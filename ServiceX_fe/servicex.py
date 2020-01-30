@@ -38,9 +38,9 @@ async def get_data(selection_query: str, datasets: Union[str, List[str]],
     # that just isn't going to work here. The advantage is better handling of connections.
     # TODO: Option to pass in the connectino pool?
     async with aiohttp.ClientSession() as client:
-        async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
+        async with client.post(f'{servicex_endpoint}/transformation', data=json_query) as response:
             # TODO: Make sure to throw the correct type of exception
-            assert response.status_code == 200
+            assert response.status == 200
             request_id = (await response.json())["request_id"]
 
         # Load all the files as they become availible.
