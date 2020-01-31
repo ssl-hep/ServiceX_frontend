@@ -3,7 +3,6 @@ from requests.api import patch  # NOQA
 import ServiceX_fe as fe
 import pandas as pd
 import json
-import asyncio
 from unittest import mock
 
 
@@ -30,6 +29,7 @@ def good_transform_request(mocker):
     r = ClientSessionMocker(json.dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
     mocker.patch('aiohttp.ClientSession.post', return_value=r)
     return r
+
 
 @pytest.fixture()
 def time_is_short(mocker):
