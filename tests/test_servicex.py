@@ -28,7 +28,7 @@ class fget_object_good_copy_callable(mock.MagicMock):
     def __call__(self, *args, **kwargs):
         assert len(args) == 3
         import shutil
-        shutil.copy('G:\\func_adl_cache\\2b63659eadc83973437e8661e7bbffa0\\ANALYSIS_001.root',
+        shutil.copy('tests\\sample_servicex_output.root',
                     args[2])
 
 
@@ -80,7 +80,7 @@ async def test_good_run_single_ds_1file(good_transform_request, time_is_short, f
     'Simple run with expected results'
     r = await fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
-    assert len(r) == 22576
+    assert len(r) == 283458
 
 
 @pytest.mark.asyncio
@@ -88,7 +88,7 @@ async def test_good_run_single_ds_2file(good_transform_request, time_is_short, f
     'Simple run with expected results'
     r = await fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
-    assert len(r) == 22576*2
+    assert len(r) == 283458*2
 
 # TODO:
 # Other tests
