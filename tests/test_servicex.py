@@ -30,6 +30,19 @@ class fget_object_good_copy_callable(mock.MagicMock):
         import shutil
         shutil.copy('G:\\func_adl_cache\\2b63659eadc83973437e8661e7bbffa0\\ANALYSIS_001.root', args[2])
 
+@pytest.fixture()
+def files_back_1(mocker):
+    mocker.patch('minio.api.Minio.list_objects', return_value=['file1'])
+    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    return None
+
+
+@pytest.fixture()
+def files_back_2(mocker):
+    mocker.patch('minio.api.Minio.list_objects', return_value=['file1', 'file2'])
+    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    return None
+
 
 @pytest.fixture()
 def good_transform_request(mocker):
@@ -40,9 +53,6 @@ def good_transform_request(mocker):
     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
     r2 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "1"}), 200)
     mocker.patch('aiohttp.ClientSession.get', return_value=r2)
-
-    mocker.patch('minio.api.Minio.list_objects', return_value=['file1'])
-    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
 
     return None
 
@@ -58,11 +68,19 @@ def time_is_short(mocker):
 
 
 @pytest.mark.asyncio
-async def test_good_run_single_ds(good_transform_request, time_is_short):
+async def test_good_run_single_ds_1file(good_transform_request, time_is_short, files_back_1):
     'Simple run with expected results'
     r = await fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 22576
+
+
+@pytest.mark.asyncio
+async def test_good_run_single_ds_2file(good_transform_request, time_is_short, files_back_2):
+    'Simple run with expected results'
+    r = await fe.get_data('(valid qastle string)', 'one_ds')
+    assert isinstance(r, pd.DataFrame)
+    assert len(r) == 22576*2
 
 # TODO:
 # Other tests
