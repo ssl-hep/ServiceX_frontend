@@ -25,7 +25,8 @@ setup(name="ServiceX_fe",
           "pandas",
           "uproot~=3.7",
           "retry~=0.9",
-          "aiohttp~=3.6"
+          "aiohttp~=3.6",
+          "minio~=5.0"
       ],
       extras_require={
           'test': [
