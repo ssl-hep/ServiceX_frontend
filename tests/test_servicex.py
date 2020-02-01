@@ -37,6 +37,7 @@ def make_minio_file(mocker, fname):
     r.object_name = fname
     return r
 
+
 @pytest.fixture()
 def files_back_1(mocker):
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file(mocker, 'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
