@@ -24,15 +24,25 @@ class ClientSessionMocker:
         return self
 
 
+class fget_object_good_copy_callable(mock.MagicMock):
+    def __call__(self, *args, **kwargs):
+        assert len(args) == 3
+        import shutil
+        shutil.copy('G:\\func_adl_cache\\2b63659eadc83973437e8661e7bbffa0\\ANALYSIS_001.root', args[2])
+
+
 @pytest.fixture()
 def good_transform_request(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
     r1 = ClientSessionMocker(json.dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
     r2 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "1"}), 200)
     mocker.patch('aiohttp.ClientSession.get', return_value=r2)
 
     mocker.patch('minio.api.Minio.list_objects', return_value=['file1'])
-    mocker.patch('minio.api.Minio.fget_object', return_value=None)
+    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
 
     return None
 
@@ -52,7 +62,7 @@ async def test_good_run_single_ds(good_transform_request, time_is_short):
     'Simple run with expected results'
     r = await fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
-    assert len(r) == 4
+    assert len(r) == 22576
 
 # TODO:
 # Other tests

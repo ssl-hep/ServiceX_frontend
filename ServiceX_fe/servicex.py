@@ -8,6 +8,7 @@ import urllib
 import aiohttp
 from minio import Minio
 import pandas as pd
+import uproot
 
 
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
@@ -48,7 +49,7 @@ def santize_filename(fname: str):
                 .replace(';', '_')
 
 
-async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str):
+async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) -> pd.DataFrame:
     '''
     Download a single file to a local temp file from the minio object store
     '''
@@ -56,7 +57,11 @@ async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str
     local_filepath = os.path.join(tempfile.gettempdir(), local_filename)
     # TODO: clean up these temporary files when done?
     minio_client.fget_object(request_id, bucket_fname, local_filepath)
-    return local_filepath
+
+    # Load it into uproot and get the first and only key out of it.
+    f_in = uproot.open(local_filepath)
+    r = f_in[f_in.keys()[0]]
+    return r.pandas.df()
 
 
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
@@ -142,7 +147,11 @@ async def get_data(selection_query: str, datasets: Union[str, List[str]],
             done = (files_remaining is not None) and files_remaining == 0
 
         # Now, wait for all of them to complete so we can stich the files together.
-        await asyncio.gather(*files_downloading.values())
+        all_files = await asyncio.gather(*files_downloading.values())
 
         # return the result
-        return pd.DataFrame()
+        assert len(all_files) > 0
+        if len(all_files) == 0:
+            return all_files[0]
+        else:
+            return pd.concat(all_files)
