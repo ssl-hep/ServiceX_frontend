@@ -28,18 +28,26 @@ class fget_object_good_copy_callable(mock.MagicMock):
     def __call__(self, *args, **kwargs):
         assert len(args) == 3
         import shutil
-        shutil.copy('G:\\func_adl_cache\\2b63659eadc83973437e8661e7bbffa0\\ANALYSIS_001.root', args[2])
+        shutil.copy('G:\\func_adl_cache\\2b63659eadc83973437e8661e7bbffa0\\ANALYSIS_001.root',
+                    args[2])
+
+
+def make_minio_file(mocker, fname):
+    r = mocker.MagicMock()
+    r.object_name = fname
+    return r
 
 @pytest.fixture()
 def files_back_1(mocker):
-    mocker.patch('minio.api.Minio.list_objects', return_value=['file1'])
+    mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file(mocker, 'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
     mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
     return None
 
 
 @pytest.fixture()
 def files_back_2(mocker):
-    mocker.patch('minio.api.Minio.list_objects', return_value=['file1', 'file2'])
+    mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file(mocker, 'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                                                               make_minio_file(mocker, 'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
     mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
     return None
 

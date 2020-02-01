@@ -46,7 +46,8 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
 def santize_filename(fname: str):
     'No matter the string given, make it an acceptable filename'
     return fname.replace('*', '_') \
-                .replace(';', '_')
+                .replace(';', '_') \
+                .replace(':', '_')
 
 
 async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) -> pd.DataFrame:
@@ -80,7 +81,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                          secret_key='leftfoot1',
                          secure=False)
 
-    files = list(minio_client.list_objects(request_id))  # type: List[str]
+    files = list([f.object_name for f in minio_client.list_objects(request_id)])  # type: List[str]
     new_files = [fname for fname in files if fname not in files_queued]
     # TODO: These need to run in a threadpool with some number of threads that controls
     # the number of simultanious downloads. Especially since minio does not provide an
