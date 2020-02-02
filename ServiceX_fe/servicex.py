@@ -37,8 +37,8 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
             raise BaseException(f'Unable to get transformation status '
                                 f' - http error {response.status}')
         info = await response.json()
-        files_remaining = None if (('files-remaining' not in info) or
-                                   (info['files-remaining'] is None)) \
+        files_remaining = None if (('files-remaining' not in info)
+                                   or (info['files-remaining'] is None)) \
             else int(info['files-remaining'])
         files_processed = int(info['files-processed'])
         return files_remaining, files_processed
@@ -95,7 +95,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 
 async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          servicex_endpoint: str = 'http://localhost:5000/servicex') \
-                         -> pd.DataFrame:
+          -> pd.DataFrame:
     '''
     Return data from a query with data sets
 
@@ -164,8 +164,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
 
 def get_data(selection_query: str, datasets: Union[str, List[str]],
-             servicex_endpoint: str = 'http://localhost:5000/servicex') \
-             -> pd.DataFrame:
+             servicex_endpoint: str = 'http://localhost:5000/servicex') -> pd.DataFrame:
     '''
     Return data from a query with data sets
 
