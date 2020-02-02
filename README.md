@@ -1,6 +1,12 @@
 # ServiceX_frontend
  Client access library for ServiceX
 
+[![GitHub Actions Status](https://github.com/gordonwatts/ServiceX_frontend/workflows/CI/CD/badge.svg)](https://github.com/gordonwatts/ServiceX_frontend/actions)
+[![Code Coverage](https://codecov.io/gh/gordonwatts/ServiceX_frontend/graph/badge.svg)](https://codecov.io/gh/gordonwatts/ServiceX_frontend)
+
+[![PyPI version](https://badge.fury.io/py/ServiceX_frontend.svg)](https://badge.fury.io/py/ServiceX_frontend)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/ServiceX_frontend.svg)](https://pypi.org/project/ServiceX_frontend/)
+
 # Introduction
 
 Given you have a selection string, this library will manage submitting it to a ServiceX instance and retreiving the data locally for you.
