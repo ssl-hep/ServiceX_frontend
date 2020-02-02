@@ -104,7 +104,7 @@ def test_good_run_single_ds_1file_noasync(good_transform_request, time_is_short,
 
 def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, time_is_short, files_back_1):
     'Async loop has been created for other reasons, and the non-async version still needs to work.'
-    loop = asyncio.get_event_loop()
+    _ = asyncio.get_event_loop()
     r = fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458
