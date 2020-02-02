@@ -7,6 +7,7 @@ import urllib
 
 import aiohttp
 from minio import Minio
+import nest_asyncio
 import pandas as pd
 import uproot
 
@@ -177,5 +178,6 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     Returns:
         df                  Pandas DataFrame that contains the resulting flat data.
     '''
+    nest_asyncio.apply()
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint))

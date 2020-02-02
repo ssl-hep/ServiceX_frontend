@@ -52,9 +52,9 @@ Comming:
 
 This code has been tested in several environments:
 
-- Linux, Windows, MacOS
+- Windows, Linux (notyet), MacOS (notyet)
 - Python 3.7
-- Jupyter Notebooks, regular python command-line invoked source files
+- Jupyter Notebooks (not automated), regular python command-line invoked source files
 
 # Development
 

@@ -110,6 +110,14 @@ def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, time
     assert len(r) == 283458
 
 
+def test_run_with_running_event_loop(good_transform_request, time_is_short, files_back_1):
+    async def doit():
+        r = fe.get_data('(valid qastle string)', 'one_ds')
+        assert isinstance(r, pd.DataFrame)
+        assert len(r) == 283458
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(doit())
+
 # TODO:
 # Other tests
 #  Loose connection for a while after we submit the request

@@ -26,7 +26,8 @@ setup(name="ServiceX_fe",
           "uproot~=3.7",
           "retry~=0.9",
           "aiohttp~=3.6",
-          "minio~=5.0"
+          "minio~=5.0",
+          "nest_asyncio~=1"
       ],
       extras_require={
           'test': [
