@@ -27,7 +27,7 @@ setup(name="ServiceX_fe",
           "retry~=0.9",
           "aiohttp~=3.6",
           "minio~=5.0",
-          "nest_asyncio~=1"
+          "nest_asyncio~=1.2"
       ],
       extras_require={
           'test': [
@@ -40,7 +40,6 @@ setup(name="ServiceX_fe",
               'codecov',
               'autopep8',
               'twine',
-              'requets-mock',
               'jupyterlab'
           ],
       },
