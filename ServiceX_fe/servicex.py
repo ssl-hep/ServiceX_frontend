@@ -61,8 +61,11 @@ async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str
 
     # Load it into uproot and get the first and only key out of it.
     f_in = uproot.open(local_filepath)
-    r = f_in[f_in.keys()[0]]
-    return r.pandas.df()
+    try:
+        r = f_in[f_in.keys()[0]]
+        return r.pandas.df()
+    finally:
+        f_in._context.source.close()
 
 
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
