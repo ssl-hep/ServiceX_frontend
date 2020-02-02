@@ -39,7 +39,8 @@ setup(name="ServiceX_fe",
               'codecov',
               'autopep8',
               'twine',
-              'requets-mock'
+              'requets-mock',
+              'jupyterlab'
           ],
       },
       classifiers=[
