@@ -31,7 +31,7 @@ class fget_object_good_copy_callable(mock.MagicMock):
     def __call__(self, *args, **kwargs):
         assert len(args) == 3
 
-        shutil.copy('tests\\sample_servicex_output.root',
+        shutil.copy('tests/sample_servicex_output.root',
                     args[2])
 
 
