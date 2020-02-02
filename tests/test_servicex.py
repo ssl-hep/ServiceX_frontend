@@ -1,9 +1,11 @@
-import pytest
-from requests.api import patch  # NOQA
-import ServiceX_fe as fe
-import pandas as pd
 import json
+import shutil
 from unittest import mock
+
+import pandas as pd
+import pytest
+
+import ServiceX_fe as fe
 
 
 class ClientSessionMocker:
@@ -27,7 +29,7 @@ class ClientSessionMocker:
 class fget_object_good_copy_callable(mock.MagicMock):
     def __call__(self, *args, **kwargs):
         assert len(args) == 3
-        import shutil
+
         shutil.copy('tests\\sample_servicex_output.root',
                     args[2])
 
@@ -90,6 +92,13 @@ async def test_good_run_single_ds_2file(good_transform_request, time_is_short, f
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458*2
+
+
+def test_good_run_single_ds_1file_noasync(good_transform_request, time_is_short, files_back_1):
+    'Simple run with expected results'
+    r = fe.get_data('(valid qastle string)', 'one_ds')
+    assert isinstance(r, pd.DataFrame)
+    assert len(r) == 283458
 
 # TODO:
 # Other tests

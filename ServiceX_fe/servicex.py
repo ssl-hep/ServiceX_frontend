@@ -160,3 +160,22 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             return all_files[0]
         else:
             return pd.concat(all_files)
+
+
+def get_data(selection_query: str, datasets: Union[str, List[str]],
+             servicex_endpoint: str = 'http://localhost:5000/servicex') \
+             -> pd.DataFrame:
+    '''
+    Return data from a query with data sets
+
+    Arguments:
+        selection_query     `qastle` string that specifies what columnes to extract, how to format
+                            them, and how to format them.
+        datasets            Dataset or datasets to run the query against.
+        service_endpoint    The URL where the instance of ServivceX we are querying lives
+
+    Returns:
+        df                  Pandas DataFrame that contains the resulting flat data.
+    '''
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint))
