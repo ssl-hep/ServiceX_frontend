@@ -157,7 +157,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
         # return the result
         assert len(all_files) > 0
-        if len(all_files) == 0:
+        if len(all_files) == 1:
             return all_files[0]
         else:
             return pd.concat(all_files)
