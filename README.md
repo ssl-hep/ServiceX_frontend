@@ -43,7 +43,7 @@ Implemented:
 
 Comming:
 
-- Data is returned as an `awkward` array
+- Data is returned as an `awkward` array, or a list of ROOT files located in a specified directory
 - Support up to 100 simultanious queries from a laptop-like front end without overwhelming the local machine (hopefully ServiceX will be overwhelmed!)
 - Make it easy to submit the same query for 100 different datasets
 - Run in an async or a non-async environment and non-async methods will accomodate automatically.
