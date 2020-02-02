@@ -90,7 +90,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 
 
 async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
-                   servicex_endpoint: str = 'http://localhost:5000/servicex') -> pd.DataFrame:
+                         servicex_endpoint: str = 'http://localhost:5000/servicex') \
+                         -> pd.DataFrame:
     '''
     Return data from a query with data sets
 
