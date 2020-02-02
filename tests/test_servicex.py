@@ -1,3 +1,4 @@
+import asyncio
 import json
 import shutil
 from unittest import mock
@@ -95,10 +96,19 @@ async def test_good_run_single_ds_2file(good_transform_request, time_is_short, f
 
 
 def test_good_run_single_ds_1file_noasync(good_transform_request, time_is_short, files_back_1):
-    'Simple run with expected results'
+    'Simple run with expected results, but with the non-async version'
     r = fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458
+
+
+def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, time_is_short, files_back_1):
+    'Async loop has been created for other reasons, and the non-async version still needs to work.'
+    loop = asyncio.get_event_loop()
+    r = fe.get_data('(valid qastle string)', 'one_ds')
+    assert isinstance(r, pd.DataFrame)
+    assert len(r) == 283458
+
 
 # TODO:
 # Other tests
