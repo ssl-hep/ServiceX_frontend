@@ -79,7 +79,7 @@ def time_is_short(mocker):
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file(good_transform_request, time_is_short, files_back_1):
     'Simple run with expected results'
-    r = await fe.get_data('(valid qastle string)', 'one_ds')
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458
 
@@ -87,7 +87,7 @@ async def test_good_run_single_ds_1file(good_transform_request, time_is_short, f
 @pytest.mark.asyncio
 async def test_good_run_single_ds_2file(good_transform_request, time_is_short, files_back_2):
     'Simple run with expected results'
-    r = await fe.get_data('(valid qastle string)', 'one_ds')
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458*2
 
