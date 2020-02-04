@@ -12,6 +12,11 @@ import pandas as pd
 import uproot
 
 
+# Number of seconds to wait between polling servicex for the status of a transform job
+# while waiting for it to finish.
+servicex_status_poll_time = 5.0
+
+
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
                                 request_id: str) -> Tuple[Optional[int], int]:
     '''
@@ -140,7 +145,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         files_downloading = {}
         last_files_processed = 0
         while not done:
-            await asyncio.sleep(5.0)
+            await asyncio.sleep(servicex_status_poll_time)
             files_remaining, files_processed = await _get_transform_status(client,
                                                                            servicex_endpoint,
                                                                            request_id)

@@ -9,6 +9,14 @@ import pytest
 import ServiceX_fe as fe
 
 
+@pytest.fixture(scope="module")
+def reduce_wait_time():
+    old_value = fe.servicex.servicex_status_poll_time
+    fe.servicex.servicex_status_poll_time = 0.01
+    yield None
+    fe.servicex.servicex_status_poll_time = old_value
+
+
 class ClientSessionMocker:
     def __init__(self, text, status):
         self._text = text
@@ -62,7 +70,7 @@ class list_objects_callable(mock.MagicMock):
         req_id = args[0]
         assert isinstance(req_id, str)
         number = int(req_id)
-        return [make_minio_file(f'root:::dcache-atlas-{i}') for i in range(0, number)]
+        return [make_minio_file(f'root:::dcache-atlas-{args[0]}-{i}') for i in range(0, number)]
 
 
 @pytest.fixture()
@@ -101,18 +109,8 @@ def four_good_transform_requests(mocker):
     mocker.patch('aiohttp.ClientSession.get', return_value=g1)
 
 
-@pytest.fixture()
-def time_is_short(mocker):
-    # TODO: Make sure this allows other co-routines to run!
-    class AsyncMock(mock.MagicMock):
-        async def __call__(self, *args, **kwargs):
-            return super(AsyncMock, self).__call__(*args, **kwargs)
-
-    mocker.patch('asyncio.sleep', new_callable=AsyncMock)
-
-
 @pytest.mark.asyncio
-async def test_good_run_single_ds_1file(good_transform_request, time_is_short, files_back_1):
+async def test_good_run_single_ds_1file(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
@@ -120,21 +118,21 @@ async def test_good_run_single_ds_1file(good_transform_request, time_is_short, f
 
 
 @pytest.mark.asyncio
-async def test_good_run_single_ds_2file(good_transform_request, time_is_short, files_back_2):
+async def test_good_run_single_ds_2file(good_transform_request, reduce_wait_time, files_back_2):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458*2
 
 
-def test_good_run_single_ds_1file_noasync(good_transform_request, time_is_short, files_back_1):
+def test_good_run_single_ds_1file_noasync(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results, but with the non-async version'
     r = fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458
 
 
-def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, time_is_short, files_back_1):
+def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, reduce_wait_time, files_back_1):
     'Async loop has been created for other reasons, and the non-async version still needs to work.'
     _ = asyncio.get_event_loop()
     r = fe.get_data('(valid qastle string)', 'one_ds')
@@ -142,7 +140,7 @@ def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, time
     assert len(r) == 283458
 
 
-def test_run_with_running_event_loop(good_transform_request, time_is_short, files_back_1):
+def test_run_with_running_event_loop(good_transform_request, reduce_wait_time, files_back_1):
     async def doit():
         r = fe.get_data('(valid qastle string)', 'one_ds')
         assert isinstance(r, pd.DataFrame)
@@ -152,7 +150,7 @@ def test_run_with_running_event_loop(good_transform_request, time_is_short, file
 
 
 @pytest.mark.asyncio
-async def test_run_with_four_queries(four_good_transform_requests, time_is_short, four_sets_of_files_back):
+async def test_run_with_four_queries(four_good_transform_requests, reduce_wait_time, four_sets_of_files_back):
     'Try to run four transform requests at same time. Make sure each retursn what we expect.'
     r1 = fe.get_data_async('(valid qastle string)', 'one_ds')
     r2 = fe.get_data_async('(valid qastle string)', 'two_ds')
