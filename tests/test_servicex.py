@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 import shutil
 from unittest import mock
 
@@ -68,13 +69,18 @@ class list_objects_callable(mock.MagicMock):
     def __call__(self, *args, **kwargs):
         assert len(args) == 1
         req_id = args[0]
-        assert isinstance(req_id, str)
-        number = int(req_id)
-        return [make_minio_file(f'root:::dcache-atlas-{args[0]}-{i}') for i in range(0, number)]
+        num_files_s = req_id
+        dash = req_id.find('_')
+        if dash > 0:
+            num_files_s = req_id[:dash]
+        num_files = int(num_files_s)
+
+        return [make_minio_file(f'root:::dcache-atlas-{req_id}-{i}') for i in range(0, num_files)]
 
 
 @pytest.fixture()
-def four_sets_of_files_back(mocker):
+def indexed_files_back(mocker):
+    'Use the request id formatting to figure out how many files to deliver back'
     mocker.patch('minio.api.Minio.list_objects', new_callable=list_objects_callable)
     mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
 
@@ -93,16 +99,17 @@ def good_transform_request(mocker):
 
 
 @pytest.fixture()
-def four_good_transform_requests(mocker):
+def good_requests_indexed(mocker):
     '''
-    We will setup four transform requests.
+    Parse the dataset to figure out what is to be done
     '''
-    # Get the original queries
-    r1 = ClientSessionMocker(json.dumps({"request_id": "1"}), 200)
-    r2 = ClientSessionMocker(json.dumps({"request_id": "2"}), 200)
-    r3 = ClientSessionMocker(json.dumps({"request_id": "3"}), 200)
-    r4 = ClientSessionMocker(json.dumps({"request_id": "4"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=[r1, r2, r3, r4])
+    def call_post(_, data=None):
+        dataset = data['did']
+        info = re.search('^[a-z]+_([0-9]+)_([0-9]+)$', dataset)
+        query_number = info[1]
+        nfiles = info[2]
+        return ClientSessionMocker(json.dumps({"request_id": f'{nfiles}_{query_number}'}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=call_post)
 
     # Now get back the returns, which are just going to always be the same.
     g1 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "4"}), 200)
@@ -150,18 +157,30 @@ def test_run_with_running_event_loop(good_transform_request, reduce_wait_time, f
 
 
 @pytest.mark.asyncio
-async def test_run_with_four_queries(four_good_transform_requests, reduce_wait_time, four_sets_of_files_back):
+async def test_run_with_four_queries(good_requests_indexed, reduce_wait_time, indexed_files_back):
     'Try to run four transform requests at same time. Make sure each retursn what we expect.'
-    r1 = fe.get_data_async('(valid qastle string)', 'one_ds')
-    r2 = fe.get_data_async('(valid qastle string)', 'two_ds')
-    r3 = fe.get_data_async('(valid qastle string)', 'three_ds')
-    r4 = fe.get_data_async('(valid qastle string)', 'four_ds')
+    r1 = fe.get_data_async('(valid qastle string)', 'ds_0_1')
+    r2 = fe.get_data_async('(valid qastle string)', 'ds_1_2')
+    r3 = fe.get_data_async('(valid qastle string)', 'ds_2_3')
+    r4 = fe.get_data_async('(valid qastle string)', 'ds_3_4')
     all_wait = await asyncio.gather(*[r1, r2, r3, r4])
     assert len(all_wait) == 4
     for cnt, r in enumerate(all_wait):
         assert isinstance(r, pd.DataFrame)
         assert len(r) == 283458*(cnt+1)
 
+
+@pytest.mark.asyncio
+async def test_run_with_onehundred_queries(good_requests_indexed, reduce_wait_time, indexed_files_back):
+    'Try to run four transform requests at same time. Make sure each retursn what we expect.'
+    # Request 100 times, each with 1 file in the return.
+    count = 100
+    all_requests = [fe.get_data_async('(valid qastle string)', f'ds_{i}_1') for i in range(0, count)]
+    all_wait = await asyncio.gather(*all_requests)
+    assert len(all_wait) == count
+    for cnt, r in enumerate(all_wait):
+        assert isinstance(r, pd.DataFrame)
+        assert len(r) == 283458
 
 # TODO:
 # Other tests
