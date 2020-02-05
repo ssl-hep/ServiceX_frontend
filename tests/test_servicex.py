@@ -1,5 +1,6 @@
 import asyncio
 import json
+import queue
 import re
 import shutil
 from unittest import mock
@@ -65,6 +66,31 @@ def files_back_2(mocker):
     return None
 
 
+@pytest.fixture()
+def files_back_2_one_at_a_time(mocker):
+    q = queue.Queue()
+    d = {}
+    f1 = make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+    f2 = make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+
+    def return_files(req_id):
+        if len(d) == 0:
+            q.put("get-file-list 0")
+            d['flag'] = True
+            return [f1]
+        else:
+            q.put("get-file-list 1")
+            return [f1, f2]
+
+    def copy_files(a, b, c):
+        q.put(f'copy-a-file {c}')
+        fget_object_good_copy_callable()(a, b, c)
+
+    mocker.patch('minio.api.Minio.list_objects', side_effect=return_files)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=copy_files)
+    return q
+
+
 class list_objects_callable(mock.MagicMock):
     def __call__(self, *args, **kwargs):
         assert len(args) == 1
@@ -94,6 +120,21 @@ def good_transform_request(mocker):
     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
     r2 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "1"}), 200)
     mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+    return None
+
+
+@pytest.fixture()
+def good_transform_request_delayed_finish(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
+    r1 = ClientSessionMocker(json.dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+    f1 = ClientSessionMocker(json.dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+    f2 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+    mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2])
 
     return None
 
@@ -181,6 +222,31 @@ async def test_run_with_onehundred_queries(good_requests_indexed, reduce_wait_ti
     for cnt, r in enumerate(all_wait):
         assert isinstance(r, pd.DataFrame)
         assert len(r) == 283458
+
+
+@pytest.mark.asyncio
+async def test_files_download_before_done(good_transform_request_delayed_finish, reduce_wait_time, files_back_2_one_at_a_time):
+    'Make sure files start the download before the transform is done'
+    #  fe.servicex.servicex_status_poll_time = 1.0
+
+    r1 = fe.get_data_async('(valid qastle string)', 'ds_0_2')
+    r = await r1
+    assert isinstance(r, pd.DataFrame)
+    assert len(r) == 283458*2
+
+    q = files_back_2_one_at_a_time
+    print(q.qsize())
+
+    ordering = []
+    while q.qsize() > 0:
+        ordering.append(q.get(False))
+
+    print(ordering)
+
+    assert ordering[0] == 'get-file-list 0'
+    assert ordering[1].startswith('copy-a-file')
+
+    assert False
 
 # TODO:
 # Other tests
