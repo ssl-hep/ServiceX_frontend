@@ -225,14 +225,23 @@ async def test_run_with_onehundred_queries(good_requests_indexed, reduce_wait_ti
 
 
 @pytest.mark.asyncio
-async def test_files_download_before_done(good_transform_request_delayed_finish, reduce_wait_time, files_back_2_one_at_a_time):
-    'Make sure files start the download before the transform is done'
+async def test_files_downloaded_ready_in_sequence(good_transform_request_delayed_finish, reduce_wait_time, files_back_2_one_at_a_time):
+    'If one file finishes first, and later the second one finishes, make sure we get both the files.'
     #  fe.servicex.servicex_status_poll_time = 1.0
 
     r1 = fe.get_data_async('(valid qastle string)', 'ds_0_2')
     r = await r1
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458*2
+
+
+@pytest.mark.asyncio
+async def test_files_downloading_is_interleaved(good_transform_request_delayed_finish, reduce_wait_time, files_back_2_one_at_a_time):
+    'Make sure files start the download before the transform is done'
+    #  fe.servicex.servicex_status_poll_time = 1.0
+
+    r1 = fe.get_data_async('(valid qastle string)', 'ds_0_2')
+    await r1
 
     q = files_back_2_one_at_a_time
     print(q.qsize())
