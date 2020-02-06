@@ -4,8 +4,8 @@
 [![GitHub Actions Status](https://github.com/gordonwatts/ServiceX_frontend/workflows/CI/CD/badge.svg)](https://github.com/gordonwatts/ServiceX_frontend/actions)
 [![Code Coverage](https://codecov.io/gh/gordonwatts/ServiceX_frontend/graph/badge.svg)](https://codecov.io/gh/gordonwatts/ServiceX_frontend)
 
-[![PyPI version](https://badge.fury.io/py/ServiceX_frontend.svg)](https://badge.fury.io/py/ServiceX_frontend)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/ServiceX_frontend.svg)](https://pypi.org/project/ServiceX_frontend/)
+[![PyPI version](https://badge.fury.io/py/ServiceX-fe.svg)](https://badge.fury.io/py/ServiceX-fe)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/ServiceX-fe.svg)](https://pypi.org/project/ServiceX-fe/)
 
 # Introduction
 
