@@ -255,8 +255,6 @@ async def test_files_downloading_is_interleaved(good_transform_request_delayed_f
     assert ordering[0] == 'get-file-list 0'
     assert ordering[1].startswith('copy-a-file')
 
-    assert False
-
 # TODO:
 # Other tests
 #  Loose connection for a while after we submit the request

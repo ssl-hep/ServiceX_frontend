@@ -1,5 +1,6 @@
 # Main frontend interface
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 import os
 import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
@@ -56,7 +57,12 @@ def santize_filename(fname: str):
                 .replace(':', '_')
 
 
-async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) -> pd.DataFrame:
+# Threadpool on which downloads occur. This is because the current minio library
+# uses blocking http requests, so we can't use asyncio to interleave them.
+_download_executor = ThreadPoolExecutor(max_workers=5)
+
+
+def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) -> pd.DataFrame:
     '''
     Download a single file to a local temp file from the minio object store
     '''
@@ -92,10 +98,12 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 
     files = list([f.object_name for f in minio_client.list_objects(request_id)])  # type: List[str]
     new_files = [fname for fname in files if fname not in files_queued]
-    # TODO: These need to run in a threadpool with some number of threads that controls
-    # the number of simultanious downloads. Especially since minio does not provide an
-    # async API.
-    return {fname: _download_file(minio_client, request_id, fname) for fname in new_files}
+
+    # Submit in a thread pool so they can run and block concurrently.
+    futures = {fname: asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
+                                          request_id, fname))
+               for fname in new_files}
+    return futures
 
 
 async def get_data_async(selection_query: str, datasets: Union[str, List[str]],

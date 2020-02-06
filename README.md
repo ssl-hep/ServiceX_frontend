@@ -66,12 +66,12 @@ Implemented:
 - Complete returned data must fit in the process' memory
 - Run in an async or a non-async environment and non-async methods will accomodate automatically (including `jupyter` notebooks).
 - Support up to 100 simultanious queries from a laptop-like front end without overwhelming the local machine (hopefully ServiceX will be overwhelmed!)
+- Start downloading files as soon as they are ready (before ServiceX is done with the complete transform).
 
 Comming:
 
 - Data is returned as an `awkward` array, or a list of ROOT files located in a specified directory
 - Make it easy to submit the same query for 100 different datasets
-- Start downloading files as soon as they are ready (before ServiceX is done with the complete transform).
 
 # Testing
 
