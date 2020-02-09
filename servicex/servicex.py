@@ -173,7 +173,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         if len(all_files) == 1:
             return all_files[0]
         else:
-            return pd.concat(all_files)
+            r = pd.concat(all_files)
+            assert isinstance(r, pd.DataFrame)
+            return r
 
 
 def get_data(selection_query: str, datasets: Union[str, List[str]],

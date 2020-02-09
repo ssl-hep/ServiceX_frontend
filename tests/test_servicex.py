@@ -8,7 +8,7 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-import ServiceX_fe as fe
+import servicex as fe
 
 
 @pytest.fixture(scope="module")

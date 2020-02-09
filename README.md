@@ -27,9 +27,10 @@ Before you install this library you'll need:
 The following lines will return a `pandas.DataFrame` containing all the jet pT's from an ATLAS xAOD file containing Z->ee Monte Carlo:
 
 ```
+    import servicex
     query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
     dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
-    r = ServiceX_fe.get_data(query , dataset, servicex_endpoint=endpoint)
+    r = servicex.get_data(query , dataset, servicex_endpoint=endpoint)
     print(r)
 ```
 And the output in a terminal window from running the above script (takes about 1-2 minutes to complete):
@@ -88,7 +89,7 @@ For any changes please feel free to submit pull requests!
 To do development please setup your environment with the following steps:
 
 1. A python 3.7 development environment
-1. Pull down this package, XXX
+1. Pull down this package, XX
 1. `python -m pip install -e .[test]`
 1. Run the tests to make sure everything is good: `pytest`.
 
