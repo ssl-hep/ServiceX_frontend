@@ -1,11 +1,11 @@
 # ServiceX_frontend
  Client access library for ServiceX
 
-[![GitHub Actions Status](https://github.com/gordonwatts/ServiceX_frontend/workflows/CI/CD/badge.svg)](https://github.com/gordonwatts/ServiceX_frontend/actions)
-[![Code Coverage](https://codecov.io/gh/gordonwatts/ServiceX_frontend/graph/badge.svg)](https://codecov.io/gh/gordonwatts/ServiceX_frontend)
+[![GitHub Actions Status](https://github.com/ssl-hep/ServiceX_frontend/workflows/CI/CD/badge.svg)](https://github.com/ssl-hep/ServiceX_frontend/actions)
+[![Code Coverage](https://codecov.io/gh/ssl-hep/ServiceX_frontend/graph/badge.svg)](https://codecov.io/gh/ssl-hep/ServiceX_frontend)
 
-[![PyPI version](https://badge.fury.io/py/ServiceX-fe.svg)](https://badge.fury.io/py/ServiceX-fe)
-[![Supported Python versions](https://img.shields.io/pypi/pyversions/ServiceX-fe.svg)](https://pypi.org/project/ServiceX-fe/)
+[![PyPI version](https://badge.fury.io/py/ServiceX-fe.svg)](https://badge.fury.io/py/servicex)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/servicex.svg)](https://pypi.org/project/servicex/)
 
 # Introduction
 
@@ -63,7 +63,7 @@ Implemented:
 
 - Accepts a `qastle` formatted query
 - Exceptions are used to report back errors of all sorts from the service to the user's code.
-- Data is return as a `pandas.DataFrame`
+- Data is return as a `pandas.DataFrame` or a  `awkward` array (see the `data_type` parameter)
 - Complete returned data must fit in the process' memory
 - Run in an async or a non-async environment and non-async methods will accomodate automatically (including `jupyter` notebooks).
 - Support up to 100 simultanious queries from a laptop-like front end without overwhelming the local machine (hopefully ServiceX will be overwhelmed!)
@@ -71,7 +71,7 @@ Implemented:
 
 Comming:
 
-- Data is returned as an `awkward` array, or a list of ROOT files located in a specified directory
+- Data is returned as a list of ROOT files located in a specified directory
 - Make it easy to submit the same query for 100 different datasets
 
 # Testing

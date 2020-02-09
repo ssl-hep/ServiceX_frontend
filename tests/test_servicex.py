@@ -158,7 +158,7 @@ def good_requests_indexed(mocker):
 
 
 @pytest.mark.asyncio
-async def test_good_run_single_ds_1file(good_transform_request, reduce_wait_time, files_back_1):
+async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
@@ -166,11 +166,42 @@ async def test_good_run_single_ds_1file(good_transform_request, reduce_wait_time
 
 
 @pytest.mark.asyncio
-async def test_good_run_single_ds_2file(good_transform_request, reduce_wait_time, files_back_2):
+async def test_good_run_single_ds_2file_pandas(good_transform_request, reduce_wait_time, files_back_2):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458*2
+
+
+@pytest.mark.asyncio
+async def test_good_run_single_ds_1file_awkward(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    assert isinstance(r, dict)
+    assert len(r) == 1
+    assert b'JetPt' in r
+    assert len(r[b'JetPt']) == 283458
+
+
+@pytest.mark.asyncio
+async def test_good_run_single_ds_2file_awkward(good_transform_request, reduce_wait_time, files_back_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    assert isinstance(r, dict)
+    assert len(r) == 1
+    assert b'JetPt' in r
+    assert len(r[b'JetPt']) == 283458*2
+
+
+@pytest.mark.asyncio
+async def test_bad_datatype_request(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+
+    try:
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='forkme')
+    except BaseException:
+        return
+    assert False
 
 
 def test_good_run_single_ds_1file_noasync(good_transform_request, reduce_wait_time, files_back_1):

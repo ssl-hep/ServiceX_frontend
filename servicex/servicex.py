@@ -9,6 +9,7 @@ import urllib
 import aiohttp
 from minio import Minio
 import nest_asyncio
+import numpy as np
 import pandas as pd
 import uproot
 
@@ -62,7 +63,8 @@ def santize_filename(fname: str):
 _download_executor = ThreadPoolExecutor(max_workers=5)
 
 
-def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) -> pd.DataFrame:
+def _download_file(minio_client: Minio, request_id: str, bucket_fname: str, data_type: str) \
+        -> pd.DataFrame:
     '''
     Download a single file to a local temp file from the minio object store
     '''
@@ -75,13 +77,19 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) -> p
     f_in = uproot.open(local_filepath)
     try:
         r = f_in[f_in.keys()[0]]
-        return r.pandas.df()
+        if data_type == 'pandas':
+            return r.pandas.df()
+        elif data_type == 'awkward':
+            return r.arrays()
+        else:
+            raise BaseException(f'Internal coding error - {data_type} should not be known.')
     finally:
         f_in._context.source.close()
 
 
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
-                              request_id: str) -> Dict[str, Any]:
+                              request_id: str,
+                              data_type: str) -> Dict[str, Any]:
     '''
     Get the list of files in a minio bucket and download any files we've not already started. We
     queue them up, and return a list of the futures that point to the files when they
@@ -101,14 +109,15 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 
     # Submit in a thread pool so they can run and block concurrently.
     futures = {fname: asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                          request_id, fname))
+                                          request_id, fname, data_type))
                for fname in new_files}
     return futures
 
 
 async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
-                         servicex_endpoint: str = 'http://localhost:5000/servicex') \
-        -> pd.DataFrame:
+                         servicex_endpoint: str = 'http://localhost:5000/servicex',
+                         data_type: str = 'pandas') \
+        -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets
 
@@ -117,13 +126,20 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                             them, and how to format them.
         datasets            Dataset or datasets to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
+        data_type           How should the data come back? 'pandas' and 'awkward' are the only
+                            legal values. Defaults to 'pandas'
 
     Returns:
-        df                  Pandas DataFrame that contains the resulting flat data.
+        df                  Pandas DataFrame that contains the resulting flat data, or an awkward
+                            array. Everything is in memory.
     '''
+    # Parameter clean up
     if isinstance(datasets, str):
         datasets = [datasets]
     assert len(datasets) == 1
+
+    if (data_type != 'pandas') and (data_type != 'awkward'):
+        raise BaseException('Unknown return type.')
 
     # Build the query, get a request ID back.
     image = "sslhep/servicex_xaod_cpp_transformer:v0.2"
@@ -159,7 +175,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                                                                            request_id)
             if files_processed != last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
-                                                          servicex_endpoint, request_id)
+                                                          servicex_endpoint, request_id,
+                                                          data_type)
                 files_downloading.update(new_downloads)
                 last_files_processed = files_processed
 
@@ -173,13 +190,21 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         if len(all_files) == 1:
             return all_files[0]
         else:
-            r = pd.concat(all_files)
-            assert isinstance(r, pd.DataFrame)
-            return r
+            if data_type == 'pandas':
+                r = pd.concat(all_files)
+                assert isinstance(r, pd.DataFrame)
+                return r
+            elif data_type == 'awkward':
+                col_names = all_files[0].keys()
+                return {c: np.concatenate([ar[c] for ar in all_files]) for c in col_names}
+            else:
+                raise BaseException(f'Internal programming error - {data_type} should not be'
+                                    ' unknown.')
 
 
 def get_data(selection_query: str, datasets: Union[str, List[str]],
-             servicex_endpoint: str = 'http://localhost:5000/servicex') -> pd.DataFrame:
+             servicex_endpoint: str = 'http://localhost:5000/servicex',
+             data_type: str = 'pandas') -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets
 
@@ -188,6 +213,8 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
                             them, and how to format them.
         datasets            Dataset or datasets to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
+        data_type           How should the data come back? 'pandas' and 'awkward' are the only
+                            legal values. Defaults to 'pandas'
 
     Returns:
         df                  Pandas DataFrame that contains the resulting flat data.
