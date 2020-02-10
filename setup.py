@@ -6,7 +6,7 @@ from distutils.core import setup
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name="servicex",
+setup(name="ServiceX-fe",
       version='1.0.0-alpha.2',
       packages=['servicex'],
       scripts=[],
