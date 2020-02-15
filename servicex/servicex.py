@@ -121,7 +121,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 
 async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
-                         data_type: str = 'pandas') \
+                         data_type: str = 'pandas',
+                         image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2') \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets
@@ -133,6 +134,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas' and 'awkward' are the only
                             legal values. Defaults to 'pandas'
+        image               ServiceX image that should run this
 
     Returns:
         df                  Pandas DataFrame that contains the resulting flat data, or an awkward
@@ -147,7 +149,6 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         raise BaseException('Unknown return type.')
 
     # Build the query, get a request ID back.
-    image = "sslhep/servicex_xaod_cpp_transformer:v0.2"
     json_query = {
         "did": datasets[0],
         "selection": selection_query,
@@ -162,9 +163,11 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     # that just isn't going to work here. The advantage is better handling of connections.
     # TODO: Option to pass in the connectino pool?
     async with aiohttp.ClientSession() as client:
-        async with client.post(f'{servicex_endpoint}/transformation', data=json_query) as response:
+        async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
             # TODO: Make sure to throw the correct type of exception
-            assert response.status == 200
+            if response.status != 200:
+                raise ServiceX_Exception('ServiceX rejected the transformation request: '
+                                         f'({response.status}){await response.json()}')
             request_id = (await response.json())["request_id"]
 
         # Sit here waiting for the results to come in. In case there are missing items
@@ -209,7 +212,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
 def get_data(selection_query: str, datasets: Union[str, List[str]],
              servicex_endpoint: str = 'http://localhost:5000/servicex',
-             data_type: str = 'pandas') -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
+             data_type: str = 'pandas',
+             image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2') \
+        -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets
 
@@ -226,4 +231,5 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     '''
     nest_asyncio.apply()
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint))
+    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint,
+                                   image=image))

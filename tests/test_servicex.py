@@ -1,5 +1,5 @@
 import asyncio
-import json
+from json import dumps, loads
 import queue
 import re
 import shutil
@@ -28,7 +28,7 @@ class ClientSessionMocker:
         return self._text
 
     async def json(self):
-        return json.loads(self._text)
+        return loads(self._text)
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
@@ -116,12 +116,17 @@ def good_transform_request(mocker):
     '''
     Setup to run a good transform request that returns a single file.
     '''
-    r1 = ClientSessionMocker(json.dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
-    r2 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "1"}), 200)
+    called_json_data = {}
+
+    def call_post(data_dict_to_save: dict, json=None):
+        data_dict_to_save.update(json)
+        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
     mocker.patch('aiohttp.ClientSession.get', return_value=r2)
 
-    return None
+    return called_json_data
 
 
 @pytest.fixture()
@@ -129,7 +134,7 @@ def bad_transform_request(mocker):
     '''
     Fail when we return!
     '''
-    r1 = ClientSessionMocker(json.dumps({"message": "Things Just Went Badly"}), 400)
+    r1 = ClientSessionMocker(dumps({"message": "Things Just Went Badly"}), 400)
     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
 
     return None
@@ -140,11 +145,11 @@ def good_transform_request_delayed_finish(mocker):
     '''
     Setup to run a good transform request that returns a single file.
     '''
-    r1 = ClientSessionMocker(json.dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    r1 = ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
 
-    f1 = ClientSessionMocker(json.dumps({"files-remaining": "1", "files-processed": "1"}), 200)
-    f2 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+    f1 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+    f2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
     mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2])
 
     return None
@@ -155,16 +160,16 @@ def good_requests_indexed(mocker):
     '''
     Parse the dataset to figure out what is to be done
     '''
-    def call_post(_, data=None):
-        dataset = data['did']
+    def call_post(_, json=None):
+        dataset = json['did']
         info = re.search('^[a-z]+_([0-9]+)_([0-9]+)$', dataset)
         query_number = info[1]
         nfiles = info[2]
-        return ClientSessionMocker(json.dumps({"request_id": f'{nfiles}_{query_number}'}), 200)
+        return ClientSessionMocker(dumps({"request_id": f'{nfiles}_{query_number}'}), 200)
     mocker.patch('aiohttp.ClientSession.post', side_effect=call_post)
 
     # Now get back the returns, which are just going to always be the same.
-    g1 = ClientSessionMocker(json.dumps({"files-remaining": "0", "files-processed": "4"}), 200)
+    g1 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "4"}), 200)
     mocker.patch('aiohttp.ClientSession.get', return_value=g1)
 
 
@@ -202,6 +207,14 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, reduce_w
     assert len(r) == 1
     assert b'JetPt' in r
     assert len(r[b'JetPt']) == 283458*2
+
+
+@pytest.mark.asyncio
+async def test_image_spec(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    await fe.get_data_async('(valid qastle string)', 'one_ds', image='fork-it-over:latest')
+    called = good_transform_request
+    assert called['image'] == 'fork-it-over:latest'
 
 
 @pytest.mark.asyncio
