@@ -125,6 +125,17 @@ def good_transform_request(mocker):
 
 
 @pytest.fixture()
+def bad_transform_request(mocker):
+    '''
+    Fail when we return!
+    '''
+    r1 = ClientSessionMocker(json.dumps({"message": "Things Just Went Badly"}), 400)
+    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+    return None
+
+
+@pytest.fixture()
 def good_transform_request_delayed_finish(mocker):
     '''
     Setup to run a good transform request that returns a single file.
