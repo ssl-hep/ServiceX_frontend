@@ -19,6 +19,11 @@ import uproot
 servicex_status_poll_time = 5.0
 
 
+class ServiceX_Exception(BaseException):
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
                                 request_id: str) -> Tuple[Optional[int], int]:
     '''

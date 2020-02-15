@@ -1,1 +1,1 @@
-from .servicex import get_data_async, get_data  # NOQA
+from .servicex import get_data_async, get_data, ServiceX_Exception  # NOQA

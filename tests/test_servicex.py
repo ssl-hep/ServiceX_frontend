@@ -194,6 +194,18 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, reduce_w
 
 
 @pytest.mark.asyncio
+async def test_servicex_rejects_transform_request(bad_transform_request, reduce_wait_time):
+    'Simple run bomb during transform query'
+    try:
+        await fe.get_data_async('(valid qastle string)', 'one_ds')
+        assert False
+    except fe.ServiceX_Exception as se:
+        # Make sure the code failure, 400, is in the string somewhere.
+        assert str(se).find('400') >= 0
+        return
+
+
+@pytest.mark.asyncio
 async def test_bad_datatype_request(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
 
