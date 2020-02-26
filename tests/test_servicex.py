@@ -210,6 +210,17 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, reduce_w
 
 
 @pytest.mark.asyncio
+async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_time, files_back_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+
+    # Test that what we pull down can correctly be used by uproot methods
+    import uproot_methods
+    arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
+    assert len(arr) == 283458*2
+
+
+@pytest.mark.asyncio
 async def test_image_spec(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     await fe.get_data_async('(valid qastle string)', 'one_ds', image='fork-it-over:latest')
