@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
 
 import aiohttp
+import awkward
 from minio import Minio, ResponseError
 import nest_asyncio
 import numpy as np
@@ -211,7 +212,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                 return r
             elif data_type == 'awkward':
                 col_names = all_files[0].keys()
-                return {c: np.concatenate([ar[c] for ar in all_files]) for c in col_names}
+                return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
             else:
                 raise BaseException(f'Internal programming error - {data_type} should not be'
                                     ' unknown.')
