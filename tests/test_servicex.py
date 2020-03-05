@@ -4,6 +4,8 @@ import queue
 import re
 import shutil
 from unittest import mock
+from unittest.mock import MagicMixin, MagicMock
+from minio.error import ResponseError
 
 import pandas as pd
 import pytest
@@ -54,6 +56,16 @@ def make_minio_file(fname):
 @pytest.fixture()
 def files_back_1(mocker):
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
+    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    return None
+
+
+@pytest.fixture()
+def files_back_1_fail_initally(mocker):
+    'Throw a response error - so the bucket doesn not get created right away'
+    response = MagicMock()
+    response.data = '<xml></xml>'
+    mocker.patch('minio.api.Minio.list_objects', side_effect=[ResponseError(response, 'POST', 'Dude'), [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]])
     mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
     return None
 
@@ -175,6 +187,14 @@ def good_requests_indexed(mocker):
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds')
+    assert isinstance(r, pd.DataFrame)
+    assert len(r) == 283458
+
+
+@pytest.mark.asyncio
+async def test_fails_bucket_lookup_at_first(good_transform_request, reduce_wait_time, files_back_1_fail_initally):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)

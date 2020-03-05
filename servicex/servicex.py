@@ -7,10 +7,11 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
 
 import aiohttp
-from minio import Minio
+from minio import Minio, ResponseError
 import nest_asyncio
 import numpy as np
 import pandas as pd
+from retry import retry
 import uproot
 
 
@@ -92,6 +93,12 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str, data
         f_in._context.source.close()
 
 
+@retry(delay=1, tries=10, exceptions=ResponseError)
+def protected_list_objects(client: Minio, request_id: str):
+    'Return a list of objects in a minio bucket'
+    return client.list_objects(request_id)
+
+
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
                               data_type: str) -> Dict[str, Any]:
@@ -109,7 +116,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                          secret_key='leftfoot1',
                          secure=False)
 
-    files = list([f.object_name for f in minio_client.list_objects(request_id)])  # type: List[str]
+    files = list([f.object_name for f in protected_list_objects(minio_client, request_id)])  # type: List[str]
     new_files = [fname for fname in files if fname not in files_queued]
 
     # Submit in a thread pool so they can run and block concurrently.
