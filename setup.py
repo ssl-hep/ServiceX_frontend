@@ -6,8 +6,8 @@ from distutils.core import setup
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-setup(name="ServiceX-fe",
-      version='1.0.0-alpha.7',
+setup(name="servicex",
+      version='1.0.0-alpha.8',
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
