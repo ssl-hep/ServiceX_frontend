@@ -19,7 +19,7 @@ setup(name="servicex",
       maintainer_email="gwatts@uw.edu",
       url="https://github.com/iris-hep/func_adl_xAOD",
       license="TBD",
-      python_requires='>=3.6',
+      python_requires='>=3.6, <=3.8.1',
       test_suite="tests",
       install_requires=[
           "pandas~=1.0",

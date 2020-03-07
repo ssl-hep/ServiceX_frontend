@@ -79,7 +79,8 @@ Comming:
 This code has been tested in several environments:
 
 - Windows, Linux, MacOS
-- Python 3.7
+- Python 3.6, 3.7, 3.8
+   - 3.8.0 and 3.8.1 only. Unfortunately, 3.8.2 has caused `nest_asyncio` to fail. Until that package is updated we are stuck at 3.8.1.
 - Jupyter Notebooks (not automated), regular python command-line invoked source files
 
 # Development
