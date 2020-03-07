@@ -1,4 +1,4 @@
-# Main frontend interface
+# Main front end interface
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import os
@@ -173,10 +173,11 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     async with aiohttp.ClientSession() as client:
         async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
             # TODO: Make sure to throw the correct type of exception
+            r = await response.json()
             if response.status != 200:
                 raise ServiceX_Exception('ServiceX rejected the transformation request: '
-                                         f'({response.status}){await response.json()}')
-            request_id = (await response.json())["request_id"]
+                                         f'({response.status}){r}')
+            request_id = r["request_id"]
 
         # Sit here waiting for the results to come in. In case there are missing items
         # in the minio stream, we will avoid counting that. That should be an explicit error taken
