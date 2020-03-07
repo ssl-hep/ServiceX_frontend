@@ -4,7 +4,7 @@ import queue
 import re
 import shutil
 from unittest import mock
-from unittest.mock import MagicMixin, MagicMock
+from unittest.mock import MagicMock
 from minio.error import ResponseError
 
 import pandas as pd
@@ -39,12 +39,9 @@ class ClientSessionMocker:
         return self
 
 
-class fget_object_good_copy_callable(mock.MagicMock):
-    def __call__(self, *args, **kwargs):
-        assert len(args) == 3
-
-        shutil.copy('tests/sample_servicex_output.root',
-                    args[2])
+def good_copy(a, b, c):
+    'Mock the fget_object from minio by copying out our test file'
+    shutil.copy('tests/sample_servicex_output.root', c)
 
 
 def make_minio_file(fname):
@@ -56,7 +53,7 @@ def make_minio_file(fname):
 @pytest.fixture()
 def files_back_1(mocker):
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return None
 
 
@@ -66,7 +63,7 @@ def files_back_1_fail_initally(mocker):
     response = MagicMock()
     response.data = '<xml></xml>'
     mocker.patch('minio.api.Minio.list_objects', side_effect=[ResponseError(response, 'POST', 'Dude'), [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]])
-    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return None
 
 
@@ -74,7 +71,7 @@ def files_back_1_fail_initally(mocker):
 def files_back_2(mocker):
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
                                                                make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return None
 
 
@@ -96,7 +93,7 @@ def files_back_2_one_at_a_time(mocker):
 
     def copy_files(a, b, c):
         q.put(f'copy-a-file {c}')
-        fget_object_good_copy_callable()(a, b, c)
+        good_copy(a, b, c)
 
     mocker.patch('minio.api.Minio.list_objects', side_effect=return_files)
     mocker.patch('minio.api.Minio.fget_object', side_effect=copy_files)
@@ -120,7 +117,7 @@ class list_objects_callable(mock.MagicMock):
 def indexed_files_back(mocker):
     'Use the request id formatting to figure out how many files to deliver back'
     mocker.patch('minio.api.Minio.list_objects', new_callable=list_objects_callable)
-    mocker.patch('minio.api.Minio.fget_object', new_callable=fget_object_good_copy_callable)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
 
 
 @pytest.fixture()
