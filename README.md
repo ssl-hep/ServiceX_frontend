@@ -4,7 +4,7 @@
 [![GitHub Actions Status](https://github.com/ssl-hep/ServiceX_frontend/workflows/CI/CD/badge.svg)](https://github.com/ssl-hep/ServiceX_frontend/actions)
 [![Code Coverage](https://codecov.io/gh/ssl-hep/ServiceX_frontend/graph/badge.svg)](https://codecov.io/gh/ssl-hep/ServiceX_frontend)
 
-[![PyPI version](https://badge.fury.io/py/ServiceX-fe.svg)](https://badge.fury.io/py/servicex)
+[![PyPI version](https://badge.fury.io/py/servicex.svg)](https://badge.fury.io/py/servicex)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/servicex.svg)](https://pypi.org/project/servicex/)
 
 # Introduction
