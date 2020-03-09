@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "i:\\gwatts\\Code\\irishep\\ServiceX_frontend\\.venv\\Scripts\\python.exe",
+    "python.pythonPath": ".venv\\Scripts\\python.exe",
     "pyright.openFilesOnly": false,
     "pyright.useLibraryCodeForTypes": true,
     "python.analysis.logLevel": "Information",
