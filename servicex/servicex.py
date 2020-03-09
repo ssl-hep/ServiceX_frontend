@@ -117,7 +117,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                          secret_key='leftfoot1',
                          secure=False)
 
-    files = list([f.object_name for f in protected_list_objects(minio_client, request_id)])  # type: List[str]
+    files = list([f.object_name for f in protected_list_objects(minio_client, request_id)])  \
+        # type: List[str]
     new_files = [fname for fname in files if fname not in files_queued]
 
     # Submit in a thread pool so they can run and block concurrently.

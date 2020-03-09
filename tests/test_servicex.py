@@ -6,7 +6,6 @@ import shutil
 from unittest import mock
 from unittest.mock import MagicMock
 
-import minio
 from minio.error import ResponseError
 import pandas as pd
 import pytest
