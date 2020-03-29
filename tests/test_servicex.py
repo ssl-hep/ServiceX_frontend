@@ -269,7 +269,7 @@ async def test_bad_datatype_request(good_transform_request, reduce_wait_time, fi
 
     try:
         await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='forkme')
-    except BaseException:
+    except fe.ServiceXFrontEndException:
         return
     assert False
 
