@@ -60,6 +60,8 @@ If your query is badly formed or there is an other problem with the backend, an 
 
 If you'd like to be able to submit multiple queries and have them run on the ServiceX back end in parallel, it may be best to use the `asyncio` interface, which has the identical signature, but is called `get_data_async`.
 
+For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
+
 # Features
 
 Implemented:
@@ -83,7 +85,6 @@ This code has been tested in several environments:
 
 - Windows, Linux, MacOS
 - Python 3.6, 3.7, 3.8
-   - 3.8.0 and 3.8.1 only. Unfortunately, 3.8.2 has caused `nest_asyncio` to fail. Until that package is updated we are stuck at 3.8.1.
 - Jupyter Notebooks (not automated), regular python command-line invoked source files
 
 # Development
