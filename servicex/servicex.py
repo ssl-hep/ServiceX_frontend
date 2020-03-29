@@ -9,7 +9,6 @@ import urllib
 import aiohttp
 import awkward
 from minio import Minio, ResponseError
-import nest_asyncio
 import numpy as np
 import pandas as pd
 from retry import retry
@@ -247,7 +246,23 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     Returns:
         df                  Pandas DataFrame that contains the resulting flat data.
     '''
-    nest_asyncio.apply()
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint,
-                                   image=image))
+    if not loop.is_running():
+        r = get_data_async(selection_query, datasets, servicex_endpoint, image=image)
+        return loop.run_until_complete(r)
+    else:
+        def get_data_wrapper(*args, **kwargs):
+            # New thread - get the loop.
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            assert not loop.is_running()
+            try:
+                return loop.run_until_complete(get_data_async(*args, **kwargs))
+            finally:
+                pass
+
+        exector = ThreadPoolExecutor(max_workers=1)
+        future = exector.submit(get_data_wrapper, selection_query, datasets,
+                                servicex_endpoint, image=image)
+
+        return future.result()
