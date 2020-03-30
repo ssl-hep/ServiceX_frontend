@@ -55,12 +55,6 @@ def make_minio_file(fname):
 
 @pytest.fixture()
 def files_back_1(mocker):
-    # I attempted a full blown mock, but it failed. It wasn't getting picked up.
-    # No idea why. But I've left this here for future in case we return to it.
-    # mock_minio = mocker.MagicMock(minio.api.Minio)
-    # mocker.patch('minio.Minio', return_value=mock_minio)
-    # mock_minio.list_objects = MagicMock(return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    # mock_minio.fget_object = MagicMock(side_effect=good_copy)
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
     p = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return p
