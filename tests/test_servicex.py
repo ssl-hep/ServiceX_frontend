@@ -7,6 +7,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 from typing import List
 import os
+import tempfile
 
 from minio.error import ResponseError
 import pandas as pd
@@ -386,6 +387,20 @@ async def test_good_download_files_2(good_transform_request, reduce_wait_time, f
     assert os.path.exists(r[0])
     assert isinstance(r[1], str)
     assert os.path.exists(r[1])
+
+
+@pytest.mark.asyncio
+async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file', storage_directory=tmp)
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert os.path.exists(r[0])
+    assert r[0].startswith(tmp)
 
 # TODO:
 # Other tests

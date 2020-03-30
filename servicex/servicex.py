@@ -76,31 +76,19 @@ def santize_filename(fname: str):
 _download_executor = ThreadPoolExecutor(max_workers=5)
 
 
-def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) \
-        -> str:
+def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
+                   storage_directory: Optional[str]) -> str:
     '''
     Download a single file to a local temp file from the minio object store, and return
     its location.
     '''
     local_filename = santize_filename(bucket_fname)
-    local_filepath = os.path.join(tempfile.gettempdir(), local_filename)
+    local_dir = tempfile.gettempdir() if storage_directory is None else storage_directory
+    local_filepath = os.path.join(local_dir, local_filename)
     # TODO: clean up these temporary files when done?
     minio_client.fget_object(request_id, bucket_fname, local_filepath)
 
     return local_filepath
-
-    # Load it into uproot and get the first and only key out of it.
-    # f_in = uproot.open(local_filepath)
-    # try:
-    #     r = f_in[f_in.keys()[0]]
-    #     if data_type == 'pandas':
-    #         return r.pandas.df()
-    #     elif data_type == 'awkward':
-    #         return r.arrays()
-    #     else:
-    #         raise BaseException(f'Internal coding error - {data_type} should not be known.')
-    # finally:
-    #     f_in._context.source.close()
 
 
 @retry(delay=1, tries=10, exceptions=ResponseError)
@@ -137,7 +125,8 @@ async def _post_process_data(data_type: str, filepath: str):
 
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
-                              data_type: str) -> Dict[str, Any]:
+                              data_type: str,
+                              storage_directory: Optional[str]) -> Dict[str, Any]:
     '''
     Look at the minio bucket to see if there are any new file items written there. If so, then
     trigger a download.
@@ -147,6 +136,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
         end_point           Where we can reach minio
         request_id          Request we are trying to access and get data for
         data_type           What is the final data type?
+        storage_directory   Where we should stash the files. If None, then use temp.
 
     Returns:
         futures     Futures for all files that are pending downloads
@@ -169,7 +159,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     futures = {fname: _post_process_data(
         data_type,
         await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                                            request_id, fname)))
+                                                            request_id, fname, storage_directory)))
                for fname in new_files}
     return futures
 
@@ -178,7 +168,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
                          data_type: str = 'pandas',
                          image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
-                         max_workers: int = 20) \
+                         max_workers: int = 20,
+                         storage_directory: Optional[str] = None) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets.
@@ -188,23 +179,31 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                             them, and how to format them.
         datasets            Dataset or datasets to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
-        data_type           How should the data come back? 'pandas' and 'awkward' are the only
-                            legal values. Defaults to 'pandas'
+        data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
+                            are the only legal values. Defaults to 'pandas'
         image               ServiceX image that should run this.
         max_workers         Max number of workers that will run to process this request.
+        storage_directory   Location where files should be downloaded. If None is specified then
+                            they are stored in the machine's temp directory.
 
     Returns:
-        df                  Pandas DataFrame that contains the resulting flat data, or an awkward
-                            array. Everything is in memory.
+        df                  Depends on the `data_type` that has been requested:
+                            `data_type == 'pandas'` a single in-memory pandas.DataFrame
+                            `data_type == 'awkward'` a single dict of JaggedArrays
+                            `data_type == 'root-file'` List of paths to root files. You
+                                are responsible for deleting them when done.
 
     ## Notes
 
-        - the `max_workers` parameter is currently translated into the actual number of workers
-          to process this request. As the `ServiceX` back-end evolves this will be come the max
-          number of workers.
-        - This is the python `async` interface (see python documentation on `await` and
-          `async`). It should be used if you plan to make more than one simultanious query
-          to the system.
+    - There are combinations of image name and and `data_type` and `selection_query` that
+      do not work together. That logic is resolved at the `ServiceX` backend, and if the
+      parameters do not match, an exception will be thrown in your code.
+    - the `max_workers` parameter is currently translated into the actual number of workers
+        to process this request. As the `ServiceX` back-end evolves this will be come the max
+        number of workers.
+    - This is the python `async` interface (see python documentation on `await` and
+        `async`). It should be used if you plan to make more than one simultanious query
+        to the system.
     '''
     # Parameter clean up
     if isinstance(datasets, str):
@@ -251,7 +250,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             if files_processed != last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
-                                                          data_type)
+                                                          data_type, storage_directory)
                 files_downloading.update(new_downloads)
                 last_files_processed = files_processed
 
