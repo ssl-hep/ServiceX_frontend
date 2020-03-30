@@ -5,6 +5,8 @@ import re
 import shutil
 from unittest import mock
 from unittest.mock import MagicMock
+from typing import List
+import os
 
 from minio.error import ResponseError
 import pandas as pd
@@ -362,6 +364,28 @@ async def test_files_downloading_is_interleaved(good_transform_request_delayed_f
 
     assert ordering[0] == 'get-file-list 0'
     assert ordering[1].startswith('copy-a-file')
+
+
+@pytest.mark.asyncio
+async def test_good_download_files_1(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert isinstance(r[0], str)
+    assert os.path.exists(r[0])
+
+
+@pytest.mark.asyncio
+async def test_good_download_files_2(good_transform_request, reduce_wait_time, files_back_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, List)
+    assert len(r) == 2
+    assert isinstance(r[0], str)
+    assert os.path.exists(r[0])
+    assert isinstance(r[1], str)
+    assert os.path.exists(r[1])
 
 # TODO:
 # Other tests

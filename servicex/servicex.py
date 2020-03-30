@@ -76,24 +76,58 @@ def santize_filename(fname: str):
 _download_executor = ThreadPoolExecutor(max_workers=5)
 
 
-def _download_file(minio_client: Minio, request_id: str, bucket_fname: str, data_type: str) \
-        -> pd.DataFrame:
+def _download_file(minio_client: Minio, request_id: str, bucket_fname: str) \
+        -> str:
     '''
-    Download a single file to a local temp file from the minio object store
+    Download a single file to a local temp file from the minio object store, and return
+    its location.
     '''
     local_filename = santize_filename(bucket_fname)
     local_filepath = os.path.join(tempfile.gettempdir(), local_filename)
     # TODO: clean up these temporary files when done?
     minio_client.fget_object(request_id, bucket_fname, local_filepath)
 
+    return local_filepath
+
     # Load it into uproot and get the first and only key out of it.
-    f_in = uproot.open(local_filepath)
+    # f_in = uproot.open(local_filepath)
+    # try:
+    #     r = f_in[f_in.keys()[0]]
+    #     if data_type == 'pandas':
+    #         return r.pandas.df()
+    #     elif data_type == 'awkward':
+    #         return r.arrays()
+    #     else:
+    #         raise BaseException(f'Internal coding error - {data_type} should not be known.')
+    # finally:
+    #     f_in._context.source.close()
+
+
+@retry(delay=1, tries=10, exceptions=ResponseError)
+def protected_list_objects(client: Minio, request_id: str):
+    '''
+    Return a list of objects in a minio bucket. We've seen some failures here in
+    the real world, so protect this with a retry.
+    '''
+    return client.list_objects(request_id)
+
+
+async def _post_process_data(data_type: str, filepath: str):
+    '''
+    Post-process the data and return the "apprpriate" type
+    '''
+    # Load it into uproot and get the first and only key out of it.
+    # Make sure to release the lock on the file once we've extracted
+    # the data!
+    f_in = uproot.open(filepath)
     try:
         r = f_in[f_in.keys()[0]]
         if data_type == 'pandas':
             return r.pandas.df()
         elif data_type == 'awkward':
             return r.arrays()
+        elif data_type == 'root-file':
+            return filepath
         else:
             raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
                                             'should not be known.')
@@ -101,19 +135,21 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str, data
         f_in._context.source.close()
 
 
-@retry(delay=1, tries=10, exceptions=ResponseError)
-def protected_list_objects(client: Minio, request_id: str):
-    'Return a list of objects in a minio bucket'
-    return client.list_objects(request_id)
-
-
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
                               data_type: str) -> Dict[str, Any]:
     '''
-    Get the list of files in a minio bucket and download any files we've not already started. We
-    queue them up, and return a list of the futures that point to the files when they
-    are downloaded.
+    Look at the minio bucket to see if there are any new file items written there. If so, then
+    trigger a download.
+
+    Arguments:
+        files_queued        List of files already downloading or downloaded
+        end_point           Where we can reach minio
+        request_id          Request we are trying to access and get data for
+        data_type           What is the final data type?
+
+    Returns:
+        futures     Futures for all files that are pending downloads
     '''
     # We need to assume where the minio port is and go from there.
     end_point_parse = urllib.parse.urlparse(end_point)
@@ -128,9 +164,12 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
         # type: List[str]
     new_files = [fname for fname in files if fname not in files_queued]
 
-    # Submit in a thread pool so they can run and block concurrently.
-    futures = {fname: asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                          request_id, fname, data_type))
+    # Submit in a thread pool so they can run and block concurrently (minio doesn't have
+    # an async interface), and then do any post-processing needed.
+    futures = {fname: _post_process_data(
+        data_type,
+        await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
+                                                            request_id, fname)))
                for fname in new_files}
     return futures
 
@@ -172,7 +211,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         datasets = [datasets]
     assert len(datasets) == 1
 
-    if (data_type != 'pandas') and (data_type != 'awkward'):
+    if (data_type != 'pandas') and (data_type != 'awkward')and (data_type != 'root-file'):
         raise ServiceXFrontEndException('Unknown return type.')
 
     # Build the query, get a request ID back.
@@ -223,6 +262,11 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
         # return the result
         assert len(all_files) > 0
+
+        if data_type == 'root-file':
+            return all_files
+
+        # We need to shift the files to another format.
         if len(all_files) == 1:
             return all_files[0]
         else:
