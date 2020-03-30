@@ -62,8 +62,8 @@ def files_back_1(mocker):
     # mock_minio.list_objects = MagicMock(return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
     # mock_minio.fget_object = MagicMock(side_effect=good_copy)
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return None
+    p = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return p
 
 
 @pytest.fixture()
@@ -381,6 +381,16 @@ async def test_good_download_files_1(good_transform_request, reduce_wait_time, f
     assert len(r) == 1
     assert isinstance(r[0], str)
     assert os.path.exists(r[0])
+
+
+@pytest.mark.asyncio
+async def test_download_to_temp_file(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert os.path.exists(r[0])
+    assert not r[0].endswith('.temp')
+    local_filepath = files_back_1.call_args[0][2]
+    assert local_filepath.endswith('.temp')
 
 
 @pytest.mark.asyncio

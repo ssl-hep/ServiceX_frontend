@@ -86,7 +86,11 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
     dir = os.path.dirname(local_filepath)
     if not os.path.exists(dir):
         os.mkdir(dir)
-    minio_client.fget_object(request_id, bucket_fname, local_filepath)
+
+    # We are going to build a temp file, and download it from there.
+    temp_local_filepath = f'{local_filepath}.temp'
+    minio_client.fget_object(request_id, bucket_fname, temp_local_filepath)
+    os.replace(temp_local_filepath, local_filepath)
 
     return local_filepath
 
