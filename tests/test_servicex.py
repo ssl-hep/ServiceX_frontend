@@ -1,12 +1,12 @@
 import asyncio
 from json import dumps, loads
+import os
 import queue
 import re
 import shutil
+from typing import List
 from unittest import mock
 from unittest.mock import MagicMock
-from typing import List
-import os
 import tempfile
 
 from minio.error import ResponseError
@@ -190,6 +190,12 @@ def good_requests_indexed(mocker):
     g1 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "4"}), 200)
     mocker.patch('aiohttp.ClientSession.get', return_value=g1)
 
+
+def clean_fname(fname: str):
+    'No matter the string given, make it an acceptable filename'
+    return fname.replace('*', '_') \
+                .replace(';', '_') \
+                .replace(':', '_')
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
@@ -401,6 +407,34 @@ async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, fi
     assert len(r) == 1
     assert os.path.exists(r[0])
     assert r[0].startswith(tmp)
+
+
+@pytest.mark.asyncio
+async def test_download_to_lambda_dir(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file', file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert os.path.exists(r[0])
+    assert r[0].startswith(tmp)
+
+
+@pytest.mark.asyncio
+async def test_download_bad_params_filerename(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    with pytest.raises(Exception):
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
+                                storage_directory=tmp,
+                                file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+
 
 # TODO:
 # Other tests

@@ -3,7 +3,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import os
 import tempfile
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Callable
 import urllib
 
 import aiohttp
@@ -77,15 +77,15 @@ _download_executor = ThreadPoolExecutor(max_workers=5)
 
 
 def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
-                   storage_directory: Optional[str]) -> str:
+                   file_name_func: Callable[[str, str], str]) -> str:
     '''
     Download a single file to a local temp file from the minio object store, and return
     its location.
     '''
-    local_filename = santize_filename(bucket_fname)
-    local_dir = tempfile.gettempdir() if storage_directory is None else storage_directory
-    local_filepath = os.path.join(local_dir, local_filename)
-    # TODO: clean up these temporary files when done?
+    local_filepath = file_name_func(request_id, bucket_fname)
+    dir = os.path.dirname(local_filepath)
+    if not os.path.exists(dir):
+        os.mkdir(dir)
     minio_client.fget_object(request_id, bucket_fname, local_filepath)
 
     return local_filepath
@@ -102,7 +102,7 @@ def protected_list_objects(client: Minio, request_id: str):
 
 async def _post_process_data(data_type: str, filepath: str):
     '''
-    Post-process the data and return the "apprpriate" type
+    Post-process the data and return the "appropriate" type
     '''
     # Load it into uproot and get the first and only key out of it.
     # Make sure to release the lock on the file once we've extracted
@@ -126,7 +126,7 @@ async def _post_process_data(data_type: str, filepath: str):
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
                               data_type: str,
-                              storage_directory: Optional[str]) -> Dict[str, Any]:
+                              file_name_func: Callable[[str, str], str]) -> Dict[str, Any]:
     '''
     Look at the minio bucket to see if there are any new file items written there. If so, then
     trigger a download.
@@ -159,7 +159,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     futures = {fname: _post_process_data(
         data_type,
         await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                                            request_id, fname, storage_directory)))
+                                                            request_id, fname, file_name_func)))
                for fname in new_files}
     return futures
 
@@ -169,7 +169,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          data_type: str = 'pandas',
                          image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
                          max_workers: int = 20,
-                         storage_directory: Optional[str] = None) \
+                         storage_directory: Optional[str] = None,
+                         file_name_func: Callable[[str, str], str] = None) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets.
@@ -185,6 +186,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         max_workers         Max number of workers that will run to process this request.
         storage_directory   Location where files should be downloaded. If None is specified then
                             they are stored in the machine's temp directory.
+        file_name_func      Returns a path where the file should be written. The path must be
+                            fully qualified (`storage_directory` must not be set if this is used).
+                            See notes on how to use this lambda.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -204,6 +208,17 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     - This is the python `async` interface (see python documentation on `await` and
         `async`). It should be used if you plan to make more than one simultanious query
         to the system.
+    - The `file_name_func` function takes two arguments, the first is the request-id and
+      the second is the full minio object name.
+        - The object name may contain ':', ';', and '*' and perhaps other characters that
+          are not allowed on your filesystem.
+        - The file path does not need to have been created - `os.mkdir` will be run on the
+          filepath.
+        - It will almost certianly be the case that the call-back for this function occurs
+          on a different thread than you made the initial call to `get_data_async`. Make sure
+          your code is thread safe!
+        - The filename should be safe in the sense that a ".downloading" can be appended to
+          the end of the string without causing any trouble.
     '''
     # Parameter clean up
     if isinstance(datasets, str):
@@ -212,6 +227,22 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
     if (data_type != 'pandas') and (data_type != 'awkward')and (data_type != 'root-file'):
         raise ServiceXFrontEndException('Unknown return type.')
+
+    if (storage_directory is not None) and (file_name_func is not None):
+        raise Exception("You may only specify `storage_direcotry` or `file_name_func`, not both.")
+
+    # Normalize how we do the files
+    if file_name_func is None:
+        if storage_directory is None:
+            def file_name(req_id: str, minio_name: str):
+                return os.path.join(tempfile.gettempdir(), req_id,
+                                    santize_filename(minio_name))
+            file_name_func = file_name
+        else:
+            def file_name(req_id: str, minio_name: str):
+                return os.path.join(tempfile.gettempdir(), storage_directory,
+                                    santize_filename(minio_name))
+            file_name_func = file_name
 
     # Build the query, get a request ID back.
     json_query = {
@@ -250,7 +281,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             if files_processed != last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
-                                                          data_type, storage_directory)
+                                                          data_type, file_name_func)
                 files_downloading.update(new_downloads)
                 last_files_processed = files_processed
 
