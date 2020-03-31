@@ -5,6 +5,7 @@ import os
 import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Callable
 import urllib
+from pathlib import Path
 
 import aiohttp
 import awkward
@@ -77,15 +78,22 @@ _download_executor = ThreadPoolExecutor(max_workers=5)
 
 
 def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
-                   file_name_func: Callable[[str, str], str]) -> str:
+                   file_name_func: Callable[[str, str], str],
+                   redownload_files: bool) -> str:
     '''
     Download a single file to a local temp file from the minio object store, and return
     its location.
     '''
     local_filepath = file_name_func(request_id, bucket_fname)
+
+    # Can we re-use something that is there?
+    if (not redownload_files) and (os.path.exists(local_filepath)):
+        return local_filepath
+
+    # Make sure there is a place to write the output file.
     dir = os.path.dirname(local_filepath)
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        Path(dir).mkdir(parents=True)
 
     # We are going to build a temp file, and download it from there.
     temp_local_filepath = f'{local_filepath}.temp'
@@ -130,7 +138,8 @@ async def _post_process_data(data_type: str, filepath: str):
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
                               data_type: str,
-                              file_name_func: Callable[[str, str], str]) -> Dict[str, Any]:
+                              file_name_func: Callable[[str, str], str],
+                              redownload_files: bool) -> Dict[str, Any]:
     '''
     Look at the minio bucket to see if there are any new file items written there. If so, then
     trigger a download.
@@ -140,7 +149,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
         end_point           Where we can reach minio
         request_id          Request we are trying to access and get data for
         data_type           What is the final data type?
-        storage_directory   Where we should stash the files. If None, then use temp.
+        file_name_func      Where we should stash the files.
+        redownload_files    If present, then redownload the file anyway
 
     Returns:
         futures     Futures for all files that are pending downloads
@@ -163,7 +173,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     futures = {fname: _post_process_data(
         data_type,
         await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                                            request_id, fname, file_name_func)))
+                                                            request_id, fname, file_name_func,
+                                                            redownload_files)))
                for fname in new_files}
     return futures
 
@@ -174,7 +185,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
                          max_workers: int = 20,
                          storage_directory: Optional[str] = None,
-                         file_name_func: Callable[[str, str], str] = None) \
+                         file_name_func: Callable[[str, str], str] = None,
+                         redownload_files: bool = False) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
     Return data from a query with data sets.
@@ -193,6 +205,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         file_name_func      Returns a path where the file should be written. The path must be
                             fully qualified (`storage_directory` must not be set if this is used).
                             See notes on how to use this lambda.
+        redownload_files    If true, evne if the file is already in the requested location,
+                            re-download it.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -239,7 +253,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     if file_name_func is None:
         if storage_directory is None:
             def file_name(req_id: str, minio_name: str):
-                return os.path.join(tempfile.gettempdir(), req_id,
+                return os.path.join(tempfile.gettempdir(), 'servicex', req_id,
                                     santize_filename(minio_name))
             file_name_func = file_name
         else:
@@ -285,7 +299,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             if files_processed != last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
-                                                          data_type, file_name_func)
+                                                          data_type, file_name_func,
+                                                          redownload_files)
                 files_downloading.update(new_downloads)
                 last_files_processed = files_processed
 

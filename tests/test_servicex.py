@@ -15,6 +15,16 @@ import pytest
 
 import servicex as fe
 
+@pytest.fixture(autouse=True)
+def delete_default_downloaded_files():
+    download_location = os.path.join(tempfile.gettempdir(), 'servicex')
+    if os.path.exists(download_location):
+        shutil.rmtree(download_location)
+    yield
+    if os.path.exists(download_location):
+        shutil.rmtree(download_location)
+
+
 
 @pytest.fixture(scope="module")
 def reduce_wait_time():
@@ -439,6 +449,39 @@ async def test_download_bad_params_filerename(good_transform_request, reduce_wai
                                 storage_directory=tmp,
                                 file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
 
+
+@pytest.mark.asyncio
+async def test_download_already_there_files(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    output_file = os.path.join(tmp, 'bogus.root')
+    # Put in a good file for reading
+    good_copy (None, None, output_file)
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
+                                file_name_func=lambda rid, obj_name: output_file,
+                                redownload_files=False)
+    assert len(r) == 1
+    files_back_1.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_download_not_there_files(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    output_file = os.path.join(tmp, 'bogus.file')
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
+                                file_name_func=lambda rid, obj_name: output_file,
+                                redownload_files=True)
+    assert len(r) == 1
+    files_back_1.assert_called()
 
 # TODO:
 # Other tests
