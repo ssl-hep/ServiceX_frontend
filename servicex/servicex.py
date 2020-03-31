@@ -314,7 +314,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         assert len(all_files) > 0
 
         if data_type == 'root-file':
-            return all_files
+            return list(all_files)
 
         # We need to shift the files to another format.
         if len(all_files) == 1:
