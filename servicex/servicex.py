@@ -187,7 +187,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          storage_directory: Optional[str] = None,
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False) \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
+        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 
@@ -258,6 +258,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             file_name_func = file_name
         else:
             def file_name(req_id: str, minio_name: str):
+                assert storage_directory is not None
                 return os.path.join(tempfile.gettempdir(), storage_directory,
                                     santize_filename(minio_name))
             file_name_func = file_name
@@ -336,7 +337,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
              data_type: str = 'pandas',
              image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
              max_workers: int = 20) \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
+        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 

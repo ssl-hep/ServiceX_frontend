@@ -15,6 +15,7 @@ import pytest
 
 import servicex as fe
 
+
 @pytest.fixture(autouse=True)
 def delete_default_downloaded_files():
     download_location = os.path.join(tempfile.gettempdir(), 'servicex')
@@ -23,7 +24,6 @@ def delete_default_downloaded_files():
     yield
     if os.path.exists(download_location):
         shutil.rmtree(download_location)
-
 
 
 @pytest.fixture(scope="module")
@@ -201,6 +201,7 @@ def clean_fname(fname: str):
                 .replace(';', '_') \
                 .replace(':', '_')
 
+
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
@@ -252,6 +253,7 @@ async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_t
 
     # Test that what we pull down can correctly be used by uproot methods
     import uproot_methods
+    assert isinstance(r, dict)
     arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
     assert len(arr) == 283458*2
 
@@ -391,6 +393,7 @@ async def test_good_download_files_1(good_transform_request, reduce_wait_time, f
 async def test_download_to_temp_file(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
     assert os.path.exists(r[0])
     assert not r[0].endswith('.temp')
     local_filepath = files_back_1.call_args[0][2]
@@ -459,7 +462,7 @@ async def test_download_already_there_files(good_transform_request, reduce_wait_
     os.mkdir(tmp)
     output_file = os.path.join(tmp, 'bogus.root')
     # Put in a good file for reading
-    good_copy (None, None, output_file)
+    good_copy(None, None, output_file)
 
     r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
                                 file_name_func=lambda rid, obj_name: output_file,
