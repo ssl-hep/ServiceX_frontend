@@ -9,7 +9,6 @@ import urllib
 import aiohttp
 import awkward
 from minio import Minio, ResponseError
-import nest_asyncio
 import numpy as np
 import pandas as pd
 from retry import retry
@@ -21,7 +20,14 @@ import uproot
 servicex_status_poll_time = 5.0
 
 
-class ServiceX_Exception(BaseException):
+class ServiceX_Exception(Exception):
+    'Raised when something has gone wrong in the ServiceX remote service'
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
+class ServiceXFrontEndException(Exception):
+    'Raised to indicate an API error in use of the servicex library'
     def __init__(self, msg):
         super().__init__(self, msg)
 
@@ -48,8 +54,8 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
     '''
     async with client.get(f'{endpoint}/transformation/{request_id}/status') as response:
         if response.status != 200:
-            raise BaseException(f'Unable to get transformation status '
-                                f' - http error {response.status}')
+            raise ServiceX_Exception(f'Unable to get transformation status '
+                                     f' - http error {response.status}')
         info = await response.json()
         files_remaining = None \
             if (('files-remaining' not in info) or (info['files-remaining'] is None)) \
@@ -89,7 +95,8 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str, data
         elif data_type == 'awkward':
             return r.arrays()
         else:
-            raise BaseException(f'Internal coding error - {data_type} should not be known.')
+            raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
+                                            'should not be known.')
     finally:
         f_in._context.source.close()
 
@@ -155,7 +162,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     assert len(datasets) == 1
 
     if (data_type != 'pandas') and (data_type != 'awkward'):
-        raise BaseException('Unknown return type.')
+        raise ServiceXFrontEndException('Unknown return type.')
 
     # Build the query, get a request ID back.
     json_query = {
@@ -216,8 +223,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                 col_names = all_files[0].keys()
                 return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
             else:
-                raise BaseException(f'Internal programming error - {data_type} should not be'
-                                    ' unknown.')
+                raise ServiceXFrontEndException(f'Internal programming error - {data_type} should '
+                                                'not be unknown.')
 
 
 def get_data(selection_query: str, datasets: Union[str, List[str]],
@@ -239,7 +246,23 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     Returns:
         df                  Pandas DataFrame that contains the resulting flat data.
     '''
-    nest_asyncio.apply()
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint,
-                                   image=image))
+    if not loop.is_running():
+        r = get_data_async(selection_query, datasets, servicex_endpoint, image=image)
+        return loop.run_until_complete(r)
+    else:
+        def get_data_wrapper(*args, **kwargs):
+            # New thread - get the loop.
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            assert not loop.is_running()
+            try:
+                return loop.run_until_complete(get_data_async(*args, **kwargs))
+            finally:
+                pass
+
+        exector = ThreadPoolExecutor(max_workers=1)
+        future = exector.submit(get_data_wrapper, selection_query, datasets,
+                                servicex_endpoint, image=image)
+
+        return future.result()
