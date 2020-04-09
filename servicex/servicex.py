@@ -138,10 +138,11 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
                          data_type: str = 'pandas',
-                         image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2') \
+                         image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
+                         max_workers: int = 20) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
-    Return data from a query with data sets
+    Return data from a query with data sets.
 
     Arguments:
         selection_query     `qastle` string that specifies what columnes to extract, how to format
@@ -150,11 +151,21 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas' and 'awkward' are the only
                             legal values. Defaults to 'pandas'
-        image               ServiceX image that should run this
+        image               ServiceX image that should run this.
+        max_workers         Max number of workers that will run to process this request.
 
     Returns:
         df                  Pandas DataFrame that contains the resulting flat data, or an awkward
                             array. Everything is in memory.
+
+    ## Notes
+
+        - the `max_workers` parameter is currently translated into the actual number of workers
+          to process this request. As the `ServiceX` back-end evolves this will be come the max
+          number of workers.
+        - This is the python `async` interface (see python documentation on `await` and
+          `async`). It should be used if you plan to make more than one simultanious query
+          to the system.
     '''
     # Parameter clean up
     if isinstance(datasets, str):
@@ -172,7 +183,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         "result-destination": "object-store",
         "result-format": "root-file",
         "chunk-size": 1000,
-        "workers": 5
+        "workers": max_workers
     }
 
     # Start the async context manager. We should use only one for the whole app, however,
@@ -230,10 +241,11 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 def get_data(selection_query: str, datasets: Union[str, List[str]],
              servicex_endpoint: str = 'http://localhost:5000/servicex',
              data_type: str = 'pandas',
-             image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2') \
+             image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
+             max_workers: int = 20) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
     '''
-    Return data from a query with data sets
+    Return data from a query with data sets.
 
     Arguments:
         selection_query     `qastle` string that specifies what columnes to extract, how to format
@@ -242,13 +254,23 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas' and 'awkward' are the only
                             legal values. Defaults to 'pandas'
+        image               ServiceX image that should run this.
+        max_workers         Max number of workers that will run to process this request.
 
     Returns:
-        df                  Pandas DataFrame that contains the resulting flat data.
+        df                  Pandas DataFrame that contains the resulting flat data, or an awkward
+                            array. Everything is in memory.
+
+    ## Notes
+
+        - the `max_workers` parameter is currently translated into the actual number of workers
+          to process this request. As the `ServiceX` back-end evolves this will be come the max
+          number of workers.
     '''
     loop = asyncio.get_event_loop()
     if not loop.is_running():
-        r = get_data_async(selection_query, datasets, servicex_endpoint, image=image)
+        r = get_data_async(selection_query, datasets, servicex_endpoint, image=image,
+                           max_workers=max_workers)
         return loop.run_until_complete(r)
     else:
         def get_data_wrapper(*args, **kwargs):
@@ -263,6 +285,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
 
         exector = ThreadPoolExecutor(max_workers=1)
         future = exector.submit(get_data_wrapper, selection_query, datasets,
-                                servicex_endpoint, image=image)
+                                servicex_endpoint, image=image,
+                                max_workers=max_workers)
 
         return future.result()

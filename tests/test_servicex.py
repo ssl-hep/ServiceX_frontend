@@ -251,6 +251,13 @@ async def test_image_spec(good_transform_request, reduce_wait_time, files_back_1
     assert called['image'] == 'fork-it-over:latest'
 
 
+def test_max_workers_spec(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    fe.get_data('(valid qastle string)', 'one_ds', max_workers=50)
+    called = good_transform_request
+    assert called['workers'] == 50
+
+
 @pytest.mark.asyncio
 async def test_servicex_rejects_transform_request(bad_transform_request, reduce_wait_time):
     'Simple run bomb during transform query'
