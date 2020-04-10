@@ -79,7 +79,7 @@ _download_executor = ThreadPoolExecutor(max_workers=5)
 
 def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
                    file_name_func: Callable[[str, str], str],
-                   redownload_files: bool) -> str:
+                   redownload_files: bool) -> Tuple[str, str]:
     '''
     Download a single file to a local temp file from the minio object store, and return
     its location.
@@ -88,7 +88,7 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
 
     # Can we re-use something that is there?
     if (not redownload_files) and (os.path.exists(local_filepath)):
-        return local_filepath
+        return (bucket_fname, local_filepath)
 
     # Make sure there is a place to write the output file.
     dir = os.path.dirname(local_filepath)
@@ -100,7 +100,7 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
     minio_client.fget_object(request_id, bucket_fname, temp_local_filepath)
     os.replace(temp_local_filepath, local_filepath)
 
-    return local_filepath
+    return (bucket_fname, local_filepath)
 
 
 @retry(delay=1, tries=10, exceptions=ResponseError)
@@ -112,22 +112,21 @@ def protected_list_objects(client: Minio, request_id: str):
     return client.list_objects(request_id)
 
 
-async def _post_process_data(data_type: str, filepath: str):
+async def _post_process_data(data_type: str, filepath: Tuple[str, str]):
     '''
     Post-process the data and return the "appropriate" type
     '''
-    # Load it into uproot and get the first and only key out of it.
-    # Make sure to release the lock on the file once we've extracted
-    # the data!
-    f_in = uproot.open(filepath)
+    if data_type == 'root-file' or data_type == 'parquet':
+        return filepath
+
+    # All other types require loading things into uproot first.
+    f_in = uproot.open(filepath[1])
     try:
         r = f_in[f_in.keys()[0]]
         if data_type == 'pandas':
-            return r.pandas.df()
+            return (filepath[0], r.pandas.df())
         elif data_type == 'awkward':
-            return r.arrays()
-        elif data_type == 'root-file' or data_type == 'parquet':
-            return filepath
+            return (filepath[0], r.arrays())
         else:
             raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
                                             'should not be known.')
@@ -311,10 +310,12 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             done = (files_remaining is not None) and files_remaining == 0
 
         # Now, wait for all of them to complete so we can stich the files together.
-        all_files = await asyncio.gather(*files_downloading.values())
+        all_file_info = list(await asyncio.gather(*files_downloading.values()))
 
-        # return the result
-        assert len(all_files) > 0
+        # return the result, sorting to keep the data in order.
+        assert len(all_file_info) > 0
+        all_file_info.sort(key=lambda k: k[0])
+        all_files = [v[1] for v in all_file_info]
 
         if data_type == 'root-file' or data_type == 'parquet':
             return list(all_files)

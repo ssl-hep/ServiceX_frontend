@@ -89,6 +89,32 @@ def files_back_2(mocker):
 
 
 @pytest.fixture()
+def files_back_4_order_1(mocker):
+    mocker.patch('minio.api.Minio.list_objects',
+                 return_value=[
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+                 ])
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return None
+
+
+@pytest.fixture()
+def files_back_4_order_2(mocker):
+    mocker.patch('minio.api.Minio.list_objects',
+                 return_value=[
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+                 ])
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return None
+
+
+@pytest.fixture()
 def files_back_2_one_at_a_time(mocker):
     q = queue.Queue()
     d = {}
@@ -399,6 +425,24 @@ async def test_good_download_files_parquet(good_transform_request, reduce_wait_t
     assert os.path.exists(r[0])
     called = good_transform_request
     assert called['result-format'] == 'parquet'
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_order_1(good_transform_request, reduce_wait_time, files_back_4_order_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
+    s_r = sorted(r)
+    assert r == s_r
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_order_2(good_transform_request, reduce_wait_time, files_back_4_order_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
+    s_r = sorted(r)
+    assert r == s_r
 
 
 @pytest.mark.asyncio
