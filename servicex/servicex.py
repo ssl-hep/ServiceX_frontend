@@ -340,7 +340,10 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
              servicex_endpoint: str = 'http://localhost:5000/servicex',
              data_type: str = 'pandas',
              image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
-             max_workers: int = 20) \
+             max_workers: int = 20,
+             storage_directory: Optional[str] = None,
+             file_name_func: Callable[[str, str], str] = None,
+             redownload_files: bool = False) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
@@ -350,25 +353,51 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
                             them, and how to format them.
         datasets            Dataset or datasets to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
-        data_type           How should the data come back? 'pandas' and 'awkward' are the only
-                            legal values. Defaults to 'pandas'
+        data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
+                            are the only legal values. Defaults to 'pandas'
         image               ServiceX image that should run this.
         max_workers         Max number of workers that will run to process this request.
+        storage_directory   Location where files should be downloaded. If None is specified then
+                            they are stored in the machine's temp directory.
+        file_name_func      Returns a path where the file should be written. The path must be
+                            fully qualified (`storage_directory` must not be set if this is used).
+                            See notes on how to use this lambda.
+        redownload_files    If true, evne if the file is already in the requested location,
+                            re-download it.
 
     Returns:
-        df                  Pandas DataFrame that contains the resulting flat data, or an awkward
-                            array. Everything is in memory.
+        df                  Depends on the `data_type` that has been requested:
+                            `data_type == 'pandas'` a single in-memory pandas.DataFrame
+                            `data_type == 'awkward'` a single dict of JaggedArrays
+                            `data_type == 'root-file'` List of paths to root files. You
+                                are responsible for deleting them when done.
 
     ## Notes
 
-        - the `max_workers` parameter is currently translated into the actual number of workers
-          to process this request. As the `ServiceX` back-end evolves this will be come the max
-          number of workers.
+    - There are combinations of image name and and `data_type` and `selection_query` that
+      do not work together. That logic is resolved at the `ServiceX` backend, and if the
+      parameters do not match, an exception will be thrown in your code.
+    - the `max_workers` parameter is currently translated into the actual number of workers
+        to process this request. As the `ServiceX` back-end evolves this will be come the max
+        number of workers.
+    - The `file_name_func` function takes two arguments, the first is the request-id and
+      the second is the full minio object name.
+        - The object name may contain ':', ';', and '*' and perhaps other characters that
+          are not allowed on your filesystem.
+        - The file path does not need to have been created - `os.mkdir` will be run on the
+          filepath.
+        - It will almost certianly be the case that the call-back for this function occurs
+          on a different thread than you made the initial call to `get_data_async`. Make sure
+          your code is thread safe!
+        - The filename should be safe in the sense that a ".downloading" can be appended to
+          the end of the string without causing any trouble.
     '''
     loop = asyncio.get_event_loop()
     if not loop.is_running():
         r = get_data_async(selection_query, datasets, servicex_endpoint, image=image,
-                           max_workers=max_workers)
+                           max_workers=max_workers, data_type=data_type,
+                           storage_directory=storage_directory, file_name_func=file_name_func,
+                           redownload_files=redownload_files)
         return loop.run_until_complete(r)
     else:
         def get_data_wrapper(*args, **kwargs):
