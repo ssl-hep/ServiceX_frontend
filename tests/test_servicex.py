@@ -390,6 +390,18 @@ async def test_good_download_files_1(good_transform_request, reduce_wait_time, f
 
 
 @pytest.mark.asyncio
+async def test_good_download_files_parquet(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='parquet')
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert isinstance(r[0], str)
+    assert os.path.exists(r[0])
+    called = good_transform_request
+    assert called['result-format'] == 'parquet'
+
+
+@pytest.mark.asyncio
 async def test_download_to_temp_file(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')

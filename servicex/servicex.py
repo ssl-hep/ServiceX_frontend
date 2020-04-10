@@ -126,7 +126,7 @@ async def _post_process_data(data_type: str, filepath: str):
             return r.pandas.df()
         elif data_type == 'awkward':
             return r.arrays()
-        elif data_type == 'root-file':
+        elif data_type == 'root-file' or data_type == 'parquet':
             return filepath
         else:
             raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
@@ -238,12 +238,15 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         - The filename should be safe in the sense that a ".downloading" can be appended to
           the end of the string without causing any trouble.
     '''
-    # Parameter clean up
+    # Parameter clean up, API saftey checking
     if isinstance(datasets, str):
         datasets = [datasets]
     assert len(datasets) == 1
 
-    if (data_type != 'pandas') and (data_type != 'awkward')and (data_type != 'root-file'):
+    if (data_type != 'pandas') \
+            and (data_type != 'awkward') \
+            and (data_type != 'parquet') \
+            and (data_type != 'root-file'):
         raise ServiceXFrontEndException('Unknown return type.')
 
     if (storage_directory is not None) and (file_name_func is not None):
@@ -269,7 +272,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         "selection": selection_query,
         "image": image,
         "result-destination": "object-store",
-        "result-format": "root-file",
+        "result-format": 'parquet' if data_type == 'parquet' else "root-file",
         "chunk-size": 1000,
         "workers": max_workers
     }
@@ -313,7 +316,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         # return the result
         assert len(all_files) > 0
 
-        if data_type == 'root-file':
+        if data_type == 'root-file' or data_type == 'parquet':
             return list(all_files)
 
         # We need to shift the files to another format.
