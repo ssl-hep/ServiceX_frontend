@@ -6,6 +6,7 @@ import tempfile
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Callable
 import urllib
 from pathlib import Path
+import logging
 
 import aiohttp
 import awkward
@@ -279,6 +280,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         "chunk-size": 1000,
         "workers": max_workers
     }
+
+    # Log this
+    logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
 
     # Start the async context manager. We should use only one for the whole app, however,
     # that just isn't going to work here. The advantage is better handling of connections.
