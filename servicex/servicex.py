@@ -16,6 +16,10 @@ from retry import retry
 import uproot
 
 
+# Where shall we store files by default when we pull them down?
+default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
+
+
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
@@ -255,7 +259,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     if file_name_func is None:
         if storage_directory is None:
             def file_name(req_id: str, minio_name: str):
-                return os.path.join(tempfile.gettempdir(), 'servicex', req_id,
+                return os.path.join(default_file_cache_name, req_id,
                                     santize_filename(minio_name))
             file_name_func = file_name
         else:

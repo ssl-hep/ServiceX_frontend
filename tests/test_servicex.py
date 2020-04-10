@@ -18,7 +18,9 @@ import servicex as fe
 
 @pytest.fixture(autouse=True)
 def delete_default_downloaded_files():
-    download_location = os.path.join(tempfile.gettempdir(), 'servicex')
+    download_location = os.path.join(tempfile.gettempdir(), 'servicex-testing')
+    import servicex.servicex as sx
+    sx.default_file_cache_name = download_location
     if os.path.exists(download_location):
         shutil.rmtree(download_location)
     yield
