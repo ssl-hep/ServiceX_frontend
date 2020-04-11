@@ -1,6 +1,9 @@
-from typing import Any, Callable, Dict, Optional
+from os.path import exists
+from typing import Callable, Dict, Optional
 import os
 import tempfile
+from hashlib import blake2b
+from pathlib import Path
 
 import aiohttp
 from tqdm.auto import tqdm
@@ -97,15 +100,42 @@ class _default_wrapper_mgr:
         self._update_bar(self._tqdm_d, total, downloaded)
 
 
+# Changes in the json that won't affect the result
+_json_keys_to_ignore_for_hash = ['workers']
+
+
 async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
                                       servicex_endpoint: str,
-                                      json_query: Dict[str, Any]) -> str:
+                                      json_query: Dict[str, str]) -> str:
     '''
     Submit a transform, or look it up in our local query database
     '''
+    # Check the cache
+    hasher = blake2b(digest_size=20)
+    for k, v in json_query.items():
+        if k not in _json_keys_to_ignore_for_hash:
+            hasher.update(k.encode())
+            hasher.update(str(v).encode())
+    hash = hasher.hexdigest()
+
+    hash_file = Path(default_file_cache_name) / 'request-cache' / hash
+    if hash_file.exists():
+        with hash_file.open('r') as r:
+            return r.readline().strip()
+
+    # Make the query.
     async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
         r = await response.json()
         if response.status != 200:
             raise ServiceX_Exception('ServiceX rejected the transformation request: '
                                      f'({response.status}){r}')
-        return r["request_id"]
+        req_id = r["request_id"]
+
+        hash_file.parent.mkdir(parents=True, exist_ok=True)
+        with hash_file.open('w') as w:
+            w.write(f'{req_id}\n')
+            # In case humans come poking around
+            w.write(str(json_query))
+            w.write('\n')
+
+    return req_id

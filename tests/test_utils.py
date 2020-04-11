@@ -1,10 +1,11 @@
 from typing import Optional
+import aiohttp
 
 import pytest
 
-from servicex.utils import _status_update_wrapper
+from servicex.utils import _status_update_wrapper, _submit_or_lookup_transform
 
-from .utils_for_testing import good_transform_request  # NOQA
+from .utils_for_testing import good_transform_request, delete_default_downloaded_files  # NOQA
 
 
 def test_callback_no_updates():
@@ -143,5 +144,94 @@ def test_callback_none():
 
 
 @pytest.mark.asyncio
-async def test_request_trans_once():
-    pass
+async def test_request_trans_once(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        assert rid is not None
+        req_json = good_transform_request
+        assert req_json is not None
+
+
+@pytest.mark.asyncio
+async def test_request_trans_twice(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+
+        assert rid1 == rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_workers(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        json_query['workers'] = 100
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+
+        assert rid1 == rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_selection(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        json_query['selection'] = '(call valid qastle)'
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+
+        assert rid1 != rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_did(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        json_query['did'] = 'did_002'
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+
+        assert rid1 != rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_unknown(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        json_query['fork'] = 'me'
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+
+        assert rid1 != rid2

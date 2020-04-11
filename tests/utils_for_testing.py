@@ -36,6 +36,7 @@ def good_transform_request(mocker):
         nonlocal counter
         counter = counter + 1
         return ClientSessionMocker(dumps({"request_id": f"1234-4433-111-34-22-444-{counter}"}), 200)
+
     mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
 
     r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
