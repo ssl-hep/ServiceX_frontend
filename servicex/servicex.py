@@ -86,7 +86,7 @@ _download_executor = ThreadPoolExecutor(max_workers=5)
 
 def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
                    file_name_func: Callable[[str, str], str],
-                   redownload_files: bool, notifier: _status_update_wrapper) -> Tuple[str, str]:
+                   redownload_files: bool) -> Tuple[str, str]:
     '''
     Download a single file to a local temp file from the minio object store, and return
     its location.
@@ -108,8 +108,6 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
     os.replace(temp_local_filepath, local_filepath)
 
     # Done, notify anyone that wants to update progress.
-    notifier.inc(downloaded=1)
-    notifier.broadcast()
     return (bucket_fname, local_filepath)
 
 
@@ -122,26 +120,31 @@ def protected_list_objects(client: Minio, request_id: str):
     return client.list_objects(request_id)
 
 
-async def _post_process_data(data_type: str, filepath: Tuple[str, str]):
+async def _post_process_data(data_type: str, filepath: Tuple[str, str],
+                             notifier: _status_update_wrapper):
     '''
     Post-process the data and return the "appropriate" type
     '''
-    if data_type == 'root-file' or data_type == 'parquet':
-        return filepath
-
-    # All other types require loading things into uproot first.
-    f_in = uproot.open(filepath[1])
     try:
-        r = f_in[f_in.keys()[0]]
-        if data_type == 'pandas':
-            return (filepath[0], r.pandas.df())
-        elif data_type == 'awkward':
-            return (filepath[0], r.arrays())
-        else:
-            raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
-                                            'should not be known.')
+        if data_type == 'root-file' or data_type == 'parquet':
+            return filepath
+
+        # All other types require loading things into uproot first.
+        f_in = uproot.open(filepath[1])
+        try:
+            r = f_in[f_in.keys()[0]]
+            if data_type == 'pandas':
+                return (filepath[0], r.pandas.df())
+            elif data_type == 'awkward':
+                return (filepath[0], r.arrays())
+            else:
+                raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
+                                                'should not be known.')
+        finally:
+            f_in._context.source.close()
     finally:
-        f_in._context.source.close()
+        notifier.inc(downloaded=1)
+        notifier.broadcast()
 
 
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
@@ -184,7 +187,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
         data_type,
         await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
                                                             request_id, fname, file_name_func,
-                                                            redownload_files, notifier)))
+                                                            redownload_files)),
+        notifier)
                for fname in new_files}
     return futures
 
