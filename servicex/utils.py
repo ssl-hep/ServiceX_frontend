@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Optional, Awaitable
+from typing import Any, Callable, Dict, Optional
 
 import aiohttp
 from tqdm.auto import tqdm

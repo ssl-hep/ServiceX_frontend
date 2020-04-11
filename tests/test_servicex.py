@@ -1,19 +1,21 @@
 import asyncio
-from json import dumps, loads
+from json import dumps
 import os
 import queue
 import re
 import shutil
+import tempfile
 from typing import List, Optional
 from unittest import mock
 from unittest.mock import MagicMock
-import tempfile
 
 from minio.error import ResponseError
 import pandas as pd
 import pytest
 
 import servicex as fe
+
+from .utils_for_testing import good_transform_request, ClientSessionMocker  # NOQA
 
 
 @pytest.fixture(autouse=True)
@@ -34,24 +36,6 @@ def reduce_wait_time():
     fe.servicex.servicex_status_poll_time = 0.01
     yield None
     fe.servicex.servicex_status_poll_time = old_value
-
-
-class ClientSessionMocker:
-    def __init__(self, text, status):
-        self._text = text
-        self.status = status
-
-    async def text(self):
-        return self._text
-
-    async def json(self):
-        return loads(self._text)
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
-
-    async def __aenter__(self):
-        return self
 
 
 def good_copy(a, b, c):
@@ -94,10 +78,10 @@ def files_back_2(mocker):
 def files_back_4_order_1(mocker):
     mocker.patch('minio.api.Minio.list_objects',
                  return_value=[
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
                  ])
     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return None
@@ -107,10 +91,10 @@ def files_back_4_order_1(mocker):
 def files_back_4_order_2(mocker):
     mocker.patch('minio.api.Minio.list_objects',
                  return_value=[
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
                  ])
     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return None
@@ -159,24 +143,6 @@ def indexed_files_back(mocker):
     'Use the request id formatting to figure out how many files to deliver back'
     mocker.patch('minio.api.Minio.list_objects', new_callable=list_objects_callable)
     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-
-
-@pytest.fixture()
-def good_transform_request(mocker):
-    '''
-    Setup to run a good transform request that returns a single file.
-    '''
-    called_json_data = {}
-
-    def call_post(data_dict_to_save: dict, json=None):
-        data_dict_to_save.update(json)
-        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
-
-    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
-    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
-
-    return called_json_data
 
 
 @pytest.fixture()
@@ -251,7 +217,7 @@ async def test_good_run_single_ds_2file_pandas(good_transform_request, reduce_wa
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458*2
+    assert len(r) == 283458 * 2
 
 
 @pytest.mark.asyncio
@@ -271,7 +237,7 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, reduce_w
     assert isinstance(r, dict)
     assert len(r) == 1
     assert b'JetPt' in r
-    assert len(r[b'JetPt']) == 283458*2
+    assert len(r[b'JetPt']) == 283458 * 2
 
 
 @pytest.mark.asyncio
@@ -283,7 +249,7 @@ async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_t
     import uproot_methods
     assert isinstance(r, dict)
     arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
-    assert len(arr) == 283458*2
+    assert len(arr) == 283458 * 2
 
 
 @pytest.mark.asyncio
@@ -359,7 +325,7 @@ async def test_run_with_four_queries(good_requests_indexed, reduce_wait_time, in
     assert len(all_wait) == 4
     for cnt, r in enumerate(all_wait):
         assert isinstance(r, pd.DataFrame)
-        assert len(r) == 283458*(cnt+1)
+        assert len(r) == 283458 * (cnt + 1)
 
 
 @pytest.mark.asyncio
@@ -383,7 +349,7 @@ async def test_files_downloaded_ready_in_sequence(good_transform_request_delayed
     r1 = fe.get_data_async('(valid qastle string)', 'ds_0_2')
     r = await r1
     assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458*2
+    assert len(r) == 283458 * 2
 
 
 @pytest.mark.asyncio

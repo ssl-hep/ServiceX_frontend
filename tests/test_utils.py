@@ -1,5 +1,10 @@
-from servicex.utils import _status_update_wrapper
 from typing import Optional
+
+import pytest
+
+from servicex.utils import _status_update_wrapper
+
+from .utils_for_testing import good_transform_request  # NOQA
 
 
 def test_callback_no_updates():
@@ -135,3 +140,8 @@ def test_callback_none():
     u.update(downloaded=3)
     u.update(total=12)
     u.broadcast()
+
+
+@pytest.mark.asyncio
+async def test_request_trans_once():
+    pass
