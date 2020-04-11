@@ -4,7 +4,7 @@ import os
 import queue
 import re
 import shutil
-from typing import List
+from typing import List, Optional
 from unittest import mock
 from unittest.mock import MagicMock
 import tempfile
@@ -543,6 +543,26 @@ async def test_download_not_there_files(good_transform_request, reduce_wait_time
                                 redownload_files=True)
     assert len(r) == 1
     files_back_1.assert_called()
+
+
+def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results, but with the non-async version'
+    f_total = None
+    f_processed = None
+    f_downloaded = None
+
+    def check_in(total: Optional[int], processed: int, downloaded: int):
+        nonlocal f_total, f_processed, f_downloaded
+        f_total = total
+        f_processed = processed
+        f_downloaded = downloaded
+
+    fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
+
+    assert f_total == 1
+    assert f_processed == 1
+    assert f_downloaded == 1
+
 
 # TODO:
 # Other tests

@@ -1,12 +1,12 @@
 # Main front end interface
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import os
-import tempfile
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Callable
-import urllib
-from pathlib import Path
 import logging
+import os
+from pathlib import Path
+import tempfile
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+import urllib
 
 import aiohttp
 import awkward
@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 from retry import retry
 import uproot
+
+from .utils import _status_update_wrapper
 
 
 # Where shall we store files by default when we pull them down?
@@ -84,7 +86,7 @@ _download_executor = ThreadPoolExecutor(max_workers=5)
 
 def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
                    file_name_func: Callable[[str, str], str],
-                   redownload_files: bool) -> Tuple[str, str]:
+                   redownload_files: bool, notifier: _status_update_wrapper) -> Tuple[str, str]:
     '''
     Download a single file to a local temp file from the minio object store, and return
     its location.
@@ -105,6 +107,9 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
     minio_client.fget_object(request_id, bucket_fname, temp_local_filepath)
     os.replace(temp_local_filepath, local_filepath)
 
+    # Done, notify anyone that wants to update progress.
+    notifier.inc(downloaded=1)
+    notifier.broadcast()
     return (bucket_fname, local_filepath)
 
 
@@ -143,7 +148,8 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
                               data_type: str,
                               file_name_func: Callable[[str, str], str],
-                              redownload_files: bool) -> Dict[str, Any]:
+                              redownload_files: bool,
+                              notifier: _status_update_wrapper) -> Dict[str, Any]:
     '''
     Look at the minio bucket to see if there are any new file items written there. If so, then
     trigger a download.
@@ -178,7 +184,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
         data_type,
         await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
                                                             request_id, fname, file_name_func,
-                                                            redownload_files)))
+                                                            redownload_files, notifier)))
                for fname in new_files}
     return futures
 
@@ -190,8 +196,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          max_workers: int = 20,
                          storage_directory: Optional[str] = None,
                          file_name_func: Callable[[str, str], str] = None,
-                         redownload_files: bool = False) \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
+                         redownload_files: bool = False,
+                         status_callback: Optional[Callable[[Optional[int], int, int], None]]
+                         = None) -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 
@@ -211,6 +218,10 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                             See notes on how to use this lambda.
         redownload_files    If true, evne if the file is already in the requested location,
                             re-download it.
+        status_callback     If specified, called as we grab files and download them with updates.
+                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            locally. TotalFiles might change over time as more files are found by
+                            servicex.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -255,6 +266,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
     if (storage_directory is not None) and (file_name_func is not None):
         raise Exception("You may only specify `storage_direcotry` or `file_name_func`, not both.")
+
+    notifier = _status_update_wrapper(status_callback)
 
     # Normalize how we do the files
     if file_name_func is None:
@@ -307,11 +320,15 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             files_remaining, files_processed = await _get_transform_status(client,
                                                                            servicex_endpoint,
                                                                            request_id)
+            notifier.update(processed=files_processed)
+            if files_remaining is not None:
+                notifier.update(total=files_remaining+files_processed)
+            notifier.broadcast()
             if files_processed != last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
                                                           data_type, file_name_func,
-                                                          redownload_files)
+                                                          redownload_files, notifier)
                 files_downloading.update(new_downloads)
                 last_files_processed = files_processed
 
@@ -351,7 +368,8 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
              max_workers: int = 20,
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
-             redownload_files: bool = False) \
+             redownload_files: bool = False, \
+             status_callback: Optional[Callable[[Optional[int], int, int], None]] = None) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
@@ -372,6 +390,10 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
                             See notes on how to use this lambda.
         redownload_files    If true, evne if the file is already in the requested location,
                             re-download it.
+        status_callback     If specified, called as we grab files and download them with updates.
+                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            locally. TotalFiles might change over time as more files are found by
+                            servicex.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -405,7 +427,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
         r = get_data_async(selection_query, datasets, servicex_endpoint, image=image,
                            max_workers=max_workers, data_type=data_type,
                            storage_directory=storage_directory, file_name_func=file_name_func,
-                           redownload_files=redownload_files)
+                           redownload_files=redownload_files, status_callback=status_callback)
         return loop.run_until_complete(r)
     else:
         def get_data_wrapper(*args, **kwargs):
