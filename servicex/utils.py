@@ -6,7 +6,7 @@ class _status_update_wrapper:
     '''
     Internal class to make it easier to deal with the updater
     '''
-    def __init__(self, callback: 
+    def __init__(self, callback:
                  Optional[Callable[[Optional[int], int, int], None]] = None):
         self._total = None
         self._processed = None
@@ -61,7 +61,7 @@ class _default_wrapper_mgr:
                 # There is a bug in the tqm library if running in a notebook
                 # See https://github.com/tqdm/tqdm/issues/688
                 # This forces us to do the reset, sadly.
-                old_processed = self._tqdm.n
+                old_processed = self._tqdm.n  # type: int
                 self._tqdm.reset(total)
                 self._tqdm.update(old_processed)
         self._tqdm.update(processed - self._tqdm.n)
