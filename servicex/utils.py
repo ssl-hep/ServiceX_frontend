@@ -1,4 +1,5 @@
 from typing import Optional, Callable
+from tqdm.auto import tqdm
 
 
 class _status_update_wrapper:
@@ -40,3 +41,29 @@ class _status_update_wrapper:
                 self._downloaded = downloaded
             else:
                 self._downloaded += downloaded
+
+
+def _run_default_wrapper(t: Optional[int], p: int, d: int) -> None:
+    'Place holder to run the default runner'
+    assert False, 'This should never be called'
+
+
+class _default_wrapper_mgr:
+    'Default prorgress bar'
+    def __init__(self, sample_name: Optional[str] = None):
+        self._tqdm = tqdm(total=9e9, desc=sample_name, unit='file',
+                          leave=False, dynamic_ncols=True)
+
+    def update(self, total: Optional[int], processed: int, downloaded: int):
+        if total is not None:
+            if self._tqdm.total != total:
+                # There is a bug in the tqm library if running in a notebook
+                # See https://github.com/tqdm/tqdm/issues/688
+                # This forces us to do the reset, sadly.
+                old_processed = self._tqdm.n
+                self._tqdm.reset(total)
+                self._tqdm.update(old_processed)
+        self._tqdm.update(processed - self._tqdm.n)
+
+        if total is not None and downloaded == total:
+            self._tqdm.close()

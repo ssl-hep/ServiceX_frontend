@@ -16,7 +16,7 @@ import pandas as pd
 from retry import retry
 import uproot
 
-from .utils import _status_update_wrapper
+from .utils import _status_update_wrapper, _run_default_wrapper, _default_wrapper_mgr
 
 
 # Where shall we store files by default when we pull them down?
@@ -198,7 +198,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False,
                          status_callback: Optional[Callable[[Optional[int], int, int], None]]
-                         = None) -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
+                         = _run_default_wrapper) -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 
@@ -267,6 +267,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     if (storage_directory is not None) and (file_name_func is not None):
         raise Exception("You may only specify `storage_direcotry` or `file_name_func`, not both.")
 
+    if status_callback is _run_default_wrapper:
+        t = _default_wrapper_mgr(datasets[0] if isinstance(datasets, list) else datasets)
+        status_callback = t.update
     notifier = _status_update_wrapper(status_callback)
 
     # Normalize how we do the files
