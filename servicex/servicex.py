@@ -189,7 +189,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                                                             request_id, fname, file_name_func,
                                                             redownload_files)),
         notifier)
-            for fname in new_files}
+        for fname in new_files}
     return futures
 
 
