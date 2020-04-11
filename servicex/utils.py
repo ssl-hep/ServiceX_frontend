@@ -1,4 +1,3 @@
-from os.path import exists
 from typing import Callable, Dict, Optional
 import os
 import tempfile
