@@ -52,7 +52,8 @@ class _default_wrapper_mgr:
     'Default prorgress bar'
     def __init__(self, sample_name: Optional[str] = None):
         self._tqdm = tqdm(total=9e9, desc=sample_name, unit='file',
-                          leave=False, dynamic_ncols=True)
+                          leave=True, dynamic_ncols=True,
+                          bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
     def update(self, total: Optional[int], processed: int, downloaded: int):
         if total is not None:
@@ -64,6 +65,7 @@ class _default_wrapper_mgr:
                 self._tqdm.reset(total)
                 self._tqdm.update(old_processed)
         self._tqdm.update(processed - self._tqdm.n)
+        self._tqdm.refresh()
 
         if total is not None and downloaded == total:
             self._tqdm.close()
