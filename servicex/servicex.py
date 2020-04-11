@@ -304,8 +304,11 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         done = False
         files_downloading = {}
         last_files_processed = 0
+        first = True
         while not done:
-            await asyncio.sleep(servicex_status_poll_time)
+            if not first:
+                await asyncio.sleep(servicex_status_poll_time)
+            first = False
             files_remaining, files_processed = await _get_transform_status(client,
                                                                            servicex_endpoint,
                                                                            request_id)
