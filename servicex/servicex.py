@@ -326,7 +326,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                                                                            request_id)
             notifier.update(processed=files_processed)
             if files_remaining is not None:
-                notifier.update(total=files_remaining+files_processed)
+                notifier.update(total=files_remaining + files_processed)
             notifier.broadcast()
             if files_processed != last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
