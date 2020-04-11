@@ -51,21 +51,28 @@ def _run_default_wrapper(t: Optional[int], p: int, d: int) -> None:
 class _default_wrapper_mgr:
     'Default prorgress bar'
     def __init__(self, sample_name: Optional[str] = None):
-        self._tqdm = tqdm(total=9e9, desc=sample_name, unit='file',
-                          leave=True, dynamic_ncols=True,
-                          bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
+        self._tqdm_p = tqdm(total=9e9, desc=sample_name, unit='file',
+                            leave=True, dynamic_ncols=True,
+                            bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
+        self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
+                            leave=True, dynamic_ncols=True,
+                            bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
-    def update(self, total: Optional[int], processed: int, downloaded: int):
+    def _update_bar(self, bar: tqdm, total: Optional[int], num: int):
         if total is not None:
-            if self._tqdm.total != total:
+            if bar.total != total:
                 # There is a bug in the tqm library if running in a notebook
                 # See https://github.com/tqdm/tqdm/issues/688
                 # This forces us to do the reset, sadly.
-                old_processed = self._tqdm.n  # type: int
-                self._tqdm.reset(total)
-                self._tqdm.update(old_processed)
-        self._tqdm.update(processed - self._tqdm.n)
-        self._tqdm.refresh()
+                old_num = bar.n  # type: int
+                bar.reset(total)
+                bar.update(old_num)
+        bar.update(num - bar.n)
+        bar.refresh()
 
-        if total is not None and downloaded == total:
-            self._tqdm.close()
+        if total is not None and num == total:
+            bar.close()
+
+    def update(self, total: Optional[int], processed: int, downloaded: int):
+        self._update_bar(self._tqdm_p, total, processed)
+        self._update_bar(self._tqdm_d, total, downloaded)
