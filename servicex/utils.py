@@ -1,7 +1,12 @@
 from typing import Any, Callable, Dict, Optional
+import os
+import tempfile
 
 import aiohttp
 from tqdm.auto import tqdm
+
+# Where shall we store files by default when we pull them down?
+default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
 
 
 class ServiceX_Exception(Exception):
@@ -99,7 +104,6 @@ async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
     Submit a transform, or look it up in our local query database
     '''
     async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
-        # TODO: Make sure to throw the correct type of exception
         r = await response.json()
         if response.status != 200:
             raise ServiceX_Exception('ServiceX rejected the transformation request: '
