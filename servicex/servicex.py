@@ -16,7 +16,9 @@ import pandas as pd
 from retry import retry
 import uproot
 
-from .utils import _status_update_wrapper, _run_default_wrapper, _default_wrapper_mgr
+from .utils import (
+    _default_wrapper_mgr, _run_default_wrapper, _status_update_wrapper,
+    _submit_or_lookup_transform, ServiceX_Exception, ServiceXFrontEndException)
 
 
 # Where shall we store files by default when we pull them down?
@@ -26,18 +28,6 @@ default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
-
-
-class ServiceX_Exception(Exception):
-    'Raised when something has gone wrong in the ServiceX remote service'
-    def __init__(self, msg):
-        super().__init__(self, msg)
-
-
-class ServiceXFrontEndException(Exception):
-    'Raised to indicate an API error in use of the servicex library'
-    def __init__(self, msg):
-        super().__init__(self, msg)
 
 
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
@@ -309,13 +299,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     # that just isn't going to work here. The advantage is better handling of connections.
     # TODO: Option to pass in the connectino pool?
     async with aiohttp.ClientSession() as client:
-        async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
-            # TODO: Make sure to throw the correct type of exception
-            r = await response.json()
-            if response.status != 200:
-                raise ServiceX_Exception('ServiceX rejected the transformation request: '
-                                         f'({response.status}){r}')
-            request_id = r["request_id"]
+        request_id = await _submit_or_lookup_transform(client, servicex_endpoint, json_query)
 
         # Sit here waiting for the results to come in. In case there are missing items
         # in the minio stream, we will avoid counting that. That should be an explicit error taken

@@ -1,5 +1,19 @@
-from typing import Optional, Callable
+from typing import Any, Callable, Dict, Optional, Awaitable
+
+import aiohttp
 from tqdm.auto import tqdm
+
+
+class ServiceX_Exception(Exception):
+    'Raised when something has gone wrong in the ServiceX remote service'
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
+class ServiceXFrontEndException(Exception):
+    'Raised to indicate an API error in use of the servicex library'
+    def __init__(self, msg):
+        super().__init__(self, msg)
 
 
 class _status_update_wrapper:
@@ -76,3 +90,18 @@ class _default_wrapper_mgr:
     def update(self, total: Optional[int], processed: int, downloaded: int):
         self._update_bar(self._tqdm_p, total, processed)
         self._update_bar(self._tqdm_d, total, downloaded)
+
+
+async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
+                                      servicex_endpoint: str,
+                                      json_query: Dict[str, Any]) -> str:
+    '''
+    Submit a transform, or look it up in our local query database
+    '''
+    async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
+        # TODO: Make sure to throw the correct type of exception
+        r = await response.json()
+        if response.status != 200:
+            raise ServiceX_Exception('ServiceX rejected the transformation request: '
+                                     f'({response.status}){r}')
+        return r["request_id"]
