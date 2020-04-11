@@ -198,7 +198,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False,
                          status_callback: Optional[Callable[[Optional[int], int, int], None]]
-                         = _run_default_wrapper) -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
+                         = _run_default_wrapper) \
+        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 
@@ -371,7 +372,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
              max_workers: int = 20,
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
-             redownload_files: bool = False, \
+             redownload_files: bool = False,
              status_callback: Optional[Callable[[Optional[int], int, int], None]] = None) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
