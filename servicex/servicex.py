@@ -18,7 +18,8 @@ import uproot
 
 from .utils import (
     ServiceXFrontEndException, ServiceX_Exception, _default_wrapper_mgr,
-    _run_default_wrapper, _status_update_wrapper, _submit_or_lookup_transform)
+    _run_default_wrapper, _status_update_wrapper, _submit_or_lookup_transform,
+    _clean_linq)
 
 
 # Number of seconds to wait between polling servicex for the status of a transform job
@@ -262,6 +263,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         t = _default_wrapper_mgr(datasets[0] if isinstance(datasets, list) else datasets)
         status_callback = t.update
     notifier = _status_update_wrapper(status_callback)
+
+    selection_query = _clean_linq(selection_query)
 
     # Normalize how we do the files
     if file_name_func is None:

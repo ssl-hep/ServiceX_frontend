@@ -3,6 +3,7 @@ import os
 import tempfile
 from hashlib import blake2b
 from pathlib import Path
+import re
 
 import aiohttp
 from tqdm.auto import tqdm
@@ -138,3 +139,35 @@ async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
             w.write('\n')
 
     return req_id
+
+
+def _clean_linq(linq: str) -> str:
+    '''
+    Noramlize the variables in a linq expression. Should make the
+    linq expression more easily comparable even if the algorithm that
+    generates the underlying variable numbers changes.
+
+    # TODO: Assumes a form with "exx" as the names. Clearly, this can't work.
+    # This needs mods.
+    '''
+    all_uses = re.findall('e[0-9]+', linq)
+    index = 0
+    used = []
+    mapping = {}
+    for v in all_uses:
+        if v not in used:
+            used.append(v)
+            new_var = f'a{index}'
+            index += 1
+            mapping[v] = new_var
+
+    if len(mapping) == 0:
+        return linq
+
+    max_len = max([len(k) for k in mapping.keys()])
+    for l in range(max_len, 0, -1):
+        for k in mapping.keys():
+            if len(k) == l:
+                linq = linq.replace(k, mapping[k])
+
+    return linq
