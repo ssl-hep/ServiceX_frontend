@@ -106,6 +106,7 @@ _json_keys_to_ignore_for_hash = ['workers']
 
 async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
                                       servicex_endpoint: str,
+                                      use_cache: bool,
                                       json_query: Dict[str, str]) -> str:
     '''
     Submit a transform, or look it up in our local query database
@@ -119,7 +120,7 @@ async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
     hash = hasher.hexdigest()
 
     hash_file = Path(default_file_cache_name) / 'request-cache' / hash
-    if hash_file.exists():
+    if use_cache and hash_file.exists():
         with hash_file.open('r') as r:
             return r.readline().strip()
 

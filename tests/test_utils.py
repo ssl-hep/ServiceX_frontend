@@ -152,7 +152,7 @@ async def test_request_trans_once(good_transform_request):
         'workers': 10,
     }
     async with aiohttp.ClientSession() as client:
-        rid = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
         assert rid is not None
         req_json = good_transform_request
         assert req_json is not None
@@ -167,10 +167,25 @@ async def test_request_trans_twice(good_transform_request):
         'workers': 10,
     }
     async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
 
         assert rid1 == rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_twice_no_cache(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", False, json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", False, json_query)
+
+        assert rid1 != rid2
 
 
 @pytest.mark.asyncio
@@ -182,9 +197,9 @@ async def test_request_trans_cache_workers(good_transform_request):
         'workers': 10,
     }
     async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
         json_query['workers'] = 100
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
 
         assert rid1 == rid2
 
@@ -198,9 +213,9 @@ async def test_request_trans_cache_selection(good_transform_request):
         'workers': 10,
     }
     async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
         json_query['selection'] = '(call valid qastle)'
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
 
         assert rid1 != rid2
 
@@ -214,9 +229,9 @@ async def test_request_trans_cache_did(good_transform_request):
         'workers': 10,
     }
     async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
         json_query['did'] = 'did_002'
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
 
         assert rid1 != rid2
 
@@ -230,8 +245,8 @@ async def test_request_trans_cache_unknown(good_transform_request):
         'workers': 10,
     }
     async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
         json_query['fork'] = 'me'
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
 
         assert rid1 != rid2

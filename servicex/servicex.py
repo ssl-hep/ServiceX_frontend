@@ -188,6 +188,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          storage_directory: Optional[str] = None,
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False,
+                         use_cache: bool = True,
                          status_callback: Optional[Callable[[Optional[int], int, int], None]]
                          = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
@@ -214,6 +215,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                             Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
                             locally. TotalFiles might change over time as more files are found by
                             servicex.
+        use_cache           Use the local query cache. If false it will force a re-run, and the
+                            result of the run will overwrite what is currently in the cache.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -299,7 +302,8 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     # that just isn't going to work here. The advantage is better handling of connections.
     # TODO: Option to pass in the connectino pool?
     async with aiohttp.ClientSession() as client:
-        request_id = await _submit_or_lookup_transform(client, servicex_endpoint, json_query)
+        request_id = await _submit_or_lookup_transform(client, servicex_endpoint,
+                                                       use_cache, json_query)
 
         # Sit here waiting for the results to come in. In case there are missing items
         # in the minio stream, we will avoid counting that. That should be an explicit error taken
@@ -364,6 +368,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
              redownload_files: bool = False,
+             use_cache: bool = True,
              status_callback: Optional[Callable[[Optional[int], int, int], None]] = None) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
@@ -389,6 +394,8 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
                             Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
                             locally. TotalFiles might change over time as more files are found by
                             servicex.
+        use_cache           Use the local query cache. If false it will force a re-run, and the
+                            result of the run will overwrite what is currently in the cache.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -422,7 +429,8 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
         r = get_data_async(selection_query, datasets, servicex_endpoint, image=image,
                            max_workers=max_workers, data_type=data_type,
                            storage_directory=storage_directory, file_name_func=file_name_func,
-                           redownload_files=redownload_files, status_callback=status_callback)
+                           redownload_files=redownload_files, status_callback=status_callback,
+                           use_cache=use_cache)
         return loop.run_until_complete(r)
     else:
         def get_data_wrapper(*args, **kwargs):
