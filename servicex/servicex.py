@@ -299,7 +299,7 @@ async def get_data_async(selection_query: str, dataset: str,
             files_remaining, files_processed = await _get_transform_status(client,
                                                                            servicex_endpoint,
                                                                            request_id)
-            if files_processed != last_files_processed:
+            if files_processed > last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
                                                           data_type, file_name_func,
