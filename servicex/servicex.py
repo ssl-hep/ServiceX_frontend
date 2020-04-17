@@ -267,7 +267,7 @@ async def get_data_async(selection_query: str, dataset: str,
 
     # Build the query, get a request ID back.
     json_query = {
-        "did": dataset[0],
+        "did": dataset,
         "selection": selection_query,
         "image": image,
         "result-destination": "object-store",
