@@ -68,7 +68,11 @@ Implemented:
 
 - Accepts a `qastle` formatted query
 - Exceptions are used to report back errors of all sorts from the service to the user's code.
-- Data is return as a `pandas.DataFrame` or a  `awkward` array (see the `data_type` parameter)
+- Data is return in the following forms:
+    - `pandas.DataFrame` an in process DataFrame of all the data requested
+    - `awkward` an in process `JaggedArray` or dictionary of `JaggedArray`s
+    - A list of root files that can be upened with `uproot` and used as desired.
+    - Not all output formats are compatible with all transformations.
 - Complete returned data must fit in the process' memory
 - Run in an async or a non-async environment and non-async methods will accomodate automatically (including `jupyter` notebooks).
 - Support up to 100 simultanious queries from a laptop-like front end without overwhelming the local machine (hopefully ServiceX will be overwhelmed!)
@@ -76,7 +80,6 @@ Implemented:
 
 Comming:
 
-- Data is returned as a list of ROOT files located in a specified directory
 - Make it easy to submit the same query for 100 different datasets
 
 # Testing

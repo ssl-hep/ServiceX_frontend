@@ -1,16 +1,31 @@
 import asyncio
 from json import dumps, loads
+import os
 import queue
 import re
 import shutil
+from typing import List
 from unittest import mock
 from unittest.mock import MagicMock
+import tempfile
 
 from minio.error import ResponseError
 import pandas as pd
 import pytest
 
 import servicex as fe
+
+
+@pytest.fixture(autouse=True)
+def delete_default_downloaded_files():
+    download_location = os.path.join(tempfile.gettempdir(), 'servicex-testing')
+    import servicex.servicex as sx
+    sx.default_file_cache_name = download_location
+    if os.path.exists(download_location):
+        shutil.rmtree(download_location)
+    yield
+    if os.path.exists(download_location):
+        shutil.rmtree(download_location)
 
 
 @pytest.fixture(scope="module")
@@ -52,15 +67,9 @@ def make_minio_file(fname):
 
 @pytest.fixture()
 def files_back_1(mocker):
-    # I attempted a full blown mock, but it failed. It wasn't getting picked up.
-    # No idea why. But I've left this here for future in case we return to it.
-    # mock_minio = mocker.MagicMock(minio.api.Minio)
-    # mocker.patch('minio.Minio', return_value=mock_minio)
-    # mock_minio.list_objects = MagicMock(return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    # mock_minio.fget_object = MagicMock(side_effect=good_copy)
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return None
+    p = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return p
 
 
 @pytest.fixture()
@@ -77,6 +86,32 @@ def files_back_1_fail_initally(mocker):
 def files_back_2(mocker):
     mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
                                                                make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return None
+
+
+@pytest.fixture()
+def files_back_4_order_1(mocker):
+    mocker.patch('minio.api.Minio.list_objects',
+                 return_value=[
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+                 ])
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return None
+
+
+@pytest.fixture()
+def files_back_4_order_2(mocker):
+    mocker.patch('minio.api.Minio.list_objects',
+                 return_value=[
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+                 ])
     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return None
 
@@ -188,6 +223,13 @@ def good_requests_indexed(mocker):
     mocker.patch('aiohttp.ClientSession.get', return_value=g1)
 
 
+def clean_fname(fname: str):
+    'No matter the string given, make it an acceptable filename'
+    return fname.replace('*', '_') \
+                .replace(';', '_') \
+                .replace(':', '_')
+
+
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
@@ -239,6 +281,7 @@ async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_t
 
     # Test that what we pull down can correctly be used by uproot methods
     import uproot_methods
+    assert isinstance(r, dict)
     arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
     assert len(arr) == 283458*2
 
@@ -362,6 +405,144 @@ async def test_files_downloading_is_interleaved(good_transform_request_delayed_f
 
     assert ordering[0] == 'get-file-list 0'
     assert ordering[1].startswith('copy-a-file')
+
+
+@pytest.mark.asyncio
+async def test_good_download_files_1(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert isinstance(r[0], str)
+    assert os.path.exists(r[0])
+
+
+@pytest.mark.asyncio
+async def test_good_download_files_parquet(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='parquet')
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert isinstance(r[0], str)
+    assert os.path.exists(r[0])
+    called = good_transform_request
+    assert called['result-format'] == 'parquet'
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_order_1(good_transform_request, reduce_wait_time, files_back_4_order_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
+    s_r = sorted(r)
+    assert r == s_r
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_order_2(good_transform_request, reduce_wait_time, files_back_4_order_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
+    s_r = sorted(r)
+    assert r == s_r
+
+
+@pytest.mark.asyncio
+async def test_download_to_temp_file(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
+    assert os.path.exists(r[0])
+    assert not r[0].endswith('.temp')
+    local_filepath = files_back_1.call_args[0][2]
+    assert local_filepath.endswith('.temp')
+
+
+@pytest.mark.asyncio
+async def test_good_download_files_2(good_transform_request, reduce_wait_time, files_back_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, List)
+    assert len(r) == 2
+    assert isinstance(r[0], str)
+    assert os.path.exists(r[0])
+    assert isinstance(r[1], str)
+    assert os.path.exists(r[1])
+
+
+@pytest.mark.asyncio
+async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file', storage_directory=tmp)
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert os.path.exists(r[0])
+    assert r[0].startswith(tmp)
+
+
+@pytest.mark.asyncio
+async def test_download_to_lambda_dir(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file', file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+    assert isinstance(r, List)
+    assert len(r) == 1
+    assert os.path.exists(r[0])
+    assert r[0].startswith(tmp)
+
+
+@pytest.mark.asyncio
+async def test_download_bad_params_filerename(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    with pytest.raises(Exception):
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
+                                storage_directory=tmp,
+                                file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+
+
+@pytest.mark.asyncio
+async def test_download_already_there_files(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    output_file = os.path.join(tmp, 'bogus.root')
+    # Put in a good file for reading
+    good_copy(None, None, output_file)
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
+                                file_name_func=lambda rid, obj_name: output_file,
+                                redownload_files=False)
+    assert len(r) == 1
+    files_back_1.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_download_not_there_files(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
+    if os.path.exists(tmp):
+        shutil.rmtree(tmp)
+    os.mkdir(tmp)
+    output_file = os.path.join(tmp, 'bogus.file')
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
+                                file_name_func=lambda rid, obj_name: output_file,
+                                redownload_files=True)
+    assert len(r) == 1
+    files_back_1.assert_called()
 
 # TODO:
 # Other tests
