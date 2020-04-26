@@ -193,7 +193,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     return futures
 
 
-async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
+async def get_data_async(selection_query: str, dataset: str,
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
                          data_type: str = 'pandas',
                          image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
@@ -208,9 +208,9 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
     Return data from a query with data sets.
 
     Arguments:
-        selection_query     `qastle` string that specifies what columnes to extract, how to format
+        selection_query     `qastle` string that specifies what columns to extract, how to format
                             them, and how to format them.
-        datasets            Dataset or datasets to run the query against.
+        dataset             Dataset (DID) to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
                             are the only legal values. Defaults to 'pandas'
@@ -259,10 +259,6 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
           the end of the string without causing any trouble.
     '''
     # Parameter clean up, API saftey checking
-    if isinstance(datasets, str):
-        datasets = [datasets]
-    assert len(datasets) == 1
-
     if (data_type != 'pandas') \
             and (data_type != 'awkward') \
             and (data_type != 'parquet') \
@@ -273,7 +269,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         raise Exception("You may only specify `storage_direcotry` or `file_name_func`, not both.")
 
     if status_callback is _run_default_wrapper:
-        t = _default_wrapper_mgr(datasets[0] if isinstance(datasets, list) else datasets)
+        t = _default_wrapper_mgr(dataset)
         status_callback = t.update
     notifier = _status_update_wrapper(status_callback)
 
@@ -293,7 +289,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
     # Build the query, get a request ID back.
     json_query = {
-        "did": datasets[0],
+        "did": dataset,
         "selection": selection_query,
         "image": image,
         "result-destination": "object-store",
@@ -332,7 +328,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             if files_remaining is not None:
                 notifier.update(total=files_remaining + files_processed)
             notifier.broadcast()
-            if files_processed != last_files_processed:
+            if files_processed > last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
                                                           data_type, file_name_func,
@@ -369,7 +365,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                                                 'not be unknown.')
 
 
-def get_data(selection_query: str, datasets: Union[str, List[str]],
+def get_data(selection_query: str, dataset: str,
              servicex_endpoint: str = 'http://localhost:5000/servicex',
              data_type: str = 'pandas',
              image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
@@ -383,9 +379,9 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     Return data from a query with data sets.
 
     Arguments:
-        selection_query     `qastle` string that specifies what columnes to extract, how to format
+        selection_query     `qastle` string that specifies what columns to extract, how to format
                             them, and how to format them.
-        datasets            Dataset or datasets to run the query against.
+        datasets            Dataset (DID) to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
                             are the only legal values. Defaults to 'pandas'
@@ -432,7 +428,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     '''
     loop = asyncio.get_event_loop()
     if not loop.is_running():
-        r = get_data_async(selection_query, datasets, servicex_endpoint, image=image,
+        r = get_data_async(selection_query, dataset, servicex_endpoint, image=image,
                            max_workers=max_workers, data_type=data_type,
                            storage_directory=storage_directory, file_name_func=file_name_func,
                            redownload_files=redownload_files, status_callback=status_callback)
@@ -449,7 +445,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
                 pass
 
         exector = ThreadPoolExecutor(max_workers=1)
-        future = exector.submit(get_data_wrapper, selection_query, datasets,
+        future = exector.submit(get_data_wrapper, selection_query, dataset,
                                 servicex_endpoint, image=image,
                                 max_workers=max_workers)
 
