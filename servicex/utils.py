@@ -7,10 +7,11 @@ class _status_update_wrapper:
     Internal class to make it easier to deal with the updater
     '''
     def __init__(self, callback:
-                 Optional[Callable[[Optional[int], int, int], None]] = None):
+                 Optional[Callable[[Optional[int], int, int, int], None]] = None):
         self._total = None
         self._processed = None
         self._downloaded = None
+        self._failed = None
         self._callback = callback
 
     def broadcast(self):
@@ -23,11 +24,14 @@ class _status_update_wrapper:
                     self._processed = 0
                 if self._downloaded is None:
                     self._downloaded = 0
-                self._callback(self._total, self._processed, self._downloaded)
+                if self._failed is None:
+                    self._failed = 0
+                self._callback(self._total, self._processed, self._downloaded, self._failed)
 
     def update(self, processed: Optional[int] = None,
                downloaded: Optional[int] = None,
-               total: Optional[int] = None):
+               total: Optional[int] = None,
+               failed: Optional[int] = None):
         if total is not None:
             if self._total is not None:
                 if total > self._total:
@@ -38,6 +42,8 @@ class _status_update_wrapper:
             self._processed = processed
         if downloaded is not None:
             self._downloaded = downloaded
+        if failed is not None:
+            self._failed = failed
 
     def inc(self, downloaded: Optional[int] = None):
         if downloaded is not None:
@@ -47,7 +53,7 @@ class _status_update_wrapper:
                 self._downloaded += downloaded
 
 
-def _run_default_wrapper(t: Optional[int], p: int, d: int) -> None:
+def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
     'Place holder to run the default runner'
     assert False, 'This should never be called'
 
@@ -62,7 +68,7 @@ class _default_wrapper_mgr:
                             leave=True, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
-    def _update_bar(self, bar: tqdm, total: Optional[int], num: int):
+    def _update_bar(self, bar: tqdm, total: Optional[int], num: int, failed: int):
         if total is not None:
             if bar.total != total:
                 # There is a bug in the tqm library if running in a notebook
@@ -77,6 +83,6 @@ class _default_wrapper_mgr:
         if total is not None and num == total:
             bar.close()
 
-    def update(self, total: Optional[int], processed: int, downloaded: int):
-        self._update_bar(self._tqdm_p, total, processed)
-        self._update_bar(self._tqdm_d, total, downloaded)
+    def update(self, total: Optional[int], processed: int, downloaded: int, failed: int):
+        self._update_bar(self._tqdm_p, total, processed, failed)
+        self._update_bar(self._tqdm_d, total, downloaded, failed)

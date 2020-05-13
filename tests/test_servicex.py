@@ -567,18 +567,21 @@ def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
     f_total = None
     f_processed = None
     f_downloaded = None
+    f_failed = None
 
-    def check_in(total: Optional[int], processed: int, downloaded: int):
-        nonlocal f_total, f_processed, f_downloaded
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal f_total, f_processed, f_downloaded, f_failed
         f_total = total
         f_processed = processed
         f_downloaded = downloaded
+        f_failed = failed
 
     fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
 
     assert f_total == 1
     assert f_processed == 1
     assert f_downloaded == 1
+    assert f_failed == 0
 
 
 def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_time, files_back_1):
@@ -586,12 +589,14 @@ def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_ti
     f_total =[]
     f_processed = []
     f_downloaded = []
+    f_failed = []
 
-    def check_in(total: Optional[int], processed: int, downloaded: int):
-        nonlocal f_total, f_processed, f_downloaded
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal f_total, f_processed, f_downloaded, f_failed
         f_total.append(total)
         f_processed.append(processed)
         f_downloaded.append(downloaded)
+        f_failed.append(failed)
 
     fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
 
