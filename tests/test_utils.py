@@ -135,3 +135,24 @@ def test_callback_none():
     u.update(downloaded=3)
     u.update(total=12)
     u.broadcast()
+
+
+def test_callback_with_total_fluctuation():
+    'Sometimes we get the total wrong..'
+
+    p_total = None
+
+    def call_me(total: Optional[int], processed: int, downloaded: int):
+        nonlocal p_total
+        p_total = total
+
+    u = _status_update_wrapper(call_me)
+    u.update(total=12)
+    u.broadcast()
+    assert p_total == 12
+    u.update(total=11)
+    u.broadcast()
+    assert p_total == 12
+    u.update(total=13)
+    u.broadcast()
+    assert p_total == 13

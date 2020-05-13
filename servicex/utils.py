@@ -29,7 +29,11 @@ class _status_update_wrapper:
                downloaded: Optional[int] = None,
                total: Optional[int] = None):
         if total is not None:
-            self._total = total
+            if self._total is not None:
+                if total > self._total:
+                    self._total = total
+            else:
+                self._total = total
         if processed is not None:
             self._processed = processed
         if downloaded is not None:
