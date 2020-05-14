@@ -41,7 +41,7 @@ class ServiceXFrontEndException(Exception):
 
 
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
-                                request_id: str) -> Tuple[Optional[int], int]:
+                                request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
     '''
     Internal routine that queries for the current stat of things. We expect the following things
     to come back:
@@ -68,8 +68,11 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
         files_remaining = None \
             if (('files-remaining' not in info) or (info['files-remaining'] is None)) \
             else int(info['files-remaining'])
+        files_failed = None \
+            if (('files-skipped' not in info) or (info['files-skipped'] is None)) \
+            else int(info['files-skipped'])
         files_processed = int(info['files-processed'])
-        return files_remaining, files_processed
+        return files_remaining, files_processed, files_failed
 
 
 def santize_filename(fname: str):
@@ -201,7 +204,7 @@ async def get_data_async(selection_query: str, dataset: str,
                          storage_directory: Optional[str] = None,
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False,
-                         status_callback: Optional[Callable[[Optional[int], int, int], None]]
+                         status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
                          = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
@@ -321,12 +324,15 @@ async def get_data_async(selection_query: str, dataset: str,
         last_files_processed = 0
         while not done:
             await asyncio.sleep(servicex_status_poll_time)
-            files_remaining, files_processed = await _get_transform_status(client,
-                                                                           servicex_endpoint,
-                                                                           request_id)
+            files_remaining, files_processed, files_failed = \
+                await _get_transform_status(client, servicex_endpoint, request_id)
             notifier.update(processed=files_processed)
+            if files_failed is not None:
+                notifier.update(failed=files_failed)
             if files_remaining is not None:
-                notifier.update(total=files_remaining + files_processed)
+                t = files_remaining + files_processed \
+                    + (files_failed if files_failed is not None else 0)
+                notifier.update(total=t)
             notifier.broadcast()
             if files_processed > last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
@@ -337,6 +343,11 @@ async def get_data_async(selection_query: str, dataset: str,
                 last_files_processed = files_processed
 
             done = (files_remaining is not None) and files_remaining == 0
+
+        # If any files have failed, then no need to get down anything from this request!
+        if notifier.failed > 0:
+            raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
+                                     f'out of {notifier.total} files.')
 
         # Now, wait for all of them to complete so we can stich the files together.
         all_file_info = list(await asyncio.gather(*files_downloading.values()))
@@ -373,7 +384,7 @@ def get_data(selection_query: str, dataset: str,
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
              redownload_files: bool = False,
-             status_callback: Optional[Callable[[Optional[int], int, int], None]] = None) \
+             status_callback: Optional[Callable[[Optional[int], int, int, int], None]] = None) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.

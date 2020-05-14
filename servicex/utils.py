@@ -8,11 +8,19 @@ class _status_update_wrapper:
     '''
     def __init__(self, callback:
                  Optional[Callable[[Optional[int], int, int, int], None]] = None):
-        self._total = None
-        self._processed = None
-        self._downloaded = None
-        self._failed = None
+        self._total: Optional[int] = None
+        self._processed: Optional[int] = None
+        self._downloaded: Optional[int] = None
+        self._failed: int = 0
         self._callback = callback
+
+    @property
+    def total(self) -> Optional[int]:
+        return self._total
+
+    @property
+    def failed(self) -> int:
+        return self._failed
 
     def broadcast(self):
         'Send an update back to the system'
@@ -80,7 +88,10 @@ class _default_wrapper_mgr:
         bar.update(num - bar.n)
         bar.refresh()
 
-        if total is not None and num == total:
+        if (failed > 0):
+            bar.sp(bar_style='danger')
+
+        if total is not None and (num + failed) == total:
             bar.close()
 
     def update(self, total: Optional[int], processed: int, downloaded: int, failed: int):
