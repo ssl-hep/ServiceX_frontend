@@ -133,6 +133,60 @@ def indexed_files_back(mocker):
 
 
 @pytest.fixture()
+def good_transform_request(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
+    called_json_data = {}
+
+    def call_post(data_dict_to_save: dict, json=None):
+        data_dict_to_save.update(json)
+        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
+    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+    return called_json_data
+
+
+@pytest.fixture()
+def good_transform_bad_status(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
+    called_json_data = {}
+
+    def call_post(data_dict_to_save: dict, json=None):
+        data_dict_to_save.update(json)
+        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+    r2 = ClientSessionMocker(dumps({"message": "not doing this over and over"}), 400)
+    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+    return called_json_data
+
+
+@pytest.fixture()
+def bad_transform(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
+    called_json_data = {}
+
+    def call_post(data_dict_to_save: dict, json=None):
+        data_dict_to_save.update(json)
+        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1", "files-skipped": 1}), 200)
+    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+    return called_json_data
+
+
+@pytest.fixture()
 def bad_transform_request(mocker):
     '''
     Fail when we return!
@@ -154,6 +208,23 @@ def good_transform_request_delayed_finish(mocker):
     f1 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
     f2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
     mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2])
+
+    return None
+
+
+@pytest.fixture()
+def good_transform_jittery_file_totals_3(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
+    r1 = ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+    f1 = ClientSessionMocker(dumps({"files-remaining": "3", "files-processed": "0"}), 200)
+    f2 = ClientSessionMocker(dumps({"files-remaining": "2", "files-processed": "0"}), 200)
+    f3 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "2"}), 200)
+    f4 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "3"}), 200)
+    mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2, f3, f4])
 
     return None
 
@@ -237,6 +308,15 @@ async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_t
     assert isinstance(r, dict)
     arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
     assert len(arr) == 283458 * 2
+
+
+@pytest.mark.asyncio
+async def test_bad_status_return(good_transform_bad_status, reduce_wait_time, files_back_1):
+    'Status comes back bad'
+    with pytest.raises(Exception) as e:
+        await fe.get_data_async('(valid qastle string)', 'one_ds')
+
+    assert "status" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -503,18 +583,70 @@ def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
     f_total = None
     f_processed = None
     f_downloaded = None
+    f_failed = None
 
-    def check_in(total: Optional[int], processed: int, downloaded: int):
-        nonlocal f_total, f_processed, f_downloaded
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal f_total, f_processed, f_downloaded, f_failed
         f_total = total
         f_processed = processed
         f_downloaded = downloaded
+        f_failed = failed
 
     fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
 
     assert f_total == 1
     assert f_processed == 1
     assert f_downloaded == 1
+    assert f_failed == 0
+
+
+def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_time, files_back_1):
+    'There are times service x returns a few number of files total for one query, but then resumes having a good number'
+    f_total = []
+    f_processed = []
+    f_downloaded = []
+    f_failed = []
+
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal f_total, f_processed, f_downloaded, f_failed
+        f_total.append(total)
+        f_processed.append(processed)
+        f_downloaded.append(downloaded)
+        f_failed.append(failed)
+
+    fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
+
+    assert all(i == 3 for i in f_total)
+
+
+def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
+    'ServiceX fails one of its files'
+    'There are times service x returns a few number of files total for one query, but then resumes having a good number'
+    f_total =[]
+    f_processed = []
+    f_downloaded = []
+    f_failed = []
+
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal f_total, f_processed, f_downloaded, f_failed
+        f_total.append(total)
+        f_processed.append(processed)
+        f_downloaded.append(downloaded)
+        f_failed.append(failed)
+
+    with pytest.raises(fe.ServiceX_Exception) as e:
+        fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
+
+    assert len(f_total) == 1
+    assert all(i == 2 for i in f_total)
+    assert all(i == 1 for i in f_failed)
+    assert "failed to transform" in str(e.value)
+
+
+def test_failed_default_callback(bad_transform, reduce_wait_time, files_back_1):
+    'Make sure that no errors occur in default status updater'
+    with pytest.raises(fe.ServiceX_Exception):
+        fe.get_data('(valid qastle string)', 'one_ds')
 
 
 # TODO:

@@ -28,7 +28,7 @@ servicex_status_poll_time = 5.0
 
 
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
-                                request_id: str) -> Tuple[Optional[int], int]:
+                                request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
     '''
     Internal routine that queries for the current stat of things. We expect the following things
     to come back:
@@ -55,8 +55,11 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
         files_remaining = None \
             if (('files-remaining' not in info) or (info['files-remaining'] is None)) \
             else int(info['files-remaining'])
+        files_failed = None \
+            if (('files-skipped' not in info) or (info['files-skipped'] is None)) \
+            else int(info['files-skipped'])
         files_processed = int(info['files-processed'])
-        return files_remaining, files_processed
+        return files_remaining, files_processed, files_failed
 
 
 def santize_filename(fname: str):
@@ -180,7 +183,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     return futures
 
 
-async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
+async def get_data_async(selection_query: str, dataset: str,
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
                          data_type: str = 'pandas',
                          image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
@@ -189,16 +192,16 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False,
                          use_cache: bool = True,
-                         status_callback: Optional[Callable[[Optional[int], int, int], None]]
+                         status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
                          = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 
     Arguments:
-        selection_query     `qastle` string that specifies what columnes to extract, how to format
+        selection_query     `qastle` string that specifies what columns to extract, how to format
                             them, and how to format them.
-        datasets            Dataset or datasets to run the query against.
+        dataset             Dataset (DID) to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
                             are the only legal values. Defaults to 'pandas'
@@ -249,10 +252,6 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
           the end of the string without causing any trouble.
     '''
     # Parameter clean up, API saftey checking
-    if isinstance(datasets, str):
-        datasets = [datasets]
-    assert len(datasets) == 1
-
     if (data_type != 'pandas') \
             and (data_type != 'awkward') \
             and (data_type != 'parquet') \
@@ -263,7 +262,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
         raise Exception("You may only specify `storage_direcotry` or `file_name_func`, not both.")
 
     if status_callback is _run_default_wrapper:
-        t = _default_wrapper_mgr(datasets[0] if isinstance(datasets, list) else datasets)
+        t = _default_wrapper_mgr(dataset)
         status_callback = t.update
     notifier = _status_update_wrapper(status_callback)
 
@@ -286,7 +285,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
 
     # Build the query, get a request ID back.
     json_query = {
-        "did": datasets[0],
+        "did": dataset,
         "selection": selection_query,
         "image": image,
         "result-destination": "object-store",
@@ -316,14 +315,17 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
             if not first:
                 await asyncio.sleep(servicex_status_poll_time)
             first = False
-            files_remaining, files_processed = await _get_transform_status(client,
-                                                                           servicex_endpoint,
-                                                                           request_id)
+            files_remaining, files_processed, files_failed = \
+                await _get_transform_status(client, servicex_endpoint, request_id)
             notifier.update(processed=files_processed)
+            if files_failed is not None:
+                notifier.update(failed=files_failed)
             if files_remaining is not None:
-                notifier.update(total=files_remaining + files_processed)
+                t = files_remaining + files_processed \
+                    + (files_failed if files_failed is not None else 0)
+                notifier.update(total=t)
             notifier.broadcast()
-            if files_processed != last_files_processed:
+            if files_processed > last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
                                                           data_type, file_name_func,
@@ -332,6 +334,11 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                 last_files_processed = files_processed
 
             done = (files_remaining is not None) and files_remaining == 0
+
+        # If any files have failed, then no need to get down anything from this request!
+        if notifier.failed > 0:
+            raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
+                                     f'out of {notifier.total} files.')
 
         # Now, wait for all of them to complete so we can stich the files together.
         all_file_info = list(await asyncio.gather(*files_downloading.values()))
@@ -360,7 +367,7 @@ async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
                                                 'not be unknown.')
 
 
-def get_data(selection_query: str, datasets: Union[str, List[str]],
+def get_data(selection_query: str, dataset: str,
              servicex_endpoint: str = 'http://localhost:5000/servicex',
              data_type: str = 'pandas',
              image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
@@ -369,15 +376,16 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
              file_name_func: Callable[[str, str], str] = None,
              redownload_files: bool = False,
              use_cache: bool = True,
-             status_callback: Optional[Callable[[Optional[int], int, int], None]] = None) \
+             status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
+             = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
 
     Arguments:
-        selection_query     `qastle` string that specifies what columnes to extract, how to format
+        selection_query     `qastle` string that specifies what columns to extract, how to format
                             them, and how to format them.
-        datasets            Dataset or datasets to run the query against.
+        datasets            Dataset (DID) to run the query against.
         service_endpoint    The URL where the instance of ServivceX we are querying lives
         data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
                             are the only legal values. Defaults to 'pandas'
@@ -426,7 +434,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     '''
     loop = asyncio.get_event_loop()
     if not loop.is_running():
-        r = get_data_async(selection_query, datasets, servicex_endpoint, image=image,
+        r = get_data_async(selection_query, dataset, servicex_endpoint, image=image,
                            max_workers=max_workers, data_type=data_type,
                            storage_directory=storage_directory, file_name_func=file_name_func,
                            redownload_files=redownload_files, status_callback=status_callback,
@@ -444,7 +452,7 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
                 pass
 
         exector = ThreadPoolExecutor(max_workers=1)
-        future = exector.submit(get_data_wrapper, selection_query, datasets,
+        future = exector.submit(get_data_wrapper, selection_query, dataset,
                                 servicex_endpoint, image=image,
                                 max_workers=max_workers)
 
