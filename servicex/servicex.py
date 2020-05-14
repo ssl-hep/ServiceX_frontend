@@ -384,8 +384,8 @@ def get_data(selection_query: str, dataset: str,
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
              redownload_files: bool = False,
-             status_callback: Optional[Callable[[Optional[int], int, int, int], None]] \
-                 = _run_default_wrapper) \
+             status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
+             = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
