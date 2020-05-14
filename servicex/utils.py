@@ -32,8 +32,6 @@ class _status_update_wrapper:
                     self._processed = 0
                 if self._downloaded is None:
                     self._downloaded = 0
-                if self._failed is None:
-                    self._failed = 0
                 self._callback(self._total, self._processed, self._downloaded, self._failed)
 
     def update(self, processed: Optional[int] = None,
@@ -87,9 +85,6 @@ class _default_wrapper_mgr:
                 bar.update(old_num)
         bar.update(num - bar.n)
         bar.refresh()
-
-        if (failed > 0):
-            bar.sp(bar_style='danger')
 
         if total is not None and (num + failed) == total:
             bar.close()

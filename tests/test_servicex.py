@@ -180,6 +180,24 @@ def good_transform_request(mocker):
 
 
 @pytest.fixture()
+def good_transform_bad_status(mocker):
+    '''
+    Setup to run a good transform request that returns a single file.
+    '''
+    called_json_data = {}
+
+    def call_post(data_dict_to_save: dict, json=None):
+        data_dict_to_save.update(json)
+        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+    r2 = ClientSessionMocker(dumps({"message": "not doing this over and over"}), 400)
+    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+    return called_json_data
+
+
+@pytest.fixture()
 def bad_transform(mocker):
     '''
     Setup to run a good transform request that returns a single file.
@@ -319,6 +337,15 @@ async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_t
     assert isinstance(r, dict)
     arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
     assert len(arr) == 283458*2
+
+
+@pytest.mark.asyncio
+async def test_bad_status_return(good_transform_bad_status, reduce_wait_time, files_back_1):
+    'Status comes back bad'
+    with pytest.raises(Exception) as e:
+        await fe.get_data_async('(valid qastle string)', 'one_ds')
+
+    assert "status" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -643,6 +670,13 @@ def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
     assert all(i == 2 for i in f_total)
     assert all(i == 1 for i in f_failed)
     assert "failed to transform" in str(e.value)
+
+
+def test_failed_default_callback(bad_transform, reduce_wait_time, files_back_1):
+    'Make sure that no errors occur in default status updater'
+    with pytest.raises(fe.ServiceX_Exception):
+        fe.get_data('(valid qastle string)', 'one_ds')
+
 
 # TODO:
 # Other tests
