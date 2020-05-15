@@ -8,9 +8,8 @@ from typing import Callable, Dict, Optional
 import aiohttp
 from tqdm.auto import tqdm
 
-from lark.reconstruct import Reconstructor
 from lark import Transformer, Token
-from qastle import parse, Parser
+from qastle import parse
 
 
 # Where shall we store files by default when we pull them down?
@@ -225,9 +224,11 @@ def _clean_linq(q: str) -> str:
                                     f'with {len(fields)} arguments - not the required 2!')
                 arg_list = [f.info for f in fields[0].info]
                 arg_mapping = {old: new_arg() for old in arg_list}
-                fields[0] = ParseTracker(f'(list {" ".join(arg_mapping[k] for k in arg_list)})',
-                                         [ParseTracker(arg_mapping[f], arg_mapping[f]) for f in arg_list])
-                fields[1] = ParseTracker(_replace_strings(fields[1].text, arg_mapping), fields[1].info)
+                fields[0] = ParseTracker(
+                    f'(list {" ".join(arg_mapping[k] for k in arg_list)})',
+                    [ParseTracker(arg_mapping[f], arg_mapping[f]) for f in arg_list])
+                fields[1] = ParseTracker(_replace_strings(fields[1].text, arg_mapping),
+                                         fields[1].info)
 
             return ParseTracker(f'({node_type} {" ".join([f.text for f in fields])})', fields)
 
