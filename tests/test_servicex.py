@@ -505,7 +505,7 @@ async def test_good_download_files_2(good_transform_request, reduce_wait_time, f
 
 @pytest.mark.asyncio
 async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
+    'Download to a specified storage directory'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
@@ -519,7 +519,7 @@ async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, fi
 
 @pytest.mark.asyncio
 async def test_download_to_lambda_dir(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
+    'Download to files using a file name function callback'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
@@ -533,20 +533,21 @@ async def test_download_to_lambda_dir(good_transform_request, reduce_wait_time, 
 
 @pytest.mark.asyncio
 async def test_download_bad_params_filerename(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
+    'Specify both a storage directory and a filename rename func - illegal'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
     os.mkdir(tmp)
-    with pytest.raises(Exception):
+    with pytest.raises(Exception) as e:
         await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
                                 storage_directory=tmp,
                                 file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+    assert "only specify" in str(e.value)
 
 
 @pytest.mark.asyncio
 async def test_download_already_there_files(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
+    'Re-run and files already existing, do not download again'
     tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
@@ -564,7 +565,7 @@ async def test_download_already_there_files(good_transform_request, reduce_wait_
 
 @pytest.mark.asyncio
 async def test_download_not_there_files(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
+    'Make sure we can download to a specific file'
     tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
