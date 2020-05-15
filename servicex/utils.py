@@ -1,12 +1,17 @@
-from typing import Callable, Dict, Optional
-import os
-import tempfile
 from hashlib import blake2b
+import os
 from pathlib import Path
 import re
+import tempfile
+from typing import Callable, Dict, Optional
 
 import aiohttp
 from tqdm.auto import tqdm
+
+from lark.reconstruct import Reconstructor
+from lark import Transformer, Token
+from qastle import parse, Parser
+
 
 # Where shall we store files by default when we pull them down?
 default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
@@ -158,33 +163,75 @@ async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
     return req_id
 
 
-def _clean_linq(linq: str) -> str:
+def _clean_linq(q: str) -> str:
     '''
-    Noramlize the variables in a linq expression. Should make the
+    Normalize the variables in a qastle expression. Should make the
     linq expression more easily comparable even if the algorithm that
     generates the underlying variable numbers changes.
-
-    # TODO: Assumes a form with "exx" as the names. Clearly, this can't work.
-    # This needs mods.
     '''
-    all_uses = re.findall('e[0-9]+', linq)
-    index = 0
-    used = []
-    mapping = {}
-    for v in all_uses:
-        if v not in used:
-            used.append(v)
-            new_var = f'a{index}'
-            index += 1
-            mapping[v] = new_var
+    from collections import namedtuple
+    ParseTracker = namedtuple('ParseTracker', ['text', 'info'])
 
-    if len(mapping) == 0:
-        return linq
+    arg_index = 0
 
-    max_len = max([len(k) for k in mapping.keys()])
-    for l in range(max_len, 0, -1):
-        for k in mapping.keys():
-            if len(k) == l:
-                linq = linq.replace(k, mapping[k])
+    def new_arg():
+        nonlocal arg_index
+        s = f'a{arg_index}'
+        arg_index += 1
+        return s
 
-    return linq
+    def _replace_strings(s: str, rep: Dict[str, str]) -> str:
+        'Replace all strings in dict that are found in s'
+        for k in rep.keys():
+            s = re.sub(f'\\b{k}\\b', rep[k], s)
+        return s
+
+    class translator(Transformer):
+        def record(self, children):
+            if (len(children) == 0
+                    or isinstance(children[0], Token)
+                    and children[0].type == 'WHITESPACE'):
+                return ""
+            else:
+                return children[0].text
+
+        def expression(self, children):
+            for child in children:
+                if isinstance(child, ParseTracker):
+                    return child
+            raise SyntaxError('Expression does not contain a node')
+
+        def atom(self, children):
+            child = children[0]
+            return ParseTracker(child.value, child.value)
+
+        def composite(self, children):
+            fields = []
+            node_type: Optional[str] = None
+            for child in children:
+                if isinstance(child, Token):
+                    if child.type == 'NODE_TYPE':
+                        node_type = child.value
+                    else:
+                        pass
+                elif isinstance(child, ParseTracker):
+                    fields.append(child)
+
+            assert node_type is not None
+
+            if node_type == 'lambda':
+                if len(fields) != 2:
+                    raise Exception(f'The qastle "{q}" is not valid - found a lambda expression'
+                                    f'with {len(fields)} arguments - not the required 2!')
+                arg_list = [f.info for f in fields[0].info]
+                arg_mapping = {old: new_arg() for old in arg_list}
+                fields[0] = ParseTracker(f'(list {" ".join(arg_mapping[k] for k in arg_list)})',
+                                         [ParseTracker(arg_mapping[f], arg_mapping[f]) for f in arg_list])
+                fields[1] = ParseTracker(_replace_strings(fields[1].text, arg_mapping), fields[1].info)
+
+            return ParseTracker(f'({node_type} {" ".join([f.text for f in fields])})', fields)
+
+    tree = parse(q)
+    new_tree = translator().transform(tree)
+    assert isinstance(new_tree, str)
+    return new_tree

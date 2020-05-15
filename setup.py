@@ -27,7 +27,8 @@ setup(name="servicex",
           "retry~=0.9",
           "aiohttp~=3.6",
           "minio~=5.0",
-          "tqdm~=4.0"
+          "tqdm~=4.0",
+          "qastle==0.7"
       ],
       extras_require={
           'test': [

@@ -7,5 +7,9 @@
     "python.linting.flake8Enabled": true,
     "python.testing.pytestArgs": [
         "--no-cov"
+    ],
+    "cSpell.words": [
+        "Reconstructor",
+        "qastle"
     ]
 }

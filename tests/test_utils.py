@@ -3,7 +3,7 @@ import aiohttp
 
 import pytest
 
-from servicex.utils import _status_update_wrapper, _submit_or_lookup_transform
+from servicex.utils import _status_update_wrapper, _submit_or_lookup_transform, _clean_linq
 
 from .utils_for_testing import good_transform_request, delete_default_downloaded_files  # NOQA
 
@@ -286,3 +286,46 @@ async def test_request_trans_cache_unknown(good_transform_request):
         rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
 
         assert rid1 != rid2
+
+
+def test_clean_linq_no_lambda():
+    q = '(valid qastle)'
+    assert _clean_linq(q) == q
+
+
+def test_clean_linq_single_lambda():
+    q = '(lambda (list e0 e1) (+ e0 e1))'
+    assert _clean_linq(q) == '(lambda (list a0 a1) (+ a0 a1))'
+
+
+def test_clean_linq_many_args():
+    q = '(lambda (list e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11) (+ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11))'
+    assert _clean_linq(q) == '(lambda (list a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11) (+ a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))'
+
+
+def test_clean_linq_funny_var_names():
+    q = '(lambda (list e0 e000) (+ e000 e0))'
+    assert _clean_linq(q) == '(lambda (list a0 a1) (+ a1 a0))'
+
+
+def test_clean_linq_nested_lambda():
+    q = '(lambda (list e0 e1) (+ (call (lambda (list e0) (+ e0 1)) e0) e1))'
+    assert _clean_linq(q) == '(lambda (list a1 a2) (+ (call (lambda (list a0) (+ a0 1)) a1) a2))'
+
+
+def test_clean_linq_arb_var_names():
+    q = '(lambda (list a0 f1) (+ a0 f1))'
+    assert _clean_linq(q) == '(lambda (list a0 a1) (+ a0 a1))'
+
+
+def test_clean_linq_empty():
+    q = ''
+    assert _clean_linq(q) == ""
+
+
+def test_clean_linq_too_many_lambda():
+    q = '(lambda (list e0 e1) (+ e0 e1) (one too many))'
+    with pytest.raises(Exception) as e:
+        _clean_linq(q)
+
+    assert "required 2"
