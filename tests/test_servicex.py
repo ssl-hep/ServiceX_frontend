@@ -38,9 +38,9 @@ def make_minio_file(fname):
 
 @pytest.fixture()
 def files_back_1(mocker):
-    mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    p = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return p
+    p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
+    p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return p_fget, p_list
 
 
 @pytest.fixture()
@@ -133,14 +133,120 @@ def indexed_files_back(mocker):
 
 
 @pytest.fixture()
+def transform_status_fails_once_then_unknown(mocker):
+    '''
+    Return good request. Have a single file come back.
+    Then pretend we know nothing about the transform any longer.
+    This requires a bit of a state machine to keep straight.
+    '''
+    request_id = "1234-4433-111-34-22-444"
+
+    # For this we always accept the transform request.
+    def call_post():
+        return ClientSessionMocker(dumps({"request_id": request_id}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+
+    called_times = 0
+
+    def get_status(a):
+        nonlocal called_times, request_id
+        try:
+            if called_times == 0:
+                # One file through
+                return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+            elif called_times == 1:
+                # ServiceX was restarted - we have no idea!!!
+                request_id = "1234-4433-111-34-22-555"
+                return ClientSessionMocker(dumps({"message": "No such request id"}), 400)
+            elif called_times == 2:
+                # Ok - this is after they have re-called. So now we are in good shape!
+                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+        finally:
+            called_times += 1
+
+    mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+
+@pytest.fixture()
+def transform_fails_once_then_second_good(mocker):
+    '''
+    1. Return a good request
+    2. Return one good file and a second one is bad (skipped)
+    3. Return a good request (second request)
+    4. Return two good files.
+    '''
+    request_id = "1234-4433-111-34-22-444"
+
+    # For this we always accept the transform request.
+    def call_post():
+        return ClientSessionMocker(dumps({"request_id": request_id}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+
+    called_times = 0
+
+    def get_status(a):
+        nonlocal called_times, request_id
+        try:
+            if called_times == 0:
+                # One file through
+                request_id = "1234-4433-111-34-22-555"
+                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1", "files-skipped": "1"}), 200)
+            elif called_times == 1:
+                # ServiceX was restarted - we have no idea!!!
+                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+        finally:
+            called_times += 1
+
+    mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+
+@pytest.fixture()
+def transform_status_fails_once_then_good(mocker):
+    '''
+    1. Return good request
+    2. Return a single file
+    3. Return a bad status message
+    4. Return a good status message
+    '''
+    # For this we always accept the transform request.
+    def call_post():
+        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+
+    called_times = 0
+
+    def get_status(a):
+        nonlocal called_times
+        try:
+            if called_times == 0:
+                # One file through
+                return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+            elif called_times == 1:
+                # We return a bad status message
+                return ClientSessionMocker(dumps({"message": "No such request id"}), 400)
+            elif called_times == 2:
+                # Ok - this is after they have re-called. So now we are in good shape!
+                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+        finally:
+            called_times += 1
+
+    mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+# TODO: Move this into the common area so we don't repeat this code
+#       Will have to solve failures in the test_utils fellow, however.
+@pytest.fixture()
 def good_transform_request(mocker):
     '''
     Setup to run a good transform request that returns a single file.
     '''
     called_json_data = {}
+    times_called = 0
 
     def call_post(data_dict_to_save: dict, json=None):
+        nonlocal times_called
+        times_called += 1
         data_dict_to_save.update(json)
+        data_dict_to_save.update(dict(called=times_called))
         return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
     mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
 
@@ -487,7 +593,7 @@ async def test_download_to_temp_file(good_transform_request, reduce_wait_time, f
     assert isinstance(r, list)
     assert os.path.exists(r[0])
     assert not r[0].endswith('.temp')
-    local_filepath = files_back_1.call_args[0][2]
+    local_filepath = files_back_1[0].call_args[0][2]
     assert local_filepath.endswith('.temp')
 
 
@@ -501,6 +607,25 @@ async def test_good_download_files_2(good_transform_request, reduce_wait_time, f
     assert os.path.exists(r[0])
     assert isinstance(r[1], str)
     assert os.path.exists(r[1])
+
+
+@pytest.mark.asyncio
+async def test_download_cached_nonet(good_transform_request, reduce_wait_time, files_back_1):
+    'Make sure we do not query the network if we already have everything local'
+    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    f_get, f_list = files_back_1
+    json = good_transform_request
+    assert json['called'] == 1
+    f_list.assert_called_once(), "Only a single transform request made"
+
+
+@pytest.mark.asyncio
+async def test_download_cached_awkward(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    a1 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    a2 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    assert a1 is a2
 
 
 @pytest.mark.asyncio
@@ -560,7 +685,54 @@ async def test_download_already_there_files(good_transform_request, reduce_wait_
                                 file_name_func=lambda rid, obj_name: output_file,
                                 redownload_files=False)
     assert len(r) == 1
-    files_back_1.assert_not_called()
+    files_back_1[0].assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_resume_download_missing_files(transform_status_fails_once_then_good, reduce_wait_time, files_back_1):
+    'We get a status error message, and then we can re-download them.'
+
+    with pytest.raises(Exception):
+        # Will fail with one file downloaded.
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert len(r) == 2
+    assert False, 'Request for a transform should have been called only once'
+
+
+@pytest.mark.asyncio
+async def test_servicex_gone_when_redownload_request(transform_status_fails_once_then_unknown, reduce_wait_time, files_back_1):
+    '''
+    We call to get a transform, get one of 2 files, then get an error.
+    We try again, and this time servicex has been restarted, so it knows nothing about our request
+    We have to re-request the transform and start from scratch.
+    '''
+
+    with pytest.raises(Exception):
+        # Will fail with one file downloaded.
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+
+    # New instance of ServiceX now, and it is ready to do everything.
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert len(r) == 2
+    assert False, 'Request for a transform should have been called twice'
+
+
+@pytest.mark.asyncio
+async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time, files_back_1):
+    '''
+    We call to get a transform, and the 1 file fails (gets marked as skip).
+    We then call again, and it works, and we get back the files we want. 
+    '''
+
+    with pytest.raises(Exception):
+        # Will fail with one file downloaded.
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert len(r) == 2
+    assert False, 'Request for a transform should have been called twice'
 
 
 @pytest.mark.asyncio
@@ -576,7 +748,7 @@ async def test_download_not_there_files(good_transform_request, reduce_wait_time
                                 file_name_func=lambda rid, obj_name: output_file,
                                 redownload_files=True)
     assert len(r) == 1
-    files_back_1.assert_called()
+    files_back_1[0].assert_called()
 
 
 def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
