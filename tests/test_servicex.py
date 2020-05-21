@@ -139,33 +139,50 @@ def transform_status_fails_once_then_unknown(mocker):
     Then pretend we know nothing about the transform any longer.
     This requires a bit of a state machine to keep straight.
     '''
-    request_id = "1234-4433-111-34-22-444"
+    request_id_1 = "1234-4433-111-34-22-444"
+    request_id_2 = "1234-4433-111-34-22-555"
+
+    request_id = request_id_1
 
     # For this we always accept the transform request.
     def call_post():
+        nonlocal request_id
         return ClientSessionMocker(dumps({"request_id": request_id}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+    post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
 
     called_times = 0
 
     def get_status(a):
-        nonlocal called_times, request_id
+        nonlocal called_times, request_id_1, request_id_2, request_id
+        req_id = a.split("/")[-2]
         try:
-            if called_times == 0:
-                # One file through
-                return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
-            elif called_times == 1:
-                # ServiceX was restarted - we have no idea!!!
-                request_id = "1234-4433-111-34-22-555"
-                return ClientSessionMocker(dumps({"message": "No such request id"}), 400)
-            elif called_times == 2:
-                # Ok - this is after they have re-called. So now we are in good shape!
+            if req_id == request_id_1:
+                if called_times == 0:
+                    # One file through
+                    return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+                else:
+                    # ServiceX was restarted - we have no idea!!!
+                    request_id = request_id_2
+                    return ClientSessionMocker(dumps({"message": "Internal Server Error"}), 500)
+            elif req_id == request_id_2:
                 return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
         finally:
             called_times += 1
 
     mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
 
+    def get_list_objects(req_id: str):
+        nonlocal request_id, request_id_1, request_id_2, called_times
+        if request_id == request_id_1:
+            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+        elif request_id == request_id_2:
+            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+    mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+    return post_patch
 
 @pytest.fixture()
 def transform_fails_once_then_second_good(mocker):
@@ -175,29 +192,45 @@ def transform_fails_once_then_second_good(mocker):
     3. Return a good request (second request)
     4. Return two good files.
     '''
-    request_id = "1234-4433-111-34-22-444"
+    request_id_1 = "1234-4433-111-34-22-444"
+    request_id_2 = "1234-4433-111-34-22-555"
+
+    request_id = request_id_1
 
     # For this we always accept the transform request.
     def call_post():
-        return ClientSessionMocker(dumps({"request_id": request_id}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+        nonlocal request_id, request_id_1, request_id_2
+        try:
+            return ClientSessionMocker(dumps({"request_id": request_id}), 200)
+        finally:
+            request_id = request_id_2
+
+    post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
 
     called_times = 0
 
     def get_status(a):
-        nonlocal called_times, request_id
-        try:
-            if called_times == 0:
-                # One file through
-                request_id = "1234-4433-111-34-22-555"
-                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1", "files-skipped": "1"}), 200)
-            elif called_times == 1:
-                # ServiceX was restarted - we have no idea!!!
-                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
-        finally:
-            called_times += 1
+        nonlocal request_id_1, request_id_2
+        req_id = a.split("/")[-2]
+        if req_id == request_id_1:
+            return ClientSessionMocker(dumps({"files-remaining": "0", "files-skipped": 1, "files-processed": "1"}), 200)
+        elif req_id == request_id_2:
+            return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
 
     mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+    def get_list_objects(req_id: str):
+        nonlocal request_id, request_id_1, request_id_2, called_times
+        if request_id == request_id_1:
+            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+        elif request_id == request_id_2:
+            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+    mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+    return post_patch
 
 
 @pytest.fixture()
@@ -730,7 +763,7 @@ async def test_resume_download_missing_files(transform_status_fails_once_then_go
 
 
 @pytest.mark.asyncio
-async def test_servicex_gone_when_redownload_request(transform_status_fails_once_then_unknown, reduce_wait_time, files_back_1):
+async def test_servicex_gone_when_redownload_request(transform_status_fails_once_then_unknown, reduce_wait_time):
     '''
     We call to get a transform, get one of 2 files, then get an error.
     We try again, and this time servicex has been restarted, so it knows nothing about our request
@@ -744,11 +777,11 @@ async def test_servicex_gone_when_redownload_request(transform_status_fails_once
     # New instance of ServiceX now, and it is ready to do everything.
     r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     assert len(r) == 2
-    assert False, 'Request for a transform should have been called twice'
+    assert transform_status_fails_once_then_unknown.call_count == 2, 'Request for a transform should have been called twice'
 
 
 @pytest.mark.asyncio
-async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time, files_back_1):
+async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time):
     '''
     We call to get a transform, and the 1 file fails (gets marked as skip).
     We then call again, and it works, and we get back the files we want. 
@@ -760,7 +793,7 @@ async def test_servicex_transformer_failure_reload(transform_fails_once_then_sec
 
     r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     assert len(r) == 2
-    assert False, 'Request for a transform should have been called twice'
+    assert transform_fails_once_then_second_good.call_count == 2, 'Request for a transform should have been called twice'
 
 
 @pytest.mark.asyncio

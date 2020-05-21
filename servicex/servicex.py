@@ -7,8 +7,6 @@ from pathlib import Path
 import tempfile
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
-import weakref
-from weakref import WeakValueDictionary
 
 import aiohttp
 import awkward
@@ -21,7 +19,8 @@ import uproot
 from .utils import (
     ServiceXFrontEndException, ServiceX_Exception, _default_wrapper_mgr,
     _run_default_wrapper, _status_update_wrapper, _submit_or_lookup_transform,
-    _clean_linq, _file_object_cache_filename, _file_object_cache_filename_temp)
+    _clean_linq, _file_object_cache_filename, _file_object_cache_filename_temp,
+    _query_is_cached)
 
 
 # Number of seconds to wait between polling servicex for the status of a transform job
@@ -205,7 +204,12 @@ async def get_data_cache_calc(request_id: str,
                               data_type: str,
                               file_name_func: Callable[[str, str], str],
                               redownload_files: bool) \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
+        -> Tuple[bool, Optional[Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]]]:
+    '''
+    Returns:
+        retry       True if we should restart the query from scratch
+        result      If retry is false, the result, otherwise None.
+    '''
     # Sit here waiting for the results to come in. In case there are missing items
     # in the minio stream, we will avoid counting that. That should be an explicit error taken
     # care of further on down in the code.
@@ -214,11 +218,18 @@ async def get_data_cache_calc(request_id: str,
     last_files_processed = 0
     first = True
     while not done:
-        if not first:
-            await asyncio.sleep(servicex_status_poll_time)
-        first = False
-        files_remaining, files_processed, files_failed = \
-            await _get_transform_status(client, servicex_endpoint, request_id)
+        try:
+            if not first:
+                await asyncio.sleep(servicex_status_poll_time)
+            files_remaining, files_processed, files_failed = \
+                await _get_transform_status(client, servicex_endpoint, request_id)
+            first = False
+        except Exception as e:
+            if 'error 500' in str(e):
+                if first:
+                    return True, None
+            raise
+
         notifier.update(processed=files_processed)
         if files_failed is not None:
             notifier.update(failed=files_failed)
@@ -258,19 +269,19 @@ async def get_data_cache_calc(request_id: str,
     all_files = [v[1] for v in all_file_info]
 
     if data_type == 'root-file' or data_type == 'parquet':
-        return list(all_files)
+        return False, list(all_files)
 
     # We need to shift the files to another format.
     if len(all_files) == 1:
-        return all_files[0]
+        return False, all_files[0]
     else:
         if data_type == 'pandas':
             r = pd.concat(all_files)
             assert isinstance(r, pd.DataFrame)
-            return r
+            return False, r
         elif data_type == 'awkward':
             col_names = all_files[0].keys()
-            return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
+            return False, {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
         else:
             raise ServiceXFrontEndException(f'Internal programming error - {data_type} should '
                                             'not be unknown.')
@@ -413,22 +424,41 @@ async def get_data_async(selection_query: str, dataset: str,
     # that just isn't going to work here. The advantage is better handling of connections.
     # TODO: Option to pass in the connection pool?
     async with aiohttp.ClientSession() as client:
-        request_id = await _submit_or_lookup_transform(client, servicex_endpoint,
-                                                       use_cache, json_query)
+        done = False
+        while not done:
+            notifier.reset()
+            cached_query = use_cache and _query_is_cached(json_query)
+            request_id = await _submit_or_lookup_transform(client, servicex_endpoint,
+                                                           use_cache, json_query)
 
-        # We have this in memory - so return it!
-        global _data_cache
-        result = _data_cache.get(request_id, None)
-        if result is None:
-            r = await get_data_cache_calc(request_id,
-                                          client,
-                                          servicex_endpoint,
-                                          notifier,
-                                          data_type,
-                                          file_name_func,
-                                          redownload_files)
-            result = weak_holder(r)
-            _data_cache[request_id] = result
+            # We have this in memory - so return it!
+            global _data_cache
+            result = _data_cache.get(request_id, None)
+            if result is not None:
+                done = True
+            else:
+                # Run this as we do not have it in the cache
+                try:
+                    retry, r = await get_data_cache_calc(request_id,
+                                                         client,
+                                                         servicex_endpoint,
+                                                         notifier,
+                                                         data_type,
+                                                         file_name_func,
+                                                         redownload_files)
+                except ServiceX_Exception as sx_e:
+                    if cached_query and "failed to transform" in str(sx_e):
+                        retry = True
+                    else:
+                        raise
+
+                if not retry:
+                    result = weak_holder(r)
+                    _data_cache[request_id] = result
+                    done = True
+                else:
+                    # Retry - so force us not to use the cache
+                    use_cache = False
         return result.o
 
 

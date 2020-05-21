@@ -34,11 +34,15 @@ class _status_update_wrapper:
     '''
     def __init__(self, callback:
                  Optional[Callable[[Optional[int], int, int, int], None]] = None):
+        self._callback = callback
+        self.reset()
+
+    def reset(self):
+        'Reset back to zero'
         self._total: Optional[int] = None
         self._processed: Optional[int] = None
         self._downloaded: Optional[int] = None
         self._failed: int = 0
-        self._callback = callback
 
     @property
     def total(self) -> Optional[int]:
@@ -124,6 +128,31 @@ class _default_wrapper_mgr:
 _json_keys_to_ignore_for_hash = ['workers']
 
 
+def _query_cache_file(json_query: Dict[str, str]) -> Path:
+    '''
+    Return a query cache file.
+    '''
+    hasher = blake2b(digest_size=20)
+    for k, v in json_query.items():
+        if k not in _json_keys_to_ignore_for_hash:
+            hasher.update(k.encode())
+            hasher.update(str(v).encode())
+    hash = hasher.hexdigest()
+
+    return Path(default_file_cache_name) / 'request-cache' / hash
+
+
+def _query_is_cached(json_query: Dict[str, str]) -> bool:
+    '''
+    Check to see if a cache file exists for the json query
+
+    Returns:
+        True        Query cache file exists and will trigger a query lookup
+        False       Otherwise
+    '''
+    return _query_cache_file(json_query).exists()
+
+
 async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
                                       servicex_endpoint: str,
                                       use_cache: bool,
@@ -132,14 +161,7 @@ async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
     Submit a transform, or look it up in our local query database
     '''
     # Check the cache
-    hasher = blake2b(digest_size=20)
-    for k, v in json_query.items():
-        if k not in _json_keys_to_ignore_for_hash:
-            hasher.update(k.encode())
-            hasher.update(str(v).encode())
-    hash = hasher.hexdigest()
-
-    hash_file = Path(default_file_cache_name) / 'request-cache' / hash
+    hash_file = _query_cache_file(json_query)
     if use_cache and hash_file.exists():
         with hash_file.open('r') as r:
             return r.readline().strip()
