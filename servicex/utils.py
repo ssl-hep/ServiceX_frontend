@@ -236,3 +236,22 @@ def _clean_linq(q: str) -> str:
     new_tree = translator().transform(tree)
     assert isinstance(new_tree, str)
     return new_tree
+
+
+def _file_object_cache_filename(request_id: str) -> Path:
+    '''
+    Return the path of the file where we will write out the cache for the
+    file objects we are downloading.
+    '''
+    global default_file_cache_name
+    return Path(default_file_cache_name) / 'object_list_cache' / request_id
+
+
+def _file_object_cache_filename_temp(request_id: str) -> Path:
+    '''
+    Return the path of the file where we will write out the cache for the
+    file objects we are downloading. This is the temp file.
+    '''
+    global default_file_cache_name
+    return Path(default_file_cache_name) / 'object_list_cache' / \
+        f'{request_id}-temp'

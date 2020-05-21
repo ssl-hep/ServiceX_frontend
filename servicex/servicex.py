@@ -19,7 +19,7 @@ import uproot
 from .utils import (
     ServiceXFrontEndException, ServiceX_Exception, _default_wrapper_mgr,
     _run_default_wrapper, _status_update_wrapper, _submit_or_lookup_transform,
-    _clean_linq)
+    _clean_linq, _file_object_cache_filename, _file_object_cache_filename_temp)
 
 
 # Number of seconds to wait between polling servicex for the status of a transform job
@@ -102,12 +102,26 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
 
 
 @retry(delay=1, tries=10, exceptions=ResponseError)
-def protected_list_objects(client: Minio, request_id: str):
+def protected_list_objects(client: Minio, request_id: str) -> List[str]:
     '''
-    Return a list of objects in a minio bucket. We've seen some failures here in
-    the real world, so protect this with a retry.
+    Returns a list of files that are currently available for
+    this request. Will pull the list from the disk cache if possible.
     '''
-    return client.list_objects(request_id)
+    # Try to fetch from cache
+    p = _file_object_cache_filename(request_id)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        return p.read_text().splitlines()
+
+    # Go out to actually request the list
+    listing = [f.object_name for f in client.list_objects(request_id)]
+
+    # Write out the a temp cache file, which will be renamed once we are
+    # sure the full set is downloaded.
+    _file_object_cache_filename_temp(request_id) \
+        .write_text(os.linesep.join(listing))
+
+    return listing
 
 
 async def _post_process_data(data_type: str, filepath: Tuple[str, str],
@@ -167,8 +181,7 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                          secret_key='leftfoot1',
                          secure=False)
 
-    files = list([f.object_name for f in protected_list_objects(minio_client, request_id)])  \
-        # type: List[str]
+    files = protected_list_objects(minio_client, request_id)
     new_files = [fname for fname in files if fname not in files_queued]
 
     # Submit in a thread pool so they can run and block concurrently (minio doesn't have
@@ -340,11 +353,18 @@ async def get_data_async(selection_query: str, dataset: str,
             raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
                                      f'out of {notifier.total} files.')
 
+        # We have the complete list of files to cache. So lets rename them.
+        # TODO: Caching logic is too spread out.
+        t_cache_file = _file_object_cache_filename_temp(request_id)
+        if t_cache_file.exists():
+            t_cache_file.rename(_file_object_cache_filename(request_id))
+
         # Now, wait for all of them to complete so we can stich the files together.
         all_file_info = list(await asyncio.gather(*files_downloading.values()))
 
         # return the result, sorting to keep the data in order.
-        assert len(all_file_info) > 0
+        assert len(all_file_info) > 0, \
+            'Internal error: no error from ServiceX, but also no files back either!'
         all_file_info.sort(key=lambda k: k[0])
         all_files = [v[1] for v in all_file_info]
 
