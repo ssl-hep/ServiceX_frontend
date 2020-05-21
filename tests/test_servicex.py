@@ -207,11 +207,13 @@ def transform_status_fails_once_then_good(mocker):
     2. Return a single file
     3. Return a bad status message
     4. Return a good status message
+
+    We have to manage the list_objects in parallel since its behavior is linked here.
     '''
     # For this we always accept the transform request.
     def call_post():
         return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+    posted_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
 
     called_times = 0
 
@@ -231,6 +233,22 @@ def transform_status_fails_once_then_good(mocker):
             called_times += 1
 
     mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+    def get_list_objects(a):
+        nonlocal called_times
+        # Note that called_times has been incremented so called_times == 1, is like state 0 in get_status
+        if called_times == 1:
+            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+        elif called_times == 2:
+            raise Exception("Should not be calling list_objects after an error from status")
+        elif called_times == 3:
+            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+    mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
+    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+    return posted_patch
 
 # TODO: Move this into the common area so we don't repeat this code
 #       Will have to solve failures in the test_utils fellow, however.
@@ -692,8 +710,15 @@ async def test_download_already_there_files(good_transform_request, reduce_wait_
 
 
 @pytest.mark.asyncio
-async def test_resume_download_missing_files(transform_status_fails_once_then_good, reduce_wait_time, files_back_1):
-    'We get a status error message, and then we can re-download them.'
+async def test_resume_download_missing_files(transform_status_fails_once_then_good, reduce_wait_time):
+    '''
+    We get a status error message, and then we can re-download them.
+
+    1. Request the transform
+    1. Get the status - but that fails the second time
+    1. This causes the download to bomb.
+    1. Re-request the download, and then discover it is done.
+    '''
 
     with pytest.raises(Exception):
         # Will fail with one file downloaded.
@@ -701,7 +726,7 @@ async def test_resume_download_missing_files(transform_status_fails_once_then_go
 
     r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     assert len(r) == 2
-    assert False, 'Request for a transform should have been called only once'
+    transform_status_fails_once_then_good.assert_called_once()
 
 
 @pytest.mark.asyncio
