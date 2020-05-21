@@ -7,6 +7,8 @@ from pathlib import Path
 import tempfile
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
+import weakref
+from weakref import WeakValueDictionary
 
 import aiohttp
 import awkward
@@ -196,6 +198,103 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     return futures
 
 
+async def get_data_cache_calc(request_id: str,
+                              client: aiohttp.ClientSession,
+                              servicex_endpoint: str,
+                              notifier: _status_update_wrapper,
+                              data_type: str,
+                              file_name_func: Callable[[str, str], str],
+                              redownload_files: bool) \
+        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
+    # Sit here waiting for the results to come in. In case there are missing items
+    # in the minio stream, we will avoid counting that. That should be an explicit error taken
+    # care of further on down in the code.
+    done = False
+    files_downloading = {}
+    last_files_processed = 0
+    first = True
+    while not done:
+        if not first:
+            await asyncio.sleep(servicex_status_poll_time)
+        first = False
+        files_remaining, files_processed, files_failed = \
+            await _get_transform_status(client, servicex_endpoint, request_id)
+        notifier.update(processed=files_processed)
+        if files_failed is not None:
+            notifier.update(failed=files_failed)
+        if files_remaining is not None:
+            t = files_remaining + files_processed \
+                + (files_failed if files_failed is not None else 0)
+            notifier.update(total=t)
+        notifier.broadcast()
+        if files_processed > last_files_processed:
+            new_downloads = await _download_new_files(files_downloading.keys(),
+                                                      servicex_endpoint, request_id,
+                                                      data_type, file_name_func,
+                                                      redownload_files, notifier)
+            files_downloading.update(new_downloads)
+            last_files_processed = files_processed
+
+        done = (files_remaining is not None) and files_remaining == 0
+
+    # If any files have failed, then no need to get down anything from this request!
+    if notifier.failed > 0:
+        raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
+                                 f'out of {notifier.total} files.')
+
+    # We have the complete list of files to cache. So lets rename them.
+    # TODO: Caching logic is too spread out.
+    t_cache_file = _file_object_cache_filename_temp(request_id)
+    if t_cache_file.exists():
+        t_cache_file.rename(_file_object_cache_filename(request_id))
+
+    # Now, wait for all of them to complete so we can stich the files together.
+    all_file_info = list(await asyncio.gather(*files_downloading.values()))
+
+    # return the result, sorting to keep the data in order.
+    assert len(all_file_info) > 0, \
+        'Internal error: no error from ServiceX, but also no files back either!'
+    all_file_info.sort(key=lambda k: k[0])
+    all_files = [v[1] for v in all_file_info]
+
+    if data_type == 'root-file' or data_type == 'parquet':
+        return list(all_files)
+
+    # We need to shift the files to another format.
+    if len(all_files) == 1:
+        return all_files[0]
+    else:
+        if data_type == 'pandas':
+            r = pd.concat(all_files)
+            assert isinstance(r, pd.DataFrame)
+            return r
+        elif data_type == 'awkward':
+            col_names = all_files[0].keys()
+            return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
+        else:
+            raise ServiceXFrontEndException(f'Internal programming error - {data_type} should '
+                                            'not be unknown.')
+
+
+# Cache the data that is coming back.
+_data_cache \
+    = {}
+# TODO: Weak reference is always deleted right away
+# See https://stackify.com/python-garbage-collection/
+# We are creating too many objects to keep any real data around.
+# Perhaps switch to a LRU algorithm that maintains something about
+# size?
+#    = weakref.WeakValueDictionary()
+# TODO: Why does the following type ref for _data_cache cause an exception?
+# : WeakValueDictionary[str, Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]]
+
+
+class weak_holder:
+    'Holder to hold all types of objects - weakref cannot hold lists, etc'
+    def __init__(self, o):
+        self.o = o
+
+
 async def get_data_async(selection_query: str, dataset: str,
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
                          data_type: str = 'pandas',
@@ -225,10 +324,10 @@ async def get_data_async(selection_query: str, dataset: str,
         file_name_func      Returns a path where the file should be written. The path must be
                             fully qualified (`storage_directory` must not be set if this is used).
                             See notes on how to use this lambda.
-        redownload_files    If true, evne if the file is already in the requested location,
+        redownload_files    If true, even if the file is already in the requested location,
                             re-download it.
         status_callback     If specified, called as we grab files and download them with updates.
-                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            Called with arguments TotalFiles, Processed By ServiceX, Downloaded
                             locally. TotalFiles might change over time as more files are found by
                             servicex.
         use_cache           Use the local query cache. If false it will force a re-run, and the
@@ -250,7 +349,7 @@ async def get_data_async(selection_query: str, dataset: str,
         to process this request. As the `ServiceX` back-end evolves this will be come the max
         number of workers.
     - This is the python `async` interface (see python documentation on `await` and
-        `async`). It should be used if you plan to make more than one simultanious query
+        `async`). It should be used if you plan to make more than one simultaneous query
         to the system.
     - The `file_name_func` function takes two arguments, the first is the request-id and
       the second is the full minio object name.
@@ -258,7 +357,7 @@ async def get_data_async(selection_query: str, dataset: str,
           are not allowed on your filesystem.
         - The file path does not need to have been created - `os.mkdir` will be run on the
           filepath.
-        - It will almost certianly be the case that the call-back for this function occurs
+        - It will almost certainly be the case that the call-back for this function occurs
           on a different thread than you made the initial call to `get_data_async`. Make sure
           your code is thread safe!
         - The filename should be safe in the sense that a ".downloading" can be appended to
@@ -312,79 +411,25 @@ async def get_data_async(selection_query: str, dataset: str,
 
     # Start the async context manager. We should use only one for the whole app, however,
     # that just isn't going to work here. The advantage is better handling of connections.
-    # TODO: Option to pass in the connectino pool?
+    # TODO: Option to pass in the connection pool?
     async with aiohttp.ClientSession() as client:
         request_id = await _submit_or_lookup_transform(client, servicex_endpoint,
                                                        use_cache, json_query)
 
-        # Sit here waiting for the results to come in. In case there are missing items
-        # in the minio stream, we will avoid counting that. That should be an explicit error taken
-        # care of further on down in the code.
-        done = False
-        files_downloading = {}
-        last_files_processed = 0
-        first = True
-        while not done:
-            if not first:
-                await asyncio.sleep(servicex_status_poll_time)
-            first = False
-            files_remaining, files_processed, files_failed = \
-                await _get_transform_status(client, servicex_endpoint, request_id)
-            notifier.update(processed=files_processed)
-            if files_failed is not None:
-                notifier.update(failed=files_failed)
-            if files_remaining is not None:
-                t = files_remaining + files_processed \
-                    + (files_failed if files_failed is not None else 0)
-                notifier.update(total=t)
-            notifier.broadcast()
-            if files_processed > last_files_processed:
-                new_downloads = await _download_new_files(files_downloading.keys(),
-                                                          servicex_endpoint, request_id,
-                                                          data_type, file_name_func,
-                                                          redownload_files, notifier)
-                files_downloading.update(new_downloads)
-                last_files_processed = files_processed
-
-            done = (files_remaining is not None) and files_remaining == 0
-
-        # If any files have failed, then no need to get down anything from this request!
-        if notifier.failed > 0:
-            raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
-                                     f'out of {notifier.total} files.')
-
-        # We have the complete list of files to cache. So lets rename them.
-        # TODO: Caching logic is too spread out.
-        t_cache_file = _file_object_cache_filename_temp(request_id)
-        if t_cache_file.exists():
-            t_cache_file.rename(_file_object_cache_filename(request_id))
-
-        # Now, wait for all of them to complete so we can stich the files together.
-        all_file_info = list(await asyncio.gather(*files_downloading.values()))
-
-        # return the result, sorting to keep the data in order.
-        assert len(all_file_info) > 0, \
-            'Internal error: no error from ServiceX, but also no files back either!'
-        all_file_info.sort(key=lambda k: k[0])
-        all_files = [v[1] for v in all_file_info]
-
-        if data_type == 'root-file' or data_type == 'parquet':
-            return list(all_files)
-
-        # We need to shift the files to another format.
-        if len(all_files) == 1:
-            return all_files[0]
-        else:
-            if data_type == 'pandas':
-                r = pd.concat(all_files)
-                assert isinstance(r, pd.DataFrame)
-                return r
-            elif data_type == 'awkward':
-                col_names = all_files[0].keys()
-                return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
-            else:
-                raise ServiceXFrontEndException(f'Internal programming error - {data_type} should '
-                                                'not be unknown.')
+        # We have this in memory - so return it!
+        global _data_cache
+        result = _data_cache.get(request_id, None)
+        if result is None:
+            r = await get_data_cache_calc(request_id,
+                                          client,
+                                          servicex_endpoint,
+                                          notifier,
+                                          data_type,
+                                          file_name_func,
+                                          redownload_files)
+            result = weak_holder(r)
+            _data_cache[request_id] = result
+        return result.o
 
 
 def get_data(selection_query: str, dataset: str,

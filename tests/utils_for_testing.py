@@ -52,6 +52,11 @@ def delete_default_downloaded_files():
     sx.default_file_cache_name = download_location
     if os.path.exists(download_location):
         shutil.rmtree(download_location)
+    import servicex.servicex as ssx
+    import weakref
+    # ssx._data_cache = weakref.WeakValueDictionary()
+    ssx._data_cache = {}
     yield
     if os.path.exists(download_location):
         shutil.rmtree(download_location)
+    ssx._data_cache = weakref.WeakValueDictionary()
