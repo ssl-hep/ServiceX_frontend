@@ -613,6 +613,9 @@ async def test_good_download_files_2(good_transform_request, reduce_wait_time, f
 async def test_download_cached_nonet(good_transform_request, reduce_wait_time, files_back_1):
     'Make sure we do not query the network if we already have everything local'
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    # Make sure to turn off the in-memory cache
+    import servicex.servicex as sxx
+    sxx._data_cache = {}
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     _ , f_list = files_back_1
     json = good_transform_request
