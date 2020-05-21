@@ -614,9 +614,9 @@ async def test_download_cached_nonet(good_transform_request, reduce_wait_time, f
     'Make sure we do not query the network if we already have everything local'
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    f_get, f_list = files_back_1
+    _ , f_list = files_back_1
     json = good_transform_request
-    assert json['called'] == 1
+    assert json['called'] == 1, 'Expected transform request to have been made only once'
     f_list.assert_called_once(), "Only a single transform request made"
 
 
