@@ -290,14 +290,6 @@ async def get_data_cache_calc(request_id: str,
 # Cache the data that is coming back.
 _data_cache \
     = {}
-# TODO: Weak reference is always deleted right away
-# See https://stackify.com/python-garbage-collection/
-# We are creating too many objects to keep any real data around.
-# Perhaps switch to a LRU algorithm that maintains something about
-# size?
-#    = weakref.WeakValueDictionary()
-# TODO: Why does the following type ref for _data_cache cause an exception?
-# : WeakValueDictionary[str, Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]]
 
 
 class weak_holder:
