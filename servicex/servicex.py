@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
 
 import aiohttp
+from aiohttp.client import request
 import awkward
 from minio import Minio, ResponseError
 import numpy as np
@@ -291,6 +292,11 @@ async def get_data_cache_calc(request_id: str,
 _data_cache \
     = {}
 
+# Locks a query incase two identical queries come in at the
+# same time.
+_query_locks = {}
+_query_locker = asyncio.Lock()
+
 
 class weak_holder:
     'Holder to hold all types of objects - weakref cannot hold lists, etc'
@@ -423,34 +429,44 @@ async def get_data_async(selection_query: str, dataset: str,
             request_id = await _submit_or_lookup_transform(client, servicex_endpoint,
                                                            use_cache, json_query)
 
-            # We have this in memory - so return it!
-            global _data_cache
-            result = _data_cache.get(request_id, None)
-            if result is not None:
-                done = True
-            else:
-                # Run this as we do not have it in the cache
-                try:
-                    retry, r = await get_data_cache_calc(request_id,
-                                                         client,
-                                                         servicex_endpoint,
-                                                         notifier,
-                                                         data_type,
-                                                         file_name_func,
-                                                         redownload_files)
-                except ServiceX_Exception as sx_e:
-                    if cached_query and "failed to transform" in str(sx_e):
-                        retry = True
-                    else:
-                        raise
+            # If we get a query while we are processing this query, we should
+            # wait.
 
-                if not retry:
-                    result = weak_holder(r)
-                    _data_cache[request_id] = result
+            global _query_locks, _query_locker
+            async with _query_locker:
+                if request_id not in _query_locks:
+                    _query_locks[request_id] = asyncio.Lock()
+                q_lock = _query_locks[request_id]
+
+            async with q_lock:
+                # We have this in memory - so return it!
+                global _data_cache
+                result = _data_cache.get(request_id, None)
+                if result is not None:
                     done = True
                 else:
-                    # Retry - so force us not to use the cache
-                    use_cache = False
+                    # Run this as we do not have it in the cache
+                    try:
+                        retry, r = await get_data_cache_calc(request_id,
+                                                             client,
+                                                             servicex_endpoint,
+                                                             notifier,
+                                                             data_type,
+                                                             file_name_func,
+                                                             redownload_files)
+                    except ServiceX_Exception as sx_e:
+                        if cached_query and "failed to transform" in str(sx_e):
+                            retry = True
+                        else:
+                            raise
+
+                    if not retry:
+                        result = weak_holder(r)
+                        _data_cache[request_id] = result
+                        done = True
+                    else:
+                        # Retry - so force us not to use the cache
+                        use_cache = False
         return result.o
 
 
@@ -483,10 +499,10 @@ def get_data(selection_query: str, dataset: str,
         file_name_func      Returns a path where the file should be written. The path must be
                             fully qualified (`storage_directory` must not be set if this is used).
                             See notes on how to use this lambda.
-        redownload_files    If true, evne if the file is already in the requested location,
+        redownload_files    If true, even if the file is already in the requested location,
                             re-download it.
         status_callback     If specified, called as we grab files and download them with updates.
-                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            Called with arguments TotalFiles, Processed By ServiceX, Downloaded
                             locally. TotalFiles might change over time as more files are found by
                             servicex.
         use_cache           Use the local query cache. If false it will force a re-run, and the
@@ -513,7 +529,7 @@ def get_data(selection_query: str, dataset: str,
           are not allowed on your filesystem.
         - The file path does not need to have been created - `os.mkdir` will be run on the
           filepath.
-        - It will almost certianly be the case that the call-back for this function occurs
+        - It will almost certainly be the case that the call-back for this function occurs
           on a different thread than you made the initial call to `get_data_async`. Make sure
           your code is thread safe!
         - The filename should be safe in the sense that a ".downloading" can be appended to

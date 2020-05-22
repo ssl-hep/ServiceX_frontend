@@ -683,6 +683,17 @@ async def test_download_cached_awkward(good_transform_request, reduce_wait_time,
 
 
 @pytest.mark.asyncio
+async def test_simultaneous_query_not_requeued(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    a_a1 = fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    a_a2 = fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+
+    a1, a2 = await asyncio.gather(a_a1, a_a2)
+    assert good_transform_request["called"] == 1
+    assert a1 is a2
+
+
+@pytest.mark.asyncio
 async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, files_back_1):
     'Download to a specified storage directory'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
