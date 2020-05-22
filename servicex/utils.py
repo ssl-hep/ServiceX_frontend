@@ -95,7 +95,7 @@ def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
 
 
 class _default_wrapper_mgr:
-    'Default prorgress bar'
+    'Default progress bar'
     def __init__(self, sample_name: Optional[str] = None):
         self._tqdm_p = tqdm(total=9e9, desc=sample_name, unit='file',
                             leave=True, dynamic_ncols=True,
