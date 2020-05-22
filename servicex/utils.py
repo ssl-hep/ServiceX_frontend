@@ -184,7 +184,7 @@ async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
     return req_id
 
 
-def _clean_linq(q: str) -> str:
+def clean_linq(q: str) -> str:
     '''
     Normalize the variables in a qastle expression. Should make the
     linq expression more easily comparable even if the algorithm that
