@@ -194,13 +194,6 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
 
     futures = {fname: asyncio.wrap_future(_download_executor.submit(do_download_and_post, fname))
                for fname in new_files}
-    # futures = {fname: _post_process_data(
-    #     data_type,
-    #     await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-    #                                                         request_id, fname, file_name_func,
-    #                                                         redownload_files)),
-    #     notifier)
-    #     for fname in new_files}
     return futures
 
 
@@ -245,6 +238,7 @@ async def get_data_cache_calc(request_id: str,
                 + (files_failed if files_failed is not None else 0)
             notifier.update(total=t)
         notifier.broadcast()
+
         if files_processed > last_files_processed:
             new_downloads = await _download_new_files(files_downloading.keys(),
                                                       servicex_endpoint, request_id,
