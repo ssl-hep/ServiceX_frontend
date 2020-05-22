@@ -102,7 +102,7 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
 
 
 @retry(delay=1, tries=10, exceptions=ResponseError)
-def protected_list_objects(client: Minio, request_id: str) -> List[str]:
+def protected_list_objects(client: Minio, request_id: str) -> Iterable[str]:
     '''
     Returns a list of files that are currently available for
     this request. Will pull the list from the disk cache if possible.
@@ -111,7 +111,7 @@ def protected_list_objects(client: Minio, request_id: str) -> List[str]:
     p = _file_object_cache_filename(request_id)
     p.parent.mkdir(parents=True, exist_ok=True)
     if p.exists():
-        return p.read_text().splitlines()
+        return filter(lambda l: len(l) > 0, p.read_text().splitlines())
 
     # Go out to actually request the list
     listing = [f.object_name for f in client.list_objects(request_id)]

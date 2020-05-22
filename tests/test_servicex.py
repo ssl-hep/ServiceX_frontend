@@ -55,10 +55,10 @@ def files_back_1_fail_initally(mocker):
 
 @pytest.fixture()
 def files_back_2(mocker):
-    mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+    p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
                                                                make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return None
+    p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+    return p_fget, p_list
 
 
 @pytest.fixture()
@@ -675,7 +675,29 @@ async def test_download_cached_nonet(good_transform_request, reduce_wait_time, f
 
 
 @pytest.mark.asyncio
+async def test_download_cached_nonet_2_files(good_transform_request, reduce_wait_time, files_back_2):
+    'Make sure we do not query the network if we already have everything local'
+    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    # Make sure to turn off the in-memory cache
+    import servicex.servicex as sxx
+    sxx._data_cache = {}
+    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    _ , f_list = files_back_2
+    json = good_transform_request
+    assert json['called'] == 1, 'Expected transform request to have been made only once'
+    f_list.assert_called_once(), "Only a single transform request made"
+
+
+@pytest.mark.asyncio
 async def test_download_cached_awkward(good_transform_request, reduce_wait_time, files_back_1):
+    'Simple run with expected results'
+    a1 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    a2 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    assert a1 is a2
+
+
+@pytest.mark.asyncio
+async def test_download_cached_awkward_2_files(good_transform_request, reduce_wait_time, files_back_2):
     'Simple run with expected results'
     a1 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
     a2 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
