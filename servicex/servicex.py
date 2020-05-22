@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
 
 import aiohttp
-from aiohttp.client import request
 import awkward
 from minio import Minio, ResponseError
 import numpy as np
@@ -372,7 +371,7 @@ async def get_data_async(selection_query: str, dataset: str,
         - The filename should be safe in the sense that a ".downloading" can be appended to
           the end of the string without causing any trouble.
     '''
-    # Parameter clean up, API saftey checking
+    # Parameter clean up, API safety checking
     if (data_type != 'pandas') \
             and (data_type != 'awkward') \
             and (data_type != 'parquet') \
@@ -467,6 +466,7 @@ async def get_data_async(selection_query: str, dataset: str,
                     else:
                         # Retry - so force us not to use the cache
                         use_cache = False
+        assert result.o is not None
         return result.o
 
 
