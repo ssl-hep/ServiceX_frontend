@@ -97,7 +97,15 @@ def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
 class _default_wrapper_mgr:
     'Default progress bar'
     def __init__(self, sample_name: Optional[str] = None):
-        self._tqdm_p = tqdm(total=9e9, desc=sample_name, unit='file',
+        self._tqdm_p = None
+        self._tqdm_d = None
+        self._sample_name = sample_name
+
+    def _init_tqdm(self):
+        if self._tqdm_p is not None:
+            return
+
+        self._tqdm_p = tqdm(total=9e9, desc=self._sample_name, unit='file',
                             leave=True, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
@@ -120,6 +128,7 @@ class _default_wrapper_mgr:
             bar.close()
 
     def update(self, total: Optional[int], processed: int, downloaded: int, failed: int):
+        self._init_tqdm()
         self._update_bar(self._tqdm_p, total, processed, failed)
         self._update_bar(self._tqdm_d, total, downloaded, failed)
 
