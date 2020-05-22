@@ -882,7 +882,7 @@ def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
     with pytest.raises(fe.ServiceX_Exception) as e:
         fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
 
-    assert len(f_total) == 1
+    assert len(f_total) == 2
     assert all(i == 2 for i in f_total)
     assert all(i == 1 for i in f_failed)
     assert "failed to transform" in str(e.value)

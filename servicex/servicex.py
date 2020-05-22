@@ -90,8 +90,7 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
 
     # Make sure there is a place to write the output file.
     dir = os.path.dirname(local_filepath)
-    if not os.path.exists(dir):
-        Path(dir).mkdir(parents=True)
+    Path(dir).mkdir(parents=True, exist_ok=True)
 
     # We are going to build a temp file, and download it from there.
     temp_local_filepath = f'{local_filepath}.temp'
@@ -125,8 +124,8 @@ def protected_list_objects(client: Minio, request_id: str) -> List[str]:
     return listing
 
 
-async def _post_process_data(data_type: str, filepath: Tuple[str, str],
-                             notifier: _status_update_wrapper):
+def _post_process_data(data_type: str, filepath: Tuple[str, str],
+                       notifier: _status_update_wrapper):
     '''
     Post-process the data and return the "appropriate" type
     '''
@@ -186,14 +185,22 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
     new_files = [fname for fname in files if fname not in files_queued]
 
     # Submit in a thread pool so they can run and block concurrently (minio doesn't have
-    # an async interface), and then do any post-processing needed.
-    futures = {fname: _post_process_data(
-        data_type,
-        await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                                            request_id, fname, file_name_func,
-                                                            redownload_files)),
-        notifier)
-        for fname in new_files}
+    # an async interface), and then do any post-processing needed. We write this as a function
+    # because it is easier to see what is going on.
+    def do_download_and_post(fname: str):
+        data = _download_file(minio_client, request_id, fname, file_name_func,
+                              redownload_files)
+        return _post_process_data(data_type, data, notifier)
+
+    futures = {fname: asyncio.wrap_future(_download_executor.submit(do_download_and_post, fname))
+               for fname in new_files}
+    # futures = {fname: _post_process_data(
+    #     data_type,
+    #     await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
+    #                                                         request_id, fname, file_name_func,
+    #                                                         redownload_files)),
+    #     notifier)
+    #     for fname in new_files}
     return futures
 
 
@@ -248,11 +255,6 @@ async def get_data_cache_calc(request_id: str,
 
         done = (files_remaining is not None) and files_remaining == 0
 
-    # If any files have failed, then no need to get down anything from this request!
-    if notifier.failed > 0:
-        raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
-                                 f'out of {notifier.total} files.')
-
     # We have the complete list of files to cache. So lets rename them.
     # TODO: Caching logic is too spread out.
     t_cache_file = _file_object_cache_filename_temp(request_id)
@@ -261,6 +263,14 @@ async def get_data_cache_calc(request_id: str,
 
     # Now, wait for all of them to complete so we can stich the files together.
     all_file_info = list(await asyncio.gather(*files_downloading.values()))
+
+    # If any files have failed, then no need to get down anything from this request!
+    # We did need to wait for everything to finish, otherwise downloads will continue,
+    # files will be locked, and, in general, things will be hard to deal with outside
+    # of this function when we return.
+    if notifier.failed > 0:
+        raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
+                                 f'out of {notifier.total} files.')
 
     # return the result, sorting to keep the data in order.
     assert len(all_file_info) > 0, \
