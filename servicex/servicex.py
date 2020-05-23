@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import urllib
 
 import aiohttp
+from attr import dataclass
 import awkward
 from minio import Minio, ResponseError
 import numpy as np
@@ -22,6 +23,247 @@ from .utils import (
     clean_linq, _file_object_cache_filename, _file_object_cache_filename_temp,
     _query_is_cached)
 
+
+# Possible New API Design
+@dataclass
+class Options:
+    # The URL end point for the service
+    service_endpoint: str = 'http://localhost:5000/servicex'
+
+    # The image for the transformer
+    image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4'
+
+    # Max number of transformer to use
+    max_workers: int = 20
+
+    # Local path where files should be downloaded (also used for caching).
+    # None defaults to user's temp directory.  `storage_directory` and
+    # `file_name_func` can't both be specified.
+    storage_directory: Optional[str] = None
+
+    # Call back function that returns a fully qualified path name given
+    # the request id and the minio object name. `storage_directory` and
+    # `file_name_func` can't both be specified.
+    file_name_func: Optional[Callable[[str, str], str]] = None
+
+    # Force a re-download of files from `servicex`, even if they are
+    # in the local cache.
+    redownload_files: bool = False
+
+    # If True, always trigger a re-run on `servicex`. The new files pulled down
+    # will overwrite what is currently on the cache
+    use_cache: bool = True
+
+    # If specified, called as we grab files and download them with updates.
+    # Called with arguments TotalFiles, Processed By ServiceX, Downloaded
+    # locally. TotalFiles might change over time as more files are found by
+    # servicex. Default uses the `tdqm` library to display a text progress bar
+    # in the terminal, and a "graphical" progress bar in jupyter
+    status_callback: Optional[Callable[[Optional[int], int, int, int], None]] \
+        = _run_default_wrapper
+
+
+async def get_data_rootfiles_async(selection_query: str, dataset: str,
+                                   options: Options = None, **kwargs) \
+        -> List[str]:
+    '''
+    Return data from a ServiceX query as a list of root files. The call returns
+    immediately - `await` on the result to obtain the list of files.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        files           List of paths to files
+    '''
+    ...
+
+
+def get_data_rootfiles(selection_query: str, dataset: str,
+                       options: Options = None, **kwargs) \
+        -> List[str]:
+    '''
+    Return data from a ServiceX query as a list of root files. This is
+    a blocking call.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        files           List of paths to files
+    '''
+    ...
+
+
+async def get_data_pandas_df_async(selection_query: str, dataset: str,
+                                   options: Options = None, **kwargs) \
+        -> pd.DataFrame:
+    '''
+    Return data from a ServiceX query as a `pandas` `DataFrame`. The call returns
+    immediately - `await` on the result to obtain the `DataFrame`.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        df              Single dataframe containing all the data.
+
+    Notes:
+        If the data requested cannot be expressed as a simple table, this will throw an
+        exception.
+    '''
+    ...
+
+
+def get_data_pandas_df(selection_query: str, dataset: str,
+                       options: Options = None, **kwargs) \
+        -> pd.DataFrame:
+    '''
+    Return data from a ServiceX query as a `pandas` `DataFrame`. This is a
+    blocking call.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        df              Single dataframe containing all the data.
+
+    Notes:
+        If the data requested cannot be expressed as a simple table, this will throw an
+        exception.
+    '''
+    ...
+
+
+async def get_data_parquet_async(selection_query: str, dataset: str,
+                                 options: Options = None, **kwargs) \
+        -> List[str]:
+    '''
+    Return data from a ServiceX query as a list of parquet files. The call returns
+    immediately - `await` on the result to obtain the list of files.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        files           List of paths to files
+    '''
+    ...
+
+
+def get_data_parquet(selection_query: str, dataset: str,
+                     options: Options = None, **kwargs) \
+        -> List[str]:
+    '''
+    Return data from a ServiceX query as a list of parquet files. This is a
+    blocking call.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        files           List of paths to files
+    '''
+    ...
+
+
+async def get_data_awkward_async(selection_query: str, dataset: str,
+                                 options: Options = None, **kwargs) \
+        -> Dict[bytes, awkward.JaggedArray]:
+    '''
+    Return data from a ServiceX query as single `JaggedArray`. The call returns
+    immediately - `await` on the result to obtain data.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        a               Single in-memory awkward array of all the data requested.
+    '''
+    ...
+
+
+def get_data_awkward(selection_query: str, dataset: str,
+                     options: Options = None, **kwargs) \
+        -> Dict[bytes, awkward.JaggedArray]:
+    '''
+    Return data from a ServiceX query as single `JaggedArray`. This is a
+    blocking call.
+
+    Arguments:
+
+    selection_query     `qastle` string that specifies what columns to extract, how to format
+                        them, and how to format them.
+    dataset             Dataset (DID) to run the query against.
+    options             An initialized `Options` object. Defaults to `None`, in which case
+                        the defaults from the `Objects` object are applied.
+    kwargs              List of keyed arguments. The valid names are the same as in the
+                        `Options` argument. They will superseed anything set in the `options`
+                        argument
+
+    Return:
+        a               Single in-memory awkward array of all the data requested.
+    '''
+    ...
+
+
+############## OLD CODE - For example, do not look below this.
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
