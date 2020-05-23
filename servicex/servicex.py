@@ -63,7 +63,7 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
         return files_remaining, files_processed, files_failed
 
 
-def santize_filename(fname: str):
+def sanitize_filename(fname: str):
     'No matter the string given, make it an acceptable filename'
     return fname.replace('*', '_') \
                 .replace(';', '_') \
@@ -398,13 +398,13 @@ async def get_data_async(selection_query: str, dataset: str,
             def file_name(req_id: str, minio_name: str):
                 import servicex.utils as sx
                 return os.path.join(sx.default_file_cache_name, req_id,
-                                    santize_filename(minio_name))
+                                    sanitize_filename(minio_name))
             file_name_func = file_name
         else:
             def file_name(req_id: str, minio_name: str):
                 assert storage_directory is not None
                 return os.path.join(tempfile.gettempdir(), storage_directory,
-                                    santize_filename(minio_name))
+                                    sanitize_filename(minio_name))
             file_name_func = file_name
 
     # Build the query, get a request ID back.

@@ -17,12 +17,14 @@ import servicex as fe
 
 from .utils_for_testing import good_transform_request, ClientSessionMocker, delete_default_downloaded_files  # NOQA
 
+
 @pytest.fixture(scope="module")
 def reduce_wait_time():
-    old_value = fe.servicex.servicex_status_poll_time
-    fe.servicex.servicex_status_poll_time = 0.01
+    import servicex.servicex as ssx
+    old_value = ssx.servicex_status_poll_time
+    ssx.servicex_status_poll_time = 0.01
     yield None
-    fe.servicex.servicex_status_poll_time = old_value
+    ssx.servicex_status_poll_time = old_value
 
 
 def good_copy(a, b, c):
@@ -45,7 +47,7 @@ def files_back_1(mocker):
 
 @pytest.fixture()
 def files_back_1_fail_initally(mocker):
-    'Throw a response error - so the bucket doesn not get created right away'
+    'Throw a response error - so the bucket does not not get created right away'
     response = MagicMock()
     response.data = '<xml></xml>'
     mocker.patch('minio.api.Minio.list_objects', side_effect=[ResponseError(response, 'POST', 'Dude'), [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]])
@@ -56,7 +58,7 @@ def files_back_1_fail_initally(mocker):
 @pytest.fixture()
 def files_back_2(mocker):
     p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                                                               make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
+                                                                        make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
     p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
     return p_fget, p_list
 
@@ -183,6 +185,7 @@ def transform_status_fails_once_then_unknown(mocker):
     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
 
     return post_patch
+
 
 @pytest.fixture()
 def transform_fails_once_then_second_good(mocker):
@@ -395,8 +398,8 @@ def good_requests_indexed(mocker):
         dataset = json['did']
         info = re.search('^[a-z]+_([0-9]+)_([0-9]+)$', dataset)
         query_number = info[1]
-        nfiles = info[2]
-        return ClientSessionMocker(dumps({"request_id": f'{nfiles}_{query_number}'}), 200)
+        n_files = info[2]
+        return ClientSessionMocker(dumps({"request_id": f'{n_files}_{query_number}'}), 200)
     mocker.patch('aiohttp.ClientSession.post', side_effect=call_post)
 
     # Now get back the returns, which are just going to always be the same.
@@ -508,20 +511,20 @@ async def test_bad_datatype_request(good_transform_request, reduce_wait_time, fi
     'Simple run with expected results'
 
     try:
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='forkme')
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='fork_me')
     except fe.ServiceXFrontEndException:
         return
     assert False
 
 
-def test_good_run_single_ds_1file_noasync(good_transform_request, reduce_wait_time, files_back_1):
+def test_good_run_single_ds_1file_no_async(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results, but with the non-async version'
     r = fe.get_data('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458
 
 
-def test_good_run_single_ds_1file_noasync_with_loop(good_transform_request, reduce_wait_time, files_back_1):
+def test_good_run_single_ds_1file_no_async_with_loop(good_transform_request, reduce_wait_time, files_back_1):
     'Async loop has been created for other reasons, and the non-async version still needs to work.'
     _ = asyncio.get_event_loop()
     r = fe.get_data('(valid qastle string)', 'one_ds')
@@ -540,7 +543,7 @@ def test_run_with_running_event_loop(good_transform_request, reduce_wait_time, f
 
 @pytest.mark.asyncio
 async def test_run_with_four_queries(good_requests_indexed, reduce_wait_time, indexed_files_back):
-    'Try to run four transform requests at same time. Make sure each retursn what we expect.'
+    'Try to run four transform requests at same time. Make sure each returns what we expect.'
     r1 = fe.get_data_async('(valid qastle string)', 'ds_0_1')
     r2 = fe.get_data_async('(valid qastle string)', 'ds_1_2')
     r3 = fe.get_data_async('(valid qastle string)', 'ds_2_3')
@@ -554,7 +557,7 @@ async def test_run_with_four_queries(good_requests_indexed, reduce_wait_time, in
 
 @pytest.mark.asyncio
 async def test_run_with_onehundred_queries(good_requests_indexed, reduce_wait_time, indexed_files_back):
-    'Try to run four transform requests at same time. Make sure each retursn what we expect.'
+    'Try to run four transform requests at same time. Make sure each returns what we expect.'
     # Request 100 times, each with 1 file in the return.
     count = 100
     all_requests = [fe.get_data_async('(valid qastle string)', f'ds_{i}_1') for i in range(0, count)]
@@ -668,7 +671,7 @@ async def test_download_cached_nonet(good_transform_request, reduce_wait_time, f
     import servicex.servicex as sxx
     sxx._data_cache = {}
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    _ , f_list = files_back_1
+    _, f_list = files_back_1
     json = good_transform_request
     assert json['called'] == 1, 'Expected transform request to have been made only once'
     f_list.assert_called_once(), "Only a single transform request made"
@@ -682,7 +685,7 @@ async def test_download_cached_nonet_2_files(good_transform_request, reduce_wait
     import servicex.servicex as sxx
     sxx._data_cache = {}
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    _ , f_list = files_back_2
+    _, f_list = files_back_2
     json = good_transform_request
     assert json['called'] == 1, 'Expected transform request to have been made only once'
     f_list.assert_called_once(), "Only a single transform request made"
@@ -817,7 +820,7 @@ async def test_servicex_gone_when_redownload_request(transform_status_fails_once
 async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time):
     '''
     We call to get a transform, and the 1 file fails (gets marked as skip).
-    We then call again, and it works, and we get back the files we want. 
+    We then call again, and it works, and we get back the files we want.
     '''
 
     with pytest.raises(Exception):
@@ -889,7 +892,7 @@ def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_ti
 def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
     'ServiceX fails one of its files'
     'There are times service x returns a few number of files total for one query, but then resumes having a good number'
-    f_total =[]
+    f_total = []
     f_processed = []
     f_downloaded = []
     f_failed = []
