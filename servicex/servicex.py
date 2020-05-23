@@ -408,14 +408,14 @@ async def get_data_async(selection_query: str, dataset: str,
             file_name_func = file_name
 
     # Build the query, get a request ID back.
-    json_query = {
+    json_query: Dict[str, str] = {
         "did": dataset,
         "selection": selection_query,
         "image": image,
         "result-destination": "object-store",
         "result-format": 'parquet' if data_type == 'parquet' else "root-file",
-        "chunk-size": 1000,
-        "workers": max_workers
+        "chunk-size": '1000',
+        "workers": str(max_workers)
     }
 
     # Log this
@@ -446,9 +446,11 @@ async def get_data_async(selection_query: str, dataset: str,
                 global _data_cache
                 result = _data_cache.get(request_id, None)
                 if result is not None:
-                    done = True
+                    return result.o
                 else:
                     # Run this as we do not have it in the cache
+                    retry = False
+                    r = None
                     try:
                         retry, r = await get_data_cache_calc(request_id,
                                                              client,
@@ -464,14 +466,15 @@ async def get_data_async(selection_query: str, dataset: str,
                             raise
 
                     if not retry:
+                        assert r is not None, 'Internal error'
                         result = weak_holder(r)
                         _data_cache[request_id] = result
-                        done = True
+                        return r
                     else:
                         # Retry - so force us not to use the cache
                         use_cache = False
-        assert result.o is not None
-        return result.o
+
+    assert False, 'Internal programming error - should not have gotten here!'
 
 
 def get_data(selection_query: str, dataset: str,

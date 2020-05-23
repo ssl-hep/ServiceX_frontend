@@ -97,8 +97,8 @@ def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
 class _default_wrapper_mgr:
     'Default progress bar'
     def __init__(self, sample_name: Optional[str] = None):
-        self._tqdm_p = None
-        self._tqdm_d = None
+        self._tqdm_p: Optional[tqdm] = None
+        self._tqdm_d: Optional[tqdm] = None
         self._sample_name = sample_name
 
     def _init_tqdm(self):
@@ -112,7 +112,8 @@ class _default_wrapper_mgr:
                             leave=True, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
-    def _update_bar(self, bar: tqdm, total: Optional[int], num: int, failed: int):
+    def _update_bar(self, bar: Optional[tqdm], total: Optional[int], num: int, failed: int):
+        assert bar is not None, 'Internal error - bar was not initalized'
         if total is not None:
             if bar.total != total:
                 # There is a bug in the tqm library if running in a notebook
