@@ -9,9 +9,12 @@
         "--no-cov"
     ],
     "cSpell.words": [
+        "NOQA",
         "Reconstructor",
         "aiohttp",
+        "linq",
         "pytest",
-        "qastle"
+        "qastle",
+        "servicex"
     ]
 }
