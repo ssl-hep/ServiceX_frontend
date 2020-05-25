@@ -28,7 +28,8 @@ setup(name="servicex",
           "aiohttp~=3.6",
           "minio~=5.0",
           "tqdm~=4.0",
-          "qastle==0.7"
+          "qastle==0.7",
+          'make_it_sync==1.0.0a1'
       ],
       extras_require={
           'test': [

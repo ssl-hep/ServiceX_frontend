@@ -47,6 +47,14 @@
         "sslhep",
         "tqdm",
         "xaod",
+        "dcache",
+        "fget",
+        "fname",
+        "linq",
+        "minio",
+        "pytest",
+        "qastle",
+        "servicex",
         "xrootd"
     ]
 }

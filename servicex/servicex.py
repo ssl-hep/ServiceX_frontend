@@ -11,6 +11,7 @@ import urllib
 import aiohttp
 from attr import dataclass
 import awkward
+from make_it_sync import make_sync
 from minio import Minio, ResponseError
 import numpy as np
 import pandas as pd
@@ -18,10 +19,17 @@ from retry import retry
 import uproot
 
 from .utils import (
-    ServiceXFrontEndException, ServiceX_Exception, _default_wrapper_mgr,
-    _run_default_wrapper, _status_update_wrapper, _submit_or_lookup_transform,
-    clean_linq, _file_object_cache_filename, _file_object_cache_filename_temp,
-    _query_is_cached)
+    ServiceXFrontEndException,
+    ServiceX_Exception,
+    _default_wrapper_mgr,
+    _file_object_cache_filename,
+    _file_object_cache_filename_temp,
+    _query_is_cached,
+    _run_default_wrapper,
+    _status_update_wrapper,
+    _submit_or_lookup_transform,
+    clean_linq,
+)
 
 
 # Possible New API Design
@@ -719,93 +727,4 @@ async def get_data_async(selection_query: str, dataset: str,
     assert False, 'Internal programming error - should not have gotten here!'
 
 
-def get_data(selection_query: str, dataset: str,
-             servicex_endpoint: str = 'http://localhost:5000/servicex',
-             data_type: str = 'pandas',
-             image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-             max_workers: int = 20,
-             storage_directory: Optional[str] = None,
-             file_name_func: Callable[[str, str], str] = None,
-             redownload_files: bool = False,
-             use_cache: bool = True,
-             status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
-             = _run_default_wrapper) \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
-    '''
-    Return data from a query with data sets.
-
-    Arguments:
-        selection_query     `qastle` string that specifies what columns to extract, how to format
-                            them, and how to format them.
-        datasets            Dataset (DID) to run the query against.
-        service_endpoint    The URL where the instance of ServivceX we are querying lives
-        data_type           How should the data come back? 'pandas', 'awkward', and 'root-file'
-                            are the only legal values. Defaults to 'pandas'
-        image               ServiceX image that should run this.
-        max_workers         Max number of workers that will run to process this request.
-        storage_directory   Location where files should be downloaded. If None is specified then
-                            they are stored in the machine's temp directory.
-        file_name_func      Returns a path where the file should be written. The path must be
-                            fully qualified (`storage_directory` must not be set if this is used).
-                            See notes on how to use this lambda.
-        redownload_files    If true, even if the file is already in the requested location,
-                            re-download it.
-        status_callback     If specified, called as we grab files and download them with updates.
-                            Called with arguments TotalFiles, Processed By ServiceX, Downloaded
-                            locally. TotalFiles might change over time as more files are found by
-                            servicex.
-        use_cache           Use the local query cache. If false it will force a re-run, and the
-                            result of the run will overwrite what is currently in the cache.
-
-    Returns:
-        df                  Depends on the `data_type` that has been requested:
-                            `data_type == 'pandas'` a single in-memory pandas.DataFrame
-                            `data_type == 'awkward'` a single dict of JaggedArrays
-                            `data_type == 'root-file'` List of paths to root files. You
-                                are responsible for deleting them when done.
-
-    ## Notes
-
-    - There are combinations of image name and and `data_type` and `selection_query` that
-      do not work together. That logic is resolved at the `ServiceX` backend, and if the
-      parameters do not match, an exception will be thrown in your code.
-    - the `max_workers` parameter is currently translated into the actual number of workers
-        to process this request. As the `ServiceX` back-end evolves this will be come the max
-        number of workers.
-    - The `file_name_func` function takes two arguments, the first is the request-id and
-      the second is the full minio object name.
-        - The object name may contain ':', ';', and '*' and perhaps other characters that
-          are not allowed on your filesystem.
-        - The file path does not need to have been created - `os.mkdir` will be run on the
-          filepath.
-        - It will almost certainly be the case that the call-back for this function occurs
-          on a different thread than you made the initial call to `get_data_async`. Make sure
-          your code is thread safe!
-        - The filename should be safe in the sense that a ".downloading" can be appended to
-          the end of the string without causing any trouble.
-    '''
-    loop = asyncio.get_event_loop()
-    if not loop.is_running():
-        r = get_data_async(selection_query, dataset, servicex_endpoint, image=image,
-                           max_workers=max_workers, data_type=data_type,
-                           storage_directory=storage_directory, file_name_func=file_name_func,
-                           redownload_files=redownload_files, status_callback=status_callback,
-                           use_cache=use_cache)
-        return loop.run_until_complete(r)
-    else:
-        def get_data_wrapper(*args, **kwargs):
-            # New thread - get the loop.
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            assert not loop.is_running()
-            try:
-                return loop.run_until_complete(get_data_async(*args, **kwargs))
-            finally:
-                pass
-
-        exector = ThreadPoolExecutor(max_workers=1)
-        future = exector.submit(get_data_wrapper, selection_query, dataset,
-                                servicex_endpoint, image=image,
-                                max_workers=max_workers)
-
-        return future.result()
+get_data = make_sync(get_data_async)
