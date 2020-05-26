@@ -16,6 +16,7 @@ from minio import Minio, ResponseError
 import numpy as np
 import pandas as pd
 from retry import retry
+from typing import Iterator
 import uproot
 
 from .utils import (
@@ -289,6 +290,8 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
         - request-id
         - stats
 
+    If the transform has already completed, we return data from cache.
+
     Arguments:
         endpoint            Web API address where servicex lives
         request_id          The id of the request to check up on
@@ -298,6 +301,11 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
                             been determined
         file_processed      How many files have been successfully processed by the system.
     '''
+    ls = load_cached_file_list(request_id)
+    if ls is not None:
+        return 0, sum(1 for _ in ls), 0
+
+    # Make the actual query
     async with client.get(f'{endpoint}/transformation/{request_id}/status') as response:
         if response.status != 200:
             raise ServiceX_Exception(f'Unable to get transformation status '
@@ -351,6 +359,26 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
     return (bucket_fname, local_filepath)
 
 
+def load_cached_file_list(request_id: str) -> Optional[Iterator[str]]:
+    '''
+    If the request finished and all files were downloaded, return the list of files.
+
+    Arguments:
+
+        request_id          The request id for the query
+
+    Returns
+        None                No query cached
+        List[str]           List of the names of the files that came back.
+    '''
+    p = _file_object_cache_filename(request_id)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        return filter(lambda l: len(l) > 0, p.read_text().splitlines())
+    else:
+        return None
+
+
 @retry(delay=1, tries=10, exceptions=ResponseError)
 def protected_list_objects(client: Minio, request_id: str) -> Iterable[str]:
     '''
@@ -358,10 +386,9 @@ def protected_list_objects(client: Minio, request_id: str) -> Iterable[str]:
     this request. Will pull the list from the disk cache if possible.
     '''
     # Try to fetch from cache
-    p = _file_object_cache_filename(request_id)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    if p.exists():
-        return filter(lambda l: len(l) > 0, p.read_text().splitlines())
+    cached_files = load_cached_file_list(request_id)
+    if cached_files is not None:
+        return cached_files
 
     # Go out to actually request the list
     listing = [f.object_name for f in client.list_objects(request_id)]
@@ -499,12 +526,6 @@ async def get_data_cache_calc(request_id: str,
 
         done = (files_remaining is not None) and files_remaining == 0
 
-    # We have the complete list of files to cache. So lets rename them.
-    # TODO: Caching logic is too spread out.
-    t_cache_file = _file_object_cache_filename_temp(request_id)
-    if t_cache_file.exists():
-        t_cache_file.rename(_file_object_cache_filename(request_id))
-
     # Now, wait for all of them to complete so we can stich the files together.
     all_file_info = list(await asyncio.gather(*files_downloading.values()))
 
@@ -515,6 +536,12 @@ async def get_data_cache_calc(request_id: str,
     if notifier.failed > 0:
         raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
                                  f'out of {notifier.total} files.')
+
+    # We have the complete list of files to cache. So lets rename them.
+    # TODO: Caching logic is too spread out.
+    t_cache_file = _file_object_cache_filename_temp(request_id)
+    if t_cache_file.exists():
+        t_cache_file.rename(_file_object_cache_filename(request_id))
 
     # return the result, sorting to keep the data in order.
     assert len(all_file_info) > 0, \

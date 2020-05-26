@@ -15,7 +15,7 @@ import pytest
 
 import servicex as fe
 
-from .utils_for_testing import good_transform_request, ClientSessionMocker, delete_default_downloaded_files  # NOQA
+from .utils_for_testing import ClientSessionMocker, delete_default_downloaded_files  # NOQA
 
 
 @pytest.fixture(scope="module")
@@ -198,15 +198,16 @@ def transform_fails_once_then_second_good(mocker):
     request_id_1 = "1234-4433-111-34-22-444"
     request_id_2 = "1234-4433-111-34-22-555"
 
-    request_id = request_id_1
+    request_id = None
 
     # For this we always accept the transform request.
     def call_post():
         nonlocal request_id, request_id_1, request_id_2
-        try:
-            return ClientSessionMocker(dumps({"request_id": request_id}), 200)
-        finally:
+        if request_id is None:
+            request_id = request_id_1
+        else:
             request_id = request_id_2
+        return ClientSessionMocker(dumps({"request_id": request_id}), 200)
 
     post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
 
@@ -305,9 +306,9 @@ def good_transform_request(mocker):
     mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
 
     r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
-    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+    status_mock = mocker.patch('aiohttp.ClientSession.get', return_value=r2)
 
-    return called_json_data
+    return called_json_data, status_mock
 
 
 @pytest.fixture()
@@ -483,14 +484,14 @@ async def test_bad_status_return(good_transform_bad_status, reduce_wait_time, fi
 async def test_image_spec(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     await fe.get_data_async('(valid qastle string)', 'one_ds', image='fork-it-over:latest')
-    called = good_transform_request
+    called = good_transform_request[0]
     assert called['image'] == 'fork-it-over:latest'
 
 
 def test_max_workers_spec(good_transform_request, reduce_wait_time, files_back_1):
     'Simple run with expected results'
     fe.get_data('(valid qastle string)', 'one_ds', max_workers=50)
-    called = good_transform_request
+    called = good_transform_request[0]
     assert called['workers'] == '50'
 
 
@@ -618,7 +619,7 @@ async def test_good_download_files_parquet(good_transform_request, reduce_wait_t
     assert len(r) == 1
     assert isinstance(r[0], str)
     assert os.path.exists(r[0])
-    called = good_transform_request
+    called = good_transform_request[0]
     assert called['result-format'] == 'parquet'
 
 
@@ -667,28 +668,32 @@ async def test_good_download_files_2(good_transform_request, reduce_wait_time, f
 async def test_download_cached_nonet(good_transform_request, reduce_wait_time, files_back_1):
     'Make sure we do not query the network if we already have everything local'
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    status_called = good_transform_request[1].call_count
     # Make sure to turn off the in-memory cache
     import servicex.servicex as sxx
     sxx._data_cache = {}
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     _, f_list = files_back_1
-    json = good_transform_request
+    json = good_transform_request[0]
     assert json['called'] == 1, 'Expected transform request to have been made only once'
     f_list.assert_called_once(), "Only a single transform request made"
+    assert good_transform_request[1].call_count == status_called
 
 
 @pytest.mark.asyncio
 async def test_download_cached_nonet_2_files(good_transform_request, reduce_wait_time, files_back_2):
     'Make sure we do not query the network if we already have everything local'
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    status_called = good_transform_request[1].call_count
     # Make sure to turn off the in-memory cache
     import servicex.servicex as sxx
     sxx._data_cache = {}
     await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
     _, f_list = files_back_2
-    json = good_transform_request
+    json = good_transform_request[0]
     assert json['called'] == 1, 'Expected transform request to have been made only once'
     f_list.assert_called_once(), "Only a single transform request made"
+    assert good_transform_request[1].call_count == status_called
 
 
 @pytest.mark.asyncio
@@ -714,7 +719,7 @@ async def test_simultaneous_query_not_requeued(good_transform_request, reduce_wa
     a_a2 = fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
 
     a1, a2 = await asyncio.gather(a_a1, a_a2)
-    assert good_transform_request["called"] == 1
+    assert good_transform_request[0]["called"] == 1
     assert a1 is a2
 
 
