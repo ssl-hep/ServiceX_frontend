@@ -1,4 +1,5 @@
 # Main front end interface
+from abc import ABC, abstractmethod
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import logging
@@ -6,17 +7,17 @@ import os
 from pathlib import Path
 import tempfile
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Iterator
 import urllib
+import functools
 
 import aiohttp
-from attr import dataclass
 import awkward
 from make_it_sync import make_sync
 from minio import Minio, ResponseError
 import numpy as np
 import pandas as pd
 from retry import retry
-from typing import Iterator
 import uproot
 
 from .utils import (
@@ -34,245 +35,171 @@ from .utils import (
 
 
 # Possible New API Design
-@dataclass
-class Options:
-    # The URL end point for the service
-    service_endpoint: str = 'http://localhost:5000/servicex'
-
-    # The image for the transformer
-    image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4'
-
-    # Max number of transformer to use
-    max_workers: int = 20
-
-    # Local path where files should be downloaded (also used for caching).
-    # None defaults to user's temp directory.  `storage_directory` and
-    # `file_name_func` can't both be specified.
-    storage_directory: Optional[str] = None
-
-    # Call back function that returns a fully qualified path name given
-    # the request id and the minio object name. `storage_directory` and
-    # `file_name_func` can't both be specified.
-    file_name_func: Optional[Callable[[str, str], str]] = None
-
-    # Force a re-download of files from `servicex`, even if they are
-    # in the local cache.
-    redownload_files: bool = False
-
-    # If True, always trigger a re-run on `servicex`. The new files pulled down
-    # will overwrite what is currently on the cache
-    use_cache: bool = True
-
-    # If specified, called as we grab files and download them with updates.
-    # Called with arguments TotalFiles, Processed By ServiceX, Downloaded
-    # locally. TotalFiles might change over time as more files are found by
-    # servicex. Default uses the `tdqm` library to display a text progress bar
-    # in the terminal, and a "graphical" progress bar in jupyter
-    status_callback: Optional[Callable[[Optional[int], int, int, int], None]] \
-        = _run_default_wrapper
-
-
-async def get_data_rootfiles_async(selection_query: str, dataset: str,
-                                   options: Options = None, **kwargs) \
-        -> List[str]:
+class ServiceXABC(ABC):
     '''
-    Return data from a ServiceX query as a list of root files. The call returns
-    immediately - `await` on the result to obtain the list of files.
+    Abstract base class for accessing the ServiceX front-end for a particular dataset.
 
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        files           List of paths to files
+    A light weight, mostly immutable, base class that holds basic configuration information for use
+    with ServiceX file access, including the dataset name. Subclasses implement the various access
+    methods. Note that not all methods may be accessible!
     '''
-    ...
+
+    def __init__(self,
+                 dataset: str,
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 storage_directory: Optional[str] = None,
+                 file_name_func: Optional[Callable[[str, str], str]] = None,
+                 max_workers: int = 20,
+                 status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
+                 = _run_default_wrapper):
+        '''
+        Create and configure a ServiceX object for a dataset.
+
+        Arguments
+            dataset             Name of a dataset from which queries will be selected.
+            service_endpoint    Where the ServiceX web API is found
+            image               Name of transformer image to use to transform the data
+            storage_directory   Location to cache data that comes back from ServiceX. Data can
+                                be reused between invocations.
+            file_name_func      Allows for unique naming of the files that come back. Rarely used.
+            max_workers         Maximum number of transformers to run simultaneously on ServiceX.
+            status_callback     Callback to update client on status of the query. See Notes.
 
 
-def get_data_rootfiles(selection_query: str, dataset: str,
-                       options: Options = None, **kwargs) \
-        -> List[str]:
+        Notes:
+            The `status_callback` argument, by default, uses the `tqdm` library to render progress
+            bars in a terminal window or a graphic in a Jupyter notebook (with proper jupyter
+            extensions installed). If `status_callback` is specified as None, no updates will be
+            rendered. A custom callback function can also be specified which takes `(total_files,
+            transformed, downloaded, skipped)` as an argument. The `total_files` parameter may be
+            `None` until the system knows how many files need to be processed (and some files can
+            even be completed before that is known).
+        '''
+        self._dataset = dataset
+        self._image = image
+        self._storage_directory = storage_directory
+        self._file_name_func = file_name_func
+        self._max_workers = max_workers
+        self._status_callback = status_callback
+
+    @abstractmethod
+    async def get_data_rootfiles_async(self, selection_query: str) -> List[str]:
+        '''
+        Fetch query data from ServiceX matching `selection_query` and return it as
+        a list of root files. The files are uniquely ordered (the same query will always
+        return the same order).
+
+        Arguments:
+            selection_query     The `qastle` string specifying the data to be queried
+
+        Returns:
+            root_files          The list of root files
+        '''
+        pass
+
+    @abstractmethod
+    async def get_data_pandas_df_async(self, selection_query: str) -> pd.DataFrame:
+        '''
+        Fetch query data from ServiceX matching `selection_query` and return it as
+        a pandas dataframe. The data is uniquely ordered (the same query will always
+        return the same order).
+
+        Arguments:
+            selection_query     The `qastle` string specifying the data to be queried
+
+        Returns:
+            df                  The pandas dataframe
+
+        Exceptions:
+            xxx                 If the data is not the correct shape (e.g. a flat,
+                                rectangular table).
+        '''
+        pass
+
+    @abstractmethod
+    async def get_data_awkward_async(self, selection_query: str) \
+            -> Dict[bytes, Union[awkward.JaggedArray, np.ndarray]]:
+        '''
+        Fetch query data from ServiceX matching `selection_query` and return it as
+        dictionary of awkward arrays, an entry for each column. The data is uniquely
+        ordered (the same query will always return the same order).
+
+        Arguments:
+            selection_query     The `qastle` string specifying the data to be queried
+
+        Returns:
+            a                   Dictionary of jagged arrays (as needed), one for each
+                                column. The dictionary keys are `bytes` to support possible
+                                unicode characters.
+        '''
+        pass
+
+    @abstractmethod
+    async def get_data_parquet_async(self, selection_query: str) -> List[str]:
+        '''
+        Fetch query data from ServiceX matching `selection_query` and return it as
+        a list of parquet files. The files are uniquely ordered (the same query will always
+        return the same order).
+
+        Arguments:
+            selection_query     The `qastle` string specifying the data to be queried
+
+        Returns:
+            root_files          The list of parquet files
+        '''
+        pass
+
+    # Define the synchronous versions of the async methods for easy of use
+
+    get_data_rootfiles = make_sync(get_data_rootfiles_async)
+    get_data_pandas_df = make_sync(get_data_pandas_df_async)
+    get_data_awkward = make_sync(get_data_awkward_async)
+    get_data_parquet = make_sync(get_data_parquet_async)
+
+    def ignore_cache(self):
+        '''
+        A context manager for use in a with statement that will cause all calls
+        to `get_data` routines to ignore any local caching. This will likely force
+        ServiceX to re-run the query. Only queries against this dataset will ignore
+        the cache.
+        '''
+        return None
+
+
+def ignore_cache():
     '''
-    Return data from a ServiceX query as a list of root files. This is
-    a blocking call.
-
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        files           List of paths to files
+        A context manager for use in a with statement that will cause all calls
+        to `get_data` routines to ignore any local caching. This will likely force
+        ServiceX to re-run the query. Only queries against this dataset will ignore
+        the cache.
     '''
-    ...
+    pass
 
 
-async def get_data_pandas_df_async(selection_query: str, dataset: str,
-                                   options: Options = None, **kwargs) \
-        -> pd.DataFrame:
+class ServiceX(ServiceXABC):
     '''
-    Return data from a ServiceX query as a `pandas` `DataFrame`. The call returns
-    immediately - `await` on the result to obtain the `DataFrame`.
-
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        df              Single dataframe containing all the data.
-
-    Notes:
-        If the data requested cannot be expressed as a simple table, this will throw an
-        exception.
+    ServiceX on the web.
     '''
-    ...
+    def __init__(self,
+                 dataset: str,
+                 service_endpoint: str = 'http://localhost:5000/servicex',
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 storage_directory: Optional[str] = None,
+                 file_name_func: Optional[Callable[[str, str], str]] = None,
+                 max_workers: int = 20,
+                 status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
+                 = _run_default_wrapper):
+        ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
+                             max_workers, status_callback)
+        self._endpoint = service_endpoint
 
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
+    async def get_data_rootfiles_async(self, selection_query: str):
+        # Need to implement this guy
+        raise NotImplementedError()
 
-def get_data_pandas_df(selection_query: str, dataset: str,
-                       options: Options = None, **kwargs) \
-        -> pd.DataFrame:
-    '''
-    Return data from a ServiceX query as a `pandas` `DataFrame`. This is a
-    blocking call.
+# ##### Below here is old (but working!) code. For reviewing API please ignore.
 
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        df              Single dataframe containing all the data.
-
-    Notes:
-        If the data requested cannot be expressed as a simple table, this will throw an
-        exception.
-    '''
-    ...
-
-
-async def get_data_parquet_async(selection_query: str, dataset: str,
-                                 options: Options = None, **kwargs) \
-        -> List[str]:
-    '''
-    Return data from a ServiceX query as a list of parquet files. The call returns
-    immediately - `await` on the result to obtain the list of files.
-
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        files           List of paths to files
-    '''
-    ...
-
-
-def get_data_parquet(selection_query: str, dataset: str,
-                     options: Options = None, **kwargs) \
-        -> List[str]:
-    '''
-    Return data from a ServiceX query as a list of parquet files. This is a
-    blocking call.
-
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        files           List of paths to files
-    '''
-    ...
-
-
-async def get_data_awkward_async(selection_query: str, dataset: str,
-                                 options: Options = None, **kwargs) \
-        -> Dict[bytes, awkward.JaggedArray]:
-    '''
-    Return data from a ServiceX query as single `JaggedArray`. The call returns
-    immediately - `await` on the result to obtain data.
-
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        a               Single in-memory awkward array of all the data requested.
-    '''
-    ...
-
-
-def get_data_awkward(selection_query: str, dataset: str,
-                     options: Options = None, **kwargs) \
-        -> Dict[bytes, awkward.JaggedArray]:
-    '''
-    Return data from a ServiceX query as single `JaggedArray`. This is a
-    blocking call.
-
-    Arguments:
-
-    selection_query     `qastle` string that specifies what columns to extract, how to format
-                        them, and how to format them.
-    dataset             Dataset (DID) to run the query against.
-    options             An initialized `Options` object. Defaults to `None`, in which case
-                        the defaults from the `Objects` object are applied.
-    kwargs              List of keyed arguments. The valid names are the same as in the
-                        `Options` argument. They will superseed anything set in the `options`
-                        argument
-
-    Return:
-        a               Single in-memory awkward array of all the data requested.
-    '''
-    ...
-
-
-############## OLD CODE - For example, do not look below this.
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
