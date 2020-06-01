@@ -15,7 +15,13 @@ import pytest
 
 import servicex as fe
 
-from .utils_for_testing import ClientSessionMocker, delete_default_downloaded_files, good_transform_request, files_in_minio  # NOQA
+from .utils_for_testing import (
+    ClientSessionMocker,
+    delete_default_downloaded_files,
+    files_in_minio,
+    good_pandas_file_data,
+    good_transform_request,
+)  # NOQA
 
 
 # @pytest.fixture(scope="module")
@@ -469,11 +475,12 @@ async def test_good_download_files_parquet(good_transform_request, files_in_mini
 
 
 @pytest.mark.asyncio
-async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
+async def test_good_run_single_ds_1file_pandas(good_transform_request, files_in_minio, good_pandas_file_data):
     'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds')
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_pandas_df_async('(valid qastle string)')
     assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458
+    assert len(r) == 6
 
 
 @pytest.mark.asyncio

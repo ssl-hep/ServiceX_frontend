@@ -91,8 +91,6 @@ def delete_default_downloaded_files():
     if os.path.exists(download_location):
         shutil.rmtree(download_location)
     import servicex.servicex as ssx
-    # import weakref
-    # ssx._data_cache = weakref.WeakValueDictionary()
     ssx._data_cache = {}
     ssx._query_locks = {}
     yield
@@ -100,4 +98,19 @@ def delete_default_downloaded_files():
         shutil.rmtree(download_location)
     ssx._data_cache = {}
     ssx._query_locks = {}
-    # ssx._data_cache = weakref.WeakValueDictionary()
+
+
+@pytest.fixture
+def good_root_file_path():
+    return Path("tests/sample_servicex_output.root")
+
+
+@pytest.fixture
+def good_pandas_file_data(mocker):
+    import pandas as pd
+
+    async def get_pandas_dummy_data(fname: str):
+        df = pd.DataFrame({'JetPt': [0, 1, 2, 3, 4, 5]})
+        return df
+
+    mocker.patch('servicex.servicex._convert_root_to_pandas', side_effect=get_pandas_dummy_data)

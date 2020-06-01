@@ -31,13 +31,13 @@ import pandas as pd
 from retry import retry
 import uproot
 
-from servicex.servicex_remote import (
+from .data_conversions import _convert_root_to_pandas
+from .servicex_remote import (
     _download_file,
     _get_transform_status,
     _result_object_list,
     _submit_query,
 )
-
 from .utils import (
     ServiceXFrontEndException,
     ServiceX_Exception,
@@ -50,7 +50,6 @@ from .utils import (
     _submit_or_lookup_transform,
     clean_linq,
 )
-
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
@@ -133,7 +132,7 @@ class ServiceXABC:
         Returns:
             root_files          The list of root files
         '''
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     async def get_data_pandas_df_async(self, selection_query: str) -> pd.DataFrame:
@@ -152,7 +151,7 @@ class ServiceXABC:
             xxx                 If the data is not the correct shape (e.g. a flat,
                                 rectangular table).
         '''
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     async def get_data_awkward_async(self, selection_query: str) \
@@ -170,7 +169,7 @@ class ServiceXABC:
                                 column. The dictionary keys are `bytes` to support possible
                                 unicode characters.
         '''
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
@@ -185,7 +184,7 @@ class ServiceXABC:
         Returns:
             root_files          The list of parquet files
         '''
-        pass
+        raise NotImplementedError()
 
     # Define the synchronous versions of the async methods for easy of use
 
@@ -235,6 +234,32 @@ class ServiceX(ServiceXABC):
     def endpoint(self):
         return self._endpoint
 
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
+    async def get_data_rootfiles_async(self, selection_query: str):
+        return await self._file_return(selection_query, 'root-file')
+
+    @functools.wraps(ServiceXABC.get_data_parquet_async)
+    async def get_data_parquet_async(self, selection_query: str):
+        return await self._file_return(selection_query, 'parquet')
+
+    @functools.wraps(ServiceXABC.get_data_pandas_df_async)
+    async def get_data_pandas_df_async(self, selection_query: str):
+        # Get all the files
+        as_files = (f async for f in self._get_files(selection_query, 'root-file'))
+
+        # Convert them to the proper format
+        as_data = ((f[0], asyncio.ensure_future(_convert_root_to_pandas(await f[1])))
+                   async for f in as_files)
+
+        # Finally, we need them in the proper order so we append them
+        # all together
+        all_data = {f[0]: await f[1] async for f in as_data}
+        ordered_data = [all_data[k] for k in sorted(all_data)]
+
+        # Combine and return
+        import pandas as pd
+        return pd.concat(ordered_data)
+
     async def _file_return(self, selection_query: str, data_format: str):
         '''
         Internal routine to refactor any query that will return a list of files (as opposed
@@ -243,14 +268,6 @@ class ServiceX(ServiceXABC):
         all = [f async for f in self._get_files(selection_query, data_format)]
         all_dict = {f[0]: await f[1] for f in all}
         return [all_dict[k] for k in sorted(all_dict)]
-
-    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
-    async def get_data_rootfiles_async(self, selection_query: str):
-        return await self._file_return(selection_query, 'root-file')
-
-    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
-    async def get_data_parquet_async(self, selection_query: str):
-        return await self._file_return(selection_query, 'parquet')
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''
@@ -319,7 +336,7 @@ class ServiceX(ServiceXABC):
             if not done:
                 await asyncio.sleep(servicex_status_poll_time)
 
-    async def _get_files(self, selection_query: str, data_type: str):
+    async def _get_files(self, selection_query: str, data_type: str) -> Iterator[Tuple[str, Awaitable[Path]]]:
         '''
         Return a list of files from servicex as they have been downloaded to this machine. The
         return type is an awaitable that will yield the path to the file.
