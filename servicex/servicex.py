@@ -235,17 +235,22 @@ class ServiceX(ServiceXABC):
     def endpoint(self):
         return self._endpoint
 
-    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
-    async def get_data_rootfiles_async(self, selection_query: str):
-        all = [f async for f in self._get_files(selection_query, 'root-file')]
+    async def _file_return(self, selection_query: str, data_format: str):
+        '''
+        Internal routine to refactor any query that will return a list of files (as opposed
+        to in-memory data).
+        '''
+        all = [f async for f in self._get_files(selection_query, data_format)]
         all_dict = {f[0]: await f[1] for f in all}
         return [all_dict[k] for k in sorted(all_dict)]
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async)
+    async def get_data_rootfiles_async(self, selection_query: str):
+        return await self._file_return(selection_query, 'root-file')
+
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
     async def get_data_parquet_async(self, selection_query: str):
-        all = [f async for f in self._get_files(selection_query, 'parquet')]
-        all_dict = {f[0]: await f[1] for f in all}
-        return [all_dict[k] for k in sorted(all_dict)]
+        return await self._file_return(selection_query, 'parquet')
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''
