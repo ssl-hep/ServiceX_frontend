@@ -173,7 +173,7 @@ class ServiceXABC:
         pass
 
     @abstractmethod
-    async def get_data_parquet_async(self, selection_query: str) -> List[str]:
+    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
         '''
         Fetch query data from ServiceX matching `selection_query` and return it as
         a list of parquet files. The files are uniquely ordered (the same query will always
@@ -235,9 +235,15 @@ class ServiceX(ServiceXABC):
     def endpoint(self):
         return self._endpoint
 
-    @functools.wraps(ServiceXABC.get_data_rootfiles_async, assigned='__doc__')
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
     async def get_data_rootfiles_async(self, selection_query: str):
         all = [f async for f in self._get_files(selection_query, 'root-file')]
+        all_dict = {f[0]: await f[1] for f in all}
+        return [all_dict[k] for k in sorted(all_dict)]
+
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
+    async def get_data_parquet_async(self, selection_query: str):
+        all = [f async for f in self._get_files(selection_query, 'parquet')]
         all_dict = {f[0]: await f[1] for f in all}
         return [all_dict[k] for k in sorted(all_dict)]
 

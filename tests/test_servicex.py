@@ -430,6 +430,7 @@ async def test_good_run_root_files(good_transform_request, files_in_minio):  # g
     assert isinstance(r, list)
     assert len(r) == 1
     assert r[0].exists()
+    assert good_transform_request.call_args[0][2]['result-format'] == 'root-file'
 
 
 @pytest.mark.asyncio
@@ -454,6 +455,17 @@ async def test_good_run_files_back_4_order_2(good_transform_request, files_in_mi
     assert len(r) == 4
     s_r = sorted([f.name for f in r])
     assert [f.name for f in r] == s_r
+
+
+@pytest.mark.asyncio
+async def test_good_download_files_parquet(good_transform_request, files_in_minio):
+    'Simple run with expected results'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_parquet_async('(valid qastle string)')
+    assert isinstance(r, list)
+    assert len(r) == 1
+    assert r[0].exists()
+    assert good_transform_request.call_args[0][2]['result-format'] == 'parquet'
 
 
 @pytest.mark.asyncio
@@ -650,18 +662,6 @@ async def test_good_download_files_1(good_transform_request, reduce_wait_time, f
     assert len(r) == 1
     assert isinstance(r[0], str)
     assert os.path.exists(r[0])
-
-
-@pytest.mark.asyncio
-async def test_good_download_files_parquet(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='parquet')
-    assert isinstance(r, List)
-    assert len(r) == 1
-    assert isinstance(r[0], str)
-    assert os.path.exists(r[0])
-    called = good_transform_request[0]
-    assert called['result-format'] == 'parquet'
 
 
 @pytest.mark.asyncio
