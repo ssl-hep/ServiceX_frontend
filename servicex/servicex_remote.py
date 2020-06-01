@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Optional, Tuple, List, AsyncGenerator
+from typing import Optional, Tuple, List, Dict, Generator
 
 import aiohttp
 from minio import Minio, ResponseError
@@ -26,13 +26,16 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
     If the transform has already completed, we return data from cache.
 
     Arguments:
-        endpoint            Web API address where servicex lives
-        request_id          The id of the request to check up on
 
-    Returns
+        endpoint            Web API address where servicex lives
+        request_id         The id of the request to check up on
+
+    Returns:
+
         files_remaining     How many files remain to be processed. None if the number has not yet
                             been determined
-        file_processed      How many files have been successfully processed by the system.
+        files_processed     How many files have been successfully processed by the system.
+        files_failed        Number of files that were skipped
     '''
     # Make the actual query
     async with client.get(f'{endpoint}/transformation/{request_id}/status') as response:
@@ -145,3 +148,19 @@ class _result_object_list:
                 if f not in seen:
                     seen.append(f)
                     yield f
+
+
+async def _submit_query(client: aiohttp.ClientSession,
+                        servicex_endpoint: str,
+                        json_query: Dict[str, str]) -> str:
+    '''
+    Submit a query to ServiceX, and return a request ID
+    '''
+    async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
+        r = await response.json()
+        if response.status != 200:
+            raise ServiceX_Exception('ServiceX rejected the transformation request: '
+                                     f'({response.status}){r}')
+        req_id = r["request_id"]
+
+        return req_id

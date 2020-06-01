@@ -1,5 +1,6 @@
 import pytest
-from json import loads, dumps
+from json import loads
+from pathlib import Path
 import os
 import tempfile
 import shutil
@@ -26,28 +27,50 @@ class ClientSessionMocker:
 @pytest.fixture()
 def good_transform_request(mocker):
     '''
-    Setup to run a good transform request that returns a single file.
+    Setup a good transform request
     '''
-    called_json_data = {}
-    counter = 0
+    counter = -1
 
-    def call_post(data_dict_to_save: dict, json=None):
-        data_dict_to_save.update(json)
+    async def call_submit(client, endpoint, json):
         nonlocal counter
-        counter = counter + 1
-        return ClientSessionMocker(dumps({"request_id": f"1234-4433-111-34-22-444-{counter}"}), 200)
+        counter += 1
+        return f"1234-4433-111-34-22-444-{counter}"
 
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+    return mocker.patch('servicex.servicex._submit_query',
+                        side_effect=call_submit)
 
-    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
-    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
 
-    return called_json_data
+@pytest.fixture()
+def files_in_minio(mocker):
+    '''
+    How many files are we returning?
+    '''
+    count = 1
+
+    async def return_files():
+        for i in range(count):
+            yield f'file-name-{i}'
+
+    list_files = mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+
+    async def get_status(c, ep, req_id):
+        return 0, count, 0
+
+    mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
+
+    async def download(client, request_id, fname, path: Path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open('w') as o:
+            o.write('hi')
+    mocker.patch('servicex.servicex._download_file', side_effect=download)
+    
+
+    return list_files
 
 
 @pytest.fixture(autouse=True)
 def delete_default_downloaded_files():
-    download_location = os.path.join(tempfile.gettempdir(), 'servicex-testing')
+    download_location = Path(tempfile.gettempdir()) / 'servicex-testing'
     import servicex.utils as sx
     sx.default_file_cache_name = download_location
     if os.path.exists(download_location):

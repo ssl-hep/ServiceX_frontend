@@ -13,7 +13,7 @@ from qastle import parse
 
 
 # Where shall we store files by default when we pull them down?
-default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
+default_file_cache_name = Path(tempfile.gettempdir()) / 'servicex'
 
 
 class ServiceX_Exception(Exception):

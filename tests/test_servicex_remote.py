@@ -41,6 +41,14 @@ def servicex_status_request(mocker):
 
 
 @pytest.fixture
+def good_submit(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'request_id': "111-222-333-444"}), 200)
+    client.post = lambda d, json: r
+    return client
+
+
+@pytest.fixture
 def servicex_status_unknown(mocker):
     r = ClientSessionMocker(dumps({'message': "unknown status"}), 500)
     mocker.patch('aiohttp.ClientSession.get', return_value=r)
@@ -201,3 +209,13 @@ async def test_files_no_repeat(good_minio_client):
     await asyncio.gather(get_files(), trigger())
 
     assert len(items) == 1
+
+
+@pytest.mark.asyncio
+async def test_submit_good(good_submit):
+    from servicex.servicex_remote import _submit_query
+
+    rid = await _submit_query(good_submit, 'http://bogus', {'hi': 'there'})
+    assert rid is not None
+    assert isinstance(rid, str)
+    assert rid == '111-222-333-444'

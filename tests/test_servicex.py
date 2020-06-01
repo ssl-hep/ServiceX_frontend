@@ -15,405 +15,430 @@ import pytest
 
 import servicex as fe
 
-from .utils_for_testing import ClientSessionMocker, delete_default_downloaded_files  # NOQA
-
-
-@pytest.fixture(scope="module")
-def reduce_wait_time():
-    import servicex.servicex as ssx
-    old_value = ssx.servicex_status_poll_time
-    ssx.servicex_status_poll_time = 0.01
-    yield None
-    ssx.servicex_status_poll_time = old_value
-
-
-def good_copy(a, b, c):
-    'Mock the fget_object from minio by copying out our test file'
-    shutil.copy('tests/sample_servicex_output.root', c)
-
-
-def make_minio_file(fname):
-    r = mock.MagicMock()
-    r.object_name = fname
-    return r
-
-
-@pytest.fixture()
-def files_back_1(mocker):
-    p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return p_fget, p_list
-
-
-@pytest.fixture()
-def files_back_1_fail_initally(mocker):
-    'Throw a response error - so the bucket does not not get created right away'
-    response = MagicMock()
-    response.data = '<xml></xml>'
-    mocker.patch('minio.api.Minio.list_objects', side_effect=[ResponseError(response, 'POST', 'Dude'), [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]])
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return None
-
-
-@pytest.fixture()
-def files_back_2(mocker):
-    p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                                                                        make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
-    p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return p_fget, p_list
-
-
-@pytest.fixture()
-def files_back_4_order_1(mocker):
-    mocker.patch('minio.api.Minio.list_objects',
-                 return_value=[
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
-                 ])
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return None
-
-
-@pytest.fixture()
-def files_back_4_order_2(mocker):
-    mocker.patch('minio.api.Minio.list_objects',
-                 return_value=[
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
-                 ])
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-    return None
-
-
-@pytest.fixture()
-def files_back_2_one_at_a_time(mocker):
-    q = queue.Queue()
-    d = {}
-    f1 = make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
-    f2 = make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
-
-    def return_files(req_id):
-        if len(d) == 0:
-            q.put("get-file-list 0")
-            d['flag'] = True
-            return [f1]
-        else:
-            q.put("get-file-list 1")
-            return [f1, f2]
-
-    def copy_files(a, b, c):
-        q.put(f'copy-a-file {c}')
-        good_copy(a, b, c)
-
-    mocker.patch('minio.api.Minio.list_objects', side_effect=return_files)
-    mocker.patch('minio.api.Minio.fget_object', side_effect=copy_files)
-    return q
-
-
-class list_objects_callable(mock.MagicMock):
-    def __call__(self, *args, **kwargs):
-        assert len(args) == 1
-        req_id = args[0]
-        num_files_s = req_id
-        dash = req_id.find('_')
-        if dash > 0:
-            num_files_s = req_id[:dash]
-        num_files = int(num_files_s)
-
-        return [make_minio_file(f'root:::dcache-atlas-{req_id}-{i}') for i in range(0, num_files)]
-
-
-@pytest.fixture()
-def indexed_files_back(mocker):
-    'Use the request id formatting to figure out how many files to deliver back'
-    mocker.patch('minio.api.Minio.list_objects', new_callable=list_objects_callable)
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-
-
-@pytest.fixture()
-def transform_status_fails_once_then_unknown(mocker):
-    '''
-    Return good request. Have a single file come back.
-    Then pretend we know nothing about the transform any longer.
-    This requires a bit of a state machine to keep straight.
-    '''
-    request_id_1 = "1234-4433-111-34-22-444"
-    request_id_2 = "1234-4433-111-34-22-555"
-
-    request_id = request_id_1
-
-    # For this we always accept the transform request.
-    def call_post():
-        nonlocal request_id
-        return ClientSessionMocker(dumps({"request_id": request_id}), 200)
-    post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
-
-    called_times = 0
-
-    def get_status(a):
-        nonlocal called_times, request_id_1, request_id_2, request_id
-        req_id = a.split("/")[-2]
-        try:
-            if req_id == request_id_1:
-                if called_times == 0:
-                    # One file through
-                    return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
-                else:
-                    # ServiceX was restarted - we have no idea!!!
-                    request_id = request_id_2
-                    return ClientSessionMocker(dumps({"message": "Internal Server Error"}), 500)
-            elif req_id == request_id_2:
-                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
-        finally:
-            called_times += 1
-
-    mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
-
-    def get_list_objects(req_id: str):
-        nonlocal request_id, request_id_1, request_id_2, called_times
-        if request_id == request_id_1:
-            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
-        elif request_id == request_id_2:
-            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
-
-    mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-
-    return post_patch
-
-
-@pytest.fixture()
-def transform_fails_once_then_second_good(mocker):
-    '''
-    1. Return a good request
-    2. Return one good file and a second one is bad (skipped)
-    3. Return a good request (second request)
-    4. Return two good files.
-    '''
-    request_id_1 = "1234-4433-111-34-22-444"
-    request_id_2 = "1234-4433-111-34-22-555"
-
-    request_id = None
-
-    # For this we always accept the transform request.
-    def call_post():
-        nonlocal request_id, request_id_1, request_id_2
-        if request_id is None:
-            request_id = request_id_1
-        else:
-            request_id = request_id_2
-        return ClientSessionMocker(dumps({"request_id": request_id}), 200)
-
-    post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
-
-    called_times = 0
-
-    def get_status(a):
-        nonlocal request_id_1, request_id_2
-        req_id = a.split("/")[-2]
-        if req_id == request_id_1:
-            return ClientSessionMocker(dumps({"files-remaining": "0", "files-skipped": 1, "files-processed": "1"}), 200)
-        elif req_id == request_id_2:
-            return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
-
-    mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
-
-    def get_list_objects(req_id: str):
-        nonlocal request_id, request_id_1, request_id_2, called_times
-        if request_id == request_id_1:
-            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
-        elif request_id == request_id_2:
-            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
-
-    mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-
-    return post_patch
-
-
-@pytest.fixture()
-def transform_status_fails_once_then_good(mocker):
-    '''
-    1. Return good request
-    2. Return a single file
-    3. Return a bad status message
-    4. Return a good status message
-
-    We have to manage the list_objects in parallel since its behavior is linked here.
-    '''
-    # For this we always accept the transform request.
-    def call_post():
-        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    posted_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
-
-    called_times = 0
-
-    def get_status(a):
-        nonlocal called_times
-        try:
-            if called_times == 0:
-                # One file through
-                return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
-            elif called_times == 1:
-                # We return a bad status message
-                return ClientSessionMocker(dumps({"message": "No such request id"}), 400)
-            elif called_times == 2:
-                # Ok - this is after they have re-called. So now we are in good shape!
-                return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
-        finally:
-            called_times += 1
-
-    mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
-
-    def get_list_objects(a):
-        nonlocal called_times
-        # Note that called_times has been incremented so called_times == 1, is like state 0 in get_status
-        if called_times == 1:
-            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
-        elif called_times == 2:
-            raise Exception("Should not be calling list_objects after an error from status")
-        elif called_times == 3:
-            return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
-                    make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
-
-    mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
-    mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
-
-    return posted_patch
-
-# TODO: Move this into the common area so we don't repeat this code
-#       Will have to solve failures in the test_utils fellow, however.
-@pytest.fixture()
-def good_transform_request(mocker):
-    '''
-    Setup to run a good transform request that returns a single file.
-    '''
-    called_json_data = {}
-    times_called = 0
-
-    def call_post(data_dict_to_save: dict, json=None):
-        nonlocal times_called
-        times_called += 1
-        data_dict_to_save.update(json)
-        data_dict_to_save.update(dict(called=times_called))
-        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
-
-    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
-    status_mock = mocker.patch('aiohttp.ClientSession.get', return_value=r2)
-
-    return called_json_data, status_mock
-
-
-@pytest.fixture()
-def good_transform_bad_status(mocker):
-    '''
-    Setup to run a good transform request that returns a single file.
-    '''
-    called_json_data = {}
-
-    def call_post(data_dict_to_save: dict, json=None):
-        data_dict_to_save.update(json)
-        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
-
-    r2 = ClientSessionMocker(dumps({"message": "not doing this over and over"}), 400)
-    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
-
-    return called_json_data
-
-
-@pytest.fixture()
-def bad_transform(mocker):
-    '''
-    Setup to run a good transform request that returns a single file.
-    '''
-    called_json_data = {}
-
-    def call_post(data_dict_to_save: dict, json=None):
-        data_dict_to_save.update(json)
-        return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
-
-    r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1", "files-skipped": 1}), 200)
-    mocker.patch('aiohttp.ClientSession.get', return_value=r2)
-
-    return called_json_data
-
-
-@pytest.fixture()
-def bad_transform_request(mocker):
-    '''
-    Fail when we return!
-    '''
-    r1 = ClientSessionMocker(dumps({"message": "Things Just Went Badly"}), 400)
-    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
-
-    return None
-
-
-@pytest.fixture()
-def good_transform_request_delayed_finish(mocker):
-    '''
-    Setup to run a good transform request that returns a single file.
-    '''
-    r1 = ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
-
-    f1 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
-    f2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
-    mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2])
-
-    return None
-
-
-@pytest.fixture()
-def good_transform_jittery_file_totals_3(mocker):
-    '''
-    Setup to run a good transform request that returns a single file.
-    '''
-    r1 = ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
-    mocker.patch('aiohttp.ClientSession.post', return_value=r1)
-
-    f1 = ClientSessionMocker(dumps({"files-remaining": "3", "files-processed": "0"}), 200)
-    f2 = ClientSessionMocker(dumps({"files-remaining": "2", "files-processed": "0"}), 200)
-    f3 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "2"}), 200)
-    f4 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "3"}), 200)
-    mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2, f3, f4])
-
-    return None
-
-
-@pytest.fixture()
-def good_requests_indexed(mocker):
-    '''
-    Parse the dataset to figure out what is to be done
-    '''
-    def call_post(_, json=None):
-        dataset = json['did']
-        info = re.search('^[a-z]+_([0-9]+)_([0-9]+)$', dataset)
-        query_number = info[1]
-        n_files = info[2]
-        return ClientSessionMocker(dumps({"request_id": f'{n_files}_{query_number}'}), 200)
-    mocker.patch('aiohttp.ClientSession.post', side_effect=call_post)
-
-    # Now get back the returns, which are just going to always be the same.
-    g1 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "4"}), 200)
-    mocker.patch('aiohttp.ClientSession.get', return_value=g1)
-
-
-def clean_fname(fname: str):
-    'No matter the string given, make it an acceptable filename'
-    return fname.replace('*', '_') \
-                .replace(';', '_') \
-                .replace(':', '_')
-
+from .utils_for_testing import ClientSessionMocker, delete_default_downloaded_files, good_transform_request, files_in_minio  # NOQA
+
+
+# @pytest.fixture(scope="module")
+# def reduce_wait_time():
+#     import servicex.servicex as ssx
+#     old_value = ssx.servicex_status_poll_time
+#     ssx.servicex_status_poll_time = 0.01
+#     yield None
+#     ssx.servicex_status_poll_time = old_value
+
+
+# def good_copy(a, b, c):
+#     'Mock the fget_object from minio by copying out our test file'
+#     shutil.copy('tests/sample_servicex_output.root', c)
+
+
+# def make_minio_file(fname):
+#     r = mock.MagicMock()
+#     r.object_name = fname
+#     return r
+
+
+# @pytest.fixture()
+# def files_back_1(mocker):
+#     p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
+#     p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+#     return p_fget, p_list
+
+
+# @pytest.fixture()
+# def files_back_1_fail_initally(mocker):
+#     'Throw a response error - so the bucket does not not get created right away'
+#     response = MagicMock()
+#     response.data = '<xml></xml>'
+#     mocker.patch('minio.api.Minio.list_objects', side_effect=[ResponseError(response, 'POST', 'Dude'), [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]])
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+#     return None
+
+
+# @pytest.fixture()
+# def files_back_2(mocker):
+#     p_list = mocker.patch('minio.api.Minio.list_objects', return_value=[make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                                                                         make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')])
+#     p_fget = mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+#     return p_fget, p_list
+
+
+# @pytest.fixture()
+# def files_back_4_order_1(mocker):
+#     mocker.patch('minio.api.Minio.list_objects',
+#                  return_value=[
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+#                  ])
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+#     return None
+
+
+# @pytest.fixture()
+# def files_back_4_order_2(mocker):
+#     mocker.patch('minio.api.Minio.list_objects',
+#                  return_value=[
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000003.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000004.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                      make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+#                  ])
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+#     return None
+
+
+# @pytest.fixture()
+# def files_back_2_one_at_a_time(mocker):
+#     q = queue.Queue()
+#     d = {}
+#     f1 = make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+#     f2 = make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
+
+#     def return_files(req_id):
+#         if len(d) == 0:
+#             q.put("get-file-list 0")
+#             d['flag'] = True
+#             return [f1]
+#         else:
+#             q.put("get-file-list 1")
+#             return [f1, f2]
+
+#     def copy_files(a, b, c):
+#         q.put(f'copy-a-file {c}')
+#         good_copy(a, b, c)
+
+#     mocker.patch('minio.api.Minio.list_objects', side_effect=return_files)
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=copy_files)
+#     return q
+
+
+# class list_objects_callable(mock.MagicMock):
+#     def __call__(self, *args, **kwargs):
+#         assert len(args) == 1
+#         req_id = args[0]
+#         num_files_s = req_id
+#         dash = req_id.find('_')
+#         if dash > 0:
+#             num_files_s = req_id[:dash]
+#         num_files = int(num_files_s)
+
+#         return [make_minio_file(f'root:::dcache-atlas-{req_id}-{i}') for i in range(0, num_files)]
+
+
+# @pytest.fixture()
+# def indexed_files_back(mocker):
+#     'Use the request id formatting to figure out how many files to deliver back'
+#     mocker.patch('minio.api.Minio.list_objects', new_callable=list_objects_callable)
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+
+# @pytest.fixture()
+# def transform_status_fails_once_then_unknown(mocker):
+#     '''
+#     Return good request. Have a single file come back.
+#     Then pretend we know nothing about the transform any longer.
+#     This requires a bit of a state machine to keep straight.
+#     '''
+#     request_id_1 = "1234-4433-111-34-22-444"
+#     request_id_2 = "1234-4433-111-34-22-555"
+
+#     request_id = request_id_1
+
+#     # For this we always accept the transform request.
+#     def call_post():
+#         nonlocal request_id
+#         return ClientSessionMocker(dumps({"request_id": request_id}), 200)
+#     post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+
+#     called_times = 0
+
+#     def get_status(a):
+#         nonlocal called_times, request_id_1, request_id_2, request_id
+#         req_id = a.split("/")[-2]
+#         try:
+#             if req_id == request_id_1:
+#                 if called_times == 0:
+#                     # One file through
+#                     return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+#                 else:
+#                     # ServiceX was restarted - we have no idea!!!
+#                     request_id = request_id_2
+#                     return ClientSessionMocker(dumps({"message": "Internal Server Error"}), 500)
+#             elif req_id == request_id_2:
+#                 return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+#         finally:
+#             called_times += 1
+
+#     mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+#     def get_list_objects(req_id: str):
+#         nonlocal request_id, request_id_1, request_id_2, called_times
+#         if request_id == request_id_1:
+#             return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+#         elif request_id == request_id_2:
+#             return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+#     mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+#     return post_patch
+
+
+# @pytest.fixture()
+# def transform_fails_once_then_second_good(mocker):
+#     '''
+#     1. Return a good request
+#     2. Return one good file and a second one is bad (skipped)
+#     3. Return a good request (second request)
+#     4. Return two good files.
+#     '''
+#     request_id_1 = "1234-4433-111-34-22-444"
+#     request_id_2 = "1234-4433-111-34-22-555"
+
+#     request_id = None
+
+#     # For this we always accept the transform request.
+#     def call_post():
+#         nonlocal request_id, request_id_1, request_id_2
+#         if request_id is None:
+#             request_id = request_id_1
+#         else:
+#             request_id = request_id_2
+#         return ClientSessionMocker(dumps({"request_id": request_id}), 200)
+
+#     post_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+
+#     called_times = 0
+
+#     def get_status(a):
+#         nonlocal request_id_1, request_id_2
+#         req_id = a.split("/")[-2]
+#         if req_id == request_id_1:
+#             return ClientSessionMocker(dumps({"files-remaining": "0", "files-skipped": 1, "files-processed": "1"}), 200)
+#         elif req_id == request_id_2:
+#             return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+
+#     mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+#     def get_list_objects(req_id: str):
+#         nonlocal request_id, request_id_1, request_id_2, called_times
+#         if request_id == request_id_1:
+#             return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+#         elif request_id == request_id_2:
+#             return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+#     mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+#     return post_patch
+
+
+# @pytest.fixture()
+# def transform_status_fails_once_then_good(mocker):
+#     '''
+#     1. Return good request
+#     2. Return a single file
+#     3. Return a bad status message
+#     4. Return a good status message
+
+#     We have to manage the list_objects in parallel since its behavior is linked here.
+#     '''
+#     # For this we always accept the transform request.
+#     def call_post():
+#         return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+#     posted_patch = mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post())
+
+#     called_times = 0
+
+#     def get_status(a):
+#         nonlocal called_times
+#         try:
+#             if called_times == 0:
+#                 # One file through
+#                 return ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+#             elif called_times == 1:
+#                 # We return a bad status message
+#                 return ClientSessionMocker(dumps({"message": "No such request id"}), 400)
+#             elif called_times == 2:
+#                 # Ok - this is after they have re-called. So now we are in good shape!
+#                 return ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+#         finally:
+#             called_times += 1
+
+#     mocker.patch('aiohttp.ClientSession.get', side_effect=get_status)
+
+#     def get_list_objects(a):
+#         nonlocal called_times
+#         # Note that called_times has been incremented so called_times == 1, is like state 0 in get_status
+#         if called_times == 1:
+#             return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+#         elif called_times == 2:
+#             raise Exception("Should not be calling list_objects after an error from status")
+#         elif called_times == 3:
+#             return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio'),
+#                     make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000002.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+#     mocker.patch('minio.api.Minio.list_objects', side_effect=get_list_objects)
+#     mocker.patch('minio.api.Minio.fget_object', side_effect=good_copy)
+
+#     return posted_patch
+
+# # TODO: Move this into the common area so we don't repeat this code
+# #       Will have to solve failures in the test_utils fellow, however.
+# @pytest.fixture()
+# def good_transform_request(mocker):
+#     '''
+#     Setup to run a good transform request that returns a single file.
+#     '''
+#     called_json_data = {}
+#     times_called = 0
+
+#     def call_post(data_dict_to_save: dict, json=None):
+#         nonlocal times_called
+#         times_called += 1
+#         data_dict_to_save.update(json)
+#         data_dict_to_save.update(dict(called=times_called))
+#         return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+#     mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+#     r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1"}), 200)
+#     status_mock = mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+#     return called_json_data, status_mock
+
+
+# @pytest.fixture()
+# def good_transform_bad_status(mocker):
+#     '''
+#     Setup to run a good transform request that returns a single file.
+#     '''
+#     called_json_data = {}
+
+#     def call_post(data_dict_to_save: dict, json=None):
+#         data_dict_to_save.update(json)
+#         return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+#     mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+#     r2 = ClientSessionMocker(dumps({"message": "not doing this over and over"}), 400)
+#     mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+#     return called_json_data
+
+
+# @pytest.fixture()
+# def bad_transform(mocker):
+#     '''
+#     Setup to run a good transform request that returns a single file.
+#     '''
+#     called_json_data = {}
+
+#     def call_post(data_dict_to_save: dict, json=None):
+#         data_dict_to_save.update(json)
+#         return ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+#     mocker.patch('aiohttp.ClientSession.post', side_effect=lambda _, json: call_post(called_json_data, json=json))
+
+#     r2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "1", "files-skipped": 1}), 200)
+#     mocker.patch('aiohttp.ClientSession.get', return_value=r2)
+
+#     return called_json_data
+
+
+# @pytest.fixture()
+# def bad_transform_request(mocker):
+#     '''
+#     Fail when we return!
+#     '''
+#     r1 = ClientSessionMocker(dumps({"message": "Things Just Went Badly"}), 400)
+#     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+#     return None
+
+
+# @pytest.fixture()
+# def good_transform_request_delayed_finish(mocker):
+#     '''
+#     Setup to run a good transform request that returns a single file.
+#     '''
+#     r1 = ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+#     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+#     f1 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "1"}), 200)
+#     f2 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "2"}), 200)
+#     mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2])
+
+#     return None
+
+
+# @pytest.fixture()
+# def good_transform_jittery_file_totals_3(mocker):
+#     '''
+#     Setup to run a good transform request that returns a single file.
+#     '''
+#     r1 = ClientSessionMocker(dumps({"request_id": "1234-4433-111-34-22-444"}), 200)
+#     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+#     f1 = ClientSessionMocker(dumps({"files-remaining": "3", "files-processed": "0"}), 200)
+#     f2 = ClientSessionMocker(dumps({"files-remaining": "2", "files-processed": "0"}), 200)
+#     f3 = ClientSessionMocker(dumps({"files-remaining": "1", "files-processed": "2"}), 200)
+#     f4 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "3"}), 200)
+#     mocker.patch('aiohttp.ClientSession.get', side_effect=[f1, f2, f3, f4])
+
+#     return None
+
+
+# @pytest.fixture()
+# def good_requests_indexed(mocker):
+#     '''
+#     Parse the dataset to figure out what is to be done
+#     '''
+#     def call_post(_, json=None):
+#         dataset = json['did']
+#         info = re.search('^[a-z]+_([0-9]+)_([0-9]+)$', dataset)
+#         query_number = info[1]
+#         n_files = info[2]
+#         return ClientSessionMocker(dumps({"request_id": f'{n_files}_{query_number}'}), 200)
+#     mocker.patch('aiohttp.ClientSession.post', side_effect=call_post)
+
+#     # Now get back the returns, which are just going to always be the same.
+#     g1 = ClientSessionMocker(dumps({"files-remaining": "0", "files-processed": "4"}), 200)
+#     mocker.patch('aiohttp.ClientSession.get', return_value=g1)
+
+
+# def clean_fname(fname: str):
+#     'No matter the string given, make it an acceptable filename'
+#     return fname.replace('*', '_') \
+#                 .replace(';', '_') \
+#                 .replace(':', '_')
+
+
+def test_create_with_dataset():
+    'Default should be possible'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    assert ds.dataset == 'localds://mc16_tev:13'
+    assert ds.endpoint == 'http://localhost:5000/servicex'
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_order_1(good_transform_request, files_in_minio):  # good_transform_request, reduce_wait_time, files_back_4_order_1):
+    'Get a root file with a single file'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
+    assert isinstance(r, list)
+    assert len(r) == 1
+    assert r[0].exists()
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_order_2(good_transform_request, reduce_wait_time, files_back_4_order_2):
+    'Simple run with expected results'
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert isinstance(r, list)
+    s_r = sorted(r)
+    assert r == s_r
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):
@@ -621,24 +646,6 @@ async def test_good_download_files_parquet(good_transform_request, reduce_wait_t
     assert os.path.exists(r[0])
     called = good_transform_request[0]
     assert called['result-format'] == 'parquet'
-
-
-@pytest.mark.asyncio
-async def test_good_run_files_order_1(good_transform_request, reduce_wait_time, files_back_4_order_1):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert isinstance(r, list)
-    s_r = sorted(r)
-    assert r == s_r
-
-
-@pytest.mark.asyncio
-async def test_good_run_files_order_2(good_transform_request, reduce_wait_time, files_back_4_order_2):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert isinstance(r, list)
-    s_r = sorted(r)
-    assert r == s_r
 
 
 @pytest.mark.asyncio
