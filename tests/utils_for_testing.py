@@ -47,11 +47,19 @@ def files_in_minio(mocker):
     '''
     count = 1
 
+    def default_lambda():
+        return range(count)
+
+    def reverse_lambda():
+        return range(count, 0, -1)
+
+    file_range = default_lambda
+
     async def return_files():
-        for i in range(count):
+        for i in file_range():
             yield f'file-name-{i}'
 
-    list_files = mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+    mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
 
     async def get_status(c, ep, req_id):
         return 0, count, 0
@@ -63,9 +71,16 @@ def files_in_minio(mocker):
         with path.open('w') as o:
             o.write('hi')
     mocker.patch('servicex.servicex._download_file', side_effect=download)
-    
 
-    return list_files
+    def reset_files(n_files: int, reverse: bool = False):
+        nonlocal count, file_range
+        count = n_files
+        if not reverse:
+            file_range = default_lambda
+        else:
+            file_range = reverse_lambda
+
+    return reset_files
 
 
 @pytest.fixture(autouse=True)

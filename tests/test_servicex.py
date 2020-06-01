@@ -423,7 +423,7 @@ def test_create_with_dataset():
 
 
 @pytest.mark.asyncio
-async def test_good_run_files_order_1(good_transform_request, files_in_minio):  # good_transform_request, reduce_wait_time, files_back_4_order_1):
+async def test_good_run_root_files(good_transform_request, files_in_minio):  # good_transform_request, reduce_wait_time, files_back_4_order_1):
     'Get a root file with a single file'
     ds = fe.ServiceX('localds://mc16_tev:13')
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
@@ -433,12 +433,28 @@ async def test_good_run_files_order_1(good_transform_request, files_in_minio):  
 
 
 @pytest.mark.asyncio
-async def test_good_run_files_order_2(good_transform_request, reduce_wait_time, files_back_4_order_2):
+async def test_good_run_files_back_4_order_1(good_transform_request, files_in_minio):
     'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    files_in_minio(4, reverse=False)
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
-    s_r = sorted(r)
-    assert r == s_r
+    assert len(r) == 4
+    s_r = sorted([f.name for f in r])
+    assert [f.name for f in r] == s_r
+
+
+@pytest.mark.asyncio
+async def test_good_run_files_back_4_order_2(good_transform_request, files_in_minio):
+    'Simple run with expected results'
+    files_in_minio(4, reverse=True)
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
+    assert isinstance(r, list)
+    assert len(r) == 4
+    s_r = sorted([f.name for f in r])
+    assert [f.name for f in r] == s_r
+
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_pandas(good_transform_request, reduce_wait_time, files_back_1):

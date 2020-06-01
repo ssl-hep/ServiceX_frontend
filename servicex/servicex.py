@@ -238,7 +238,8 @@ class ServiceX(ServiceXABC):
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, assigned='__doc__')
     async def get_data_rootfiles_async(self, selection_query: str):
         all = [f async for f in self._get_files(selection_query, 'root-file')]
-        return await asyncio.gather(*all)
+        all_dict = {f[0]: await f[1] for f in all}
+        return [all_dict[k] for k in sorted(all_dict)]
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''
@@ -330,15 +331,16 @@ class ServiceX(ServiceXABC):
 
             minio = self._minio_client()
             results_from_query = _result_object_list(minio, request_id)
-            r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id, results_from_query))
+            r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id,
+                                                                 results_from_query))
 
             async for f in results_from_query.files():
                 copy_to_path = self._file_name_func(request_id, f)
 
-                async def do_wait():
-                    await _download_file(minio, request_id, f, copy_to_path)
+                async def do_wait(final_path):
+                    await _download_file(minio, request_id, f, final_path)
                     return copy_to_path
-                yield do_wait()
+                yield f, do_wait(copy_to_path)
 
             await r_loop
 
