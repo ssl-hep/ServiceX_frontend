@@ -114,3 +114,14 @@ def good_pandas_file_data(mocker):
         return df
 
     mocker.patch('servicex.servicex._convert_root_to_pandas', side_effect=get_pandas_dummy_data)
+
+
+@pytest.fixture
+def good_awkward_file_data(mocker):
+    import awkward as awk
+
+    async def good_awkward_data(fname: str):
+        df = {b'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+        return df
+
+    mocker.patch('servicex.servicex._convert_root_to_awkward', side_effect=good_awkward_data)

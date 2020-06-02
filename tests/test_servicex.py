@@ -21,6 +21,7 @@ from .utils_for_testing import (
     files_in_minio,
     good_pandas_file_data,
     good_transform_request,
+    good_awkward_file_data
 )  # NOQA
 
 
@@ -484,39 +485,44 @@ async def test_good_run_single_ds_1file_pandas(good_transform_request, files_in_
 
 
 @pytest.mark.asyncio
+async def test_good_run_single_ds_1file_awkward(good_transform_request, files_in_minio, good_awkward_file_data):
+    'Simple run with expected results'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_awkward_async('(valid qastle string)')
+    assert isinstance(r, dict)
+    assert len(r) == 1
+    assert b'JetPt' in r
+    assert len(r[b'JetPt']) == 6
+
+
+@pytest.mark.asyncio
+async def test_good_run_single_ds_2file_pandas(good_transform_request, files_in_minio, good_pandas_file_data):
+    'Simple run with expected results'
+    files_in_minio(2)
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_pandas_df_async('(valid qastle string)')
+    assert isinstance(r, pd.DataFrame)
+    assert len(r) == 6 * 2
+
+
+@pytest.mark.asyncio
+async def test_good_run_single_ds_2file_awkward(good_transform_request, files_in_minio, good_awkward_file_data):
+    'Simple run with expected results'
+    files_in_minio(2)
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_awkward_async('(valid qastle string)')
+    assert isinstance(r, dict)
+    assert len(r) == 1
+    assert b'JetPt' in r
+    assert len(r[b'JetPt']) == 6 * 2
+
+
+@pytest.mark.asyncio
 async def test_fails_bucket_lookup_at_first(good_transform_request, reduce_wait_time, files_back_1_fail_initally):
     'Simple run with expected results'
     r = await fe.get_data_async('(valid qastle string)', 'one_ds')
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 283458
-
-
-@pytest.mark.asyncio
-async def test_good_run_single_ds_2file_pandas(good_transform_request, reduce_wait_time, files_back_2):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds')
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458 * 2
-
-
-@pytest.mark.asyncio
-async def test_good_run_single_ds_1file_awkward(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
-    assert isinstance(r, dict)
-    assert len(r) == 1
-    assert b'JetPt' in r
-    assert len(r[b'JetPt']) == 283458
-
-
-@pytest.mark.asyncio
-async def test_good_run_single_ds_2file_awkward(good_transform_request, reduce_wait_time, files_back_2):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
-    assert isinstance(r, dict)
-    assert len(r) == 1
-    assert b'JetPt' in r
-    assert len(r[b'JetPt']) == 283458 * 2
 
 
 @pytest.mark.asyncio

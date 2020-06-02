@@ -18,6 +18,7 @@ from typing import (
     Optional,
     Tuple,
     Union,
+    Callable
 )
 from typing import Iterator
 import urllib
@@ -31,7 +32,7 @@ import pandas as pd
 from retry import retry
 import uproot
 
-from .data_conversions import _convert_root_to_pandas
+from .data_conversions import _convert_root_to_pandas, _convert_root_to_awkward
 from .servicex_remote import (
     _download_file,
     _get_transform_status,
@@ -244,11 +245,23 @@ class ServiceX(ServiceXABC):
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async)
     async def get_data_pandas_df_async(self, selection_query: str):
+        import pandas as pd
+        return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
+
+    @functools.wraps(ServiceXABC.get_data_awkward_async)
+    async def get_data_awkward_async(self, selection_query: str):
+        import awkward
+        all_data = await self._data_return(selection_query, _convert_root_to_awkward)
+        col_names = all_data[0].keys()
+        return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
+
+    async def _data_return(self, selection_query: str,
+                           converter: Callable[[Path], Awaitable[Any]]):
         # Get all the files
         as_files = (f async for f in self._get_files(selection_query, 'root-file'))
 
         # Convert them to the proper format
-        as_data = ((f[0], asyncio.ensure_future(_convert_root_to_pandas(await f[1])))
+        as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
                    async for f in as_files)
 
         # Finally, we need them in the proper order so we append them
@@ -256,9 +269,7 @@ class ServiceX(ServiceXABC):
         all_data = {f[0]: await f[1] async for f in as_data}
         ordered_data = [all_data[k] for k in sorted(all_data)]
 
-        # Combine and return
-        import pandas as pd
-        return pd.concat(ordered_data)
+        return ordered_data
 
     async def _file_return(self, selection_query: str, data_format: str):
         '''
