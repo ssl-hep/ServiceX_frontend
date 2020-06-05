@@ -336,18 +336,22 @@ class ServiceX(ServiceXABC):
         '''
         done = False
         last_processed = 0
-        while not done:
-            remaining, processed, failed = await _get_transform_status(client, self._endpoint,
-                                                                       request_id)
-            done = remaining is not None and remaining == 0
-            if processed != last_processed:
-                last_processed = processed
-                downloader.trigger_scan()
+        try:
+            while not done:
+                remaining, processed, failed = await _get_transform_status(client, self._endpoint,
+                                                                           request_id)
+                done = remaining is not None and remaining == 0
+                if processed != last_processed:
+                    last_processed = processed
+                    downloader.trigger_scan()
 
-            if not done:
-                await asyncio.sleep(servicex_status_poll_time)
+                if not done:
+                    await asyncio.sleep(servicex_status_poll_time)
+        finally:
+            downloader.shutdown()
 
-    async def _get_files(self, selection_query: str, data_type: str) -> Iterator[Tuple[str, Awaitable[Path]]]:
+    async def _get_files(self, selection_query: str, data_type: str) \
+            -> Iterator[Tuple[str, Awaitable[Path]]]:
         '''
         Return a list of files from servicex as they have been downloaded to this machine. The
         return type is an awaitable that will yield the path to the file.
@@ -370,6 +374,9 @@ class ServiceX(ServiceXABC):
 
             minio = self._minio_client()
             results_from_query = _result_object_list(minio, request_id)
+
+            # Problem - if this throws, then we want to get out of this, and we will be stuck
+            # waiting below too.
             r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id,
                                                                  results_from_query))
 
@@ -382,21 +389,6 @@ class ServiceX(ServiceXABC):
                 yield f, do_wait(copy_to_path)
 
             await r_loop
-
-    # @functools.wraps(ServiceXABC.get_data_awkward_async)
-    # async def get_data_awkward_async(self, selection_query: str):
-    #     # Need to implement this guy
-    #     raise NotImplementedError()
-
-    # # @functools.wraps(ServiceXABC.get_data_pandas_df_async)
-    # async def get_data_pandas_df_async(self, selection_query: str):
-    #     # Need to implement this guy
-    #     raise NotImplementedError()
-
-    # # @functools.wraps(ServiceXABC.get_data_parquet_async)
-    # async def get_data_parquet_async(self, selection_query: str):
-    #     # Need to implement this guy
-    #     raise NotImplementedError()
 
 # ##### Below here is old (but working!) code. For reviewing API please ignore.
 

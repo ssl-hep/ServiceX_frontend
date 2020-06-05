@@ -15,13 +15,15 @@ import pytest
 
 import servicex as fe
 
-from .utils_for_testing import (
+from .utils_for_testing import (  # NOQA
     ClientSessionMocker,
     delete_default_downloaded_files,
     files_in_minio,
     good_pandas_file_data,
     good_transform_request,
-    good_awkward_file_data
+    good_awkward_file_data,
+    bad_transform_status,
+    short_status_poll_time
 )  # NOQA
 
 
@@ -430,8 +432,20 @@ def test_create_with_dataset():
 
 
 @pytest.mark.asyncio
-async def test_good_run_root_files(good_transform_request, files_in_minio):  # good_transform_request, reduce_wait_time, files_back_4_order_1):
+async def test_good_run_root_files(good_transform_request, files_in_minio):
     'Get a root file with a single file'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
+    assert isinstance(r, list)
+    assert len(r) == 1
+    assert r[0].exists()
+    assert good_transform_request.call_args[0][2]['result-format'] == 'root-file'
+
+
+@pytest.mark.asyncio
+async def test_good_run_root_files_pause(good_transform_request, files_in_minio, short_status_poll_time):
+    'Get a root file with a single file'
+    files_in_minio(1, status_calls_before_complete=1)
     ds = fe.ServiceX('localds://mc16_tev:13')
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
@@ -518,46 +532,29 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, files_in
 
 
 @pytest.mark.asyncio
-async def test_fails_bucket_lookup_at_first(good_transform_request, reduce_wait_time, files_back_1_fail_initally):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds')
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458
+async def test_status_exception(good_transform_request, bad_transform_status):
+    'Make sure status error - like transform not found - is reported all the way to the top'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    with pytest.raises(fe.ServiceX_Exception) as e:
+        await ds.get_data_awkward_async('(valid qastle string)')
+    assert "attempt" in str(e.value)
 
 
 @pytest.mark.asyncio
-async def test_2awkward_combined_correctly(good_transform_request, reduce_wait_time, files_back_2):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+async def test_image_spec(good_transform_request, files_in_minio, good_awkward_file_data):
+    ds = fe.ServiceX('localds://mc16_tev:13', image='fork-it-over:latest')
+    await ds.get_data_awkward_async('(valid qastle string)')
 
-    # Test that what we pull down can correctly be used by uproot methods
-    import uproot_methods
-    assert isinstance(r, dict)
-    arr = uproot_methods.TLorentzVectorArray.from_ptetaphi(r[b'JetPt'], r[b'JetPt'], r[b'JetPt'], r[b'JetPt'])
-    assert len(arr) == 283458 * 2
-
-
-@pytest.mark.asyncio
-async def test_bad_status_return(good_transform_bad_status, reduce_wait_time, files_back_1):
-    'Status comes back bad'
-    with pytest.raises(Exception) as e:
-        await fe.get_data_async('(valid qastle string)', 'one_ds')
-
-    assert "status" in str(e.value)
-
-
-@pytest.mark.asyncio
-async def test_image_spec(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    await fe.get_data_async('(valid qastle string)', 'one_ds', image='fork-it-over:latest')
-    called = good_transform_request[0]
+    called = good_transform_request.call_args[0][2]
     assert called['image'] == 'fork-it-over:latest'
 
 
-def test_max_workers_spec(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    fe.get_data('(valid qastle string)', 'one_ds', max_workers=50)
-    called = good_transform_request[0]
+@pytest.mark.asyncio
+async def test_max_workers_spec(good_transform_request, files_in_minio, good_awkward_file_data):
+    ds = fe.ServiceX('localds://mc16_tev:13', max_workers=50)
+    await ds.get_data_awkward_async('(valid qastle string)')
+
+    called = good_transform_request.call_args[0][2]
     assert called['workers'] == '50'
 
 

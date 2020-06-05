@@ -4,6 +4,9 @@ from pathlib import Path
 import os
 import tempfile
 import shutil
+import asyncio
+
+from servicex import ServiceX_Exception
 
 
 class ClientSessionMocker:
@@ -54,15 +57,24 @@ def files_in_minio(mocker):
         return range(count, 0, -1)
 
     file_range = default_lambda
+    status_call_count = 0
 
     async def return_files():
+        while status_call_count > -1:
+            await asyncio.sleep(0.02)
         for i in file_range():
             yield f'file-name-{i}'
 
     mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
 
     async def get_status(c, ep, req_id):
-        return 0, count, 0
+        nonlocal status_call_count
+        if status_call_count > 0:
+            status_call_count -= 1
+            return count, 0, 0
+        else:
+            status_call_count = -1
+            return 0, count, 0
 
     mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
 
@@ -72,16 +84,24 @@ def files_in_minio(mocker):
             o.write('hi')
     mocker.patch('servicex.servicex._download_file', side_effect=download)
 
-    def reset_files(n_files: int, reverse: bool = False):
-        nonlocal count, file_range
+    def reset_files(n_files: int, reverse: bool = False, status_calls_before_complete: int = 0):
+        nonlocal count, file_range, status_call_count
         count = n_files
+
         if not reverse:
             file_range = default_lambda
         else:
             file_range = reverse_lambda
 
+        status_call_count = status_calls_before_complete
+
     return reset_files
 
+
+@pytest.fixture
+def bad_transform_status(mocker):
+
+    mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceX_Exception('bad attempt'))
 
 @pytest.fixture(autouse=True)
 def delete_default_downloaded_files():
@@ -125,3 +145,10 @@ def good_awkward_file_data(mocker):
         return df
 
     mocker.patch('servicex.servicex._convert_root_to_awkward', side_effect=good_awkward_data)
+
+@pytest.fixture
+def short_status_poll_time():
+    import servicex.servicex as sxs
+    old_value, sxs.servicex_status_poll_time = sxs.servicex_status_poll_time, 0.1
+    yield
+    sxs.servicex_status_poll_time = old_value

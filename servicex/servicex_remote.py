@@ -143,11 +143,12 @@ class _result_object_list:
         while not self._done:
             await self._event.wait()
             self._event.clear()
-            files = _protected_list_objects(self._client, self._req_id)
-            for f in files:
-                if f not in seen:
-                    seen.append(f)
-                    yield f
+            if not self._done:
+                files = _protected_list_objects(self._client, self._req_id)
+                for f in files:
+                    if f not in seen:
+                        seen.append(f)
+                        yield f
 
 
 async def _submit_query(client: aiohttp.ClientSession,

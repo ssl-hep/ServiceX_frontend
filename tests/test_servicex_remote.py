@@ -1,11 +1,13 @@
-from servicex.utils import ServiceX_Exception
-import pytest
-import aiohttp
-from typing import Optional
+import asyncio
 from json import dumps
 from pathlib import Path
-import asyncio
+from typing import Optional
 
+import aiohttp
+from minio.error import ResponseError
+import pytest
+
+from servicex.utils import ServiceX_Exception
 
 from .utils_for_testing import ClientSessionMocker
 
@@ -61,19 +63,32 @@ def make_minio_file(fname):
     return r
 
 
+def copy_minio_file(req: str, bucket: str, output_file: str):
+    assert isinstance(output_file, str)
+    with open(output_file, 'w') as o:
+        o.write('hi there')
+
 @pytest.fixture
 def good_minio_client(mocker):
-    def copy_it(req: str, bucket: str, output_file: str):
-        assert isinstance(output_file, str)
-        with open(output_file, 'w') as o:
-            o.write('hi there')
 
     def do_list(request_id):
         return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
 
     minio_client = mocker.MagicMock()
-    minio_client.fget_object = copy_it
+    minio_client.fget_object = copy_minio_file
     minio_client.list_objects = do_list
+
+    return minio_client
+
+
+@pytest.fixture
+def bad_then_good_minio_listing(mocker):
+    response1 = mocker.MagicMock()
+    response1.data = '<xml></xml>'
+    response2 = [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+
+    minio_client = mocker.MagicMock()
+    minio_client.list_objects = mocker.MagicMock(side_effect=[ResponseError(response1, 'POST', 'Due'), response2])
 
     return minio_client
 
@@ -87,6 +102,7 @@ def bad_minio_client(mocker):
     minio_client.fget_object = copy_it
 
     return minio_client
+
 
 
 @pytest.fixture
@@ -159,6 +175,13 @@ async def test_download_bad(bad_minio_client, clean_temp_dir):
 def test_list_objects(good_minio_client):
     from servicex.servicex_remote import _protected_list_objects
     f = _protected_list_objects(good_minio_client, '111-222-333-444')
+    assert len(f) == 1
+
+
+def test_list_objects_with_null(bad_then_good_minio_listing):
+    'Sometimes for reasons we do not understand we get back a response error from list_objects minio method'
+    from servicex.servicex_remote import _protected_list_objects
+    f = _protected_list_objects(bad_then_good_minio_listing, '111-222-333-444')
     assert len(f) == 1
 
 
