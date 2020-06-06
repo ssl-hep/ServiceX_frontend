@@ -23,7 +23,8 @@ from .utils_for_testing import (  # NOQA
     good_transform_request,
     good_awkward_file_data,
     bad_transform_status,
-    short_status_poll_time
+    short_status_poll_time,
+    bad_transform_request
 )  # NOQA
 
 
@@ -442,6 +443,15 @@ async def test_good_run_root_files(good_transform_request, files_in_minio):
     assert good_transform_request.call_args[0][2]['result-format'] == 'root-file'
 
 
+def test_good_run_root_files_no_async(good_transform_request, files_in_minio):
+    'Make sure the non-async version works'
+    ds = fe.ServiceX('localds://mc16_tev:13')
+    r = ds.get_data_rootfiles('(valid qastle string)')
+    assert isinstance(r, list)
+    assert len(r) == 1
+    assert r[0].exists()
+
+
 @pytest.mark.asyncio
 async def test_good_run_root_files_pause(good_transform_request, files_in_minio, short_status_poll_time):
     'Get a root file with a single file'
@@ -559,142 +569,70 @@ async def test_max_workers_spec(good_transform_request, files_in_minio, good_awk
 
 
 @pytest.mark.asyncio
-async def test_servicex_rejects_transform_request(bad_transform_request, reduce_wait_time):
+async def test_servicex_rejects_transform_request(bad_transform_request):
     'Simple run bomb during transform query'
-    try:
-        await fe.get_data_async('(valid qastle string)', 'one_ds')
-        assert False
-    except fe.ServiceX_Exception as se:
-        # Make sure the code failure, 400, is in the string somewhere.
-        assert str(se).find('400') >= 0
-        return
+    with pytest.raises(fe.ServiceX_Exception) as e:
+        ds = fe.ServiceX('localds://mc16_tev:13', max_workers=50)
+        await ds.get_data_awkward_async('(valid qastle string)')
+
+    assert str(e).find('400') >= 0
+
+
+async def run_nqueries_on_n_ds(n_ds: int = 1, n_query: int = 1):
+    'Run some number of queries on some number of datasets'
+    def create_ds_query(index: int):
+        ds = fe.ServiceX(f'localds://mc16_tev:13_{index}')
+        return [ds.get_data_rootfiles_async(f'(valid qastle string {i})' for i in range(n_query))]
+
+    all_results = [item for i in range(n_ds) for item in create_ds_query(i)]
+    all_wait = await asyncio.gather(*all_results)
+
+    # They are different queries, so they should come down in different files.
+    count = 0
+    s = set()
+    for r in all_wait:
+        for f in r:
+            assert f.exists()
+            s.add(str(f))
+            count += 1
+
+    assert len(s) == count
 
 
 @pytest.mark.asyncio
-async def test_bad_datatype_request(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-
-    try:
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='fork_me')
-    except fe.ServiceXFrontEndException:
-        return
-    assert False
-
-
-def test_good_run_single_ds_1file_no_async(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results, but with the non-async version'
-    r = fe.get_data('(valid qastle string)', 'one_ds')
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458
-
-
-def test_good_run_single_ds_1file_no_async_with_loop(good_transform_request, reduce_wait_time, files_back_1):
-    'Async loop has been created for other reasons, and the non-async version still needs to work.'
-    _ = asyncio.get_event_loop()
-    r = fe.get_data('(valid qastle string)', 'one_ds')
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458
-
-
-def test_run_with_running_event_loop(good_transform_request, reduce_wait_time, files_back_1):
-    async def doit():
-        r = fe.get_data('(valid qastle string)', 'one_ds')
-        assert isinstance(r, pd.DataFrame)
-        assert len(r) == 283458
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(doit())
+async def test_run_with_4_queries_1_ds(good_transform_request, files_in_minio):
+    'Try to run four transform requests at same time on the same dataset. Make sure each returns what we expect.'
+    await run_nqueries_on_n_ds(n_ds=1, n_query=4)
 
 
 @pytest.mark.asyncio
-async def test_run_with_four_queries(good_requests_indexed, reduce_wait_time, indexed_files_back):
-    'Try to run four transform requests at same time. Make sure each returns what we expect.'
-    r1 = fe.get_data_async('(valid qastle string)', 'ds_0_1')
-    r2 = fe.get_data_async('(valid qastle string)', 'ds_1_2')
-    r3 = fe.get_data_async('(valid qastle string)', 'ds_2_3')
-    r4 = fe.get_data_async('(valid qastle string)', 'ds_3_4')
-    all_wait = await asyncio.gather(*[r1, r2, r3, r4])
-    assert len(all_wait) == 4
-    for cnt, r in enumerate(all_wait):
-        assert isinstance(r, pd.DataFrame)
-        assert len(r) == 283458 * (cnt + 1)
+async def test_run_with_100_queries_1_ds(good_transform_request, files_in_minio):
+    'Try to run four transform requests at same time on the same dataset. Make sure each returns what we expect.'
+    await run_nqueries_on_n_ds(n_ds=1, n_query=100)
 
 
 @pytest.mark.asyncio
-async def test_run_with_onehundred_queries(good_requests_indexed, reduce_wait_time, indexed_files_back):
-    'Try to run four transform requests at same time. Make sure each returns what we expect.'
-    # Request 100 times, each with 1 file in the return.
-    count = 100
-    all_requests = [fe.get_data_async('(valid qastle string)', f'ds_{i}_1') for i in range(0, count)]
-    all_wait = await asyncio.gather(*all_requests)
-    assert len(all_wait) == count
-    for cnt, r in enumerate(all_wait):
-        assert isinstance(r, pd.DataFrame)
-        assert len(r) == 283458
+async def test_run_with_1_queries_4_ds(good_transform_request, files_in_minio):
+    'Simple stress test of 4 datasets and 1 query on each'
+    await run_nqueries_on_n_ds(4)
 
 
 @pytest.mark.asyncio
-async def test_files_downloaded_ready_in_sequence(good_transform_request_delayed_finish, reduce_wait_time, files_back_2_one_at_a_time):
-    'If one file finishes first, and later the second one finishes, make sure we get both the files.'
-    #  fe.servicex.servicex_status_poll_time = 1.0
-
-    r1 = fe.get_data_async('(valid qastle string)', 'ds_0_2')
-    r = await r1
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 283458 * 2
+async def test_run_with_1_queries_100_ds(good_transform_request, files_in_minio):
+    'Simple stress test of 100 datasets and 1 query on each'
+    await run_nqueries_on_n_ds(100)
 
 
 @pytest.mark.asyncio
-async def test_files_downloading_is_interleaved(good_transform_request_delayed_finish, reduce_wait_time, files_back_2_one_at_a_time):
-    'Make sure files start the download before the transform is done'
-    #  fe.servicex.servicex_status_poll_time = 1.0
-
-    r1 = fe.get_data_async('(valid qastle string)', 'ds_0_2')
-    await r1
-
-    q = files_back_2_one_at_a_time
-    print(q.qsize())
-
-    ordering = []
-    while q.qsize() > 0:
-        ordering.append(q.get(False))
-
-    print(ordering)
-
-    assert ordering[0] == 'get-file-list 0'
-    assert ordering[1].startswith('copy-a-file')
+async def test_run_with_4_queries_4_ds(good_transform_request, files_in_minio):
+    'Simple stress test of 4 datasets and 1 query on each'
+    await run_nqueries_on_n_ds(4, n_query=4)
 
 
 @pytest.mark.asyncio
-async def test_good_download_files_1(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert isinstance(r, List)
-    assert len(r) == 1
-    assert isinstance(r[0], str)
-    assert os.path.exists(r[0])
-
-
-@pytest.mark.asyncio
-async def test_download_to_temp_file(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert isinstance(r, list)
-    assert os.path.exists(r[0])
-    assert not r[0].endswith('.temp')
-    local_filepath = files_back_1[0].call_args[0][2]
-    assert local_filepath.endswith('.temp')
-
-
-@pytest.mark.asyncio
-async def test_good_download_files_2(good_transform_request, reduce_wait_time, files_back_2):
-    'Simple run with expected results'
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert isinstance(r, List)
-    assert len(r) == 2
-    assert isinstance(r[0], str)
-    assert os.path.exists(r[0])
-    assert isinstance(r[1], str)
-    assert os.path.exists(r[1])
+async def test_run_with_100_queries_100_ds(good_transform_request, files_in_minio):
+    'Simple stress test of 100 datasets and 1 query on each'
+    await run_nqueries_on_n_ds(100, n_query=100)
 
 
 @pytest.mark.asyncio

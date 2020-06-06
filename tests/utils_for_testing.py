@@ -44,6 +44,26 @@ def good_transform_request(mocker):
 
 
 @pytest.fixture()
+def bad_transform_request(mocker):
+    '''
+    Setup a bad transform request
+    '''
+
+    return mocker.patch('servicex.servicex._submit_query',
+                        side_effect=ServiceX_Exception('Error transform 400'))
+# @pytest.fixture()
+# def bad_transform_request(mocker):
+#     '''
+#     Fail when we return!
+#     '''
+#     r1 = ClientSessionMocker(dumps({"message": "Things Just Went Badly"}), 400)
+#     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
+
+#     return None
+
+
+
+@pytest.fixture()
 def files_in_minio(mocker):
     '''
     How many files are we returning?
@@ -82,6 +102,7 @@ def files_in_minio(mocker):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('w') as o:
             o.write('hi')
+        assert path.suffix == '.temp'
     mocker.patch('servicex.servicex._download_file', side_effect=download)
 
     def reset_files(n_files: int, reverse: bool = False, status_calls_before_complete: int = 0):

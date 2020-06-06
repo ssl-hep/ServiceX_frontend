@@ -255,6 +255,13 @@ class ServiceX(ServiceXABC):
         col_names = all_data[0].keys()
         return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
 
+    # Define the synchronous versions of the async methods for easy of use
+    # TODO: Why do these have to be repeated?
+    get_data_rootfiles = make_sync(get_data_rootfiles_async)
+    get_data_pandas_df = make_sync(get_data_pandas_df_async)
+    get_data_awkward = make_sync(get_data_awkward_async)
+    get_data_parquet = make_sync(get_data_parquet_async)
+
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]]):
         # Get all the files
@@ -384,8 +391,10 @@ class ServiceX(ServiceXABC):
                 copy_to_path = self._file_name_func(request_id, f)
 
                 async def do_wait(final_path):
-                    await _download_file(minio, request_id, f, final_path)
-                    return copy_to_path
+                    temp_path = final_path.parent / (final_path.name + '.temp')
+                    await _download_file(minio, request_id, f, temp_path)
+                    temp_path.rename(final_path)
+                    return final_path
                 yield f, do_wait(copy_to_path)
 
             await r_loop

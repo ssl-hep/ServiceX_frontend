@@ -51,6 +51,14 @@ def good_submit(mocker):
 
 
 @pytest.fixture
+def bad_submit(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'message': "bad text"}), 400)
+    client.post = lambda d, json: r
+    return client
+
+
+@pytest.fixture
 def servicex_status_unknown(mocker):
     r = ClientSessionMocker(dumps({'message': "unknown status"}), 500)
     mocker.patch('aiohttp.ClientSession.get', return_value=r)
@@ -79,6 +87,25 @@ def good_minio_client(mocker):
     minio_client.list_objects = do_list
 
     return minio_client
+
+
+@pytest.fixture
+def indexed_minio_client(mocker):
+
+    count = 1
+
+    def do_list(request_id):
+        return [make_minio_file(f'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-{i}.part.minio') for i in range(count)]
+
+    minio_client = mocker.MagicMock()
+    minio_client.fget_object = copy_minio_file
+    minio_client.list_objects = do_list
+
+    def update_count(c: int):
+        nonlocal count
+        count = c
+
+    return minio_client, update_count
 
 
 @pytest.fixture
@@ -142,7 +169,7 @@ async def test_status_remain_unknown(servicex_status_request):
 
 
 @pytest.mark.asyncio
-async def test_unknown_request(servicex_status_unknown):
+async def test_status_unknown_request(servicex_status_unknown):
     from servicex.servicex_remote import _get_transform_status
 
     with pytest.raises(ServiceX_Exception) as e:
@@ -209,6 +236,34 @@ async def test_files_one_shot(good_minio_client):
 
 
 @pytest.mark.asyncio
+async def test_files_2_shot(indexed_minio_client):
+    from servicex.servicex_remote import _result_object_list
+
+    minio, update_count = indexed_minio_client
+
+    ro = _result_object_list(minio, '111-222-444')
+    items = []
+    done = False
+
+    async def get_files():
+        async for f in ro.files():
+            items.append(f)
+            update_count(2)
+        nonlocal done
+        done = True
+
+    t = asyncio.create_task(get_files())
+    ro.trigger_scan()
+    await asyncio.sleep(0.1)
+    ro.trigger_scan()
+    await asyncio.sleep(0.1)
+    ro.shutdown()
+    await t
+
+    assert len(items) == 2
+
+
+@pytest.mark.asyncio
 async def test_files_no_repeat(good_minio_client):
     from servicex.servicex_remote import _result_object_list
 
@@ -242,3 +297,13 @@ async def test_submit_good(good_submit):
     assert rid is not None
     assert isinstance(rid, str)
     assert rid == '111-222-333-444'
+
+
+@pytest.mark.asyncio
+async def test_submit_bad(bad_submit):
+    from servicex.servicex_remote import _submit_query
+
+    with pytest.raises(ServiceX_Exception) as e:
+        await _submit_query(bad_submit, 'http://bogus', {'hi': 'there'})
+
+    assert "bad text" in str(e.value)
