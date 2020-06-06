@@ -102,7 +102,7 @@ def files_in_minio(mocker):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('w') as o:
             o.write('hi')
-        assert path.suffix == '.temp'
+
     mocker.patch('servicex.servicex._download_file', side_effect=download)
 
     def reset_files(n_files: int, reverse: bool = False, status_calls_before_complete: int = 0):

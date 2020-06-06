@@ -8,6 +8,7 @@ import tempfile
 from typing import List, Optional
 from unittest import mock
 from unittest.mock import MagicMock
+from pathlib import Path
 
 from minio.error import ResponseError
 import pandas as pd
@@ -418,11 +419,11 @@ from .utils_for_testing import (  # NOQA
 #     mocker.patch('aiohttp.ClientSession.get', return_value=g1)
 
 
-# def clean_fname(fname: str):
-#     'No matter the string given, make it an acceptable filename'
-#     return fname.replace('*', '_') \
-#                 .replace(';', '_') \
-#                 .replace(':', '_')
+def clean_fname(fname: str):
+    'No matter the string given, make it an acceptable filename'
+    return fname.replace('*', '_') \
+                .replace(';', '_') \
+                .replace(':', '_')
 
 
 def test_create_with_dataset():
@@ -578,7 +579,9 @@ async def test_servicex_rejects_transform_request(bad_transform_request):
     assert str(e).find('400') >= 0
 
 
-async def run_nqueries_on_n_ds(n_ds: int = 1, n_query: int = 1):
+@pytest.mark.asyncio
+@pytest.mark.parametrize("n_ds, n_query", [(1, 4), (4, 1), (1, 100), (100, 1), (4, 4), (100, 100)])
+async def test_nqueries_on_n_ds(n_ds: int, n_query: int, good_transform_request, files_in_minio):
     'Run some number of queries on some number of datasets'
     def create_ds_query(index: int):
         ds = fe.ServiceX(f'localds://mc16_tev:13_{index}')
@@ -600,139 +603,102 @@ async def run_nqueries_on_n_ds(n_ds: int = 1, n_query: int = 1):
 
 
 @pytest.mark.asyncio
-async def test_run_with_4_queries_1_ds(good_transform_request, files_in_minio):
-    'Try to run four transform requests at same time on the same dataset. Make sure each returns what we expect.'
-    await run_nqueries_on_n_ds(n_ds=1, n_query=4)
+@pytest.mark.parametrize("n_files", [1, 2])
+async def test_download_cached_nonet(good_transform_request, files_in_minio, n_files: int):
+    '''
+    Check that we do not use the network if we have already cached a file.
+        - the transform is requested only initally
+        - the status calls are not made more than for the first time
+        - the calls to minio are only made teh first time (the list_objects, for example)
+    '''
+    files_in_minio(n_files)
+
+    async def do_query():
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_rootfiles_async('(valid qastle string')
+
+    # Call 1
+    await do_query()
+
+    # Call 2
+    await do_query()
+
+    # Check the the number of times we called for a transform is good.
+    good_transform_request.assert_called_once()
+
+    # Check that we made only one status call
+    assert False
+
+    # Check that we only called to see how many objects there were in minio once.
 
 
 @pytest.mark.asyncio
-async def test_run_with_100_queries_1_ds(good_transform_request, files_in_minio):
-    'Try to run four transform requests at same time on the same dataset. Make sure each returns what we expect.'
-    await run_nqueries_on_n_ds(n_ds=1, n_query=100)
+@pytest.mark.parametrize("n_files", [1, 2])
+async def test_download_cached_awkward(good_transform_request, files_in_minio, good_awkward_file_data, n_files: int):
+    'Run two right after each other - they should return the same data in memory'
+    async def do_query():
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_awkward_async('(valid qastle string')
 
-
-@pytest.mark.asyncio
-async def test_run_with_1_queries_4_ds(good_transform_request, files_in_minio):
-    'Simple stress test of 4 datasets and 1 query on each'
-    await run_nqueries_on_n_ds(4)
-
-
-@pytest.mark.asyncio
-async def test_run_with_1_queries_100_ds(good_transform_request, files_in_minio):
-    'Simple stress test of 100 datasets and 1 query on each'
-    await run_nqueries_on_n_ds(100)
-
-
-@pytest.mark.asyncio
-async def test_run_with_4_queries_4_ds(good_transform_request, files_in_minio):
-    'Simple stress test of 4 datasets and 1 query on each'
-    await run_nqueries_on_n_ds(4, n_query=4)
-
-
-@pytest.mark.asyncio
-async def test_run_with_100_queries_100_ds(good_transform_request, files_in_minio):
-    'Simple stress test of 100 datasets and 1 query on each'
-    await run_nqueries_on_n_ds(100, n_query=100)
-
-
-@pytest.mark.asyncio
-async def test_download_cached_nonet(good_transform_request, reduce_wait_time, files_back_1):
-    'Make sure we do not query the network if we already have everything local'
-    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    status_called = good_transform_request[1].call_count
-    # Make sure to turn off the in-memory cache
-    import servicex.servicex as sxx
-    sxx._data_cache = {}
-    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    _, f_list = files_back_1
-    json = good_transform_request[0]
-    assert json['called'] == 1, 'Expected transform request to have been made only once'
-    f_list.assert_called_once(), "Only a single transform request made"
-    assert good_transform_request[1].call_count == status_called
-
-
-@pytest.mark.asyncio
-async def test_download_cached_nonet_2_files(good_transform_request, reduce_wait_time, files_back_2):
-    'Make sure we do not query the network if we already have everything local'
-    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    status_called = good_transform_request[1].call_count
-    # Make sure to turn off the in-memory cache
-    import servicex.servicex as sxx
-    sxx._data_cache = {}
-    await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    _, f_list = files_back_2
-    json = good_transform_request[0]
-    assert json['called'] == 1, 'Expected transform request to have been made only once'
-    f_list.assert_called_once(), "Only a single transform request made"
-    assert good_transform_request[1].call_count == status_called
-
-
-@pytest.mark.asyncio
-async def test_download_cached_awkward(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    a1 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
-    a2 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+    a1 = await do_query()
+    a2 = await do_query()
     assert a1 is a2
 
 
 @pytest.mark.asyncio
-async def test_download_cached_awkward_2_files(good_transform_request, reduce_wait_time, files_back_2):
-    'Simple run with expected results'
-    a1 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
-    a2 = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
+async def test_simultaneous_query_not_requeued(good_transform_request, files_in_minio, good_awkward_file_data):
+    'Run two at once - they should not both generate queires as they are identical'
+    async def do_query():
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_awkward_async('(valid qastle string')
+
+    a1, a2 = await asyncio.gather(*[do_query(), do_query()])
     assert a1 is a2
 
 
 @pytest.mark.asyncio
-async def test_simultaneous_query_not_requeued(good_transform_request, reduce_wait_time, files_back_1):
-    'Simple run with expected results'
-    a_a1 = fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
-    a_a2 = fe.get_data_async('(valid qastle string)', 'one_ds', data_type='awkward')
-
-    a1, a2 = await asyncio.gather(a_a1, a_a2)
-    assert good_transform_request[0]["called"] == 1
-    assert a1 is a2
-
-
-@pytest.mark.asyncio
-async def test_download_to_temp_dir(good_transform_request, reduce_wait_time, files_back_1):
+async def test_download_to_temp_dir(good_transform_request, files_in_minio):
     'Download to a specified storage directory'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
     os.mkdir(tmp)
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file', storage_directory=tmp)
+
+    ds = fe.ServiceX('localds://dude-is-funny', storage_directory=tmp)
+    r = await ds.get_data_rootfiles_async('(valid qastle string')
+
     assert isinstance(r, List)
     assert len(r) == 1
-    assert os.path.exists(r[0])
-    assert r[0].startswith(tmp)
+    assert r[0].exists()
+    assert str(r[0]).startswith(tmp)
 
 
 @pytest.mark.asyncio
-async def test_download_to_lambda_dir(good_transform_request, reduce_wait_time, files_back_1):
+async def test_download_to_lambda_dir(good_transform_request, files_in_minio):
     'Download to files using a file name function callback'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
     os.mkdir(tmp)
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file', file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+
+    ds = fe.ServiceX('localds://dude-is-funny', file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
+    r = await ds.get_data_rootfiles_async('(valid qastle string')
+
     assert isinstance(r, List)
     assert len(r) == 1
-    assert os.path.exists(r[0])
-    assert r[0].startswith(tmp)
+    assert r[0].exists()
+    assert str(r[0]).startswith(tmp)
 
 
 @pytest.mark.asyncio
-async def test_download_bad_params_filerename(good_transform_request, reduce_wait_time, files_back_1):
+async def test_download_bad_params_filerename(good_transform_request, files_in_minio):
     'Specify both a storage directory and a filename rename func - illegal'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
     if os.path.exists(tmp):
         shutil.rmtree(tmp)
     os.mkdir(tmp)
     with pytest.raises(Exception) as e:
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
-                                storage_directory=tmp,
-                                file_name_func=lambda rid, obj_name: f'{tmp}\\{clean_fname(obj_name)}')
+        fe.ServiceX('http://one-ds', storage_directory=tmp, file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
     assert "only specify" in str(e.value)
 
 

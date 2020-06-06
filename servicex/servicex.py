@@ -115,6 +115,11 @@ class ServiceXABC:
                     assert storage_directory is not None
                     return Path(storage_directory) / sanitize_filename(minio_name)
                 self._file_name_func = file_name
+        else:
+            if storage_directory is not None:
+                raise ServiceX_Exception('Can only specify `storage_directory` or `file_name_func`'
+                    ' when creating Servicex, not both.')
+            self._file_name_func = file_name_func
 
     @property
     def dataset(self):
@@ -391,9 +396,7 @@ class ServiceX(ServiceXABC):
                 copy_to_path = self._file_name_func(request_id, f)
 
                 async def do_wait(final_path):
-                    temp_path = final_path.parent / (final_path.name + '.temp')
-                    await _download_file(minio, request_id, f, temp_path)
-                    temp_path.rename(final_path)
+                    await _download_file(minio, request_id, f, final_path)
                     return final_path
                 yield f, do_wait(copy_to_path)
 
