@@ -359,7 +359,7 @@ class ServiceX(ServiceXABC):
                 if processed != last_processed:
                     last_processed = processed
                     downloader.trigger_scan()
-                
+
                 self._notifier.update(processed=processed, failed=failed)
 
                 if not done:
@@ -603,10 +603,10 @@ async def get_data_cache_calc(request_id: str,
         notifier.update(processed=files_processed)
         if files_failed is not None:
             notifier.update(failed=files_failed)
-        if files_remaining is not None:
-            t = files_remaining + files_processed \
-                + (files_failed if files_failed is not None else 0)
-            notifier.update(total=t)
+        # if files_remaining is not None:
+            # t = files_remaining + files_processed \
+            #     + (files_failed if files_failed is not None else 0)
+            # notifier.update(total=t)
         notifier.broadcast()
 
         if files_processed > last_files_processed:
