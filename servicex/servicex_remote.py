@@ -87,6 +87,11 @@ async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str
             raise ServiceX_Exception(f'Failed to copy minio bucket {bucket_fname} from request '
                                      f'{request_id} to {output_file}') from e
 
+    # If the file exists, we don't need to do anything.
+    if output_file.exists():
+        return
+
+    # Do the copy, which might take a while, on a separate thread.
     return await asyncio.wrap_future(_download_executor.submit(do_copy))
 
 

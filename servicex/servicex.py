@@ -101,7 +101,12 @@ class ServiceXABC:
         self._dataset = dataset
         self._image = image
         self._max_workers = max_workers
-        self._status_callback = status_callback
+
+        # Normalize how we do the status updates
+        if status_callback is _run_default_wrapper:
+            t = _default_wrapper_mgr(dataset)
+            status_callback = t.update
+        self._notifier = _status_update_wrapper(status_callback)
 
         # Normalize how we do the files
         if file_name_func is None:
@@ -356,6 +361,8 @@ class ServiceX(ServiceXABC):
                 if processed != last_processed:
                     last_processed = processed
                     downloader.trigger_scan()
+                
+                self._notifier.update(processed=processed, failed=failed)
 
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)

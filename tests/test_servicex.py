@@ -603,60 +603,6 @@ async def test_nqueries_on_n_ds(n_ds: int, n_query: int, good_transform_request,
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("n_files", [1, 2])
-async def test_download_cached_nonet(good_transform_request, files_in_minio, n_files: int):
-    '''
-    Check that we do not use the network if we have already cached a file.
-        - the transform is requested only initally
-        - the status calls are not made more than for the first time
-        - the calls to minio are only made teh first time (the list_objects, for example)
-    '''
-    files_in_minio(n_files)
-
-    async def do_query():
-        ds = fe.ServiceX('localds://dude-is-funny')
-        return await ds.get_data_rootfiles_async('(valid qastle string')
-
-    # Call 1
-    await do_query()
-
-    # Call 2
-    await do_query()
-
-    # Check the the number of times we called for a transform is good.
-    good_transform_request.assert_called_once()
-
-    # Check that we made only one status call
-    assert False
-
-    # Check that we only called to see how many objects there were in minio once.
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("n_files", [1, 2])
-async def test_download_cached_awkward(good_transform_request, files_in_minio, good_awkward_file_data, n_files: int):
-    'Run two right after each other - they should return the same data in memory'
-    async def do_query():
-        ds = fe.ServiceX('localds://dude-is-funny')
-        return await ds.get_data_awkward_async('(valid qastle string')
-
-    a1 = await do_query()
-    a2 = await do_query()
-    assert a1 is a2
-
-
-@pytest.mark.asyncio
-async def test_simultaneous_query_not_requeued(good_transform_request, files_in_minio, good_awkward_file_data):
-    'Run two at once - they should not both generate queires as they are identical'
-    async def do_query():
-        ds = fe.ServiceX('localds://dude-is-funny')
-        return await ds.get_data_awkward_async('(valid qastle string')
-
-    a1, a2 = await asyncio.gather(*[do_query(), do_query()])
-    assert a1 is a2
-
-
-@pytest.mark.asyncio
 async def test_download_to_temp_dir(good_transform_request, files_in_minio):
     'Download to a specified storage directory'
     tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
@@ -702,95 +648,8 @@ async def test_download_bad_params_filerename(good_transform_request, files_in_m
     assert "only specify" in str(e.value)
 
 
-@pytest.mark.asyncio
-async def test_download_already_there_files(good_transform_request, reduce_wait_time, files_back_1):
-    'Re-run and files already existing, do not download again'
-    tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
-    if os.path.exists(tmp):
-        shutil.rmtree(tmp)
-    os.mkdir(tmp)
-    output_file = os.path.join(tmp, 'bogus.root')
-    # Put in a good file for reading
-    good_copy(None, None, output_file)
-
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
-                                file_name_func=lambda rid, obj_name: output_file,
-                                redownload_files=False)
-    assert len(r) == 1
-    files_back_1[0].assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_resume_download_missing_files(transform_status_fails_once_then_good, reduce_wait_time):
-    '''
-    We get a status error message, and then we can re-download them.
-
-    1. Request the transform
-    1. Get the status - but that fails the second time
-    1. This causes the download to bomb.
-    1. Re-request the download, and then discover it is done.
-    '''
-
-    with pytest.raises(Exception):
-        # Will fail with one file downloaded.
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert len(r) == 2
-    transform_status_fails_once_then_good.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_servicex_gone_when_redownload_request(transform_status_fails_once_then_unknown, reduce_wait_time):
-    '''
-    We call to get a transform, get one of 2 files, then get an error.
-    We try again, and this time servicex has been restarted, so it knows nothing about our request
-    We have to re-request the transform and start from scratch.
-    '''
-
-    with pytest.raises(Exception):
-        # Will fail with one file downloaded.
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-
-    # New instance of ServiceX now, and it is ready to do everything.
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert len(r) == 2
-    assert transform_status_fails_once_then_unknown.call_count == 2, 'Request for a transform should have been called twice'
-
-
-@pytest.mark.asyncio
-async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time):
-    '''
-    We call to get a transform, and the 1 file fails (gets marked as skip).
-    We then call again, and it works, and we get back the files we want.
-    '''
-
-    with pytest.raises(Exception):
-        # Will fail with one file downloaded.
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
-    assert len(r) == 2
-    assert transform_fails_once_then_second_good.call_count == 2, 'Request for a transform should have been called twice'
-
-
-@pytest.mark.asyncio
-async def test_download_not_there_files(good_transform_request, reduce_wait_time, files_back_1):
-    'Make sure we can download to a specific file'
-    tmp = os.path.join(tempfile.gettempdir(), 're_download_dir')
-    if os.path.exists(tmp):
-        shutil.rmtree(tmp)
-    os.mkdir(tmp)
-    output_file = os.path.join(tmp, 'bogus.file')
-
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file',
-                                file_name_func=lambda rid, obj_name: output_file,
-                                redownload_files=True)
-    assert len(r) == 1
-    files_back_1[0].assert_called()
-
-
-def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
+@pytest.mark.skip
+def test_callback_good(good_transform_request, files_in_minio):
     'Simple run with expected results, but with the non-async version'
     f_total = None
     f_processed = None
@@ -804,7 +663,8 @@ def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
         f_downloaded = downloaded
         f_failed = failed
 
-    fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
+    ds = fe.ServiceX('http://one-ds', status_callback=check_in)
+    ds.get_data_rootfiles('(valid qastle string)')
 
     assert f_total == 1
     assert f_processed == 1
@@ -812,6 +672,7 @@ def test_callback_good(good_transform_request, reduce_wait_time, files_back_1):
     assert f_failed == 0
 
 
+@pytest.mark.skip
 def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_time, files_back_1):
     'There are times service x returns a few number of files total for one query, but then resumes having a good number'
     f_total = []
@@ -831,6 +692,7 @@ def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_ti
     assert all(i == 3 for i in f_total)
 
 
+@pytest.mark.skip
 def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
     'ServiceX fails one of its files'
     'There are times service x returns a few number of files total for one query, but then resumes having a good number'
@@ -853,12 +715,122 @@ def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
     assert all(i == 2 for i in f_total)
     assert all(i == 1 for i in f_failed)
     assert "failed to transform" in str(e.value)
+    
+
+@pytest.mark.skip
+@pytest.mark.asyncio
+async def test_resume_download_missing_files(transform_status_fails_once_then_good, reduce_wait_time):
+    '''
+    We get a status error message, and then we can re-download them.
+
+    1. Request the transform
+    1. Get the status - but that fails the second time
+    1. This causes the download to bomb.
+    1. Re-request the download, and then discover it is done.
+    '''
+
+    with pytest.raises(Exception):
+        # Will fail with one file downloaded.
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert len(r) == 2
+    transform_status_fails_once_then_good.assert_called_once()
 
 
-def test_failed_default_callback(bad_transform, reduce_wait_time, files_back_1):
-    'Make sure that no errors occur in default status updater'
-    with pytest.raises(fe.ServiceX_Exception):
-        fe.get_data('(valid qastle string)', 'one_ds')
+@pytest.mark.skip
+@pytest.mark.asyncio
+async def test_servicex_gone_when_redownload_request(transform_status_fails_once_then_unknown, reduce_wait_time):
+    '''
+    We call to get a transform, get one of 2 files, then get an error.
+    We try again, and this time servicex has been restarted, so it knows nothing about our request
+    We have to re-request the transform and start from scratch.
+    '''
+
+    with pytest.raises(Exception):
+        # Will fail with one file downloaded.
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+
+    # New instance of ServiceX now, and it is ready to do everything.
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert len(r) == 2
+    assert transform_status_fails_once_then_unknown.call_count == 2, 'Request for a transform should have been called twice'
+
+
+@pytest.mark.skip
+@pytest.mark.asyncio
+async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time):
+    '''
+    We call to get a transform, and the 1 file fails (gets marked as skip).
+    We then call again, and it works, and we get back the files we want.
+    '''
+
+    with pytest.raises(Exception):
+        # Will fail with one file downloaded.
+        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+
+    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    assert len(r) == 2
+    assert transform_fails_once_then_second_good.call_count == 2, 'Request for a transform should have been called twice'
+
+
+@pytest.mark.skip
+@pytest.mark.asyncio
+@pytest.mark.parametrize("n_files", [1, 2])
+async def test_download_cached_nonet(good_transform_request, files_in_minio, n_files: int):
+    '''
+    Check that we do not use the network if we have already cached a file.
+        - the transform is requested only initally
+        - the status calls are not made more than for the first time
+        - the calls to minio are only made teh first time (the list_objects, for example)
+    '''
+    files_in_minio(n_files)
+
+    async def do_query():
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_rootfiles_async('(valid qastle string')
+
+    # Call 1
+    await do_query()
+
+    # Call 2
+    await do_query()
+
+    # Check the the number of times we called for a transform is good.
+    good_transform_request.assert_called_once()
+
+    # Check that we made only one status call
+    assert False
+
+    # Check that we only called to see how many objects there were in minio once.
+
+
+@pytest.mark.skip
+@pytest.mark.asyncio
+@pytest.mark.parametrize("n_files", [1, 2])
+async def test_download_cached_awkward(good_transform_request, files_in_minio, good_awkward_file_data, n_files: int):
+    'Run two right after each other - they should return the same data in memory'
+    async def do_query():
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_awkward_async('(valid qastle string')
+
+    a1 = await do_query()
+    a2 = await do_query()
+    assert a1 is a2
+
+
+@pytest.mark.skip
+@pytest.mark.asyncio
+async def test_simultaneous_query_not_requeued(good_transform_request, files_in_minio, good_awkward_file_data):
+    'Run two at once - they should not both generate queires as they are identical'
+    async def do_query():
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_awkward_async('(valid qastle string')
+
+    a1, a2 = await asyncio.gather(*[do_query(), do_query()])
+    assert a1 is a2
+
+
 
 
 # TODO:

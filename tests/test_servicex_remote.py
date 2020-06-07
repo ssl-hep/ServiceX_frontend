@@ -83,7 +83,7 @@ def good_minio_client(mocker):
         return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
 
     minio_client = mocker.MagicMock()
-    minio_client.fget_object = copy_minio_file
+    minio_client.fget_object = mocker.MagicMock(side_effect=copy_minio_file)
     minio_client.list_objects = do_list
 
     return minio_client
@@ -197,6 +197,50 @@ async def test_download_bad(bad_minio_client, clean_temp_dir):
         await _download_file(bad_minio_client, '111-22-333-444', 'dude-where-is-my-lunch', final_path)
     assert not final_path.exists()
     assert "Failed to copy" in str(e.value)
+
+
+@pytest.mark.asyncio
+async def test_download_already_there(good_minio_client, clean_temp_dir):
+    from servicex.servicex_remote import _download_file
+
+    final_path = clean_temp_dir / 'download_tests' / 'output-file.dude'
+    if final_path.parent.exists():
+        import shutil
+        shutil.rmtree(final_path.parent)
+
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    if final_path.exists():
+        final_path.rm()
+
+    with final_path.open('w') as o:
+        o.write('this is a line')
+
+    await _download_file(good_minio_client, '111-22-333-444', 'dude-where-is-my-lunch', final_path)
+    assert final_path.exists()
+    good_minio_client.fget_object.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_download_with_temp_file_there(good_minio_client, clean_temp_dir):
+    'This simulates a bad download - so an old temp file is left on disk'
+    from servicex.servicex_remote import _download_file
+
+    final_path = clean_temp_dir / 'download_tests' / 'output-file.dude'
+    if final_path.parent.exists():
+        import shutil
+        shutil.rmtree(final_path.parent)
+
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    if final_path.exists():
+        final_path.rm()
+
+    temp_file = final_path.parent / (final_path.name + ".temp")
+    with temp_file.open('w') as o:
+        o.write('this is a line')
+
+    await _download_file(good_minio_client, '111-22-333-444', 'dude-where-is-my-lunch', final_path)
+    assert final_path.exists()
+    good_minio_client.fget_object.assert_called_once()
 
 
 def test_list_objects(good_minio_client):

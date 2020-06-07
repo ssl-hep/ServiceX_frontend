@@ -43,6 +43,7 @@ class _status_update_wrapper:
         self._processed: Optional[int] = None
         self._downloaded: Optional[int] = None
         self._failed: int = 0
+        self._remaining: Optional[int] = None
 
     @property
     def total(self) -> Optional[int]:
@@ -55,31 +56,37 @@ class _status_update_wrapper:
     def broadcast(self):
         'Send an update back to the system'
         if self._callback is not None:
-            if self._total is not None \
-                    or self._processed is not None \
-                    or self._callback is not None:
-                if self._processed is None:
-                    self._processed = 0
-                if self._downloaded is None:
-                    self._downloaded = 0
-                self._callback(self._total, self._processed, self._downloaded, self._failed)
+            processed = self._processed if self._processed is not None else 0
+            downloaded = self._downloaded if self._downloaded is not None else 0
+            failed = self._failed if self._failed is not None else 0
+            self._callback(self._total, processed, downloaded, failed)
+
+    def _update_total(self):
+        'Update total number of files, without letting inconsistencies change things'
+        if self._processed is not None \
+                and self._remaining is not None \
+                and self._failed is not None:
+            total = self._remaining + self._processed + self._failed
+            if self._total is None:
+                self._total = total
+            else:
+                if self._total < total:
+                    self._total = total
 
     def update(self, processed: Optional[int] = None,
                downloaded: Optional[int] = None,
-               total: Optional[int] = None,
+               remaining: Optional[int] = None,
                failed: Optional[int] = None):
-        if total is not None:
-            if self._total is not None:
-                if total > self._total:
-                    self._total = total
-            else:
-                self._total = total
         if processed is not None:
             self._processed = processed
+            self._update_total()
         if downloaded is not None:
             self._downloaded = downloaded
         if failed is not None:
             self._failed = failed
+        if remaining is not None:
+            self._remaining = remaining
+            self._update_total()
 
     def inc(self, downloaded: Optional[int] = None):
         if downloaded is not None:
