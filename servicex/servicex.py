@@ -26,7 +26,6 @@ import awkward
 from make_it_sync import make_sync
 from minio import Minio, ResponseError
 import numpy as np
-from numpy.lib.stride_tricks import broadcast_arrays
 import pandas as pd
 from retry import retry
 import uproot
