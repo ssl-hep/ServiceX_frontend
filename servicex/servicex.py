@@ -224,10 +224,18 @@ def ignore_cache():
     pass
 
 
+_in_progress_items: Dict[str, asyncio.Event] = {}
+
+
 def _wrap_inmem_cache(fn):
     '''
     Wrap a ServiceX function that is getting data so that we can
     use the internal cache, if the item exists, and bypass everything.
+
+    NOTE: This is not thread safe. In fact, you'll likely get a bomb if try to
+          call this from another thread and the two threads request something the
+          same at the same time because asyncio locks are associated with loops,
+          and there is one loop per thread.
     '''
     @functools.wraps(fn)
     async def cached_version_of_fn(*args, **kwargs):
@@ -237,13 +245,26 @@ def _wrap_inmem_cache(fn):
         selection_query = args[1]
         assert isinstance(selection_query, str)
 
+        # Is it in the local cache?
         h = _string_hash([sx._dataset, selection_query])
+        if h in _in_progress_items:
+            await _in_progress_items[h].wait()
+
+        # Is it already done?
         r = sx._cache.lookup_inmem(h)
         if r is not None:
             return r
 
-        result = await fn(*args, **kwargs)
-        sx._cache.set_inmem(h, result)
+        # It is not. We need to calculate it, and prevent
+        # others from working on it.
+        _in_progress_items[h] = asyncio.Event()
+        try:
+            result = await fn(*args, **kwargs)
+            sx._cache.set_inmem(h, result)
+        finally:
+            _in_progress_items[h].set()
+            del _in_progress_items[h]
+
         return result
 
     return cached_version_of_fn

@@ -816,7 +816,6 @@ async def test_download_cached_awkward(good_transform_request, files_in_minio, g
     assert a1 is a2
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_simultaneous_query_not_requeued(good_transform_request, files_in_minio, good_awkward_file_data):
     'Run two at once - they should not both generate queires as they are identical'
