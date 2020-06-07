@@ -69,6 +69,7 @@ def files_in_minio(mocker):
     How many files are we returning?
     '''
     count = 1
+    mark_failed = 0
 
     def default_lambda():
         return range(count)
@@ -94,7 +95,7 @@ def files_in_minio(mocker):
             return count, 0, 0
         else:
             status_call_count = -1
-            return 0, count, 0
+            return 0, count - mark_failed, mark_failed
 
     mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
 
@@ -105,8 +106,12 @@ def files_in_minio(mocker):
 
     mocker.patch('servicex.servicex._download_file', side_effect=download)
 
-    def reset_files(n_files: int, reverse: bool = False, status_calls_before_complete: int = 0):
-        nonlocal count, file_range, status_call_count
+    def reset_files(n_files: int, reverse: bool = False,
+                    status_calls_before_complete: int = 0,
+                    as_failed: int = 0):
+
+        nonlocal count, file_range, status_call_count, mark_failed
+
         count = n_files
 
         if not reverse:
@@ -115,6 +120,10 @@ def files_in_minio(mocker):
             file_range = reverse_lambda
 
         status_call_count = status_calls_before_complete
+
+        if as_failed > count:
+            raise Exception(f'Not allowed to have more failed ({as_failed}) than total files ({count})')
+        mark_failed = as_failed
 
     return reset_files
 

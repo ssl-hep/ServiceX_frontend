@@ -26,6 +26,7 @@ import awkward
 from make_it_sync import make_sync
 from minio import Minio, ResponseError
 import numpy as np
+from numpy.lib.stride_tricks import broadcast_arrays
 import pandas as pd
 from retry import retry
 import uproot
@@ -360,7 +361,8 @@ class ServiceX(ServiceXABC):
                     last_processed = processed
                     downloader.trigger_scan()
 
-                self._notifier.update(processed=processed, failed=failed)
+                self._notifier.update(processed=processed, failed=failed, remaining=remaining)
+                self._notifier.broadcast()
 
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)
@@ -402,10 +404,17 @@ class ServiceX(ServiceXABC):
 
                 async def do_wait(final_path):
                     await _download_file(minio, request_id, f, final_path)
+                    self._notifier.inc(downloaded=1)
+                    self._notifier.broadcast()
                     return final_path
                 yield f, do_wait(copy_to_path)
 
             await r_loop
+        
+        # Now that data has been moved back here, lets make sure there were no failed files.
+        if self._notifier.failed > 0:
+            raise ServiceX_Exception(f'ServiceX failed to transform {self._notifier.failed}'
+                                     ' files - data incomplete.')
 
 # ##### Below here is old (but working!) code. For reviewing API please ignore.
 

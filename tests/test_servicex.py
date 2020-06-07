@@ -444,6 +444,20 @@ async def test_good_run_root_files(good_transform_request, files_in_minio):
     assert good_transform_request.call_args[0][2]['result-format'] == 'root-file'
 
 
+@pytest.mark.asyncio
+async def test_skipped_file(good_transform_request, files_in_minio):
+    '''
+    ServiceX should throw if a file is marked as "skipped".
+    '''
+    files_in_minio(2, as_failed=1)
+
+    with pytest.raises(fe.ServiceX_Exception) as e:
+        ds = fe.ServiceX('http://one-ds')
+        ds.get_data_rootfiles('(valid qastle string)')
+
+    assert "failed to transform" in str(e.value)
+
+
 def test_good_run_root_files_no_async(good_transform_request, files_in_minio):
     'Make sure the non-async version works'
     ds = fe.ServiceX('localds://mc16_tev:13')
@@ -648,7 +662,6 @@ async def test_download_bad_params_filerename(good_transform_request, files_in_m
     assert "only specify" in str(e.value)
 
 
-@pytest.mark.skip
 def test_callback_good(good_transform_request, files_in_minio):
     'Simple run with expected results, but with the non-async version'
     f_total = None
@@ -672,30 +685,13 @@ def test_callback_good(good_transform_request, files_in_minio):
     assert f_failed == 0
 
 
-@pytest.mark.skip
-def test_status_keeps_files(good_transform_jittery_file_totals_3, reduce_wait_time, files_back_1):
-    'There are times service x returns a few number of files total for one query, but then resumes having a good number'
-    f_total = []
-    f_processed = []
-    f_downloaded = []
-    f_failed = []
+def test_failed_iteration(good_transform_request, files_in_minio):
+    '''
+    ServiceX fails one of its files:
+    There are times service x returns a few number of files total for one query, but then resumes having a good number'
+    '''
+    files_in_minio(2, as_failed=1)
 
-    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
-        nonlocal f_total, f_processed, f_downloaded, f_failed
-        f_total.append(total)
-        f_processed.append(processed)
-        f_downloaded.append(downloaded)
-        f_failed.append(failed)
-
-    fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
-
-    assert all(i == 3 for i in f_total)
-
-
-@pytest.mark.skip
-def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
-    'ServiceX fails one of its files'
-    'There are times service x returns a few number of files total for one query, but then resumes having a good number'
     f_total = []
     f_processed = []
     f_downloaded = []
@@ -709,13 +705,14 @@ def test_failed_iteration(bad_transform, reduce_wait_time, files_back_1):
         f_failed.append(failed)
 
     with pytest.raises(fe.ServiceX_Exception) as e:
-        fe.get_data('(valid qastle string)', 'one_ds', status_callback=check_in)
+        ds = fe.ServiceX('http://one-ds', status_callback=check_in)
+        ds.get_data_rootfiles('(valid qastle string)')
 
-    assert len(f_total) == 2
+    assert len(f_total) == 1
     assert all(i == 2 for i in f_total)
     assert all(i == 1 for i in f_failed)
     assert "failed to transform" in str(e.value)
-    
+
 
 @pytest.mark.skip
 @pytest.mark.asyncio
