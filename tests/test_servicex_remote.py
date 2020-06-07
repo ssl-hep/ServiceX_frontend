@@ -76,6 +76,7 @@ def copy_minio_file(req: str, bucket: str, output_file: str):
     with open(output_file, 'w') as o:
         o.write('hi there')
 
+
 @pytest.fixture
 def good_minio_client(mocker):
 
@@ -129,7 +130,6 @@ def bad_minio_client(mocker):
     minio_client.fget_object = copy_it
 
     return minio_client
-
 
 
 @pytest.fixture
@@ -270,7 +270,7 @@ async def test_files_one_shot(good_minio_client):
         nonlocal done
         done = True
 
-    t = asyncio.create_task(get_files())
+    t = asyncio.ensure_future(get_files())
     ro.trigger_scan()
     await asyncio.sleep(0.1)
     ro.shutdown()
@@ -296,7 +296,7 @@ async def test_files_2_shot(indexed_minio_client):
         nonlocal done
         done = True
 
-    t = asyncio.create_task(get_files())
+    t = asyncio.ensure_future(get_files())
     ro.trigger_scan()
     await asyncio.sleep(0.1)
     ro.trigger_scan()
