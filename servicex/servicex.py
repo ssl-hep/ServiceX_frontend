@@ -12,13 +12,11 @@ from typing import (
     Awaitable,
     Callable,
     Dict,
-    Generator,
     Iterable,
     List,
     Optional,
     Tuple,
     Union,
-    Callable
 )
 from typing import Iterator
 import urllib
@@ -123,7 +121,7 @@ class ServiceXABC:
         else:
             if storage_directory is not None:
                 raise ServiceX_Exception('Can only specify `storage_directory` or `file_name_func`'
-                    ' when creating Servicex, not both.')
+                                         ' when creating Servicex, not both.')
             self._file_name_func = file_name_func
 
     @property

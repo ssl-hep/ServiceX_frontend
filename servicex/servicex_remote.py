@@ -1,7 +1,7 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Optional, Tuple, List, Dict, Generator
+from typing import Optional, Tuple, List, Dict
 
 import aiohttp
 from minio import Minio, ResponseError

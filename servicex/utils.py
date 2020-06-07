@@ -1,5 +1,4 @@
 from hashlib import blake2b
-import os
 from pathlib import Path
 import re
 import tempfile
@@ -248,8 +247,8 @@ def clean_linq(q: str) -> str:
             node_type: Optional[str] = None
             for child in children:
                 if isinstance(child, Token):
-                    if child.type == 'NODE_TYPE':
-                        node_type = child.value
+                    if child.type == 'NODE_TYPE':  # type: ignore
+                        node_type = child.value  # type: ignore
                     else:
                         pass
                 elif isinstance(child, ParseTracker):
