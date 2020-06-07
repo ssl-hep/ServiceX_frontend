@@ -48,6 +48,7 @@ from .utils import (
     _status_update_wrapper,
     _submit_or_lookup_transform,
     clean_linq,
+    _string_hash,
 )
 from .cache import cache
 
@@ -223,6 +224,31 @@ def ignore_cache():
     pass
 
 
+def _wrap_inmem_cache(fn):
+    '''
+    Wrap a ServiceX function that is getting data so that we can
+    use the internal cache, if the item exists, and bypass everything.
+    '''
+    @functools.wraps(fn)
+    async def cached_version_of_fn(*args, **kwargs):
+        assert len(args) == 2
+        sx = args[0]
+        assert isinstance(sx, ServiceX)
+        selection_query = args[1]
+        assert isinstance(selection_query, str)
+
+        h = _string_hash([sx._dataset, selection_query])
+        r = sx._cache.lookup_inmem(h)
+        if r is not None:
+            return r
+
+        result = await fn(*args, **kwargs)
+        sx._cache.set_inmem(h, result)
+        return result
+
+    return cached_version_of_fn
+
+
 class ServiceX(ServiceXABC):
     '''
     ServiceX on the web.
@@ -247,19 +273,23 @@ class ServiceX(ServiceXABC):
         return self._endpoint
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async)
+    @_wrap_inmem_cache
     async def get_data_rootfiles_async(self, selection_query: str):
         return await self._file_return(selection_query, 'root-file')
 
     @functools.wraps(ServiceXABC.get_data_parquet_async)
+    @_wrap_inmem_cache
     async def get_data_parquet_async(self, selection_query: str):
         return await self._file_return(selection_query, 'parquet')
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async)
+    @_wrap_inmem_cache
     async def get_data_pandas_df_async(self, selection_query: str):
         import pandas as pd
         return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async)
+    @_wrap_inmem_cache
     async def get_data_awkward_async(self, selection_query: str):
         import awkward
         all_data = await self._data_return(selection_query, _convert_root_to_awkward)

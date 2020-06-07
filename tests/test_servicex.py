@@ -5,7 +5,7 @@ import queue
 import re
 import shutil
 import tempfile
-from typing import List, Optional
+from typing import List, Optional, Any, Tuple
 from unittest import mock
 from unittest.mock import MagicMock
 from pathlib import Path
@@ -594,12 +594,12 @@ async def test_servicex_rejects_transform_request(bad_transform_request):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("n_ds, n_query", [(1, 4), (4, 1), (1, 100), (100, 1), (4, 4), (100, 100)])
+@pytest.mark.parametrize("n_ds, n_query", [(1, 4), (4, 1), (1, 100), (100, 1), (4, 4), (20, 20)])
 async def test_nqueries_on_n_ds(n_ds: int, n_query: int, good_transform_request, files_in_minio):
     'Run some number of queries on some number of datasets'
     def create_ds_query(index: int):
         ds = fe.ServiceX(f'localds://mc16_tev:13_{index}')
-        return [ds.get_data_rootfiles_async(f'(valid qastle string {i})' for i in range(n_query))]
+        return [ds.get_data_rootfiles_async(f'(valid qastle string {i})') for i in range(n_query)]
 
     all_results = [item for i in range(n_ds) for item in create_ds_query(i)]
     all_wait = await asyncio.gather(*all_results)
@@ -803,7 +803,6 @@ async def test_download_cached_nonet(good_transform_request, files_in_minio, n_f
     patch_info['list_files'].assert_called_once()
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
 @pytest.mark.parametrize("n_files", [1, 2])
 async def test_download_cached_awkward(good_transform_request, files_in_minio, good_awkward_file_data, n_files: int):
@@ -825,7 +824,7 @@ async def test_simultaneous_query_not_requeued(good_transform_request, files_in_
         ds = fe.ServiceX('localds://dude-is-funny')
         return await ds.get_data_awkward_async('(valid qastle string')
 
-    a1, a2 = await asyncio.gather(*[do_query(), do_query()])
+    a1, a2 = await asyncio.gather(*[do_query(), do_query()])  # type: ignore
     assert a1 is a2
 
 

@@ -9,6 +9,7 @@ from typing import Dict
 import pytest
 
 from servicex import ServiceX_Exception
+from servicex.cache import cache
 
 
 class ClientSessionMocker:
@@ -142,11 +143,13 @@ def delete_default_downloaded_files():
     import servicex.servicex as ssx
     ssx._data_cache = {}
     ssx._query_locks = {}
+    cache.reset_cache()
     yield
     if os.path.exists(download_location):
         shutil.rmtree(download_location)
     ssx._data_cache = {}
     ssx._query_locks = {}
+    cache.reset_cache()
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 from .utils import _query_cache_hash
 
@@ -10,6 +10,13 @@ class cache:
     Caching for all data returns from the system. It provides both in-memory
     and on-disk cache.
     '''
+    _in_memory_cache = {}
+
+    @classmethod
+    def reset_cache(cls):
+        'Reset the iternal cache, usually used for testing'
+        cls._in_memory_cache = {}
+
     def __init__(self, cache_path: Path):
         '''
         Create the cache object
@@ -56,3 +63,11 @@ class cache:
             return None
         with f.open('r') as i:
             return json.load(i)
+
+    def set_inmem(self, id: str, v: Any):
+        self._in_memory_cache[id] = v
+
+    def lookup_inmem(self, id: str) -> Optional[Any]:
+        if id not in self._in_memory_cache:
+            return None
+        return self._in_memory_cache[id]

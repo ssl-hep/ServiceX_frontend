@@ -2,7 +2,7 @@ from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, List
 
 import aiohttp
 from tqdm.auto import tqdm
@@ -15,6 +15,7 @@ from qastle import parse
 default_file_cache_name = Path(tempfile.gettempdir()) / 'servicex'
 
 
+# TODO: Fix this underscore name
 class ServiceX_Exception(Exception):
     'Raised when something has gone wrong in the ServiceX remote service'
     def __init__(self, msg):
@@ -153,6 +154,17 @@ def _query_cache_hash(json_query: Dict[str, str]) -> str:
         if k not in _json_keys_to_ignore_for_hash:
             hasher.update(k.encode())
             hasher.update(str(v).encode())
+    hash = hasher.hexdigest()
+    return hash
+
+
+def _string_hash(s_list: List[str]) -> str:
+    '''
+    Return a hash for an input list of strings.
+    '''
+    hasher = blake2b(digest_size=20)
+    for v in s_list:
+        hasher.update(v.encode())
     hash = hasher.hexdigest()
     return hash
 

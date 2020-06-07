@@ -67,3 +67,23 @@ def test_files_hit_reloaded(cache_dir):
     c1.set_files('1234', ['hi', 'there'])
     c2 = cache(cache_dir)
     assert c2.lookup_files('1234') == ['hi', 'there']
+
+
+def test_memory_miss(cache_dir):
+    c = cache(cache_dir)
+    assert c.lookup_inmem('dude') is None
+
+
+def test_memory_hit(cache_dir):
+    c = cache(cache_dir)
+    r = 10
+    c.set_inmem('dude', r)
+    assert c.lookup_inmem('dude') is r
+
+
+def test_memory_hit_accross(cache_dir):
+    c1 = cache(cache_dir)
+    r = 10
+    c1.set_inmem('dude', r)
+    c2 = cache(cache_dir)
+    assert c2.lookup_inmem('dude') is r
