@@ -1,10 +1,12 @@
-import pytest
-from json import loads
-from pathlib import Path
-import os
-import tempfile
-import shutil
 import asyncio
+from json import loads
+import os
+from pathlib import Path
+import shutil
+import tempfile
+from typing import Dict
+
+import pytest
 
 from servicex import ServiceX_Exception
 
@@ -51,16 +53,6 @@ def bad_transform_request(mocker):
 
     return mocker.patch('servicex.servicex._submit_query',
                         side_effect=ServiceX_Exception('Error transform 400'))
-# @pytest.fixture()
-# def bad_transform_request(mocker):
-#     '''
-#     Fail when we return!
-#     '''
-#     r1 = ClientSessionMocker(dumps({"message": "Things Just Went Badly"}), 400)
-#     mocker.patch('aiohttp.ClientSession.post', return_value=r1)
-
-#     return None
-
 
 
 @pytest.fixture()
@@ -86,7 +78,7 @@ def files_in_minio(mocker):
         for i in file_range():
             yield f'file-name-{i}'
 
-    mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+    p_list_files = mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
 
     async def get_status(c, ep, req_id):
         nonlocal status_call_count
@@ -97,18 +89,18 @@ def files_in_minio(mocker):
             status_call_count = -1
             return 0, count - mark_failed, mark_failed
 
-    mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
+    p_get_transform_status = mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
 
     async def download(client, request_id, fname, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('w') as o:
             o.write('hi')
 
-    mocker.patch('servicex.servicex._download_file', side_effect=download)
+    p_download_file = mocker.patch('servicex.servicex._download_file', side_effect=download)
 
     def reset_files(n_files: int, reverse: bool = False,
                     status_calls_before_complete: int = 0,
-                    as_failed: int = 0):
+                    as_failed: int = 0) -> Dict[str, int]:
 
         nonlocal count, file_range, status_call_count, mark_failed
 
@@ -125,6 +117,12 @@ def files_in_minio(mocker):
             raise Exception(f'Not allowed to have more failed ({as_failed}) than total files ({count})')
         mark_failed = as_failed
 
+        return {
+            'list_files': p_list_files,
+            'get_transform_status': p_get_transform_status,
+            'download_file': p_download_file
+        }
+
     return reset_files
 
 
@@ -132,6 +130,7 @@ def files_in_minio(mocker):
 def bad_transform_status(mocker):
 
     mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceX_Exception('bad attempt'))
+
 
 @pytest.fixture(autouse=True)
 def delete_default_downloaded_files():
@@ -175,6 +174,7 @@ def good_awkward_file_data(mocker):
         return df
 
     mocker.patch('servicex.servicex._convert_root_to_awkward', side_effect=good_awkward_data)
+
 
 @pytest.fixture
 def short_status_poll_time():

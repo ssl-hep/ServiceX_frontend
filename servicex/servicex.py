@@ -50,6 +50,7 @@ from .utils import (
     _submit_or_lookup_transform,
     clean_linq,
 )
+from .cache import cache
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
@@ -239,6 +240,8 @@ class ServiceX(ServiceXABC):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback)
         self._endpoint = service_endpoint
+        from servicex.utils import default_file_cache_name
+        self._cache = cache(default_file_cache_name)
 
     @property
     def endpoint(self):
@@ -387,34 +390,51 @@ class ServiceX(ServiceXABC):
                                         simultaneously.
         '''
         query = self._build_json_query(selection_query, data_type)
+        request_id = self._cache.lookup_query(query)
 
         async with aiohttp.ClientSession() as client:
-            request_id = await _submit_query(client, self._endpoint, query)
+            if request_id is None:
+                request_id = await _submit_query(client, self._endpoint, query)
+                self._cache.set_query(query, request_id)
 
-            minio = self._minio_client()
-            results_from_query = _result_object_list(minio, request_id)
-
-            # Problem - if this throws, then we want to get out of this, and we will be stuck
-            # waiting below too.
-            r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id,
-                                                                 results_from_query))
-
-            async for f in results_from_query.files():
-                copy_to_path = self._file_name_func(request_id, f)
-
-                async def do_wait(final_path):
-                    await _download_file(minio, request_id, f, final_path)
+            cached_files = self._cache.lookup_files(request_id)
+            if cached_files is not None:
+                self._notifier.update(processed=len(cached_files), remaining=0, failed=0)
+                loop = asyncio.get_running_loop()
+                for f, p in cached_files:
                     self._notifier.inc(downloaded=1)
-                    self._notifier.broadcast()
-                    return final_path
-                yield f, do_wait(copy_to_path)
+                    path_future = loop.create_future()
+                    path_future.set_result(Path(p))
+                    yield f, path_future
+            else:
+                minio = self._minio_client()
+                results_from_query = _result_object_list(minio, request_id)
 
-            await r_loop
-        
-        # Now that data has been moved back here, lets make sure there were no failed files.
-        if self._notifier.failed > 0:
-            raise ServiceX_Exception(f'ServiceX failed to transform {self._notifier.failed}'
-                                     ' files - data incomplete.')
+                # Problem - if this throws, then we want to get out of this, and we will be stuck
+                # waiting below too.
+                r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id,
+                                                                     results_from_query))
+
+                file_object_list = []
+                async for f in results_from_query.files():
+                    copy_to_path = self._file_name_func(request_id, f)
+
+                    async def do_wait(final_path):
+                        assert request_id is not None
+                        await _download_file(minio, request_id, f, final_path)
+                        self._notifier.inc(downloaded=1)
+                        self._notifier.broadcast()
+                        return final_path
+                    file_object_list.append((f, str(copy_to_path)))
+                    yield f, do_wait(copy_to_path)
+
+                self._cache.set_files(request_id, file_object_list)
+                await r_loop
+
+                # Now that data has been moved back here, lets make sure there were no failed files.
+                if self._notifier.failed > 0:
+                    raise ServiceX_Exception(f'ServiceX failed to transform {self._notifier.failed}'
+                                             ' files - data incomplete.')
 
 # ##### Below here is old (but working!) code. For reviewing API please ignore.
 

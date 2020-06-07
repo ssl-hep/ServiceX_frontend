@@ -144,6 +144,19 @@ class _default_wrapper_mgr:
 _json_keys_to_ignore_for_hash = ['workers']
 
 
+def _query_cache_hash(json_query: Dict[str, str]) -> str:
+    '''
+    Return a query cache file.
+    '''
+    hasher = blake2b(digest_size=20)
+    for k, v in json_query.items():
+        if k not in _json_keys_to_ignore_for_hash:
+            hasher.update(k.encode())
+            hasher.update(str(v).encode())
+    hash = hasher.hexdigest()
+    return hash
+
+
 def _query_cache_file(json_query: Dict[str, str]) -> Path:
     '''
     Return a query cache file.

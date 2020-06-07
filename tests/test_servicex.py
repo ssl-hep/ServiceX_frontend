@@ -771,7 +771,6 @@ async def test_servicex_transformer_failure_reload(transform_fails_once_then_sec
     assert transform_fails_once_then_second_good.call_count == 2, 'Request for a transform should have been called twice'
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
 @pytest.mark.parametrize("n_files", [1, 2])
 async def test_download_cached_nonet(good_transform_request, files_in_minio, n_files: int):
@@ -779,7 +778,7 @@ async def test_download_cached_nonet(good_transform_request, files_in_minio, n_f
     Check that we do not use the network if we have already cached a file.
         - the transform is requested only initally
         - the status calls are not made more than for the first time
-        - the calls to minio are only made teh first time (the list_objects, for example)
+        - the calls to minio are only made the first time (the list_objects, for example)
     '''
     files_in_minio(n_files)
 
@@ -796,10 +795,12 @@ async def test_download_cached_nonet(good_transform_request, files_in_minio, n_f
     # Check the the number of times we called for a transform is good.
     good_transform_request.assert_called_once()
 
-    # Check that we made only one status call
-    assert False
+    # Check that we made only one status call.
+    patch_info = files_in_minio(n_files)
+    patch_info['get_transform_status'].assert_called_once()
 
     # Check that we only called to see how many objects there were in minio once.
+    patch_info['list_files'].assert_called_once()
 
 
 @pytest.mark.skip
