@@ -399,7 +399,7 @@ class ServiceX(ServiceXABC):
             cached_files = self._cache.lookup_files(request_id)
             if cached_files is not None:
                 self._notifier.update(processed=len(cached_files), remaining=0, failed=0)
-                loop = asyncio.get_running_loop()
+                loop = asyncio.get_event_loop()
                 for f, p in cached_files:
                     self._notifier.inc(downloaded=1)
                     path_future = loop.create_future()
