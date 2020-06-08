@@ -241,5 +241,5 @@ def get_data(selection_query: str, datasets: Union[str, List[str]],
     '''
     nest_asyncio.apply()
     loop = asyncio.get_event_loop()
-    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint,
+    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint, data_type,
                                    image=image))
