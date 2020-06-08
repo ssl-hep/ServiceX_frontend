@@ -25,7 +25,8 @@ from .utils_for_testing import (  # NOQA
     good_awkward_file_data,
     bad_transform_status,
     short_status_poll_time,
-    bad_transform_request
+    bad_transform_request,
+    servicex_state_machine
 )  # NOQA
 
 
@@ -714,9 +715,8 @@ def test_failed_iteration(good_transform_request, files_in_minio):
     assert "failed to transform" in str(e.value)
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_resume_download_missing_files(transform_status_fails_once_then_good, reduce_wait_time):
+async def test_resume_download_missing_files(servicex_state_machine, short_status_poll_time):
     '''
     We get a status error message, and then we can re-download them.
 
@@ -726,13 +726,21 @@ async def test_resume_download_missing_files(transform_status_fails_once_then_go
     1. Re-request the download, and then discover it is done.
     '''
 
-    with pytest.raises(Exception):
-        # Will fail with one file downloaded.
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    servicex_state_machine['reset']()
+    servicex_state_machine['add_status_step'](processed=1, remaining=1, failed=0)
+    servicex_state_machine['add_status_fail'](fe.ServiceX_Exception('Lost the internet'))
 
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    ds = fe.ServiceX('http://one-ds')
+    with pytest.raises(fe.ServiceX_Exception):
+        # Will fail with one file downloaded.
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    servicex_state_machine['reset']()
+    servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
+
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert len(r) == 2
-    transform_status_fails_once_then_good.assert_called_once()
+    servicex_state_machine['patch_submit_query'].assert_called_once()
 
 
 @pytest.mark.skip

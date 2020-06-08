@@ -124,7 +124,7 @@ class _result_object_list:
         self._client = client
         self._req_id = request_id
         self._event = asyncio.Event()
-        self._done = False
+        self._trigger_done = False
 
     def trigger_scan(self):
         'Trigger a scan of the minio to look for new items in the bucket'
@@ -135,7 +135,7 @@ class _result_object_list:
         Initiate shutdown - a last check is performed and any new files found are
         routed.
         '''
-        self._done = True
+        self._trigger_done = True
         self._event.set()
 
     async def files(self):
@@ -145,15 +145,24 @@ class _result_object_list:
         a polling of `minio`.
         '''
         seen = []
-        while not self._done:
-            await self._event.wait()
-            self._event.clear()
-            if not self._done:
+        done = False
+        done_counter = 1
+        while not done:
+            if not self._trigger_done:
+                await self._event.wait()
+                self._event.clear()
+            if not done:
                 files = _protected_list_objects(self._client, self._req_id)
                 for f in files:
                     if f not in seen:
                         seen.append(f)
                         yield f
+
+            # Make sure to go around one last time to pick up any stragglers.
+            if done_counter == 0:
+                done = True
+            if self._trigger_done:
+                done_counter -= 1
 
 
 async def _submit_query(client: aiohttp.ClientSession,

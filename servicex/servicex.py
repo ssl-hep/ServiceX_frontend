@@ -478,12 +478,16 @@ class ServiceX(ServiceXABC):
                     file_object_list.append((f, str(copy_to_path)))
                     yield f, do_wait(copy_to_path)
 
-                self._cache.set_files(request_id, file_object_list)
                 await r_loop
 
-                # Now that data has been moved back here, lets make sure there were no failed files.
+                # If we got here, then the request finished.
+                self._cache.set_files(request_id, file_object_list)
+
+                # Now that data has been moved back here, lets make sure there were no failed
+                # files.
                 if self._notifier.failed > 0:
-                    raise ServiceX_Exception(f'ServiceX failed to transform {self._notifier.failed}'
+                    raise ServiceX_Exception(f'ServiceX failed to transform '
+                                             f'{self._notifier.failed}'
                                              ' files - data incomplete.')
 
 # ##### Below here is old (but working!) code. For reviewing API please ignore.

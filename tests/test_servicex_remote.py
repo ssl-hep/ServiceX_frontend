@@ -308,6 +308,32 @@ async def test_files_2_shot(indexed_minio_client):
 
 
 @pytest.mark.asyncio
+async def test_files_shutdown_not_files_lost(indexed_minio_client):
+    from servicex.servicex_remote import _result_object_list
+
+    minio, update_count = indexed_minio_client
+
+    ro = _result_object_list(minio, '111-222-444')
+    items = []
+    done = False
+
+    async def get_files():
+        async for f in ro.files():
+            items.append(f)
+            update_count(2)
+        nonlocal done
+        done = True
+
+    t = asyncio.ensure_future(get_files())
+    ro.trigger_scan()
+    ro.trigger_scan()
+    ro.shutdown()
+    await t
+
+    assert len(items) == 2
+
+
+@pytest.mark.asyncio
 async def test_files_no_repeat(good_minio_client):
     from servicex.servicex_remote import _result_object_list
 

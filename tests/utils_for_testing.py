@@ -128,6 +128,86 @@ def files_in_minio(mocker):
 
 
 @pytest.fixture
+def servicex_state_machine(mocker):
+    '''
+    Implement a state machine to run more complex tests.
+    '''
+    async def call_submit(client, endpoint, json):
+        import uuid
+        return str(uuid.uuid4())
+
+    p_submit_query = mocker.patch('servicex.servicex._submit_query',
+                                  side_effect=call_submit)
+
+    steps = []
+    step_index = 0
+
+    def add_status_step(processed: int, remaining: int, failed: int):
+        steps.append({'processed': processed, 'remaining': remaining, 'failed': failed})
+
+    def add_status_fail(ex):
+        steps.append({'raise': ex})
+
+    file_count_in_minio = 0
+    file_count_trigger = False
+    file_count_stop = False
+
+    def reset():
+        nonlocal steps, step_index, file_count_in_minio, file_count_stop, file_count_trigger
+        steps = []
+        step_index = 0
+        file_count_in_minio = 0
+        file_count_stop = False
+        file_count_trigger = False
+
+    async def get_status(c, ep, req_id):
+        nonlocal step_index
+        i = step_index if step_index < len(steps) else len(steps) - 1
+        step_index += 1
+        if 'raise' in steps[i]:
+            raise steps[i]['raise']
+        nonlocal file_count_in_minio
+        file_count_in_minio = steps[i]['processed']
+        return steps[i]['remaining'], steps[i]['processed'], steps[i]['failed']
+
+    mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
+
+    async def return_files():
+        nonlocal file_count_trigger
+        sent = set()
+        while (not file_count_stop) or (len(sent) < file_count_in_minio):
+            for i in range(file_count_in_minio):
+                if i not in sent:
+                    yield f'file-name-{i}'
+                    sent.add(i)
+            while not file_count_stop and not file_count_trigger:
+                await asyncio.sleep(0.05)
+            file_count_trigger = False
+
+    def files_shutdown():
+        nonlocal file_count_stop
+        file_count_stop = True
+
+    mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+    mocker.patch('servicex.servicex._result_object_list.shutdown', side_effect=files_shutdown)
+
+    async def download(client, request_id, fname, path: Path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open('w') as o:
+            o.write('hi')
+
+    mocker.patch('servicex.servicex._download_file', side_effect=download)
+
+    return {
+        'reset': reset,
+        'add_status_step': add_status_step,
+        'add_status_file': add_status_step,
+        'add_status_fail': add_status_fail,
+        'patch_submit_query': p_submit_query
+    }
+
+
+@pytest.fixture
 def bad_transform_status(mocker):
 
     mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceX_Exception('bad attempt'))
