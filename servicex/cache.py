@@ -51,6 +51,11 @@ class cache:
         with f.open('w') as o:
             o.write(f'{v}\n')
 
+    def remove_query(self, json: Dict[str, str]):
+        f = self._query_cache_file(json)
+        if f.exists():
+            f.unlink()
+
     def set_files(self, id: str, files: List[Tuple[str, str]]):
         f = self._files_cache_file(id)
         f.parent.mkdir(parents=True, exist_ok=True)

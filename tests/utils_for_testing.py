@@ -132,9 +132,15 @@ def servicex_state_machine(mocker):
     '''
     Implement a state machine to run more complex tests.
     '''
+    valid_request_id = None
+    file_count_stop = False
+
     async def call_submit(client, endpoint, json):
         import uuid
-        return str(uuid.uuid4())
+        nonlocal valid_request_id, file_count_stop
+        valid_request_id = str(uuid.uuid4())
+        file_count_stop = False
+        return valid_request_id
 
     p_submit_query = mocker.patch('servicex.servicex._submit_query',
                                   side_effect=call_submit)
@@ -150,24 +156,30 @@ def servicex_state_machine(mocker):
 
     file_count_in_minio = 0
     file_count_trigger = False
-    file_count_stop = False
 
-    def reset():
-        nonlocal steps, step_index, file_count_in_minio, file_count_stop, file_count_trigger
+    def reset(keep_request_id: bool = False):
+        nonlocal steps, step_index, file_count_in_minio, file_count_stop, file_count_trigger, valid_request_id
         steps = []
         step_index = 0
         file_count_in_minio = 0
         file_count_stop = False
         file_count_trigger = False
+        if not keep_request_id:
+            valid_request_id = None
 
     async def get_status(c, ep, req_id):
         nonlocal step_index
+
+        if req_id != valid_request_id:
+            raise ServiceX_Exception(f"Unknown request id {req_id} - so this test is going to bail. Might be test error (known: {valid_request_id}")
+
         i = step_index if step_index < len(steps) else len(steps) - 1
         step_index += 1
         if 'raise' in steps[i]:
             raise steps[i]['raise']
-        nonlocal file_count_in_minio
+        nonlocal file_count_in_minio, file_count_trigger
         file_count_in_minio = steps[i]['processed']
+        file_count_trigger = True
         return steps[i]['remaining'], steps[i]['processed'], steps[i]['failed']
 
     mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)

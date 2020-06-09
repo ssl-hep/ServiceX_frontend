@@ -736,7 +736,7 @@ async def test_resume_download_missing_files(servicex_state_machine, short_statu
         # Will fail with one file downloaded.
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
-    servicex_state_machine['reset']()
+    servicex_state_machine['reset'](keep_request_id=True)
     servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
 
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
@@ -744,23 +744,32 @@ async def test_resume_download_missing_files(servicex_state_machine, short_statu
     servicex_state_machine['patch_submit_query'].assert_called_once()
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_servicex_gone_when_redownload_request(transform_status_fails_once_then_unknown, reduce_wait_time):
+async def test_servicex_gone_when_redownload_request(servicex_state_machine, short_status_poll_time):
     '''
     We call to get a transform, get one of 2 files, then get an error.
     We try again, and this time servicex has been restarted, so it knows nothing about our request
     We have to re-request the transform and start from scratch.
     '''
 
+    servicex_state_machine['reset']()
+    servicex_state_machine['add_status_step'](processed=1, remaining=1, failed=0)
+    servicex_state_machine['add_status_fail'](fe.ServiceX_Exception('Lost the internet'))
+
+    ds = fe.ServiceX('http://one-ds')
+
     with pytest.raises(Exception):
         # Will fail with one file downloaded.
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    # Reset to work with a new query
+    servicex_state_machine['reset']()
+    servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
 
     # New instance of ServiceX now, and it is ready to do everything.
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert len(r) == 2
-    assert transform_status_fails_once_then_unknown.call_count == 2, 'Request for a transform should have been called twice'
+    servicex_state_machine['patch_submit_query'].call_count == 2, 'Request for a transform should have been called twice'
 
 
 @pytest.mark.skip

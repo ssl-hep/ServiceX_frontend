@@ -51,6 +51,13 @@ def test_query_lookup_from_file(cache_dir):
     assert c2.lookup_query({'hi': 'there'}) == 'dude'
 
 
+def test_query_remove(cache_dir):
+    c1 = cache(cache_dir)
+    c1.set_query({'hi': 'there'}, 'dude')
+    c1.remove_query({'hi': 'there'})
+    assert c1.lookup_query({'hi': 'there'}) is None
+
+
 def test_files_miss(cache_dir):
     c = cache(cache_dir)
     assert c.lookup_files('1234') is None

@@ -57,6 +57,15 @@ from .cache import cache
 servicex_status_poll_time = 5.0
 
 
+class _RetryException(Exception):
+    '''
+    Thrown internally when the system needs to re-try a request due to a complex
+    set of logic.
+    '''
+    def __init__(self):
+        Exception.__init__(self)
+
+
 class ServiceXABC:
     '''
     Abstract base class for accessing the ServiceX front-end for a particular dataset. This does
@@ -402,13 +411,20 @@ class ServiceX(ServiceXABC):
         Returns:
 
             None            Done when no more files are left.
+
+        Note:
+
+            - Raise the `_RetryException` if this is the first query and ServiceX does not
+              know about the exception.
         '''
         done = False
         last_processed = 0
+        first_query = True
         try:
             while not done:
                 remaining, processed, failed = await _get_transform_status(client, self._endpoint,
                                                                            request_id)
+                first_query = False
                 done = remaining is not None and remaining == 0
                 if processed != last_processed:
                     last_processed = processed
@@ -419,6 +435,11 @@ class ServiceX(ServiceXABC):
 
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)
+        except ServiceX_Exception as e:
+            if first_query:
+                raise _RetryException() from e
+            else:
+                raise
         finally:
             downloader.shutdown()
 
@@ -441,9 +462,11 @@ class ServiceX(ServiceXABC):
         '''
         query = self._build_json_query(selection_query, data_type)
         request_id = self._cache.lookup_query(query)
+        looked_up_request_id = False
 
         async with aiohttp.ClientSession() as client:
             if request_id is None:
+                looked_up_request_id = True
                 request_id = await _submit_query(client, self._endpoint, query)
                 self._cache.set_query(query, request_id)
 
@@ -478,7 +501,22 @@ class ServiceX(ServiceXABC):
                     file_object_list.append((f, str(copy_to_path)))
                     yield f, do_wait(copy_to_path)
 
-                await r_loop
+                # TODO: Pull this out to make sure this works correctly at a high level.
+                # This is torture code.
+                retry_me = False
+                try:
+                    await r_loop
+                except _RetryException as e:
+                    if looked_up_request_id:
+                        if hasattr(e, '__cause__'):
+                            assert e.__cause__ is not None
+                            raise e.__cause__
+                        raise
+                    retry_me = True
+                if retry_me:
+                    self._cache.remove_query(query)
+                    async for r in self._get_files(selection_query, data_type):
+                        yield r
 
                 # If we got here, then the request finished.
                 self._cache.set_files(request_id, file_object_list)
