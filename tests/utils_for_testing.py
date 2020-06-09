@@ -208,6 +208,16 @@ def servicex_state_machine(mocker):
 
 
 @pytest.fixture
+def no_files_in_minio(mocker):
+    async def return_files():
+        await asyncio.sleep(0.02)
+        for i in range(0):
+            yield f'file-name-{i}'
+
+    mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+
+
+@pytest.fixture
 def bad_transform_status(mocker):
 
     mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceX_Exception('bad attempt'))

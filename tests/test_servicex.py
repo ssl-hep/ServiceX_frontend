@@ -23,6 +23,7 @@ from .utils_for_testing import (  # NOQA
     good_pandas_file_data,
     good_transform_request,
     good_awkward_file_data,
+    no_files_in_minio,
     bad_transform_status,
     short_status_poll_time,
     bad_transform_request,
@@ -558,7 +559,7 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, files_in
 
 
 @pytest.mark.asyncio
-async def test_status_exception(good_transform_request, bad_transform_status):
+async def test_status_exception(good_transform_request, bad_transform_status, no_files_in_minio):
     'Make sure status error - like transform not found - is reported all the way to the top'
     ds = fe.ServiceX('localds://mc16_tev:13')
     with pytest.raises(fe.ServiceX_Exception) as e:
