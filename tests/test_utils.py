@@ -215,38 +215,6 @@ def test_callback_with_total_fluctuation():
 
 @pytest.mark.skip
 @pytest.mark.asyncio
-async def test_request_trans_once(good_transform_request):
-    json_query = {
-        'did': "dude_001",
-        'selection': "(valid qastle)",
-        'chunk-size': 1000,
-        'workers': 10,
-    }
-    async with aiohttp.ClientSession() as client:
-        rid = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-        assert rid is not None
-        req_json = good_transform_request
-        assert req_json is not None
-
-
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_request_trans_twice(good_transform_request):
-    json_query = {
-        'did': "dude_001",
-        'selection': "(valid qastle)",
-        'chunk-size': 1000,
-        'workers': 10,
-    }
-    async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-
-        assert rid1 == rid2
-
-
-@pytest.mark.skip
-@pytest.mark.asyncio
 async def test_request_trans_twice_no_cache(good_transform_request):
     json_query = {
         'did': "dude_001",
