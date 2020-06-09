@@ -524,6 +524,8 @@ class ServiceX(ServiceXABC):
                 # Now that data has been moved back here, lets make sure there were no failed
                 # files.
                 if self._notifier.failed > 0:
+                    # Take back the cache line
+                    self._cache.remove_query(query)
                     raise ServiceX_Exception(f'ServiceX failed to transform '
                                              f'{self._notifier.failed}'
                                              ' files - data incomplete.')

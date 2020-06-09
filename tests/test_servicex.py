@@ -772,21 +772,30 @@ async def test_servicex_gone_when_redownload_request(servicex_state_machine, sho
     servicex_state_machine['patch_submit_query'].call_count == 2, 'Request for a transform should have been called twice'
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_servicex_transformer_failure_reload(transform_fails_once_then_second_good, reduce_wait_time):
+async def test_servicex_transformer_failure_reload(servicex_state_machine, short_status_poll_time):
     '''
     We call to get a transform, and the 1 file fails (gets marked as skip).
     We then call again, and it works, and we get back the files we want.
     '''
 
-    with pytest.raises(Exception):
-        # Will fail with one file downloaded.
-        await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    servicex_state_machine['reset']()
+    servicex_state_machine['add_status_step'](processed=1, remaining=0, failed=1)
+    servicex_state_machine['add_status_fail'](fe.ServiceX_Exception('Lost the internet'))
 
-    r = await fe.get_data_async('(valid qastle string)', 'one_ds', data_type='root-file')
+    ds = fe.ServiceX('http://one-ds')
+
+    with pytest.raises(Exception):
+        # Will fail with one skipped file.
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    # Setup for a good query.
+    servicex_state_machine['reset']()
+    servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
+
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert len(r) == 2
-    assert transform_fails_once_then_second_good.call_count == 2, 'Request for a transform should have been called twice'
+    servicex_state_machine['patch_submit_query'].call_count == 2, 'Request for a transform should have been called twice'
 
 
 @pytest.mark.asyncio
