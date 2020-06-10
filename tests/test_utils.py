@@ -1,11 +1,16 @@
 from typing import Optional
-import aiohttp
 
+import aiohttp
 import pytest
 
-from servicex.utils import _status_update_wrapper, _submit_or_lookup_transform, clean_linq
+from servicex.utils import (
+    _query_cache_hash,
+    _status_update_wrapper,
+    _submit_or_lookup_transform,
+    clean_linq,
+)
 
-from .utils_for_testing import good_transform_request, delete_default_downloaded_files  # NOQA
+from .utils_for_testing import delete_default_downloaded_files, good_transform_request
 
 
 def test_callback_no_updates():
@@ -213,88 +218,69 @@ def test_callback_with_total_fluctuation():
     assert p_total == 13
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_request_trans_twice_no_cache(good_transform_request):
+def test_cache_stable():
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
         'chunk-size': 1000,
         'workers': 10,
     }
-    async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", False, json_query)
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", False, json_query)
+    h1 = _query_cache_hash(json_query)
+    h2 = _query_cache_hash(json_query)
 
-        assert rid1 != rid2
+    assert h1 == h2
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_request_trans_cache_workers(good_transform_request):
+def test_request_trans_cache_workers(good_transform_request):
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
         'chunk-size': 1000,
         'workers': 10,
     }
-    async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-        json_query['workers'] = 100
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-
-        assert rid1 == rid2
+    h1 = _query_cache_hash(json_query)
+    json_query['workers'] = 100
+    h2 = _query_cache_hash(json_query)
+    assert h1 == h2
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_request_trans_cache_selection(good_transform_request):
+def test_request_trans_cache_selection(good_transform_request):
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
         'chunk-size': 1000,
         'workers': 10,
     }
-    async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-        json_query['selection'] = '(call valid qastle)'
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-
-        assert rid1 != rid2
+    h1 = _query_cache_hash(json_query)
+    json_query['selection'] = '(call valid qastle)'
+    h2 = _query_cache_hash(json_query)
+    assert h1 != h2
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_request_trans_cache_did(good_transform_request):
+def test_request_trans_cache_did(good_transform_request):
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
         'chunk-size': 1000,
         'workers': 10,
     }
-    async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-        json_query['did'] = 'did_002'
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-
-        assert rid1 != rid2
+    h1 = _query_cache_hash(json_query)
+    json_query['did'] = 'did_002'
+    h2 = _query_cache_hash(json_query)
+    assert h1 != h2
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_request_trans_cache_unknown(good_transform_request):
+def test_request_trans_cache_unknown(good_transform_request):
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
         'chunk-size': 1000,
         'workers': 10,
     }
-    async with aiohttp.ClientSession() as client:
-        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-        json_query['fork'] = 'me'
-        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
-
-        assert rid1 != rid2
+    h1 = _query_cache_hash(json_query)
+    json_query['fork'] = 'me'
+    h2 = _query_cache_hash(json_query)
+    assert h1 != h2
 
 
 def test_clean_linq_no_lambda():
