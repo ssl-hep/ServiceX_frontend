@@ -7,7 +7,7 @@ import aiohttp
 from minio.error import ResponseError
 import pytest
 
-from servicex.utils import ServiceX_Exception
+from servicex.utils import ServiceXException
 
 from .utils_for_testing import ClientSessionMocker
 
@@ -172,7 +172,7 @@ async def test_status_remain_unknown(servicex_status_request):
 async def test_status_unknown_request(servicex_status_unknown):
     from servicex.servicex_remote import _get_transform_status
 
-    with pytest.raises(ServiceX_Exception) as e:
+    with pytest.raises(ServiceXException) as e:
         async with aiohttp.ClientSession() as client:
             await _get_transform_status(client, 'http://localhost:5000/sx', '123-123-123-444')
 
@@ -193,7 +193,7 @@ async def test_download_bad(bad_minio_client, clean_temp_dir):
     from servicex.servicex_remote import _download_file
 
     final_path = clean_temp_dir / 'output-file.dude'
-    with pytest.raises(ServiceX_Exception) as e:
+    with pytest.raises(ServiceXException) as e:
         await _download_file(bad_minio_client, '111-22-333-444', 'dude-where-is-my-lunch', final_path)
     assert not final_path.exists()
     assert "Failed to copy" in str(e.value)
@@ -373,7 +373,7 @@ async def test_submit_good(good_submit):
 async def test_submit_bad(bad_submit):
     from servicex.servicex_remote import _submit_query
 
-    with pytest.raises(ServiceX_Exception) as e:
+    with pytest.raises(ServiceXException) as e:
         await _submit_query(bad_submit, 'http://bogus', {'hi': 'there'})
 
     assert "bad text" in str(e.value)

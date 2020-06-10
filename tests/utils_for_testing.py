@@ -8,7 +8,7 @@ from typing import Dict
 
 import pytest
 
-from servicex import ServiceX_Exception
+from servicex import ServiceXException
 from servicex.cache import cache
 
 
@@ -53,7 +53,7 @@ def bad_transform_request(mocker):
     '''
 
     return mocker.patch('servicex.servicex._submit_query',
-                        side_effect=ServiceX_Exception('Error transform 400'))
+                        side_effect=ServiceXException('Error transform 400'))
 
 
 @pytest.fixture()
@@ -171,7 +171,7 @@ def servicex_state_machine(mocker):
         nonlocal step_index
 
         if req_id != valid_request_id:
-            raise ServiceX_Exception(f"Unknown request id {req_id} - so this test is going to bail. Might be test error (known: {valid_request_id}")
+            raise ServiceXException(f"Unknown request id {req_id} - so this test is going to bail. Might be test error (known: {valid_request_id}")
 
         i = step_index if step_index < len(steps) else len(steps) - 1
         step_index += 1
@@ -232,7 +232,7 @@ def no_files_in_minio(mocker):
 @pytest.fixture
 def bad_transform_status(mocker):
 
-    mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceX_Exception('bad attempt'))
+    mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceXException('bad attempt'))
 
 
 @pytest.fixture(autouse=True)

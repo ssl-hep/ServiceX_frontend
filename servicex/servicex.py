@@ -32,7 +32,7 @@ from .servicex_remote import (
     _submit_query,
 )
 from .utils import (
-    ServiceX_Exception,
+    ServiceXException,
     _default_wrapper_mgr,
     _run_default_wrapper,
     _status_update_wrapper,
@@ -121,7 +121,7 @@ class ServiceXABC:
                 self._file_name_func = file_name
         else:
             if storage_directory is not None:
-                raise ServiceX_Exception('Can only specify `storage_directory` or `file_name_func`'
+                raise ServiceXException('Can only specify `storage_directory` or `file_name_func`'
                                          ' when creating Servicex, not both.')
             self._file_name_func = file_name_func
 
@@ -425,7 +425,7 @@ class ServiceX(ServiceXABC):
 
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)
-        except ServiceX_Exception as e:
+        except ServiceXException as e:
             if first_query:
                 raise _RetryException() from e
             else:
@@ -516,7 +516,7 @@ class ServiceX(ServiceXABC):
                 if self._notifier.failed > 0:
                     # Take back the cache line
                     self._cache.remove_query(query)
-                    raise ServiceX_Exception(f'ServiceX failed to transform '
+                    raise ServiceXException(f'ServiceX failed to transform '
                                              f'{self._notifier.failed}'
                                              ' files - data incomplete.')
 

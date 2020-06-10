@@ -57,7 +57,7 @@ async def test_skipped_file(good_transform_request, files_in_minio):
     '''
     files_in_minio(2, as_failed=1)
 
-    with pytest.raises(fe.ServiceX_Exception) as e:
+    with pytest.raises(fe.ServiceXException) as e:
         ds = fe.ServiceX('http://one-ds')
         ds.get_data_rootfiles('(valid qastle string)')
 
@@ -166,7 +166,7 @@ async def test_good_run_single_ds_2file_awkward(good_transform_request, files_in
 async def test_status_exception(good_transform_request, bad_transform_status, no_files_in_minio):
     'Make sure status error - like transform not found - is reported all the way to the top'
     ds = fe.ServiceX('localds://mc16_tev:13')
-    with pytest.raises(fe.ServiceX_Exception) as e:
+    with pytest.raises(fe.ServiceXException) as e:
         await ds.get_data_awkward_async('(valid qastle string)')
     assert "attempt" in str(e.value)
 
@@ -192,7 +192,7 @@ async def test_max_workers_spec(good_transform_request, files_in_minio, good_awk
 @pytest.mark.asyncio
 async def test_servicex_rejects_transform_request(bad_transform_request):
     'Simple run bomb during transform query'
-    with pytest.raises(fe.ServiceX_Exception) as e:
+    with pytest.raises(fe.ServiceXException) as e:
         ds = fe.ServiceX('localds://mc16_tev:13', max_workers=50)
         await ds.get_data_awkward_async('(valid qastle string)')
 
@@ -310,7 +310,7 @@ def test_failed_iteration(good_transform_request, files_in_minio):
         f_downloaded.append(downloaded)
         f_failed.append(failed)
 
-    with pytest.raises(fe.ServiceX_Exception) as e:
+    with pytest.raises(fe.ServiceXException) as e:
         ds = fe.ServiceX('http://one-ds', status_callback=check_in)
         ds.get_data_rootfiles('(valid qastle string)')
 
@@ -333,10 +333,10 @@ async def test_resume_download_missing_files(servicex_state_machine, short_statu
 
     servicex_state_machine['reset']()
     servicex_state_machine['add_status_step'](processed=1, remaining=1, failed=0)
-    servicex_state_machine['add_status_fail'](fe.ServiceX_Exception('Lost the internet'))
+    servicex_state_machine['add_status_fail'](fe.ServiceXException('Lost the internet'))
 
     ds = fe.ServiceX('http://one-ds')
-    with pytest.raises(fe.ServiceX_Exception):
+    with pytest.raises(fe.ServiceXException):
         # Will fail with one file downloaded.
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
@@ -358,7 +358,7 @@ async def test_servicex_gone_when_redownload_request(servicex_state_machine, sho
 
     servicex_state_machine['reset']()
     servicex_state_machine['add_status_step'](processed=1, remaining=1, failed=0)
-    servicex_state_machine['add_status_fail'](fe.ServiceX_Exception('Lost the internet'))
+    servicex_state_machine['add_status_fail'](fe.ServiceXException('Lost the internet'))
 
     ds = fe.ServiceX('http://one-ds')
 
@@ -385,7 +385,7 @@ async def test_servicex_transformer_failure_reload(servicex_state_machine, short
 
     servicex_state_machine['reset']()
     servicex_state_machine['add_status_step'](processed=1, remaining=0, failed=1)
-    servicex_state_machine['add_status_fail'](fe.ServiceX_Exception('Lost the internet'))
+    servicex_state_machine['add_status_fail'](fe.ServiceXException('Lost the internet'))
 
     ds = fe.ServiceX('http://one-ds')
 

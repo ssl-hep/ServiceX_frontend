@@ -7,7 +7,7 @@ import aiohttp
 from minio import Minio, ResponseError
 from retry import retry
 
-from .utils import ServiceX_Exception
+from .utils import ServiceXException
 
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
@@ -40,7 +40,7 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
     # Make the actual query
     async with client.get(f'{endpoint}/transformation/{request_id}/status') as response:
         if response.status != 200:
-            raise ServiceX_Exception(f'Unable to get transformation status '
+            raise ServiceXException(f'Unable to get transformation status '
                                      f' - http error {response.status}')
         info = await response.json()
         files_remaining = None \
@@ -84,7 +84,7 @@ async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str
             minio_client.fget_object(request_id, bucket_fname, str(temp_file))
             temp_file.rename(output_file)
         except Exception as e:
-            raise ServiceX_Exception(f'Failed to copy minio bucket {bucket_fname} from request '
+            raise ServiceXException(f'Failed to copy minio bucket {bucket_fname} from request '
                                      f'{request_id} to {output_file}') from e
 
     # If the file exists, we don't need to do anything.
@@ -174,7 +174,7 @@ async def _submit_query(client: aiohttp.ClientSession,
     async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
         r = await response.json()
         if response.status != 200:
-            raise ServiceX_Exception('ServiceX rejected the transformation request: '
+            raise ServiceXException('ServiceX rejected the transformation request: '
                                      f'({response.status}){r}')
         req_id = r["request_id"]
 
