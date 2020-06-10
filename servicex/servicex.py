@@ -202,6 +202,7 @@ class ServiceXABC:
         ServiceX to re-run the query. Only queries against this dataset will ignore
         the cache.
         '''
+        # TODO: Make this work
         return None
 
 
@@ -212,6 +213,7 @@ def ignore_cache():
         ServiceX to re-run the query. Only queries against this dataset will ignore
         the cache.
     '''
+    # TODO: Make this work
     pass
 
 
@@ -487,9 +489,6 @@ class ServiceX(ServiceXABC):
                     async for r in self._get_files(selection_query, data_type):
                         yield r
 
-                # If we got here, then the request finished.
-                self._cache.set_files(request_id, file_object_list)
-
                 # Now that data has been moved back here, lets make sure there were no failed
                 # files.
                 if self._notifier.failed > 0:
@@ -498,6 +497,9 @@ class ServiceX(ServiceXABC):
                     raise ServiceXException(f'ServiceX failed to transform '
                                             f'{self._notifier.failed}'
                                             ' files - data incomplete.')
+
+                # If we got here, then the request finished.
+                self._cache.set_files(request_id, file_object_list)
 
 
 def sanitize_filename(fname: str):
