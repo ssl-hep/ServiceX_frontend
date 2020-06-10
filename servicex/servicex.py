@@ -437,11 +437,9 @@ class ServiceX(ServiceXABC):
         '''
         query = self._build_json_query(selection_query, data_type)
         request_id = self._cache.lookup_query(query)
-        looked_up_request_id = False
 
         async with aiohttp.ClientSession() as client:
             if request_id is None:
-                looked_up_request_id = True
                 request_id = await _submit_query(client, self._endpoint, query)
                 self._cache.set_query(query, request_id)
 
@@ -483,6 +481,7 @@ class ServiceX(ServiceXABC):
                     await r_loop
                 except ServiceXUnknownRequestID:
                     retry_me = True
+
                 if retry_me:
                     self._cache.remove_query(query)
                     async for r in self._get_files(selection_query, data_type):
