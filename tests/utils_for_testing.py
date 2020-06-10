@@ -8,7 +8,7 @@ from typing import Dict
 
 import pytest
 
-from servicex import ServiceXException
+from servicex import ServiceXException, ServiceXUnknownRequestID
 from servicex.cache import cache
 
 
@@ -171,7 +171,7 @@ def servicex_state_machine(mocker):
         nonlocal step_index
 
         if req_id != valid_request_id:
-            raise ServiceXException(f"Unknown request id {req_id} - so this test is going to bail. Might be test error (known: {valid_request_id}")
+            raise ServiceXUnknownRequestID(f"Unknown request id {req_id} - so this test is going to bail. Might be test error (known: {valid_request_id}")
 
         i = step_index if step_index < len(steps) else len(steps) - 1
         step_index += 1

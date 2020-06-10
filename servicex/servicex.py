@@ -33,6 +33,7 @@ from .servicex_remote import (
 )
 from .utils import (
     ServiceXException,
+    ServiceXUnknownRequestID,
     _default_wrapper_mgr,
     _run_default_wrapper,
     _status_update_wrapper,
@@ -45,15 +46,6 @@ from .cache import cache
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
-
-
-class _RetryException(Exception):
-    '''
-    Thrown internally when the system needs to re-try a request due to a complex
-    set of logic.
-    '''
-    def __init__(self):
-        Exception.__init__(self)
 
 
 class ServiceXABC:
@@ -122,7 +114,7 @@ class ServiceXABC:
         else:
             if storage_directory is not None:
                 raise ServiceXException('Can only specify `storage_directory` or `file_name_func`'
-                                         ' when creating Servicex, not both.')
+                                        ' when creating Servicex, not both.')
             self._file_name_func = file_name_func
 
     @property
@@ -409,12 +401,10 @@ class ServiceX(ServiceXABC):
         '''
         done = False
         last_processed = 0
-        first_query = True
         try:
             while not done:
                 remaining, processed, failed = await _get_transform_status(client, self._endpoint,
                                                                            request_id)
-                first_query = False
                 done = remaining is not None and remaining == 0
                 if processed != last_processed:
                     last_processed = processed
@@ -425,11 +415,6 @@ class ServiceX(ServiceXABC):
 
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)
-        except ServiceXException as e:
-            if first_query:
-                raise _RetryException() from e
-            else:
-                raise
         finally:
             downloader.shutdown()
 
@@ -496,12 +481,7 @@ class ServiceX(ServiceXABC):
                 retry_me = False
                 try:
                     await r_loop
-                except _RetryException as e:
-                    if looked_up_request_id:
-                        if hasattr(e, '__cause__'):
-                            assert e.__cause__ is not None
-                            raise e.__cause__
-                        raise
+                except ServiceXUnknownRequestID:
                     retry_me = True
                 if retry_me:
                     self._cache.remove_query(query)
@@ -517,8 +497,8 @@ class ServiceX(ServiceXABC):
                     # Take back the cache line
                     self._cache.remove_query(query)
                     raise ServiceXException(f'ServiceX failed to transform '
-                                             f'{self._notifier.failed}'
-                                             ' files - data incomplete.')
+                                            f'{self._notifier.failed}'
+                                            ' files - data incomplete.')
 
 
 def sanitize_filename(fname: str):
