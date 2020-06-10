@@ -14,15 +14,14 @@ from qastle import parse
 default_file_cache_name = Path(tempfile.gettempdir()) / 'servicex'
 
 
-# TODO: Fix this underscore name
 class ServiceXException(Exception):
     'Raised when something has gone wrong in the ServiceX remote service'
     def __init__(self, msg):
         super().__init__(self, msg)
 
 
-class ServiceXFrontEndException(Exception):
-    'Raised to indicate an API error in use of the servicex library'
+class ServiceXUnknownRequestID(Exception):
+    'Raised when we try to access ServiceX with a request ID it does not know about'
     def __init__(self, msg):
         super().__init__(self, msg)
 

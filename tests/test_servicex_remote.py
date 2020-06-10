@@ -7,7 +7,7 @@ import aiohttp
 from minio.error import ResponseError
 import pytest
 
-from servicex.utils import ServiceXException
+from servicex import ServiceXException, ServiceXUnknownRequestID
 
 from .utils_for_testing import ClientSessionMocker
 
@@ -172,7 +172,7 @@ async def test_status_remain_unknown(servicex_status_request):
 async def test_status_unknown_request(servicex_status_unknown):
     from servicex.servicex_remote import _get_transform_status
 
-    with pytest.raises(ServiceXException) as e:
+    with pytest.raises(ServiceXUnknownRequestID) as e:
         async with aiohttp.ClientSession() as client:
             await _get_transform_status(client, 'http://localhost:5000/sx', '123-123-123-444')
 
