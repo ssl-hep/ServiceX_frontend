@@ -1,16 +1,12 @@
 from typing import Optional
 
-import aiohttp
 import pytest
 
 from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
-    _submit_or_lookup_transform,
     clean_linq,
 )
-
-from .utils_for_testing import delete_default_downloaded_files, good_transform_request
 
 
 def test_callback_no_updates():
@@ -231,7 +227,7 @@ def test_cache_stable():
     assert h1 == h2
 
 
-def test_request_trans_cache_workers(good_transform_request):
+def test_request_trans_cache_workers():
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
@@ -244,7 +240,7 @@ def test_request_trans_cache_workers(good_transform_request):
     assert h1 == h2
 
 
-def test_request_trans_cache_selection(good_transform_request):
+def test_request_trans_cache_selection():
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
@@ -257,7 +253,7 @@ def test_request_trans_cache_selection(good_transform_request):
     assert h1 != h2
 
 
-def test_request_trans_cache_did(good_transform_request):
+def test_request_trans_cache_did():
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",
@@ -270,7 +266,7 @@ def test_request_trans_cache_did(good_transform_request):
     assert h1 != h2
 
 
-def test_request_trans_cache_unknown(good_transform_request):
+def test_request_trans_cache_unknown():
     json_query = {
         'did': "dude_001",
         'selection': "(valid qastle)",

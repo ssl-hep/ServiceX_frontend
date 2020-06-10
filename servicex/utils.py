@@ -169,62 +169,6 @@ def _string_hash(s_list: List[str]) -> str:
     return hash
 
 
-def _query_cache_file(json_query: Dict[str, str]) -> Path:
-    '''
-    Return a query cache file.
-    '''
-    hasher = blake2b(digest_size=20)
-    for k, v in json_query.items():
-        if k not in _json_keys_to_ignore_for_hash:
-            hasher.update(k.encode())
-            hasher.update(str(v).encode())
-    hash = hasher.hexdigest()
-
-    return Path(default_file_cache_name) / 'request-cache' / hash
-
-
-def _query_is_cached(json_query: Dict[str, str]) -> bool:
-    '''
-    Check to see if a cache file exists for the json query
-
-    Returns:
-        True        Query cache file exists and will trigger a query lookup
-        False       Otherwise
-    '''
-    return _query_cache_file(json_query).exists()
-
-
-async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
-                                      servicex_endpoint: str,
-                                      use_cache: bool,
-                                      json_query: Dict[str, str]) -> str:
-    '''
-    Submit a transform, or look it up in our local query database
-    '''
-    # Check the cache
-    hash_file = _query_cache_file(json_query)
-    if use_cache and hash_file.exists():
-        with hash_file.open('r') as r:
-            return r.readline().strip()
-
-    # Make the query.
-    async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
-        r = await response.json()
-        if response.status != 200:
-            raise ServiceX_Exception('ServiceX rejected the transformation request: '
-                                     f'({response.status}){r}')
-        req_id = r["request_id"]
-
-        hash_file.parent.mkdir(parents=True, exist_ok=True)
-        with hash_file.open('w') as w:
-            w.write(f'{req_id}\n')
-            # In case humans come poking around
-            w.write(str(json_query))
-            w.write('\n')
-
-    return req_id
-
-
 def clean_linq(q: str) -> str:
     '''
     Normalize the variables in a qastle expression. Should make the
