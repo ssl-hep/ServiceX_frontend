@@ -14,7 +14,7 @@ class cache:
 
     @classmethod
     def reset_cache(cls):
-        'Reset the iternal cache, usually used for testing'
+        'Reset the internal cache, usually used for testing'
         cls._in_memory_cache = {}
 
     def __init__(self, cache_path: Path):

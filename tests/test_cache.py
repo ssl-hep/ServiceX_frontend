@@ -38,9 +38,9 @@ def test_query_hit_1(cache_dir):
 def test_query_hit_2(cache_dir):
     c = cache(cache_dir)
     c.set_query({'hi': 'there'}, 'dude1')
-    c.set_query({'hi': 'theree'}, 'dude2')
+    c.set_query({'hi': 'there_1'}, 'dude2')
     assert c.lookup_query({'hi': 'there'}) == 'dude1'
-    assert c.lookup_query({'hi': 'theree'}) == 'dude2'
+    assert c.lookup_query({'hi': 'there_1'}) == 'dude2'
 
 
 def test_query_lookup_from_file(cache_dir):

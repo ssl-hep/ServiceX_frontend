@@ -33,8 +33,10 @@
         "jupyterlab",
         "linq",
         "localds",
+        "minio",
         "ncols",
         "ndarray",
+        "nqueries",
         "ntuples",
         "numpy",
         "pnfs",
@@ -47,14 +49,6 @@
         "sslhep",
         "tqdm",
         "xaod",
-        "dcache",
-        "fget",
-        "fname",
-        "linq",
-        "minio",
-        "pytest",
-        "qastle",
-        "servicex",
         "xrootd"
     ]
 }

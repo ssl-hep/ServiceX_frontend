@@ -4,7 +4,6 @@ import re
 import tempfile
 from typing import Callable, Dict, Optional, List
 
-import aiohttp
 from tqdm.auto import tqdm
 
 from lark import Transformer, Token
