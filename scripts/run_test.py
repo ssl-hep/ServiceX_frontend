@@ -3,14 +3,22 @@
 # do that sort of testing.
 # An example endpoint (pass as arg to this script): http://localhost:5000/servicex
 import sys
-import servicex
+from servicex import ServiceX
 
 
 def run_query(endpoint: str) -> None:
-    r = servicex.get_data("(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')", "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00", servicex_endpoint=endpoint)
+    ds = ServiceX(
+        "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00",
+        endpoint
+        )
+    r = ds.get_data_rootfiles("(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')")
     print(r)
 
 
 if __name__ == '__main__':
     assert len(sys.argv) == 2
     run_query(sys.argv[1])
+
+# TODO: Make sure files download while other things are still running
+# TODO: The total number of files sometimes balloons up to 22 from 17 for this example.
+#       Should not happen.
