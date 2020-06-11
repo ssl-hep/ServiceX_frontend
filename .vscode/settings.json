@@ -46,6 +46,7 @@
         "qsize",
         "rucio",
         "servicex",
+        "servicexabc",
         "sslhep",
         "tqdm",
         "xaod",

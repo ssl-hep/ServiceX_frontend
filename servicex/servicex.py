@@ -1,30 +1,19 @@
 # Main front end interface
-from abc import abstractmethod
 import asyncio
 import functools
 import logging
 from pathlib import Path
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple
 from typing import Iterator
 import urllib
 
 import aiohttp
-import awkward
 from make_it_sync import make_sync
 from minio import Minio
-import numpy as np
-import pandas as pd
 
-from .data_conversions import _convert_root_to_pandas, _convert_root_to_awkward
+from .servicexabc import ServiceXABC
+from .cache import cache
+from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
 from .servicex_remote import (
     _download_file,
     _get_transform_status,
@@ -34,187 +23,15 @@ from .servicex_remote import (
 from .utils import (
     ServiceXException,
     ServiceXUnknownRequestID,
-    _default_wrapper_mgr,
     _run_default_wrapper,
-    _status_update_wrapper,
     _string_hash,
 )
-from .cache import cache
 
 # TODO: Make sure clean_linq is properly used, somewhere.
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
-
-
-class ServiceXABC:
-    '''
-    Abstract base class for accessing the ServiceX front-end for a particular dataset. This does
-    have some implementations, but not a full set (hence why it isn't an ABC).
-
-    A light weight, mostly immutable, base class that holds basic configuration information for use
-    with ServiceX file access, including the dataset name. Subclasses implement the various access
-    methods. Note that not all methods may be accessible!
-    '''
-
-    def __init__(self,
-                 dataset: str,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-                 storage_directory: Optional[str] = None,
-                 file_name_func: Optional[Callable[[str, str], Path]] = None,
-                 max_workers: int = 20,
-                 status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
-                 = _run_default_wrapper):
-        '''
-        Create and configure a ServiceX object for a dataset.
-
-        Arguments
-            dataset             Name of a dataset from which queries will be selected.
-            service_endpoint    Where the ServiceX web API is found
-            image               Name of transformer image to use to transform the data
-            storage_directory   Location to cache data that comes back from ServiceX. Data can
-                                be reused between invocations.
-            file_name_func      Allows for unique naming of the files that come back. Rarely used.
-            max_workers         Maximum number of transformers to run simultaneously on ServiceX.
-            status_callback     Callback to update client on status of the query. See Notes.
-
-
-        Notes:
-            The `status_callback` argument, by default, uses the `tqdm` library to render progress
-            bars in a terminal window or a graphic in a Jupyter notebook (with proper jupyter
-            extensions installed). If `status_callback` is specified as None, no updates will be
-            rendered. A custom callback function can also be specified which takes `(total_files,
-            transformed, downloaded, skipped)` as an argument. The `total_files` parameter may be
-            `None` until the system knows how many files need to be processed (and some files can
-            even be completed before that is known).
-        '''
-        self._dataset = dataset
-        self._image = image
-        self._max_workers = max_workers
-
-        # Normalize how we do the status updates
-        if status_callback is _run_default_wrapper:
-            t = _default_wrapper_mgr(dataset)
-            status_callback = t.update
-        self._notifier = _status_update_wrapper(status_callback)
-
-        # Normalize how we do the files
-        if file_name_func is None:
-            if storage_directory is None:
-                def file_name(req_id: str, minio_name: str):
-                    import servicex.utils as sx
-                    return sx.default_file_cache_name / req_id / sanitize_filename(minio_name)
-                self._file_name_func = file_name
-            else:
-                def file_name(req_id: str, minio_name: str):
-                    assert storage_directory is not None
-                    return Path(storage_directory) / sanitize_filename(minio_name)
-                self._file_name_func = file_name
-        else:
-            if storage_directory is not None:
-                raise ServiceXException('Can only specify `storage_directory` or `file_name_func`'
-                                        ' when creating Servicex, not both.')
-            self._file_name_func = file_name_func
-
-    @property
-    def dataset(self):
-        return self._dataset
-
-    @abstractmethod
-    async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
-        '''
-        Fetch query data from ServiceX matching `selection_query` and return it as
-        a list of root files. The files are uniquely ordered (the same query will always
-        return the same order).
-
-        Arguments:
-            selection_query     The `qastle` string specifying the data to be queried
-
-        Returns:
-            root_files          The list of root files
-        '''
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def get_data_pandas_df_async(self, selection_query: str) -> pd.DataFrame:
-        '''
-        Fetch query data from ServiceX matching `selection_query` and return it as
-        a pandas dataframe. The data is uniquely ordered (the same query will always
-        return the same order).
-
-        Arguments:
-            selection_query     The `qastle` string specifying the data to be queried
-
-        Returns:
-            df                  The pandas dataframe
-
-        Exceptions:
-            xxx                 If the data is not the correct shape (e.g. a flat,
-                                rectangular table).
-        '''
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def get_data_awkward_async(self, selection_query: str) \
-            -> Dict[bytes, Union[awkward.JaggedArray, np.ndarray]]:
-        '''
-        Fetch query data from ServiceX matching `selection_query` and return it as
-        dictionary of awkward arrays, an entry for each column. The data is uniquely
-        ordered (the same query will always return the same order).
-
-        Arguments:
-            selection_query     The `qastle` string specifying the data to be queried
-
-        Returns:
-            a                   Dictionary of jagged arrays (as needed), one for each
-                                column. The dictionary keys are `bytes` to support possible
-                                unicode characters.
-        '''
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
-        '''
-        Fetch query data from ServiceX matching `selection_query` and return it as
-        a list of parquet files. The files are uniquely ordered (the same query will always
-        return the same order).
-
-        Arguments:
-            selection_query     The `qastle` string specifying the data to be queried
-
-        Returns:
-            root_files          The list of parquet files
-        '''
-        raise NotImplementedError()
-
-    # Define the synchronous versions of the async methods for easy of use
-
-    get_data_rootfiles = make_sync(get_data_rootfiles_async)
-    get_data_pandas_df = make_sync(get_data_pandas_df_async)
-    get_data_awkward = make_sync(get_data_awkward_async)
-    get_data_parquet = make_sync(get_data_parquet_async)
-
-    def ignore_cache(self):
-        '''
-        A context manager for use in a with statement that will cause all calls
-        to `get_data` routines to ignore any local caching. This will likely force
-        ServiceX to re-run the query. Only queries against this dataset will ignore
-        the cache.
-        '''
-        # TODO: Make this work
-        return None
-
-
-def ignore_cache():
-    '''
-        A context manager for use in a with statement that will cause all calls
-        to `get_data` routines to ignore any local caching. This will likely force
-        ServiceX to re-run the query. Only queries against this dataset will ignore
-        the cache.
-    '''
-    # TODO: Make this work
-    pass
 
 
 _in_progress_items: Dict[str, asyncio.Event] = {}
@@ -320,15 +137,15 @@ class ServiceX(ServiceXABC):
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]]):
         # Get all the files
-        as_files = (f async for f in self._get_files(selection_query, 'root-file'))
+        as_files = (f async for f in self._get_files(selection_query, 'root-file'))  # type: ignore
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
-                   async for f in as_files)
+                   async for f in as_files)  # type: ignore
 
         # Finally, we need them in the proper order so we append them
         # all together
-        all_data = {f[0]: await f[1] async for f in as_data}
+        all_data = {f[0]: await f[1] async for f in as_data}  # type: ignore
         ordered_data = [all_data[k] for k in sorted(all_data)]
 
         return ordered_data
@@ -338,7 +155,7 @@ class ServiceX(ServiceXABC):
         Internal routine to refactor any query that will return a list of files (as opposed
         to in-memory data).
         '''
-        all = [f async for f in self._get_files(selection_query, data_format)]
+        all = [f async for f in self._get_files(selection_query, data_format)]  # type: ignore
         all_dict = {f[0]: await f[1] for f in all}
         return [all_dict[k] for k in sorted(all_dict)]
 
@@ -486,7 +303,7 @@ class ServiceX(ServiceXABC):
 
                 if retry_me:
                     self._cache.remove_query(query)
-                    async for r in self._get_files(selection_query, data_type):
+                    async for r in self._get_files(selection_query, data_type):  # type: ignore
                         yield r
 
                 # Now that data has been moved back here, lets make sure there were no failed
@@ -500,10 +317,3 @@ class ServiceX(ServiceXABC):
 
                 # If we got here, then the request finished.
                 self._cache.set_files(request_id, file_object_list)
-
-
-def sanitize_filename(fname: str):
-    'No matter the string given, make it an acceptable filename'
-    return fname.replace('*', '_') \
-                .replace(';', '_') \
-                .replace(':', '_')

@@ -26,6 +26,13 @@ class ServiceXUnknownRequestID(Exception):
         super().__init__(self, msg)
 
 
+def sanitize_filename(fname: str):
+    'No matter the string given, make it an acceptable filename'
+    return fname.replace('*', '_') \
+                .replace(';', '_') \
+                .replace(':', '_')
+
+
 class _status_update_wrapper:
     '''
     Internal class to make it easier to deal with the updater
