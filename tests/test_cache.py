@@ -65,15 +65,15 @@ def test_files_miss(cache_dir):
 
 def test_files_hit(cache_dir):
     c = cache(cache_dir)
-    c.set_files('1234', ['hi', 'there'])
-    assert c.lookup_files('1234') == ['hi', 'there']
+    c.set_files('1234', [('hi', '1'), ('there', '1')])
+    assert c.lookup_files('1234') == [['hi', '1'], ['there', '1']]
 
 
 def test_files_hit_reloaded(cache_dir):
     c1 = cache(cache_dir)
-    c1.set_files('1234', ['hi', 'there'])
+    c1.set_files('1234', [('hi', '1'), ('there', '1')])
     c2 = cache(cache_dir)
-    assert c2.lookup_files('1234') == ['hi', 'there']
+    assert c2.lookup_files('1234') == [['hi', '1'], ['there', '1']]
 
 
 def test_memory_miss(cache_dir):
