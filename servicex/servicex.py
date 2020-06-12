@@ -264,12 +264,13 @@ class ServiceX(ServiceXABC):
             minio = self._minio_client()
             results_from_query = _result_object_list(minio, request_id)
 
-            # Problem - if this throws, then we want to get out of this, and we will be stuck
-            # waiting below too.
+            # The `ensure_future` queues this for immediate execution, rather than waiting
+            # until we do an await. Note that we catch it below in the `finally` clause.
             r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id,
                                                                  results_from_query))
 
             try:
+                # TODO: Make sure files are downloaded in parallel.
                 file_object_list = []
                 async for f in results_from_query.files():
                     copy_to_path = self._file_name_func(request_id, f)
@@ -284,12 +285,13 @@ class ServiceX(ServiceXABC):
                     file_object_list.append((f, str(copy_to_path)))
                     yield f, do_wait(copy_to_path)
             finally:
+                # Make sure it terminates successfully.
                 await r_loop
 
             # Now that data has been moved back here, lets make sure there were no failed
             # files. If there were, then we need to mark this whole transform as
             # having failed, and remove any trace of it in our caches so that if the user
-            # wants to re-try, then can do it as they see fit.
+            # wants to re-try, they won't pick up this failed transform from the cache.
             if self._notifier.failed > 0:
                 self._cache.remove_query(query)
                 raise ServiceXException(f'ServiceX failed to transform '
