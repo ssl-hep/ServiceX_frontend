@@ -160,7 +160,7 @@ class _result_object_list:
                         yield f
 
             # Make sure to go around one last time to pick up any stragglers.
-            if done_counter == 0:
+            if done_counter <= 0:
                 done = True
             if self._trigger_done:
                 done_counter -= 1
@@ -175,6 +175,7 @@ async def _submit_query(client: aiohttp.ClientSession,
     async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
         r = await response.json()
         if response.status != 200:
+            # This was an error at ServiceX, bubble it up so code above us can handle as needed.
             raise ServiceXException('ServiceX rejected the transformation request: '
                                     f'({response.status}){r}')
         req_id = r["request_id"]
