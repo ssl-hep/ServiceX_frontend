@@ -314,9 +314,10 @@ def test_failed_iteration(good_transform_request, files_in_minio):
         ds = fe.ServiceX('http://one-ds', status_callback=check_in)
         ds.get_data_rootfiles('(valid qastle string)')
 
-    assert len(f_total) == 1
+    assert len(f_total) == 2
     assert all(i == 2 for i in f_total)
     assert all(i == 1 for i in f_failed)
+    assert all(i <= 1 for i in f_downloaded)
     assert "failed to transform" in str(e.value)
 
 

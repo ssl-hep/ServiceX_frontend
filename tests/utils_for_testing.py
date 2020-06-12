@@ -65,7 +65,7 @@ def files_in_minio(mocker):
     mark_failed = 0
 
     def default_lambda():
-        return range(count)
+        return range(count - mark_failed)
 
     def reverse_lambda():
         return range(count, 0, -1)

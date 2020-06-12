@@ -26,60 +26,14 @@ from .utils import (
     ServiceXException,
     ServiceXUnknownRequestID,
     _run_default_wrapper,
-    _string_hash,
 )
+from .servicex_utils import _wrap_in_memory_sx_cache
 
 # TODO: Make sure clean_linq is properly used, somewhere.
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
-
-
-_in_progress_items: Dict[str, asyncio.Event] = {}
-
-
-def _wrap_inmem_cache(fn):
-    '''
-    Wrap a ServiceX function that is getting data so that we can
-    use the internal cache, if the item exists, and bypass everything.
-
-    NOTE: This is not thread safe. In fact, you'll likely get a bomb if try to
-          call this from another thread and the two threads request something the
-          same at the same time because asyncio locks are associated with loops,
-          and there is one loop per thread.
-    '''
-    @functools.wraps(fn)
-    async def cached_version_of_fn(*args, **kwargs):
-        assert len(args) == 2
-        sx = args[0]
-        assert isinstance(sx, ServiceX)
-        selection_query = args[1]
-        assert isinstance(selection_query, str)
-
-        # Is it in the local cache?
-        h = _string_hash([sx._dataset, selection_query])
-        if h in _in_progress_items:
-            await _in_progress_items[h].wait()
-
-        # Is it already done?
-        r = sx._cache.lookup_inmem(h)
-        if r is not None:
-            return r
-
-        # It is not. We need to calculate it, and prevent
-        # others from working on it.
-        _in_progress_items[h] = asyncio.Event()
-        try:
-            result = await fn(*args, **kwargs)
-            sx._cache.set_inmem(h, result)
-        finally:
-            _in_progress_items[h].set()
-            del _in_progress_items[h]
-
-        return result
-
-    return cached_version_of_fn
 
 
 class ServiceX(ServiceXABC):
@@ -106,23 +60,23 @@ class ServiceX(ServiceXABC):
         return self._endpoint
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async)
-    @_wrap_inmem_cache
+    @_wrap_in_memory_sx_cache
     async def get_data_rootfiles_async(self, selection_query: str):
         return await self._file_return(selection_query, 'root-file')
 
     @functools.wraps(ServiceXABC.get_data_parquet_async)
-    @_wrap_inmem_cache
+    @_wrap_in_memory_sx_cache
     async def get_data_parquet_async(self, selection_query: str):
         return await self._file_return(selection_query, 'parquet')
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async)
-    @_wrap_inmem_cache
+    @_wrap_in_memory_sx_cache
     async def get_data_pandas_df_async(self, selection_query: str):
         import pandas as pd
         return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async)
-    @_wrap_inmem_cache
+    @_wrap_in_memory_sx_cache
     async def get_data_awkward_async(self, selection_query: str):
         import awkward
         all_data = await self._data_return(selection_query, _convert_root_to_awkward)
@@ -136,9 +90,34 @@ class ServiceX(ServiceXABC):
     get_data_awkward = make_sync(get_data_awkward_async)
     get_data_parquet = make_sync(get_data_parquet_async)
 
+    async def _file_return(self, selection_query: str, data_format: str):
+        '''
+        Given a query, return the list of files, in a unique order, that hold
+        the data for the query.
+
+        For certian types of exceptions, the queries will be repeated. For example,
+        if `ServiceX` indicates that it was restarted in the middle of the query, then
+        the query will be re-submitted.
+
+        Arguments:
+
+            selection_query     `qastle` data that makes up the selection request.
+            data_format         The file-based data format (root or parquet)
+
+        Returns:
+
+            data                Data converted to the "proper" format, depending
+                                on the converter call.
+        '''
+        async def convert_to_file(f: Path) -> Path:
+            return f
+
+        return await self._data_return(selection_query, convert_to_file, data_format)
+
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _data_return(self, selection_query: str,
-                           converter: Callable[[Path], Awaitable[Any]]):
+                           converter: Callable[[Path], Awaitable[Any]],
+                           data_format: str = 'root-file'):
         '''
         Given a query, return the data, in a unique order, that hold
         the data for the query.
@@ -159,7 +138,7 @@ class ServiceX(ServiceXABC):
                                 on the converter call.
         '''
         # Get all the files
-        as_files = (f async for f in self._get_files(selection_query, 'root-file'))  # type: ignore
+        as_files = (f async for f in self._get_files(selection_query, data_format))  # type: ignore
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
@@ -172,54 +151,60 @@ class ServiceX(ServiceXABC):
 
         return ordered_data
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, max_tries=3, interval=0.1)
-    async def _file_return(self, selection_query: str, data_format: str):
-        # TODO: Isn't this just a special case of the get_data guy?
+    async def _get_files(self, selection_query: str, data_type: str) \
+            -> Iterator[Tuple[str, Awaitable[Path]]]:
         '''
-        Internal routine to refactor any query that will return a list of files (as opposed
-        to in-memory data).
-        '''
-        all = [f async for f in self._get_files(selection_query, data_format)]  # type: ignore
-        all_dict = {f[0]: await f[1] for f in all}
-        return [all_dict[k] for k in sorted(all_dict)]
+        Return a list of files from servicex as they have been downloaded to this machine. The
+        return type is an awaitable that will yield the path to the file.
 
-    def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
-        '''
-        Returns a list of locally written files for a given selection query.
+        For certian types of `ServiceX` failures we will automatically attempt a few retries:
+
+            - When `ServiceX` forgets the query. This sometimes happens when a user submits a
+              query, and then disconnects from the network, `ServiceX` is restarted, and then the
+              user attempts to download the files from that "no-longer-existing" request.
+
+        Up to 3 re-tries are attempted automatically.
 
         Arguments:
-            selection_query         The query to be send into the ServiceX API
-            data_type               What is the output data type (parquet, root-file, etc.)
 
-        Notes:
-            - Internal routine.
+            selection_query             The query string to send to ServiceX
+            data_type                   The type of data that we want to come back.
+
+        Returns
+            Awaitable[Path]             An awaitable that is a path. When it completes, the
+                                        path will be valid and point to an existing file.
+                                        This is returned this way so a number of downloads can run
+                                        simultaneously.
         '''
-        json_query: Dict[str, str] = {
-            "did": self._dataset,
-            "selection": selection_query,
-            "image": self._image,
-            "result-destination": "object-store",
-            "result-format": 'parquet' if data_type == 'parquet' else "root-file",
-            "chunk-size": '1000',
-            "workers": str(self._max_workers)
-        }
+        # TODO: Notifier is a per-query item, not a per dataset, needs to be created
+        #       for each query, not a single one.
+        query = self._build_json_query(selection_query, data_type)
 
-        logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
+        async with aiohttp.ClientSession() as client:
 
-        return json_query
+            # Get a request id - which might be cached, but if not, submit it.
+            request_id = await self._get_request_id(client, query)
 
-    def _minio_client(self):
+            # Look up the cache, and then fetch an iterator going thorugh the results
+            # from either servicex or the cache, depending.
+            cached_files = self._cache.lookup_files(request_id)
+            fetched_files_seq = self._get_cached_files(cached_files) if cached_files is not None \
+                else self._get_files_from_servicex(request_id, client, query)
+
+            # Reflect the files back up a level.
+            async for r in fetched_files_seq:
+                yield r
+
+    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]):
         '''
-        Create the minio client
+        For this query, fetch the request id. If we have it cached, use that. Otherwise, query
+        ServiceX for a enw one (and cache it for later use).
         '''
-        end_point_parse = urllib.parse.urlparse(self._endpoint)  # type: ignore
-        minio_endpoint = f'{end_point_parse.hostname}:9000'
-
-        minio_client = Minio(minio_endpoint,
-                             access_key='miniouser',
-                             secret_key='leftfoot1',
-                             secure=False)
-        return minio_client
+        request_id = self._cache.lookup_query(query)
+        if request_id is None:
+            request_id = await _submit_query(client, self._endpoint, query)
+            self._cache.set_query(query, request_id)
+        return request_id
 
     async def _get_status_loop(self, client: aiohttp.ClientSession,
                                request_id: str,
@@ -255,17 +240,6 @@ class ServiceX(ServiceXABC):
                     await asyncio.sleep(servicex_status_poll_time)
         finally:
             downloader.shutdown()
-
-    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]):
-        '''
-        For this query, fetch the request id. If we have it cached, use that. Otherwise, query
-        ServiceX for a enw one (and cache it for later use).
-        '''
-        request_id = self._cache.lookup_query(query)
-        if request_id is None:
-            request_id = await _submit_query(client, self._endpoint, query)
-            self._cache.set_query(query, request_id)
-        return request_id
 
     async def _get_cached_files(self, cached_files: List[Tuple[str, str]]):
         '''
@@ -332,46 +306,40 @@ class ServiceX(ServiceXABC):
 
             raise
 
-    async def _get_files(self, selection_query: str, data_type: str) \
-            -> Iterator[Tuple[str, Awaitable[Path]]]:
+    def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''
-        Return a list of files from servicex as they have been downloaded to this machine. The
-        return type is an awaitable that will yield the path to the file.
-
-        For certian types of `ServiceX` failures we will automatically attempt a few retries:
-
-            - When `ServiceX` forgets the query. This sometimes happens when a user submits a
-              query, and then disconnects from the network, `ServiceX` is restarted, and then the
-              user attempts to download the files from that "no-longer-existing" request.
-
-        Up to 3 re-tries are attempted automatically.
+        Returns a list of locally written files for a given selection query.
 
         Arguments:
+            selection_query         The query to be send into the ServiceX API
+            data_type               What is the output data type (parquet, root-file, etc.)
 
-            selection_query             The query string to send to ServiceX
-            data_type                   The type of data that we want to come back.
-
-        Returns
-            Awaitable[Path]             An awaitable that is a path. When it completes, the
-                                        path will be valid and point to an existing file.
-                                        This is returned this way so a number of downloads can run
-                                        simultaneously.
+        Notes:
+            - Internal routine.
         '''
-        # TODO: Notifier is a per-query item, not a per dataset, needs to be created
-        #       for each query, not a single one.
-        query = self._build_json_query(selection_query, data_type)
+        json_query: Dict[str, str] = {
+            "did": self._dataset,
+            "selection": selection_query,
+            "image": self._image,
+            "result-destination": "object-store",
+            "result-format": 'parquet' if data_type == 'parquet' else "root-file",
+            "chunk-size": '1000',
+            "workers": str(self._max_workers)
+        }
 
-        async with aiohttp.ClientSession() as client:
+        logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
 
-            # Get a request id - which might be cached, but if not, submit it.
-            request_id = await self._get_request_id(client, query)
+        return json_query
 
-            # Look up the cache, and then fetch an iterator going thorugh the results
-            # from either servicex or the cache, depending.
-            cached_files = self._cache.lookup_files(request_id)
-            fetched_files_seq = self._get_cached_files(cached_files) if cached_files is not None \
-                else self._get_files_from_servicex(request_id, client, query)
+    def _minio_client(self):
+        '''
+        Create the minio client
+        '''
+        end_point_parse = urllib.parse.urlparse(self._endpoint)  # type: ignore
+        minio_endpoint = f'{end_point_parse.hostname}:9000'
 
-            # Reflect the files back up a level.
-            async for r in fetched_files_seq:
-                yield r
+        minio_client = Minio(minio_endpoint,
+                             access_key='miniouser',
+                             secret_key='leftfoot1',
+                             secure=False)
+        return minio_client
