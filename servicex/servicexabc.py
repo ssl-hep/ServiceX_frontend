@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
@@ -16,8 +16,7 @@ from .utils import (
 )
 
 
-# TODO: Make the ABC class work correctly
-class ServiceXABC:
+class ServiceXABC(ABC):
     '''
     Abstract base class for accessing the ServiceX front-end for a particular dataset. This does
     have some implementations, but not a full set (hence why it isn't an ABC).
@@ -171,7 +170,7 @@ class ServiceXABC:
         ServiceX to re-run the query. Only queries against this dataset will ignore
         the cache.
         '''
-        # TODO: Make this work
+        # TODO: Make sure ignore cache works
         return None
 
 
@@ -182,5 +181,4 @@ def ignore_cache():
         ServiceX to re-run the query. Only queries against this dataset will ignore
         the cache.
     '''
-    # TODO: Make this work
     pass

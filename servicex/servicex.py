@@ -59,23 +59,23 @@ class ServiceX(ServiceXABC):
     def endpoint(self):
         return self._endpoint
 
-    @functools.wraps(ServiceXABC.get_data_rootfiles_async)
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_rootfiles_async(self, selection_query: str):
+    async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
         return await self._file_return(selection_query, 'root-file')
 
-    @functools.wraps(ServiceXABC.get_data_parquet_async)
+    @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_parquet_async(self, selection_query: str):
         return await self._file_return(selection_query, 'parquet')
 
-    @functools.wraps(ServiceXABC.get_data_pandas_df_async)
+    @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_pandas_df_async(self, selection_query: str):
         import pandas as pd
         return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
 
-    @functools.wraps(ServiceXABC.get_data_awkward_async)
+    @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_awkward_async(self, selection_query: str):
         import awkward
