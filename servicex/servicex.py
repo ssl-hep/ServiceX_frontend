@@ -178,6 +178,7 @@ class ServiceX(ServiceXABC):
         '''
         # TODO: Notifier is a per-query item, not a per dataset, needs to be created
         #       for each query, not a single one.
+        # TODO: Make sure we get type-hint above correct
         query = self._build_json_query(selection_query, data_type)
 
         async with aiohttp.ClientSession() as client:
