@@ -10,7 +10,8 @@ import urllib
 import aiohttp
 from make_it_sync import make_sync
 from minio import Minio
-from retry import retry
+from backoff import on_exception
+import backoff
 
 from .cache import cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
@@ -135,7 +136,7 @@ class ServiceX(ServiceXABC):
     get_data_awkward = make_sync(get_data_awkward_async)
     get_data_parquet = make_sync(get_data_parquet_async)
 
-    @retry(exceptions=ServiceXUnknownRequestID, tries=3)
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]]):
         '''
@@ -171,7 +172,7 @@ class ServiceX(ServiceXABC):
 
         return ordered_data
 
-    @retry(exceptions=ServiceXUnknownRequestID)
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, max_tries=3, interval=0.1)
     async def _file_return(self, selection_query: str, data_format: str):
         # TODO: Isn't this just a special case of the get_data guy?
         '''

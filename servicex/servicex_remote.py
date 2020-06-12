@@ -5,7 +5,8 @@ from typing import Optional, Tuple, List, Dict
 
 import aiohttp
 from minio import Minio, ResponseError
-from retry import retry
+from backoff import on_exception
+import backoff
 
 from .utils import ServiceXException, ServiceXUnknownRequestID
 
@@ -95,7 +96,7 @@ async def _download_file(minio_client: Minio, request_id: str, bucket_fname: str
     return await asyncio.wrap_future(_download_executor.submit(do_copy))
 
 
-@retry(delay=1, tries=10, exceptions=ResponseError)
+@on_exception(backoff.constant, ResponseError, interval=0.1)
 def _protected_list_objects(client: Minio, request_id: str) -> List[str]:
     '''
     Returns the list of files that are Minio has stored in this particular
