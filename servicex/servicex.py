@@ -8,7 +8,6 @@ from typing import Iterator
 import urllib
 
 import aiohttp
-from make_it_sync import make_sync
 from minio import Minio
 from backoff import on_exception
 import backoff
@@ -82,13 +81,6 @@ class ServiceX(ServiceXABC):
         all_data = await self._data_return(selection_query, _convert_root_to_awkward)
         col_names = all_data[0].keys()
         return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
-
-    # Define the synchronous versions of the async methods for easy of use
-    # TODO: Why do these have to be repeated?
-    get_data_rootfiles = make_sync(get_data_rootfiles_async)
-    get_data_pandas_df = make_sync(get_data_pandas_df_async)
-    get_data_awkward = make_sync(get_data_awkward_async)
-    get_data_parquet = make_sync(get_data_parquet_async)
 
     async def _file_return(self, selection_query: str, data_format: str):
         '''

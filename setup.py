@@ -29,7 +29,7 @@ setup(name="servicex",
           "minio~=5.0",
           "tqdm~=4.0",
           "qastle==0.7",
-          'make_it_sync==1.0.0a1'
+          'make_it_sync==1.0.0'
       ],
       extras_require={
           'test': [
