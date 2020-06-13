@@ -162,23 +162,3 @@ class ServiceXABC(ABC):
     get_data_pandas_df = make_sync(get_data_pandas_df_async)
     get_data_awkward = make_sync(get_data_awkward_async)
     get_data_parquet = make_sync(get_data_parquet_async)
-
-    def ignore_cache(self):
-        '''
-        A context manager for use in a with statement that will cause all calls
-        to `get_data` routines to ignore any local caching. This will likely force
-        ServiceX to re-run the query. Only queries against this dataset will ignore
-        the cache.
-        '''
-        # TODO: Make sure ignore cache works
-        return None
-
-
-def ignore_cache():
-    '''
-        A context manager for use in a with statement that will cause all calls
-        to `get_data` routines to ignore any local caching. This will likely force
-        ServiceX to re-run the query. Only queries against this dataset will ignore
-        the cache.
-    '''
-    pass
