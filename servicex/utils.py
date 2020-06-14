@@ -2,7 +2,7 @@ from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import Callable, Dict, Optional, List
+from typing import Callable, Optional, Dict, List
 
 from tqdm.auto import tqdm
 
@@ -33,12 +33,20 @@ def sanitize_filename(fname: str):
                 .replace(':', '_')
 
 
+StatusUpdateCallback = Callable[[Optional[int], int, int, int], None]
+# The sig of the call-back
+
+StatusUpdateFactory = Callable[[str], StatusUpdateCallback]
+# Factory method that returns a factory that can run the status callback
+# First argument is a string.
+
+
 class _status_update_wrapper:
     '''
     Internal class to make it easier to deal with the updater
     '''
     def __init__(self, callback:
-                 Optional[Callable[[Optional[int], int, int, int], None]] = None):
+                 Optional[StatusUpdateCallback] = None):
         self._callback = callback
         self.reset()
 
@@ -100,9 +108,19 @@ class _status_update_wrapper:
                 self._downloaded += downloaded
 
 
-def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
-    'Place holder to run the default runner'
-    assert False, 'This should never be called'
+def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:
+    '''
+    Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
+    '''
+    return _default_wrapper_mgr(ds_name).update
+
+
+def _null_progress_feedback(ds_name: str) -> None:
+    '''
+    Internal routine to create a feedback object that does not
+    give anyone feedback!
+    '''
+    return None
 
 
 class _default_wrapper_mgr:

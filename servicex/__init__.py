@@ -1,4 +1,8 @@
-from .servicex import (    # NOQA
-    ServiceX,
+from .servicex import ServiceX  # NOQA
+from .utils import (  # NOQA
+    ServiceXException,
+    ServiceXUnknownRequestID,
+    StatusUpdateCallback,
+    StatusUpdateFactory,
+    clean_linq,
 )
-from .utils import clean_linq, ServiceXException, ServiceXUnknownRequestID # NOQA

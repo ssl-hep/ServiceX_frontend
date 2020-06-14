@@ -282,7 +282,7 @@ def test_callback_good(good_transform_request, files_in_minio):
         f_downloaded = downloaded
         f_failed = failed
 
-    ds = fe.ServiceX('http://one-ds', status_callback=check_in)
+    ds = fe.ServiceX('http://one-ds', status_callback_factory=lambda ds: check_in)
     ds.get_data_rootfiles('(valid qastle string)')
 
     assert f_total == 1
@@ -311,7 +311,7 @@ def test_failed_iteration(good_transform_request, files_in_minio):
         f_failed.append(failed)
 
     with pytest.raises(fe.ServiceXException) as e:
-        ds = fe.ServiceX('http://one-ds', status_callback=check_in)
+        ds = fe.ServiceX('http://one-ds', status_callback_factory=lambda ds: check_in)
         ds.get_data_rootfiles('(valid qastle string)')
 
     assert len(f_total) == 2

@@ -8,9 +8,9 @@ from typing import Iterator
 import urllib
 
 import aiohttp
-from minio import Minio
 from backoff import on_exception
 import backoff
+from minio import Minio
 
 from .cache import cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
@@ -20,13 +20,14 @@ from .servicex_remote import (
     _result_object_list,
     _submit_query,
 )
+from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
     ServiceXException,
-    ServiceXUnknownRequestID,
+    ServiceXUnknownRequestID, StatusUpdateCallback,
+    StatusUpdateFactory,
     _run_default_wrapper,
 )
-from .servicex_utils import _wrap_in_memory_sx_cache
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
@@ -44,10 +45,9 @@ class ServiceX(ServiceXABC):
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
-                 status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
-                 = _run_default_wrapper):
+                 status_callback_factory: StatusUpdateFactory = _run_default_wrapper):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
-                             max_workers, status_callback)
+                             max_workers, status_callback_factory)
         self._endpoint = service_endpoint
         from servicex.utils import default_file_cache_name
         self._cache = cache(default_file_cache_name)
@@ -127,8 +127,13 @@ class ServiceX(ServiceXABC):
             data                Data converted to the "proper" format, depending
                                 on the converter call.
         '''
+        # Get a notifier to update anyone who wants to listen.
+        notifier = self._create_notifier()
+
         # Get all the files
-        as_files = (f async for f in self._get_files(selection_query, data_format))  # type: ignore
+        as_files = \
+            (f async for f in
+             self._get_files(selection_query, data_format, notifier))  # type: ignore
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
@@ -141,7 +146,8 @@ class ServiceX(ServiceXABC):
 
         return ordered_data
 
-    async def _get_files(self, selection_query: str, data_type: str) \
+    async def _get_files(self, selection_query: str, data_type: str,
+                         notifier: StatusUpdateCallback) \
             -> Iterator[Tuple[str, Awaitable[Path]]]:
         '''
         Return a list of files from servicex as they have been downloaded to this machine. The
@@ -159,6 +165,7 @@ class ServiceX(ServiceXABC):
 
             selection_query             The query string to send to ServiceX
             data_type                   The type of data that we want to come back.
+            notifier                    Status callback to let our progress be advertised
 
         Returns
             Awaitable[Path]             An awaitable that is a path. When it completes, the
@@ -166,8 +173,6 @@ class ServiceX(ServiceXABC):
                                         This is returned this way so a number of downloads can run
                                         simultaneously.
         '''
-        # TODO: Notifier is a per-query item, not a per dataset, needs to be created
-        #       for each query, not a single one.
         # TODO: Make sure we get type-hint above correct
         query = self._build_json_query(selection_query, data_type)
 
@@ -179,8 +184,9 @@ class ServiceX(ServiceXABC):
             # Look up the cache, and then fetch an iterator going thorugh the results
             # from either servicex or the cache, depending.
             cached_files = self._cache.lookup_files(request_id)
-            fetched_files_seq = self._get_cached_files(cached_files) if cached_files is not None \
-                else self._get_files_from_servicex(request_id, client, query)
+            fetched_files_seq = self._get_cached_files(cached_files, notifier) \
+                if cached_files is not None \
+                else self._get_files_from_servicex(request_id, client, query, notifier)
 
             # Reflect the files back up a level.
             async for r in fetched_files_seq:
@@ -199,7 +205,8 @@ class ServiceX(ServiceXABC):
 
     async def _get_status_loop(self, client: aiohttp.ClientSession,
                                request_id: str,
-                               downloader: _result_object_list):
+                               downloader: _result_object_list,
+                               notifier: StatusUpdateCallback):
         '''
         Run the status loop, file scans each time a new file is finished.
 
@@ -224,29 +231,31 @@ class ServiceX(ServiceXABC):
                     last_processed = processed
                     downloader.trigger_scan()
 
-                self._notifier.update(processed=processed, failed=failed, remaining=remaining)
-                self._notifier.broadcast()
+                notifier.update(processed=processed, failed=failed, remaining=remaining)
+                notifier.broadcast()
 
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)
         finally:
             downloader.shutdown()
 
-    async def _get_cached_files(self, cached_files: List[Tuple[str, str]]):
+    async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
+                                notifier: StatusUpdateCallback):
         '''
         Return the list of files as an iterator that we have pulled from the cache
         '''
-        self._notifier.update(processed=len(cached_files), remaining=0, failed=0)
+        notifier.update(processed=len(cached_files), remaining=0, failed=0)
         loop = asyncio.get_event_loop()
         for f, p in cached_files:
-            self._notifier.inc(downloaded=1)
+            notifier.inc(downloaded=1)
             path_future = loop.create_future()
             path_future.set_result(Path(p))
             yield f, path_future
 
     async def _get_files_from_servicex(self, request_id: str,
                                        client: aiohttp.ClientSession,
-                                       query: Dict[str, str]):
+                                       query: Dict[str, str],
+                                       notifier: StatusUpdateCallback):
         '''
         Fetch query result files from `servicex`. Given the `request_id` we will download
         files as they become available. We also coordinate caching.
@@ -258,10 +267,10 @@ class ServiceX(ServiceXABC):
             # The `ensure_future` queues this for immediate execution, rather than waiting
             # until we do an await. Note that we catch it below in the `finally` clause.
             r_loop = asyncio.ensure_future(self._get_status_loop(client, request_id,
-                                                                 results_from_query))
+                                                                 results_from_query,
+                                                                 notifier))
 
             try:
-                # TODO: Make sure files are downloaded in parallel.
                 file_object_list = []
                 async for f in results_from_query.files():
                     copy_to_path = self._file_name_func(request_id, f)
@@ -269,8 +278,8 @@ class ServiceX(ServiceXABC):
                     async def do_wait(final_path):
                         assert request_id is not None
                         await _download_file(minio, request_id, f, final_path)
-                        self._notifier.inc(downloaded=1)
-                        self._notifier.broadcast()
+                        notifier.inc(downloaded=1)
+                        notifier.broadcast()
                         return final_path
 
                     file_object_list.append((f, str(copy_to_path)))
@@ -283,10 +292,10 @@ class ServiceX(ServiceXABC):
             # files. If there were, then we need to mark this whole transform as
             # having failed, and remove any trace of it in our caches so that if the user
             # wants to re-try, they won't pick up this failed transform from the cache.
-            if self._notifier.failed > 0:
+            if notifier.failed > 0:
                 self._cache.remove_query(query)
                 raise ServiceXException(f'ServiceX failed to transform '
-                                        f'{self._notifier.failed}'
+                                        f'{notifier.failed}'
                                         ' files - data incomplete.')
 
             # If we got here, then the request finished! Cache the results! Woo!

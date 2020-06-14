@@ -1,4 +1,4 @@
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
@@ -8,11 +8,12 @@ import numpy as np
 import pandas as pd
 
 from .utils import (
-    ServiceXException,
-    _default_wrapper_mgr,
+    ServiceXException, StatusUpdateCallback,
+    StatusUpdateFactory,
+    _null_progress_feedback,
     _run_default_wrapper,
-    _status_update_wrapper,
     sanitize_filename,
+    _status_update_wrapper,
 )
 
 
@@ -32,40 +33,44 @@ class ServiceXABC(ABC):
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
-                 status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
-                 = _run_default_wrapper):
+                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper):
         '''
         Create and configure a ServiceX object for a dataset.
 
         Arguments
-            dataset             Name of a dataset from which queries will be selected.
-            service_endpoint    Where the ServiceX web API is found
-            image               Name of transformer image to use to transform the data
-            storage_directory   Location to cache data that comes back from ServiceX. Data can
-                                be reused between invocations.
-            file_name_func      Allows for unique naming of the files that come back. Rarely used.
-            max_workers         Maximum number of transformers to run simultaneously on ServiceX.
-            status_callback     Callback to update client on status of the query. See Notes.
+
+            dataset                     Name of a dataset from which queries will be selected.
+            service_endpoint            Where the ServiceX web API is found
+            image                       Name of transformer image to use to transform the data
+            storage_directory           Location to cache data that comes back from ServiceX. Data
+                                        can be reused between invocations.
+            file_name_func              Allows for unique naming of the files that come back.
+                                        Rarely used.
+            max_workers                 Maximum number of transformers to run simultaneously on
+                                        ServiceX.
+            status_callback_factory     Factory to create a status notification callback for each
+                                        query. One is created per query.
 
 
         Notes:
-            The `status_callback` argument, by default, uses the `tqdm` library to render progress
-            bars in a terminal window or a graphic in a Jupyter notebook (with proper jupyter
-            extensions installed). If `status_callback` is specified as None, no updates will be
-            rendered. A custom callback function can also be specified which takes `(total_files,
-            transformed, downloaded, skipped)` as an argument. The `total_files` parameter may be
-            `None` until the system knows how many files need to be processed (and some files can
-            even be completed before that is known).
+
+            -  The `status_callback` argument, by default, uses the `tqdm` library to render
+               progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
+               jupyter extensions installed). If `status_callback` is specified as None, no
+               updates will be rendered. A custom callback function can also be specified which
+               takes `(total_files, transformed, downloaded, skipped)` as an argument. The
+               `total_files` parameter may be `None` until the system knows how many files need to
+               be processed (and some files can even be completed before that is known).
         '''
         self._dataset = dataset
         self._image = image
         self._max_workers = max_workers
 
-        # Normalize how we do the status updates
-        if status_callback is _run_default_wrapper:
-            t = _default_wrapper_mgr(dataset)
-            status_callback = t.update
-        self._notifier = _status_update_wrapper(status_callback)
+        # We can't create the notifier until the actual query,
+        # so only need to save the status update.
+        self._status_callback_factory = \
+            status_callback_factory if status_callback_factory is not None \
+            else _null_progress_feedback
 
         # Normalize how we do the files
         if file_name_func is None:
@@ -84,6 +89,10 @@ class ServiceXABC(ABC):
                 raise ServiceXException('Can only specify `storage_directory` or `file_name_func`'
                                         ' when creating Servicex, not both.')
             self._file_name_func = file_name_func
+
+    def _create_notifier(self) -> _status_update_wrapper:
+        'Internal method to create a updater from the status call-back'
+        return _status_update_wrapper(self._status_callback_factory(self._dataset))
 
     @property
     def dataset(self):
