@@ -16,6 +16,7 @@
         "Minio",
         "NOQA",
         "Powheg",
+        "NOQA",
         "Reconstructor",
         "STDM",
         "Servivce",
@@ -52,6 +53,10 @@
         "sslhep",
         "tqdm",
         "xaod",
-        "xrootd"
+        "xrootd",
+        "linq",
+        "pytest",
+        "qastle",
+        "servicex"
     ]
 }
