@@ -4,13 +4,14 @@ import functools
 import logging
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
-from typing import Iterator
 import urllib
 
 import aiohttp
 from backoff import on_exception
 import backoff
 from minio import Minio
+
+from typing import AsyncIterator
 
 from .cache import cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
@@ -24,9 +25,10 @@ from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
     ServiceXException,
-    ServiceXUnknownRequestID, StatusUpdateCallback,
+    ServiceXUnknownRequestID,
     StatusUpdateFactory,
     _run_default_wrapper,
+    _status_update_wrapper,
 )
 
 # Number of seconds to wait between polling servicex for the status of a transform job
@@ -133,7 +135,7 @@ class ServiceX(ServiceXABC):
         # Get all the files
         as_files = \
             (f async for f in
-             self._get_files(selection_query, data_format, notifier))  # type: ignore
+             self._get_files(selection_query, data_format, notifier))
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
@@ -147,8 +149,8 @@ class ServiceX(ServiceXABC):
         return ordered_data
 
     async def _get_files(self, selection_query: str, data_type: str,
-                         notifier: StatusUpdateCallback) \
-            -> Iterator[Tuple[str, Awaitable[Path]]]:
+                         notifier: _status_update_wrapper) \
+            -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
         '''
         Return a list of files from servicex as they have been downloaded to this machine. The
         return type is an awaitable that will yield the path to the file.
@@ -173,7 +175,6 @@ class ServiceX(ServiceXABC):
                                         This is returned this way so a number of downloads can run
                                         simultaneously.
         '''
-        # TODO: Make sure we get type-hint above correct
         query = self._build_json_query(selection_query, data_type)
 
         async with aiohttp.ClientSession() as client:
@@ -206,7 +207,7 @@ class ServiceX(ServiceXABC):
     async def _get_status_loop(self, client: aiohttp.ClientSession,
                                request_id: str,
                                downloader: _result_object_list,
-                               notifier: StatusUpdateCallback):
+                               notifier: _status_update_wrapper):
         '''
         Run the status loop, file scans each time a new file is finished.
 
@@ -240,7 +241,7 @@ class ServiceX(ServiceXABC):
             downloader.shutdown()
 
     async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
-                                notifier: StatusUpdateCallback):
+                                notifier: _status_update_wrapper):
         '''
         Return the list of files as an iterator that we have pulled from the cache
         '''
@@ -255,7 +256,7 @@ class ServiceX(ServiceXABC):
     async def _get_files_from_servicex(self, request_id: str,
                                        client: aiohttp.ClientSession,
                                        query: Dict[str, str],
-                                       notifier: StatusUpdateCallback):
+                                       notifier: _status_update_wrapper):
         '''
         Fetch query result files from `servicex`. Given the `request_id` we will download
         files as they become available. We also coordinate caching.
