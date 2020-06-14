@@ -133,7 +133,7 @@ Everything is based around the `ServiceX` object.
 
 To get the data use one of the `get_data` method. They all have the same API, differing only by what they return.
 
-```
+```python
  |  get_data_awkward_async(self, selection_query: str) -> Dict[bytes, Union[awkward.array.jagged.JaggedArray, numpy.ndarray]]
  |      Fetch query data from ServiceX matching `selection_query` and return it as
  |      dictionary of awkward arrays, an entry for each column. The data is uniquely
