@@ -227,6 +227,20 @@ def test_cache_stable():
     assert h1 == h2
 
 
+def test_cache_query_agnostic():
+    json_query = {
+        'did': "dude_001",
+        'selection': "(lambda (list a0 a1) (+ a0 a1))",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    h1 = _query_cache_hash(json_query)
+    json_query['selection'] = '(lambda (list b0 b1) (+ b0 b1))'
+    h2 = _query_cache_hash(json_query)
+
+    assert h1 == h2
+
+
 def test_request_trans_cache_workers():
     json_query = {
         'did': "dude_001",
@@ -284,6 +298,11 @@ def test_clean_linq_no_lambda():
     assert clean_linq(q) == q
 
 
+def test_clean_linq_invalid_qastle():
+    q = '(lambda a (+ a 1))'
+    assert clean_linq(q) == q
+
+
 def test_clean_linq_single_lambda():
     q = '(lambda (list e0 e1) (+ e0 e1))'
     assert clean_linq(q) == '(lambda (list a0 a1) (+ a0 a1))'
@@ -312,11 +331,3 @@ def test_clean_linq_arb_var_names():
 def test_clean_linq_empty():
     q = ''
     assert clean_linq(q) == ""
-
-
-def test_clean_linq_too_many_lambda():
-    q = '(lambda (list e0 e1) (+ e0 e1) (one too many))'
-    with pytest.raises(Exception):
-        clean_linq(q)
-
-    assert "required 2"

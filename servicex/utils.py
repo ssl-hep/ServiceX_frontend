@@ -157,6 +157,8 @@ def _query_cache_hash(json_query: Dict[str, str]) -> str:
     hasher = blake2b(digest_size=20)
     for k, v in json_query.items():
         if k not in _json_keys_to_ignore_for_hash:
+            if k == 'selection':
+                v = clean_linq(v)
             hasher.update(k.encode())
             hasher.update(str(v).encode())
     hash = hasher.hexdigest()
@@ -178,7 +180,17 @@ def clean_linq(q: str) -> str:
     '''
     Normalize the variables in a qastle expression. Should make the
     linq expression more easily comparable even if the algorithm that
-    generates the underlying variable numbers changes.
+    generates the underlying variable numbers changes. If the selection algorithm will violate
+    the qastle syntax, it is returned unaltered and with no errors.
+
+    Arguments
+
+        q           Strign containing the qastle code`
+
+    Returns
+
+        clean_q     Sanitized query - lambda arguments are given a uniform source code
+                    labeling so that two queries with the same structure are marked as the same.
     '''
     from collections import namedtuple
     ParseTracker = namedtuple('ParseTracker', ['text', 'info'])
@@ -244,7 +256,10 @@ def clean_linq(q: str) -> str:
 
             return ParseTracker(f'({node_type} {" ".join([f.text for f in fields])})', fields)
 
-    tree = parse(q)
-    new_tree = translator().transform(tree)
-    assert isinstance(new_tree, str)
-    return new_tree
+    try:
+        tree = parse(q)
+        new_tree = translator().transform(tree)
+        assert isinstance(new_tree, str)
+        return new_tree
+    except Exception:
+        return q

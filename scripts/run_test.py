@@ -19,6 +19,5 @@ if __name__ == '__main__':
     assert len(sys.argv) == 2
     run_query(sys.argv[1])
 
-# TODO: Make sure files download while other things are still running
 # TODO: The total number of files sometimes balloons up to 22 from 17 for this
 #       example. Should not happen.

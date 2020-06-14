@@ -28,8 +28,6 @@ from .utils import (
 )
 from .servicex_utils import _wrap_in_memory_sx_cache
 
-# TODO: Make sure clean_linq is properly used, somewhere.
-
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0

@@ -439,12 +439,26 @@ async def test_download_cached_nonet(good_transform_request, files_in_minio, n_f
 @pytest.mark.parametrize("n_files", [1, 2])
 async def test_download_cached_awkward(good_transform_request, files_in_minio, good_awkward_file_data, n_files: int):
     'Run two right after each other - they should return the same data in memory'
+    files_in_minio(n_files)
+
     async def do_query():
         ds = fe.ServiceX('localds://dude-is-funny')
         return await ds.get_data_awkward_async('(valid qastle string')
 
     a1 = await do_query()
     a2 = await do_query()
+    assert a1 is a2
+
+
+@pytest.mark.asyncio
+async def test_download_cache_qastle_norm(good_transform_request, files_in_minio, good_awkward_file_data):
+    'Run two right after each other - they should return the same data in memory'
+    async def do_query(q: str):
+        ds = fe.ServiceX('localds://dude-is-funny')
+        return await ds.get_data_awkward_async(q)
+
+    a1 = await do_query('(lambda (list a0 a1) (+ a0 a1))')
+    a2 = await do_query('(lambda (list b0 b1) (+ b0 b1))')
     assert a1 is a2
 
 

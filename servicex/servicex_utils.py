@@ -2,7 +2,7 @@ import asyncio
 from typing import Dict
 import functools
 
-from .utils import _string_hash
+from .utils import _string_hash, clean_linq
 
 _in_progress_items: Dict[str, asyncio.Event] = {}
 
@@ -28,7 +28,7 @@ def _wrap_in_memory_sx_cache(fn):
         assert isinstance(selection_query, str)
 
         # Is it in the local cache?
-        h = _string_hash([sx._dataset, selection_query])
+        h = _string_hash([sx._dataset, clean_linq(selection_query)])
         if h in _in_progress_items:
             await _in_progress_items[h].wait()
 
