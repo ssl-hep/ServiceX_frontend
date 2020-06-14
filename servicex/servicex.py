@@ -1,11 +1,12 @@
 # Main front end interface
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import logging
 import os
-import tempfile
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, Callable
-import urllib
 from pathlib import Path
+import tempfile
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+import urllib
 
 import aiohttp
 import awkward
@@ -14,6 +15,8 @@ import numpy as np
 import pandas as pd
 from retry import retry
 import uproot
+
+from .utils import _status_update_wrapper, _run_default_wrapper, _default_wrapper_mgr
 
 
 # Where shall we store files by default when we pull them down?
@@ -38,7 +41,7 @@ class ServiceXFrontEndException(Exception):
 
 
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
-                                request_id: str) -> Tuple[Optional[int], int]:
+                                request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
     '''
     Internal routine that queries for the current stat of things. We expect the following things
     to come back:
@@ -65,8 +68,11 @@ async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
         files_remaining = None \
             if (('files-remaining' not in info) or (info['files-remaining'] is None)) \
             else int(info['files-remaining'])
+        files_failed = None \
+            if (('files-skipped' not in info) or (info['files-skipped'] is None)) \
+            else int(info['files-skipped'])
         files_processed = int(info['files-processed'])
-        return files_remaining, files_processed
+        return files_remaining, files_processed, files_failed
 
 
 def santize_filename(fname: str):
@@ -104,6 +110,7 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
     minio_client.fget_object(request_id, bucket_fname, temp_local_filepath)
     os.replace(temp_local_filepath, local_filepath)
 
+    # Done, notify anyone that wants to update progress.
     return (bucket_fname, local_filepath)
 
 
@@ -116,33 +123,39 @@ def protected_list_objects(client: Minio, request_id: str):
     return client.list_objects(request_id)
 
 
-async def _post_process_data(data_type: str, filepath: Tuple[str, str]):
+async def _post_process_data(data_type: str, filepath: Tuple[str, str],
+                             notifier: _status_update_wrapper):
     '''
     Post-process the data and return the "appropriate" type
     '''
-    if data_type == 'root-file' or data_type == 'parquet':
-        return filepath
-
-    # All other types require loading things into uproot first.
-    f_in = uproot.open(filepath[1])
     try:
-        r = f_in[f_in.keys()[0]]
-        if data_type == 'pandas':
-            return (filepath[0], r.pandas.df())
-        elif data_type == 'awkward':
-            return (filepath[0], r.arrays())
-        else:
-            raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
-                                            'should not be known.')
+        if data_type == 'root-file' or data_type == 'parquet':
+            return filepath
+
+        # All other types require loading things into uproot first.
+        f_in = uproot.open(filepath[1])
+        try:
+            r = f_in[f_in.keys()[0]]
+            if data_type == 'pandas':
+                return (filepath[0], r.pandas.df())
+            elif data_type == 'awkward':
+                return (filepath[0], r.arrays())
+            else:
+                raise ServiceXFrontEndException(f'Internal coding error - {data_type} '
+                                                'should not be known.')
+        finally:
+            f_in._context.source.close()
     finally:
-        f_in._context.source.close()
+        notifier.inc(downloaded=1)
+        notifier.broadcast()
 
 
 async def _download_new_files(files_queued: Iterable[str], end_point: str,
                               request_id: str,
                               data_type: str,
                               file_name_func: Callable[[str, str], str],
-                              redownload_files: bool) -> Dict[str, Any]:
+                              redownload_files: bool,
+                              notifier: _status_update_wrapper) -> Dict[str, Any]:
     '''
     Look at the minio bucket to see if there are any new file items written there. If so, then
     trigger a download.
@@ -177,19 +190,22 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
         data_type,
         await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
                                                             request_id, fname, file_name_func,
-                                                            redownload_files)))
-               for fname in new_files}
+                                                            redownload_files)),
+        notifier)
+        for fname in new_files}
     return futures
 
 
 async def get_data_async(selection_query: str, dataset: str,
                          servicex_endpoint: str = 'http://localhost:5000/servicex',
                          data_type: str = 'pandas',
-                         image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
+                         image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                          max_workers: int = 20,
                          storage_directory: Optional[str] = None,
                          file_name_func: Callable[[str, str], str] = None,
-                         redownload_files: bool = False) \
+                         redownload_files: bool = False,
+                         status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
+                         = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
@@ -210,6 +226,10 @@ async def get_data_async(selection_query: str, dataset: str,
                             See notes on how to use this lambda.
         redownload_files    If true, evne if the file is already in the requested location,
                             re-download it.
+        status_callback     If specified, called as we grab files and download them with updates.
+                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            locally. TotalFiles might change over time as more files are found by
+                            servicex.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -251,6 +271,11 @@ async def get_data_async(selection_query: str, dataset: str,
     if (storage_directory is not None) and (file_name_func is not None):
         raise Exception("You may only specify `storage_direcotry` or `file_name_func`, not both.")
 
+    if status_callback is _run_default_wrapper:
+        t = _default_wrapper_mgr(dataset)
+        status_callback = t.update
+    notifier = _status_update_wrapper(status_callback)
+
     # Normalize how we do the files
     if file_name_func is None:
         if storage_directory is None:
@@ -276,6 +301,9 @@ async def get_data_async(selection_query: str, dataset: str,
         "workers": max_workers
     }
 
+    # Log this
+    logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
+
     # Start the async context manager. We should use only one for the whole app, however,
     # that just isn't going to work here. The advantage is better handling of connections.
     # TODO: Option to pass in the connectino pool?
@@ -296,18 +324,30 @@ async def get_data_async(selection_query: str, dataset: str,
         last_files_processed = 0
         while not done:
             await asyncio.sleep(servicex_status_poll_time)
-            files_remaining, files_processed = await _get_transform_status(client,
-                                                                           servicex_endpoint,
-                                                                           request_id)
+            files_remaining, files_processed, files_failed = \
+                await _get_transform_status(client, servicex_endpoint, request_id)
+            notifier.update(processed=files_processed)
+            if files_failed is not None:
+                notifier.update(failed=files_failed)
+            if files_remaining is not None:
+                t = files_remaining + files_processed \
+                    + (files_failed if files_failed is not None else 0)
+                notifier.update(total=t)
+            notifier.broadcast()
             if files_processed > last_files_processed:
                 new_downloads = await _download_new_files(files_downloading.keys(),
                                                           servicex_endpoint, request_id,
                                                           data_type, file_name_func,
-                                                          redownload_files)
+                                                          redownload_files, notifier)
                 files_downloading.update(new_downloads)
                 last_files_processed = files_processed
 
             done = (files_remaining is not None) and files_remaining == 0
+
+        # If any files have failed, then no need to get down anything from this request!
+        if notifier.failed > 0:
+            raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
+                                     f'out of {notifier.total} files.')
 
         # Now, wait for all of them to complete so we can stich the files together.
         all_file_info = list(await asyncio.gather(*files_downloading.values()))
@@ -339,11 +379,13 @@ async def get_data_async(selection_query: str, dataset: str,
 def get_data(selection_query: str, dataset: str,
              servicex_endpoint: str = 'http://localhost:5000/servicex',
              data_type: str = 'pandas',
-             image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2',
+             image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
              max_workers: int = 20,
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
-             redownload_files: bool = False) \
+             redownload_files: bool = False,
+             status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
+             = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
     '''
     Return data from a query with data sets.
@@ -364,6 +406,10 @@ def get_data(selection_query: str, dataset: str,
                             See notes on how to use this lambda.
         redownload_files    If true, evne if the file is already in the requested location,
                             re-download it.
+        status_callback     If specified, called as we grab files and download them with updates.
+                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            locally. TotalFiles might change over time as more files are found by
+                            servicex.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -397,7 +443,7 @@ def get_data(selection_query: str, dataset: str,
         r = get_data_async(selection_query, dataset, servicex_endpoint, image=image,
                            max_workers=max_workers, data_type=data_type,
                            storage_directory=storage_directory, file_name_func=file_name_func,
-                           redownload_files=redownload_files)
+                           redownload_files=redownload_files, status_callback=status_callback)
         return loop.run_until_complete(r)
     else:
         def get_data_wrapper(*args, **kwargs):

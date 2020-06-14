@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name="servicex",
-      version='1.0.0-beta.2',
+      version='1.0.0-beta.3',
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
@@ -27,6 +27,7 @@ setup(name="servicex",
           "retry~=0.9",
           "aiohttp~=3.6",
           "minio~=5.0",
+          "tqdm~=4.0"
       ],
       extras_require={
           'test': [
