@@ -471,10 +471,3 @@ async def test_simultaneous_query_not_requeued(good_transform_request, files_in_
 
     a1, a2 = await asyncio.gather(*[do_query(), do_query()])  # type: ignore
     assert a1 is a2
-
-
-# TODO:
-# Other tests
-#  Loose connection for a while after we submit the request
-#  Don't have request to submit the request
-#  Fail during download due to bad (temporary) connection.
