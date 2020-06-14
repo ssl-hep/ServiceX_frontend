@@ -84,14 +84,13 @@ class _status_update_wrapper:
                failed: Optional[int] = None):
         if processed is not None:
             self._processed = processed
-            self._update_total()
         if downloaded is not None:
             self._downloaded = downloaded
         if failed is not None:
             self._failed = failed
         if remaining is not None:
             self._remaining = remaining
-            self._update_total()
+        self._update_total()
 
     def inc(self, downloaded: Optional[int] = None):
         if downloaded is not None:

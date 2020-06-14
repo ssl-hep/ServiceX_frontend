@@ -214,6 +214,22 @@ def test_callback_with_total_fluctuation():
     assert p_total == 13
 
 
+def test_callback_with_total_sequence():
+    'Make sure we can del with multiple things at once'
+
+    p_total = None
+
+    def call_me(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal p_total
+        p_total = total
+
+    u = _status_update_wrapper(call_me)
+    u.update(processed=0, remaining=6)
+    u.update(processed=2, remaining=4)
+    u.broadcast()
+    assert p_total == 6
+
+
 def test_cache_stable():
     json_query = {
         'did': "dude_001",
