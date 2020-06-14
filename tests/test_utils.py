@@ -1,5 +1,11 @@
-from servicex.utils import _status_update_wrapper
 from typing import Optional
+import aiohttp
+
+import pytest
+
+from servicex.utils import _status_update_wrapper, _submit_or_lookup_transform, clean_linq
+
+from .utils_for_testing import good_transform_request, delete_default_downloaded_files  # NOQA
 
 
 def test_callback_no_updates():
@@ -98,6 +104,40 @@ def test_callback_everything():
     assert p_failed == 1
 
 
+def test_callback_reset():
+    'We want to restart.'
+
+    called = False
+    p_total = None
+    p_processed = None
+    p_downloaded = None
+    p_failed = None
+
+    def call_me(total: Optional[int], processed: int, downloaded: int, failed: int):
+        nonlocal called, p_total, p_processed, p_downloaded, p_failed
+        called = True
+        p_total = total
+        p_processed = processed
+        p_downloaded = downloaded
+        p_failed = failed
+
+    u = _status_update_wrapper(call_me)
+    u.update(processed=10)
+    u.update(downloaded=2)
+    u.update(failed=1)
+    u.update(total=12)
+    u.reset()
+    u.update(processed=10)
+    u.update(downloaded=2)
+    u.update(total=12)
+    u.broadcast()
+    assert called
+    assert p_total == 12
+    assert p_downloaded == 2
+    assert p_processed == 10
+    assert p_failed == 0
+
+
 def test_callback_inc_with_nothing():
     called = False
     p_total = None
@@ -148,7 +188,7 @@ def test_callback_none():
     u.update(processed=10)
     u.update(downloaded=3)
     u.update(total=12)
-    u.update(failed = 1)
+    u.update(failed=1)
     u.broadcast()
 
 
@@ -171,3 +211,155 @@ def test_callback_with_total_fluctuation():
     u.update(total=13)
     u.broadcast()
     assert p_total == 13
+
+
+@pytest.mark.asyncio
+async def test_request_trans_once(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        assert rid is not None
+        req_json = good_transform_request
+        assert req_json is not None
+
+
+@pytest.mark.asyncio
+async def test_request_trans_twice(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+
+        assert rid1 == rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_twice_no_cache(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", False, json_query)
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", False, json_query)
+
+        assert rid1 != rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_workers(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        json_query['workers'] = 100
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+
+        assert rid1 == rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_selection(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        json_query['selection'] = '(call valid qastle)'
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+
+        assert rid1 != rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_did(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        json_query['did'] = 'did_002'
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+
+        assert rid1 != rid2
+
+
+@pytest.mark.asyncio
+async def test_request_trans_cache_unknown(good_transform_request):
+    json_query = {
+        'did': "dude_001",
+        'selection': "(valid qastle)",
+        'chunk-size': 1000,
+        'workers': 10,
+    }
+    async with aiohttp.ClientSession() as client:
+        rid1 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+        json_query['fork'] = 'me'
+        rid2 = await _submit_or_lookup_transform(client, "http://localhost:5000/servicex", True, json_query)
+
+        assert rid1 != rid2
+
+
+def test_clean_linq_no_lambda():
+    q = '(valid qastle)'
+    assert clean_linq(q) == q
+
+
+def test_clean_linq_single_lambda():
+    q = '(lambda (list e0 e1) (+ e0 e1))'
+    assert clean_linq(q) == '(lambda (list a0 a1) (+ a0 a1))'
+
+
+def test_clean_linq_many_args():
+    q = '(lambda (list e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11) (+ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11))'
+    assert clean_linq(q) == '(lambda (list a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11) (+ a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))'
+
+
+def test_clean_linq_funny_var_names():
+    q = '(lambda (list e0 e000) (+ e000 e0))'
+    assert clean_linq(q) == '(lambda (list a0 a1) (+ a1 a0))'
+
+
+def test_clean_linq_nested_lambda():
+    q = '(lambda (list e0 e1) (+ (call (lambda (list e0) (+ e0 1)) e0) e1))'
+    assert clean_linq(q) == '(lambda (list a1 a2) (+ (call (lambda (list a0) (+ a0 1)) a1) a2))'
+
+
+def test_clean_linq_arb_var_names():
+    q = '(lambda (list a0 f1) (+ a0 f1))'
+    assert clean_linq(q) == '(lambda (list a0 a1) (+ a0 a1))'
+
+
+def test_clean_linq_empty():
+    q = ''
+    assert clean_linq(q) == ""
+
+
+def test_clean_linq_too_many_lambda():
+    q = '(lambda (list e0 e1) (+ e0 e1) (one too many))'
+    with pytest.raises(Exception):
+        clean_linq(q)
+
+    assert "required 2"

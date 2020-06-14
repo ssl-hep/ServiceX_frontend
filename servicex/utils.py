@@ -1,5 +1,31 @@
-from typing import Optional, Callable
+from hashlib import blake2b
+import os
+from pathlib import Path
+import re
+import tempfile
+from typing import Callable, Dict, Optional
+
+import aiohttp
 from tqdm.auto import tqdm
+
+from lark import Transformer, Token
+from qastle import parse
+
+
+# Where shall we store files by default when we pull them down?
+default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
+
+
+class ServiceX_Exception(Exception):
+    'Raised when something has gone wrong in the ServiceX remote service'
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
+class ServiceXFrontEndException(Exception):
+    'Raised to indicate an API error in use of the servicex library'
+    def __init__(self, msg):
+        super().__init__(self, msg)
 
 
 class _status_update_wrapper:
@@ -8,11 +34,15 @@ class _status_update_wrapper:
     '''
     def __init__(self, callback:
                  Optional[Callable[[Optional[int], int, int, int], None]] = None):
+        self._callback = callback
+        self.reset()
+
+    def reset(self):
+        'Reset back to zero'
         self._total: Optional[int] = None
         self._processed: Optional[int] = None
         self._downloaded: Optional[int] = None
         self._failed: int = 0
-        self._callback = callback
 
     @property
     def total(self) -> Optional[int]:
@@ -65,9 +95,17 @@ def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
 
 
 class _default_wrapper_mgr:
-    'Default prorgress bar'
+    'Default progress bar'
     def __init__(self, sample_name: Optional[str] = None):
-        self._tqdm_p = tqdm(total=9e9, desc=sample_name, unit='file',
+        self._tqdm_p = None
+        self._tqdm_d = None
+        self._sample_name = sample_name
+
+    def _init_tqdm(self):
+        if self._tqdm_p is not None:
+            return
+
+        self._tqdm_p = tqdm(total=9e9, desc=self._sample_name, unit='file',
                             leave=True, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
@@ -90,5 +128,161 @@ class _default_wrapper_mgr:
             bar.close()
 
     def update(self, total: Optional[int], processed: int, downloaded: int, failed: int):
+        self._init_tqdm()
         self._update_bar(self._tqdm_p, total, processed, failed)
         self._update_bar(self._tqdm_d, total, downloaded, failed)
+
+
+# Changes in the json that won't affect the result
+_json_keys_to_ignore_for_hash = ['workers']
+
+
+def _query_cache_file(json_query: Dict[str, str]) -> Path:
+    '''
+    Return a query cache file.
+    '''
+    hasher = blake2b(digest_size=20)
+    for k, v in json_query.items():
+        if k not in _json_keys_to_ignore_for_hash:
+            hasher.update(k.encode())
+            hasher.update(str(v).encode())
+    hash = hasher.hexdigest()
+
+    return Path(default_file_cache_name) / 'request-cache' / hash
+
+
+def _query_is_cached(json_query: Dict[str, str]) -> bool:
+    '''
+    Check to see if a cache file exists for the json query
+
+    Returns:
+        True        Query cache file exists and will trigger a query lookup
+        False       Otherwise
+    '''
+    return _query_cache_file(json_query).exists()
+
+
+async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
+                                      servicex_endpoint: str,
+                                      use_cache: bool,
+                                      json_query: Dict[str, str]) -> str:
+    '''
+    Submit a transform, or look it up in our local query database
+    '''
+    # Check the cache
+    hash_file = _query_cache_file(json_query)
+    if use_cache and hash_file.exists():
+        with hash_file.open('r') as r:
+            return r.readline().strip()
+
+    # Make the query.
+    async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
+        r = await response.json()
+        if response.status != 200:
+            raise ServiceX_Exception('ServiceX rejected the transformation request: '
+                                     f'({response.status}){r}')
+        req_id = r["request_id"]
+
+        hash_file.parent.mkdir(parents=True, exist_ok=True)
+        with hash_file.open('w') as w:
+            w.write(f'{req_id}\n')
+            # In case humans come poking around
+            w.write(str(json_query))
+            w.write('\n')
+
+    return req_id
+
+
+def clean_linq(q: str) -> str:
+    '''
+    Normalize the variables in a qastle expression. Should make the
+    linq expression more easily comparable even if the algorithm that
+    generates the underlying variable numbers changes.
+    '''
+    from collections import namedtuple
+    ParseTracker = namedtuple('ParseTracker', ['text', 'info'])
+
+    arg_index = 0
+
+    def new_arg():
+        nonlocal arg_index
+        s = f'a{arg_index}'
+        arg_index += 1
+        return s
+
+    def _replace_strings(s: str, rep: Dict[str, str]) -> str:
+        'Replace all strings in dict that are found in s'
+        for k in rep.keys():
+            s = re.sub(f'\\b{k}\\b', rep[k], s)
+        return s
+
+    class translator(Transformer):
+        def record(self, children):
+            if (len(children) == 0
+                    or isinstance(children[0], Token)
+                    and children[0].type == 'WHITESPACE'):
+                return ""
+            else:
+                return children[0].text
+
+        def expression(self, children):
+            for child in children:
+                if isinstance(child, ParseTracker):
+                    return child
+            raise SyntaxError('Expression does not contain a node')
+
+        def atom(self, children):
+            child = children[0]
+            return ParseTracker(child.value, child.value)
+
+        def composite(self, children):
+            fields = []
+            node_type: Optional[str] = None
+            for child in children:
+                if isinstance(child, Token):
+                    if child.type == 'NODE_TYPE':
+                        node_type = child.value
+                    else:
+                        pass
+                elif isinstance(child, ParseTracker):
+                    fields.append(child)
+
+            assert node_type is not None
+
+            if node_type == 'lambda':
+                if len(fields) != 2:
+                    raise Exception(f'The qastle "{q}" is not valid - found a lambda expression'
+                                    f'with {len(fields)} arguments - not the required 2!')
+                arg_list = [f.info for f in fields[0].info]
+                arg_mapping = {old: new_arg() for old in arg_list}
+                fields[0] = ParseTracker(
+                    f'(list {" ".join(arg_mapping[k] for k in arg_list)})',
+                    [ParseTracker(arg_mapping[f], arg_mapping[f]) for f in arg_list])
+                fields[1] = ParseTracker(_replace_strings(fields[1].text, arg_mapping),
+                                         fields[1].info)
+
+            return ParseTracker(f'({node_type} {" ".join([f.text for f in fields])})', fields)
+
+    tree = parse(q)
+    new_tree = translator().transform(tree)
+    assert isinstance(new_tree, str)
+    return new_tree
+
+
+def _file_object_cache_filename(request_id: str) -> Path:
+    '''
+    Return the path of the file where we will write out the cache for the
+    file objects we are downloading.
+    '''
+    global default_file_cache_name
+    return Path(default_file_cache_name) / 'object_list_cache' / request_id
+
+
+def _file_object_cache_filename_temp(request_id: str) -> Path:
+    '''
+    Return the path of the file where we will write out the cache for the
+    file objects we are downloading. This is the temp file.
+    '''
+    global default_file_cache_name
+    return Path(default_file_cache_name) / 'object_list_cache' / \
+        f'{request_id}-temp'

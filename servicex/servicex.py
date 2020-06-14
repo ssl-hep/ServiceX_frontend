@@ -16,28 +16,16 @@ import pandas as pd
 from retry import retry
 import uproot
 
-from .utils import _status_update_wrapper, _run_default_wrapper, _default_wrapper_mgr
-
-
-# Where shall we store files by default when we pull them down?
-default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
+from .utils import (
+    ServiceXFrontEndException, ServiceX_Exception, _default_wrapper_mgr,
+    _run_default_wrapper, _status_update_wrapper, _submit_or_lookup_transform,
+    clean_linq, _file_object_cache_filename, _file_object_cache_filename_temp,
+    _query_is_cached)
 
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
-
-
-class ServiceX_Exception(Exception):
-    'Raised when something has gone wrong in the ServiceX remote service'
-    def __init__(self, msg):
-        super().__init__(self, msg)
-
-
-class ServiceXFrontEndException(Exception):
-    'Raised to indicate an API error in use of the servicex library'
-    def __init__(self, msg):
-        super().__init__(self, msg)
 
 
 async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
@@ -102,8 +90,7 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
 
     # Make sure there is a place to write the output file.
     dir = os.path.dirname(local_filepath)
-    if not os.path.exists(dir):
-        Path(dir).mkdir(parents=True)
+    Path(dir).mkdir(parents=True, exist_ok=True)
 
     # We are going to build a temp file, and download it from there.
     temp_local_filepath = f'{local_filepath}.temp'
@@ -115,16 +102,30 @@ def _download_file(minio_client: Minio, request_id: str, bucket_fname: str,
 
 
 @retry(delay=1, tries=10, exceptions=ResponseError)
-def protected_list_objects(client: Minio, request_id: str):
+def protected_list_objects(client: Minio, request_id: str) -> Iterable[str]:
     '''
-    Return a list of objects in a minio bucket. We've seen some failures here in
-    the real world, so protect this with a retry.
+    Returns a list of files that are currently available for
+    this request. Will pull the list from the disk cache if possible.
     '''
-    return client.list_objects(request_id)
+    # Try to fetch from cache
+    p = _file_object_cache_filename(request_id)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    if p.exists():
+        return filter(lambda l: len(l) > 0, p.read_text().splitlines())
+
+    # Go out to actually request the list
+    listing = [f.object_name for f in client.list_objects(request_id)]
+
+    # Write out the a temp cache file, which will be renamed once we are
+    # sure the full set is downloaded.
+    _file_object_cache_filename_temp(request_id) \
+        .write_text(os.linesep.join(listing))
+
+    return listing
 
 
-async def _post_process_data(data_type: str, filepath: Tuple[str, str],
-                             notifier: _status_update_wrapper):
+def _post_process_data(data_type: str, filepath: Tuple[str, str],
+                       notifier: _status_update_wrapper):
     '''
     Post-process the data and return the "appropriate" type
     '''
@@ -180,20 +181,130 @@ async def _download_new_files(files_queued: Iterable[str], end_point: str,
                          secret_key='leftfoot1',
                          secure=False)
 
-    files = list([f.object_name for f in protected_list_objects(minio_client, request_id)])  \
-        # type: List[str]
+    files = protected_list_objects(minio_client, request_id)
     new_files = [fname for fname in files if fname not in files_queued]
 
     # Submit in a thread pool so they can run and block concurrently (minio doesn't have
-    # an async interface), and then do any post-processing needed.
-    futures = {fname: _post_process_data(
-        data_type,
-        await asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                                            request_id, fname, file_name_func,
-                                                            redownload_files)),
-        notifier)
-        for fname in new_files}
+    # an async interface), and then do any post-processing needed. We write this as a function
+    # because it is easier to see what is going on.
+    def do_download_and_post(fname: str):
+        data = _download_file(minio_client, request_id, fname, file_name_func,
+                              redownload_files)
+        return _post_process_data(data_type, data, notifier)
+
+    futures = {fname: asyncio.wrap_future(_download_executor.submit(do_download_and_post, fname))
+               for fname in new_files}
     return futures
+
+
+async def get_data_cache_calc(request_id: str,
+                              client: aiohttp.ClientSession,
+                              servicex_endpoint: str,
+                              notifier: _status_update_wrapper,
+                              data_type: str,
+                              file_name_func: Callable[[str, str], str],
+                              redownload_files: bool) \
+        -> Tuple[bool, Optional[Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]]]:
+    '''
+    Returns:
+        retry       True if we should restart the query from scratch
+        result      If retry is false, the result, otherwise None.
+    '''
+    # Sit here waiting for the results to come in. In case there are missing items
+    # in the minio stream, we will avoid counting that. That should be an explicit error taken
+    # care of further on down in the code.
+    done = False
+    files_downloading = {}
+    last_files_processed = 0
+    first = True
+    while not done:
+        try:
+            if not first:
+                await asyncio.sleep(servicex_status_poll_time)
+            files_remaining, files_processed, files_failed = \
+                await _get_transform_status(client, servicex_endpoint, request_id)
+            first = False
+        except Exception as e:
+            if 'error 500' in str(e):
+                if first:
+                    return True, None
+            raise
+
+        notifier.update(processed=files_processed)
+        if files_failed is not None:
+            notifier.update(failed=files_failed)
+        if files_remaining is not None:
+            t = files_remaining + files_processed \
+                + (files_failed if files_failed is not None else 0)
+            notifier.update(total=t)
+        notifier.broadcast()
+
+        if files_processed > last_files_processed:
+            new_downloads = await _download_new_files(files_downloading.keys(),
+                                                      servicex_endpoint, request_id,
+                                                      data_type, file_name_func,
+                                                      redownload_files, notifier)
+            files_downloading.update(new_downloads)
+            last_files_processed = files_processed
+
+        done = (files_remaining is not None) and files_remaining == 0
+
+    # We have the complete list of files to cache. So lets rename them.
+    # TODO: Caching logic is too spread out.
+    t_cache_file = _file_object_cache_filename_temp(request_id)
+    if t_cache_file.exists():
+        t_cache_file.rename(_file_object_cache_filename(request_id))
+
+    # Now, wait for all of them to complete so we can stich the files together.
+    all_file_info = list(await asyncio.gather(*files_downloading.values()))
+
+    # If any files have failed, then no need to get down anything from this request!
+    # We did need to wait for everything to finish, otherwise downloads will continue,
+    # files will be locked, and, in general, things will be hard to deal with outside
+    # of this function when we return.
+    if notifier.failed > 0:
+        raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
+                                 f'out of {notifier.total} files.')
+
+    # return the result, sorting to keep the data in order.
+    assert len(all_file_info) > 0, \
+        'Internal error: no error from ServiceX, but also no files back either!'
+    all_file_info.sort(key=lambda k: k[0])
+    all_files = [v[1] for v in all_file_info]
+
+    if data_type == 'root-file' or data_type == 'parquet':
+        return False, list(all_files)
+
+    # We need to shift the files to another format.
+    if len(all_files) == 1:
+        return False, all_files[0]
+    else:
+        if data_type == 'pandas':
+            r = pd.concat(all_files)
+            assert isinstance(r, pd.DataFrame)
+            return False, r
+        elif data_type == 'awkward':
+            col_names = all_files[0].keys()
+            return False, {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
+        else:
+            raise ServiceXFrontEndException(f'Internal programming error - {data_type} should '
+                                            'not be unknown.')
+
+
+# Cache the data that is coming back.
+_data_cache \
+    = {}
+
+# Locks a query incase two identical queries come in at the
+# same time.
+_query_locks = {}
+_query_locker = asyncio.Lock()
+
+
+class weak_holder:
+    'Holder to hold all types of objects - weakref cannot hold lists, etc'
+    def __init__(self, o):
+        self.o = o
 
 
 async def get_data_async(selection_query: str, dataset: str,
@@ -204,6 +315,7 @@ async def get_data_async(selection_query: str, dataset: str,
                          storage_directory: Optional[str] = None,
                          file_name_func: Callable[[str, str], str] = None,
                          redownload_files: bool = False,
+                         use_cache: bool = True,
                          status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
                          = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
@@ -224,12 +336,14 @@ async def get_data_async(selection_query: str, dataset: str,
         file_name_func      Returns a path where the file should be written. The path must be
                             fully qualified (`storage_directory` must not be set if this is used).
                             See notes on how to use this lambda.
-        redownload_files    If true, evne if the file is already in the requested location,
+        redownload_files    If true, even if the file is already in the requested location,
                             re-download it.
         status_callback     If specified, called as we grab files and download them with updates.
-                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            Called with arguments TotalFiles, Processed By ServiceX, Downloaded
                             locally. TotalFiles might change over time as more files are found by
                             servicex.
+        use_cache           Use the local query cache. If false it will force a re-run, and the
+                            result of the run will overwrite what is currently in the cache.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -247,7 +361,7 @@ async def get_data_async(selection_query: str, dataset: str,
         to process this request. As the `ServiceX` back-end evolves this will be come the max
         number of workers.
     - This is the python `async` interface (see python documentation on `await` and
-        `async`). It should be used if you plan to make more than one simultanious query
+        `async`). It should be used if you plan to make more than one simultaneous query
         to the system.
     - The `file_name_func` function takes two arguments, the first is the request-id and
       the second is the full minio object name.
@@ -255,13 +369,13 @@ async def get_data_async(selection_query: str, dataset: str,
           are not allowed on your filesystem.
         - The file path does not need to have been created - `os.mkdir` will be run on the
           filepath.
-        - It will almost certianly be the case that the call-back for this function occurs
+        - It will almost certainly be the case that the call-back for this function occurs
           on a different thread than you made the initial call to `get_data_async`. Make sure
           your code is thread safe!
         - The filename should be safe in the sense that a ".downloading" can be appended to
           the end of the string without causing any trouble.
     '''
-    # Parameter clean up, API saftey checking
+    # Parameter clean up, API safety checking
     if (data_type != 'pandas') \
             and (data_type != 'awkward') \
             and (data_type != 'parquet') \
@@ -276,11 +390,14 @@ async def get_data_async(selection_query: str, dataset: str,
         status_callback = t.update
     notifier = _status_update_wrapper(status_callback)
 
+    selection_query = clean_linq(selection_query)
+
     # Normalize how we do the files
     if file_name_func is None:
         if storage_directory is None:
             def file_name(req_id: str, minio_name: str):
-                return os.path.join(default_file_cache_name, req_id,
+                import servicex.utils as sx
+                return os.path.join(sx.default_file_cache_name, req_id,
                                     santize_filename(minio_name))
             file_name_func = file_name
         else:
@@ -306,74 +423,55 @@ async def get_data_async(selection_query: str, dataset: str,
 
     # Start the async context manager. We should use only one for the whole app, however,
     # that just isn't going to work here. The advantage is better handling of connections.
-    # TODO: Option to pass in the connectino pool?
+    # TODO: Option to pass in the connection pool?
     async with aiohttp.ClientSession() as client:
-        async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
-            # TODO: Make sure to throw the correct type of exception
-            r = await response.json()
-            if response.status != 200:
-                raise ServiceX_Exception('ServiceX rejected the transformation request: '
-                                         f'({response.status}){r}')
-            request_id = r["request_id"]
-
-        # Sit here waiting for the results to come in. In case there are missing items
-        # in the minio stream, we will avoid counting that. That should be an explicit error taken
-        # care of further on down in the code.
         done = False
-        files_downloading = {}
-        last_files_processed = 0
         while not done:
-            await asyncio.sleep(servicex_status_poll_time)
-            files_remaining, files_processed, files_failed = \
-                await _get_transform_status(client, servicex_endpoint, request_id)
-            notifier.update(processed=files_processed)
-            if files_failed is not None:
-                notifier.update(failed=files_failed)
-            if files_remaining is not None:
-                t = files_remaining + files_processed \
-                    + (files_failed if files_failed is not None else 0)
-                notifier.update(total=t)
-            notifier.broadcast()
-            if files_processed > last_files_processed:
-                new_downloads = await _download_new_files(files_downloading.keys(),
-                                                          servicex_endpoint, request_id,
-                                                          data_type, file_name_func,
-                                                          redownload_files, notifier)
-                files_downloading.update(new_downloads)
-                last_files_processed = files_processed
+            notifier.reset()
+            cached_query = use_cache and _query_is_cached(json_query)
+            request_id = await _submit_or_lookup_transform(client, servicex_endpoint,
+                                                           use_cache, json_query)
 
-            done = (files_remaining is not None) and files_remaining == 0
+            # If we get a query while we are processing this query, we should
+            # wait.
 
-        # If any files have failed, then no need to get down anything from this request!
-        if notifier.failed > 0:
-            raise ServiceX_Exception(f'ServiceX failed to transform {notifier.failed} '
-                                     f'out of {notifier.total} files.')
+            global _query_locks, _query_locker
+            async with _query_locker:
+                if request_id not in _query_locks:
+                    _query_locks[request_id] = asyncio.Lock()
+                q_lock = _query_locks[request_id]
 
-        # Now, wait for all of them to complete so we can stich the files together.
-        all_file_info = list(await asyncio.gather(*files_downloading.values()))
+            async with q_lock:
+                # We have this in memory - so return it!
+                global _data_cache
+                result = _data_cache.get(request_id, None)
+                if result is not None:
+                    done = True
+                else:
+                    # Run this as we do not have it in the cache
+                    try:
+                        retry, r = await get_data_cache_calc(request_id,
+                                                             client,
+                                                             servicex_endpoint,
+                                                             notifier,
+                                                             data_type,
+                                                             file_name_func,
+                                                             redownload_files)
+                    except ServiceX_Exception as sx_e:
+                        if cached_query and "failed to transform" in str(sx_e):
+                            retry = True
+                        else:
+                            raise
 
-        # return the result, sorting to keep the data in order.
-        assert len(all_file_info) > 0
-        all_file_info.sort(key=lambda k: k[0])
-        all_files = [v[1] for v in all_file_info]
-
-        if data_type == 'root-file' or data_type == 'parquet':
-            return list(all_files)
-
-        # We need to shift the files to another format.
-        if len(all_files) == 1:
-            return all_files[0]
-        else:
-            if data_type == 'pandas':
-                r = pd.concat(all_files)
-                assert isinstance(r, pd.DataFrame)
-                return r
-            elif data_type == 'awkward':
-                col_names = all_files[0].keys()
-                return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
-            else:
-                raise ServiceXFrontEndException(f'Internal programming error - {data_type} should '
-                                                'not be unknown.')
+                    if not retry:
+                        result = weak_holder(r)
+                        _data_cache[request_id] = result
+                        done = True
+                    else:
+                        # Retry - so force us not to use the cache
+                        use_cache = False
+        assert result.o is not None
+        return result.o
 
 
 def get_data(selection_query: str, dataset: str,
@@ -384,6 +482,7 @@ def get_data(selection_query: str, dataset: str,
              storage_directory: Optional[str] = None,
              file_name_func: Callable[[str, str], str] = None,
              redownload_files: bool = False,
+             use_cache: bool = True,
              status_callback: Optional[Callable[[Optional[int], int, int, int], None]]
              = _run_default_wrapper) \
         -> Union[pd.DataFrame, Dict[bytes, np.ndarray], List[str]]:
@@ -404,12 +503,14 @@ def get_data(selection_query: str, dataset: str,
         file_name_func      Returns a path where the file should be written. The path must be
                             fully qualified (`storage_directory` must not be set if this is used).
                             See notes on how to use this lambda.
-        redownload_files    If true, evne if the file is already in the requested location,
+        redownload_files    If true, even if the file is already in the requested location,
                             re-download it.
         status_callback     If specified, called as we grab files and download them with updates.
-                            Called with arguments TotalFiles, Processed By ServiceX, Downlaoded
+                            Called with arguments TotalFiles, Processed By ServiceX, Downloaded
                             locally. TotalFiles might change over time as more files are found by
                             servicex.
+        use_cache           Use the local query cache. If false it will force a re-run, and the
+                            result of the run will overwrite what is currently in the cache.
 
     Returns:
         df                  Depends on the `data_type` that has been requested:
@@ -432,7 +533,7 @@ def get_data(selection_query: str, dataset: str,
           are not allowed on your filesystem.
         - The file path does not need to have been created - `os.mkdir` will be run on the
           filepath.
-        - It will almost certianly be the case that the call-back for this function occurs
+        - It will almost certainly be the case that the call-back for this function occurs
           on a different thread than you made the initial call to `get_data_async`. Make sure
           your code is thread safe!
         - The filename should be safe in the sense that a ".downloading" can be appended to
@@ -443,7 +544,8 @@ def get_data(selection_query: str, dataset: str,
         r = get_data_async(selection_query, dataset, servicex_endpoint, image=image,
                            max_workers=max_workers, data_type=data_type,
                            storage_directory=storage_directory, file_name_func=file_name_func,
-                           redownload_files=redownload_files, status_callback=status_callback)
+                           redownload_files=redownload_files, status_callback=status_callback,
+                           use_cache=use_cache)
         return loop.run_until_complete(r)
     else:
         def get_data_wrapper(*args, **kwargs):
