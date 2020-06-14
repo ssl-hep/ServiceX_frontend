@@ -1,7 +1,5 @@
 from typing import Optional
 
-import pytest
-
 from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
