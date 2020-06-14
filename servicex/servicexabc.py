@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from .utils import (
-    ServiceXException, StatusUpdateCallback,
+    ServiceXException,
     StatusUpdateFactory,
     _null_progress_feedback,
     _run_default_wrapper,
