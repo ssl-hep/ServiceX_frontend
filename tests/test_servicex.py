@@ -34,15 +34,9 @@ def clean_fname(fname: str):
                 .replace(':', '_')
 
 
-def test_create_with_dataset():
-    'Default should be possible'
-    ds = fe.ServiceX('localds://mc16_tev:13')
-    assert ds.dataset == 'localds://mc16_tev:13'
-    assert ds.endpoint == 'http://localhost:5000/servicex'
-
 
 @pytest.mark.asyncio
-async def test_good_run_root_files1(mocker):
+async def test_good_run_root_files1():
     'Get a root file with a single file'
     mock_servicex_adaptor = MockServiceXAdaptor("123-456")
     ds = fe.ServiceX('localds://mc16_tev:13', mock_servicex_adaptor)

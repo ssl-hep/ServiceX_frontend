@@ -9,16 +9,13 @@ import urllib
 import aiohttp
 from backoff import on_exception
 import backoff
-from minio import Minio
 
 from typing import AsyncIterator
 
 from .cache import cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
-from .servicex_adaptor import (
-    _download_file,
-    _result_object_list,
-    ServiceXAdaptor)
+from .minio_adaptor import MinioAdaptor, ResultObjectList
+from .servicex_adaptor import ServiceXAdaptor
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
@@ -41,6 +38,7 @@ class ServiceX(ServiceXABC):
     def __init__(self,
                  dataset: str,
                  servicex_adaptor: ServiceXAdaptor,
+                 minio_adaptor: MinioAdaptor = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
@@ -49,12 +47,16 @@ class ServiceX(ServiceXABC):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
         self._servicex_adaptor = servicex_adaptor
+
+        if not minio_adaptor:
+            end_point_parse = urllib.parse.urlparse(self._servicex_adaptor._endpoint)  # type: ignore
+            minio_endpoint = f'{end_point_parse.hostname}:9000'
+            self._minio_adaptor = MinioAdaptor(minio_endpoint, 'miniouser', 'leftfoot1')
+        else:
+            self._minio_adaptor = minio_adaptor
+
         from servicex.utils import default_file_cache_name
         self._cache = cache(default_file_cache_name)
-
-    @property
-    def endpoint(self):
-        return self._servicex_adaptor._endpoint
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
@@ -204,7 +206,7 @@ class ServiceX(ServiceXABC):
 
     async def _get_status_loop(self, client: aiohttp.ClientSession,
                                request_id: str,
-                               downloader: _result_object_list,
+                               downloader: ResultObjectList,
                                notifier: _status_update_wrapper):
         '''
         Run the status loop, file scans each time a new file is finished.
@@ -259,8 +261,7 @@ class ServiceX(ServiceXABC):
         files as they become available. We also coordinate caching.
         '''
         try:
-            minio = self._minio_client()
-            results_from_query = _result_object_list(minio, request_id)
+            results_from_query = self._minio_adaptor.get_result_objects(request_id)
 
             # The `ensure_future` queues this for immediate execution, rather than waiting
             # until we do an await. Note that we catch it below in the `finally` clause.
@@ -275,7 +276,7 @@ class ServiceX(ServiceXABC):
 
                     async def do_wait(final_path):
                         assert request_id is not None
-                        await _download_file(minio, request_id, f, final_path)
+                        await self._minio_adaptor.download_file(request_id, f, final_path)
                         notifier.inc(downloaded=1)
                         notifier.broadcast()
                         return final_path
@@ -330,16 +331,3 @@ class ServiceX(ServiceXABC):
         logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
 
         return json_query
-
-    def _minio_client(self):
-        '''
-        Create the minio client
-        '''
-        end_point_parse = urllib.parse.urlparse(self.endpoint)  # type: ignore
-        minio_endpoint = f'{end_point_parse.hostname}:9000'
-
-        minio_client = Minio(minio_endpoint,
-                             access_key='miniouser',
-                             secret_key='leftfoot1',
-                             secure=False)
-        return minio_client
