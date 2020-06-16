@@ -15,12 +15,10 @@ from typing import AsyncIterator
 
 from .cache import cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
-from .servicex_remote import (
+from .servicex_adaptor import (
     _download_file,
-    _get_transform_status,
     _result_object_list,
-    _submit_query,
-)
+    ServiceXAdaptor)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
@@ -42,7 +40,7 @@ class ServiceX(ServiceXABC):
     '''
     def __init__(self,
                  dataset: str,
-                 service_endpoint: str = 'http://localhost:5000/servicex',
+                 servicex_adaptor: ServiceXAdaptor,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
@@ -50,13 +48,13 @@ class ServiceX(ServiceXABC):
                  status_callback_factory: StatusUpdateFactory = _run_default_wrapper):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
-        self._endpoint = service_endpoint
+        self._servicex_adaptor = servicex_adaptor
         from servicex.utils import default_file_cache_name
         self._cache = cache(default_file_cache_name)
 
     @property
     def endpoint(self):
-        return self._endpoint
+        return self._servicex_adaptor._endpoint
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
@@ -200,7 +198,7 @@ class ServiceX(ServiceXABC):
         '''
         request_id = self._cache.lookup_query(query)
         if request_id is None:
-            request_id = await _submit_query(client, self._endpoint, query)
+            request_id = await self._servicex_adaptor.submit_query(client, query)
             self._cache.set_query(query, request_id)
         return request_id
 
@@ -225,8 +223,7 @@ class ServiceX(ServiceXABC):
         last_processed = 0
         try:
             while not done:
-                remaining, processed, failed = await _get_transform_status(client, self._endpoint,
-                                                                           request_id)
+                remaining, processed, failed = await self._servicex_adaptor.get_transform_status(client, request_id)
                 done = remaining is not None and remaining == 0
                 if processed != last_processed:
                     last_processed = processed
@@ -338,7 +335,7 @@ class ServiceX(ServiceXABC):
         '''
         Create the minio client
         '''
-        end_point_parse = urllib.parse.urlparse(self._endpoint)  # type: ignore
+        end_point_parse = urllib.parse.urlparse(self.endpoint)  # type: ignore
         minio_endpoint = f'{end_point_parse.hostname}:9000'
 
         minio_client = Minio(minio_endpoint,

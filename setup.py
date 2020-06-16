@@ -29,7 +29,8 @@ setup(name="servicex",
           "minio~=5.0",
           "tqdm~=4.0",
           "qastle==0.7",
-          'make_it_sync==1.0.0'
+          'make_it_sync==1.0.0',
+          'google-auth==1.17'
       ],
       extras_require={
           'test': [

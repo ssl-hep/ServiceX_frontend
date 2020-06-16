@@ -2,6 +2,8 @@ import asyncio
 from json import loads
 import os
 from pathlib import Path
+
+import aiohttp
 import shutil
 import tempfile
 from typing import Dict
@@ -10,6 +12,7 @@ import pytest
 
 from servicex import ServiceXException, ServiceXUnknownRequestID
 from servicex.cache import cache
+from servicex.servicex_adaptor import ServiceXAdaptor
 
 
 class ClientSessionMocker:
@@ -126,6 +129,21 @@ def files_in_minio(mocker):
 
     return reset_files
 
+
+class MockServiceXAdaptor:
+    def __init__(self, request_id):
+        self.request_id = request_id
+        self._endpoint = "http://localhost:5000"
+
+    async def submit_query(self, client: aiohttp.ClientSession,
+                           json_query: Dict[str, str]) -> str:
+        return self.request_id
+
+
+
+@pytest.fixture
+def servicex_adaptor(mocker):
+    return mocker.AsyncMock(spec=ServiceXAdaptor)
 
 @pytest.fixture
 def servicex_state_machine(mocker):
