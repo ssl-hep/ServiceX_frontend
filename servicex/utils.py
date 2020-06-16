@@ -1,11 +1,9 @@
 from hashlib import blake2b
-import os
 from pathlib import Path
 import re
 import tempfile
-from typing import Callable, Dict, Optional
+from typing import Callable, Optional, Dict, List
 
-import aiohttp
 from tqdm.auto import tqdm
 
 from lark import Transformer, Token
@@ -13,19 +11,34 @@ from qastle import parse
 
 
 # Where shall we store files by default when we pull them down?
-default_file_cache_name = os.path.join(tempfile.gettempdir(), 'servicex')
+default_file_cache_name = Path(tempfile.gettempdir()) / 'servicex'
 
 
-class ServiceX_Exception(Exception):
+class ServiceXException(Exception):
     'Raised when something has gone wrong in the ServiceX remote service'
     def __init__(self, msg):
         super().__init__(self, msg)
 
 
-class ServiceXFrontEndException(Exception):
-    'Raised to indicate an API error in use of the servicex library'
+class ServiceXUnknownRequestID(Exception):
+    'Raised when we try to access ServiceX with a request ID it does not know about'
     def __init__(self, msg):
         super().__init__(self, msg)
+
+
+def sanitize_filename(fname: str):
+    'No matter the string given, make it an acceptable filename'
+    return fname.replace('*', '_') \
+                .replace(';', '_') \
+                .replace(':', '_')
+
+
+StatusUpdateCallback = Callable[[Optional[int], int, int, int], None]
+# The sig of the call-back
+
+StatusUpdateFactory = Callable[[str], StatusUpdateCallback]
+# Factory method that returns a factory that can run the status callback
+# First argument is a string.
 
 
 class _status_update_wrapper:
@@ -33,7 +46,7 @@ class _status_update_wrapper:
     Internal class to make it easier to deal with the updater
     '''
     def __init__(self, callback:
-                 Optional[Callable[[Optional[int], int, int, int], None]] = None):
+                 Optional[StatusUpdateCallback] = None):
         self._callback = callback
         self.reset()
 
@@ -43,6 +56,7 @@ class _status_update_wrapper:
         self._processed: Optional[int] = None
         self._downloaded: Optional[int] = None
         self._failed: int = 0
+        self._remaining: Optional[int] = None
 
     @property
     def total(self) -> Optional[int]:
@@ -55,31 +69,36 @@ class _status_update_wrapper:
     def broadcast(self):
         'Send an update back to the system'
         if self._callback is not None:
-            if self._total is not None \
-                    or self._processed is not None \
-                    or self._callback is not None:
-                if self._processed is None:
-                    self._processed = 0
-                if self._downloaded is None:
-                    self._downloaded = 0
-                self._callback(self._total, self._processed, self._downloaded, self._failed)
+            processed = self._processed if self._processed is not None else 0
+            downloaded = self._downloaded if self._downloaded is not None else 0
+            failed = self._failed if self._failed is not None else 0
+            self._callback(self._total, processed, downloaded, failed)
+
+    def _update_total(self):
+        'Update total number of files, without letting inconsistencies change things'
+        if self._processed is not None \
+                and self._remaining is not None \
+                and self._failed is not None:
+            total = self._remaining + self._processed + self._failed
+            if self._total is None:
+                self._total = total
+            else:
+                if self._total < total:
+                    self._total = total
 
     def update(self, processed: Optional[int] = None,
                downloaded: Optional[int] = None,
-               total: Optional[int] = None,
+               remaining: Optional[int] = None,
                failed: Optional[int] = None):
-        if total is not None:
-            if self._total is not None:
-                if total > self._total:
-                    self._total = total
-            else:
-                self._total = total
         if processed is not None:
             self._processed = processed
         if downloaded is not None:
             self._downloaded = downloaded
         if failed is not None:
             self._failed = failed
+        if remaining is not None:
+            self._remaining = remaining
+        self._update_total()
 
     def inc(self, downloaded: Optional[int] = None):
         if downloaded is not None:
@@ -89,16 +108,26 @@ class _status_update_wrapper:
                 self._downloaded += downloaded
 
 
-def _run_default_wrapper(t: Optional[int], p: int, d: int, f: int) -> None:
-    'Place holder to run the default runner'
-    assert False, 'This should never be called'
+def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:
+    '''
+    Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
+    '''
+    return _default_wrapper_mgr(ds_name).update
+
+
+def _null_progress_feedback(ds_name: str) -> None:
+    '''
+    Internal routine to create a feedback object that does not
+    give anyone feedback!
+    '''
+    return None
 
 
 class _default_wrapper_mgr:
     'Default progress bar'
     def __init__(self, sample_name: Optional[str] = None):
-        self._tqdm_p = None
-        self._tqdm_d = None
+        self._tqdm_p: Optional[tqdm] = None
+        self._tqdm_d: Optional[tqdm] = None
         self._sample_name = sample_name
 
     def _init_tqdm(self):
@@ -112,7 +141,8 @@ class _default_wrapper_mgr:
                             leave=True, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
-    def _update_bar(self, bar: tqdm, total: Optional[int], num: int, failed: int):
+    def _update_bar(self, bar: Optional[tqdm], total: Optional[int], num: int, failed: int):
+        assert bar is not None, 'Internal error - bar was not initalized'
         if total is not None:
             if bar.total != total:
                 # There is a bug in the tqm library if running in a notebook
@@ -137,67 +167,47 @@ class _default_wrapper_mgr:
 _json_keys_to_ignore_for_hash = ['workers']
 
 
-def _query_cache_file(json_query: Dict[str, str]) -> Path:
+def _query_cache_hash(json_query: Dict[str, str]) -> str:
     '''
     Return a query cache file.
     '''
     hasher = blake2b(digest_size=20)
     for k, v in json_query.items():
         if k not in _json_keys_to_ignore_for_hash:
+            if k == 'selection':
+                v = clean_linq(v)
             hasher.update(k.encode())
             hasher.update(str(v).encode())
     hash = hasher.hexdigest()
+    return hash
 
-    return Path(default_file_cache_name) / 'request-cache' / hash
 
-
-def _query_is_cached(json_query: Dict[str, str]) -> bool:
+def _string_hash(s_list: List[str]) -> str:
     '''
-    Check to see if a cache file exists for the json query
-
-    Returns:
-        True        Query cache file exists and will trigger a query lookup
-        False       Otherwise
+    Return a hash for an input list of strings.
     '''
-    return _query_cache_file(json_query).exists()
-
-
-async def _submit_or_lookup_transform(client: aiohttp.ClientSession,
-                                      servicex_endpoint: str,
-                                      use_cache: bool,
-                                      json_query: Dict[str, str]) -> str:
-    '''
-    Submit a transform, or look it up in our local query database
-    '''
-    # Check the cache
-    hash_file = _query_cache_file(json_query)
-    if use_cache and hash_file.exists():
-        with hash_file.open('r') as r:
-            return r.readline().strip()
-
-    # Make the query.
-    async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
-        r = await response.json()
-        if response.status != 200:
-            raise ServiceX_Exception('ServiceX rejected the transformation request: '
-                                     f'({response.status}){r}')
-        req_id = r["request_id"]
-
-        hash_file.parent.mkdir(parents=True, exist_ok=True)
-        with hash_file.open('w') as w:
-            w.write(f'{req_id}\n')
-            # In case humans come poking around
-            w.write(str(json_query))
-            w.write('\n')
-
-    return req_id
+    hasher = blake2b(digest_size=20)
+    for v in s_list:
+        hasher.update(v.encode())
+    hash = hasher.hexdigest()
+    return hash
 
 
 def clean_linq(q: str) -> str:
     '''
     Normalize the variables in a qastle expression. Should make the
     linq expression more easily comparable even if the algorithm that
-    generates the underlying variable numbers changes.
+    generates the underlying variable numbers changes. If the selection algorithm will violate
+    the qastle syntax, it is returned unaltered and with no errors.
+
+    Arguments
+
+        q           Strign containing the qastle code`
+
+    Returns
+
+        clean_q     Sanitized query - lambda arguments are given a uniform source code
+                    labeling so that two queries with the same structure are marked as the same.
     '''
     from collections import namedtuple
     ParseTracker = namedtuple('ParseTracker', ['text', 'info'])
@@ -240,8 +250,8 @@ def clean_linq(q: str) -> str:
             node_type: Optional[str] = None
             for child in children:
                 if isinstance(child, Token):
-                    if child.type == 'NODE_TYPE':
-                        node_type = child.value
+                    if child.type == 'NODE_TYPE':  # type: ignore
+                        node_type = child.value  # type: ignore
                     else:
                         pass
                 elif isinstance(child, ParseTracker):
@@ -263,26 +273,10 @@ def clean_linq(q: str) -> str:
 
             return ParseTracker(f'({node_type} {" ".join([f.text for f in fields])})', fields)
 
-    tree = parse(q)
-    new_tree = translator().transform(tree)
-    assert isinstance(new_tree, str)
-    return new_tree
-
-
-def _file_object_cache_filename(request_id: str) -> Path:
-    '''
-    Return the path of the file where we will write out the cache for the
-    file objects we are downloading.
-    '''
-    global default_file_cache_name
-    return Path(default_file_cache_name) / 'object_list_cache' / request_id
-
-
-def _file_object_cache_filename_temp(request_id: str) -> Path:
-    '''
-    Return the path of the file where we will write out the cache for the
-    file objects we are downloading. This is the temp file.
-    '''
-    global default_file_cache_name
-    return Path(default_file_cache_name) / 'object_list_cache' / \
-        f'{request_id}-temp'
+    try:
+        tree = parse(q)
+        new_tree = translator().transform(tree)
+        assert isinstance(new_tree, str)
+        return new_tree
+    except Exception:
+        return q

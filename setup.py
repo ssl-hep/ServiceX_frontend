@@ -24,11 +24,12 @@ setup(name="servicex",
       install_requires=[
           "pandas~=1.0",
           "uproot~=3.7",
-          "retry~=0.9",
+          "backoff~=1.10",
           "aiohttp~=3.6",
           "minio~=5.0",
           "tqdm~=4.0",
-          "qastle==0.7"
+          "qastle==0.7",
+          'make_it_sync==1.0.0'
       ],
       extras_require={
           'test': [
