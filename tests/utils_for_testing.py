@@ -139,12 +139,14 @@ class MockServiceXAdaptor:
                            json_query: Dict[str, str]) -> str:
         return self.request_id
 
+
 class MockResultObjectList:
     def __init__(self):
         pass
 
     async def files(self):
         return []
+
 
 class MockMinioAdaptor:
     def __init__(self):
@@ -153,9 +155,11 @@ class MockMinioAdaptor:
     def get_result_objects(self, request_id):
         return MockResultObjectList()
 
+
 @pytest.fixture
 def servicex_adaptor(mocker):
     return mocker.AsyncMock(spec=ServiceXAdaptor)
+
 
 @pytest.fixture
 def servicex_state_machine(mocker):

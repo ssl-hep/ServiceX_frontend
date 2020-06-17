@@ -34,7 +34,6 @@ def clean_fname(fname: str):
                 .replace(':', '_')
 
 
-
 @pytest.mark.asyncio
 async def test_good_run_root_files1():
     'Get a root file with a single file'
