@@ -106,10 +106,13 @@ async def test_good_run_root_files_pause(mocker):
 
 
 @pytest.mark.asyncio
-async def test_good_run_files_back_4_order_1(good_transform_request, files_in_minio):
+async def test_good_run_files_back_4_order_1(mocker):
     'Simple run with expected results'
-    files_in_minio(4, reverse=False)
-    ds = fe.ServiceX('localds://mc16_tev:13')
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry', 'three_minio_entry',
+                                                         'four_minio_entry'])
+
+    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor, minio_adaptor=mock_minio_adaptor)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
     assert len(r) == 4
@@ -118,10 +121,13 @@ async def test_good_run_files_back_4_order_1(good_transform_request, files_in_mi
 
 
 @pytest.mark.asyncio
-async def test_good_run_files_back_4_order_2(good_transform_request, files_in_minio):
+async def test_good_run_files_back_4_order_2(mocker):
     'Simple run with expected results'
-    files_in_minio(4, reverse=True)
-    ds = fe.ServiceX('localds://mc16_tev:13')
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['four_minio_entry', 'three_minio_entry', 'two_minio_entry',
+                                                         'one_minio_entry'])
+
+    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor, minio_adaptor=mock_minio_adaptor)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
     assert len(r) == 4
