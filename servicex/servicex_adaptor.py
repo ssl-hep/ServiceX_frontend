@@ -110,4 +110,6 @@ class ServiceXAdaptor:
             files_failed = self._get_transform_stat(info, 'files-skipped')
             files_processed = self._get_transform_stat(info, 'files-processed')
 
+            assert files_processed is not None
+
             return files_remaining, files_processed, files_failed
