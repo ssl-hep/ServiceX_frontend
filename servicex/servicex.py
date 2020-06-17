@@ -237,7 +237,7 @@ class ServiceX(ServiceXABC):
                 if not done:
                     await asyncio.sleep(servicex_status_poll_time)
         finally:
-            downloader.shutdown()
+            await downloader.shutdown()
 
     async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
                                 notifier: _status_update_wrapper):

@@ -2,12 +2,15 @@ import asyncio
 from json import loads
 import os
 from pathlib import Path
+from unittest.mock import Mock
+
 import shutil
 import tempfile
 from typing import Dict, List, Optional, Tuple
 
 import aiohttp
 import pytest
+from pytest_mock import MockFixture
 
 from servicex import ServiceXException, ServiceXUnknownRequestID
 from servicex.cache import cache
@@ -130,9 +133,13 @@ def files_in_minio(mocker):
 
 
 class MockServiceXAdaptor:
-    def __init__(self, request_id):
+    def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
+
+        self.transform_status = mock_transform_status \
+            if mock_transform_status \
+            else mocker.Mock(return_value=(0, 1, 0))
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
@@ -140,7 +147,7 @@ class MockServiceXAdaptor:
 
     async def get_transform_status(self, client: str, request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
         # remaining, processed, skipped
-        return (0, 1, 0)
+        return self.transform_status()
 
 
 class MockResultObjectList:
@@ -160,15 +167,16 @@ class MockResultObjectList:
 
 
 class MockMinioAdaptor:
-    def __init__(self, files: List[str] = []):
+    def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
+        self.mock_download_file = mocker.Mock()
         pass
 
     def get_result_objects(self, request_id):
         return MockResultObjectList(self._files)
 
     async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
-        pass
+        self.mock_download_file(request_id, minio_object_name, final_path)
 
 
 @pytest.fixture
