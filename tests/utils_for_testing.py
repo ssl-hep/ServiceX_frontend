@@ -2,12 +2,11 @@ import asyncio
 from json import loads
 import os
 from pathlib import Path
-
-import aiohttp
 import shutil
 import tempfile
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
+import aiohttp
 import pytest
 
 from servicex import ServiceXException, ServiceXUnknownRequestID
@@ -139,21 +138,37 @@ class MockServiceXAdaptor:
                            json_query: Dict[str, str]) -> str:
         return self.request_id
 
+    async def get_transform_status(self, client: str, request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
+        # remaining, processed, skipped
+        return (0, 1, 0)
+
 
 class MockResultObjectList:
-    def __init__(self):
+    def __init__(self, files: List[str] = []):
+        self._files = files
         pass
 
     async def files(self):
-        return []
+        for f in self._files:
+            yield f
+
+    async def shutdown(self):
+        pass
+
+    def trigger_scan(self):
+        pass
 
 
 class MockMinioAdaptor:
-    def __init__(self):
+    def __init__(self, files: List[str] = []):
+        self._files = files
         pass
 
     def get_result_objects(self, request_id):
-        return MockResultObjectList()
+        return MockResultObjectList(self._files)
+
+    async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
+        pass
 
 
 @pytest.fixture
