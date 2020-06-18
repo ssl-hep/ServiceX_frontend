@@ -335,7 +335,7 @@ def good_awkward_file_data(mocker):
 
 @pytest.fixture
 def short_status_poll_time():
-    import servicex.servicex as sxs
+    import servicex.servicex_adaptor as sxs
     old_value, sxs.servicex_status_poll_time = sxs.servicex_status_poll_time, 0.1
     yield
     sxs.servicex_status_poll_time = old_value

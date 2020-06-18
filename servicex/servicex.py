@@ -26,11 +26,6 @@ from .utils import (
     _status_update_wrapper,
 )
 
-# Number of seconds to wait between polling servicex for the status of a transform job
-# while waiting for it to finish.
-servicex_status_poll_time = 5.0
-
-
 class ServiceX(ServiceXABC):
     '''
     ServiceX on the web.

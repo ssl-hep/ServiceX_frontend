@@ -1,4 +1,5 @@
-from typing import Optional, Tuple, Dict
+from typing import AsyncGenerator, AsyncIterator, Optional, Tuple, Dict
+import asyncio
 
 import aiohttp
 from datetime import datetime
@@ -6,10 +7,17 @@ from google.auth import jwt
 
 from .utils import ServiceXException, ServiceXUnknownRequestID
 
+# Number of seconds to wait between polling servicex for the status of a transform job
+# while waiting for it to finish.
+servicex_status_poll_time = 5.0
+
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
 class ServiceXAdaptor:
     def __init__(self, endpoint, username=None, password=None):
+        '''
+        Authenticated access to ServiceX
+        '''
         self._endpoint = endpoint
         self._username = username
         self._password = password
@@ -66,6 +74,7 @@ class ServiceXAdaptor:
 
     @staticmethod
     def _get_transform_stat(info: Dict[str, str], stat_name: str):
+        'Return the info from a servicex status reply, protecting against bad internet returns'
         return None \
             if ((stat_name not in info) or (info[stat_name] is None)) \
             else int(info[stat_name])
@@ -113,3 +122,43 @@ class ServiceXAdaptor:
             assert files_processed is not None
 
             return files_remaining, files_processed, files_failed
+
+
+async def transform_status_stream(sa: ServiceXAdaptor, client: aiohttp.ClientSession,
+                                  request_id: str) \
+        -> AsyncIterator[Tuple[Optional[int], int, Optional[int]]]:
+    '''
+    Returns an async stream of `(files-remaining, files_processed, files_failed)` until the
+    servicex `request_id` request is finished, against the servicex instance located at
+    `sa`.
+    '''
+    done = False
+    last_processed = None
+    while not done:
+        next_processed = await sa.get_transform_status(client, request_id)
+        remaining, _, _ = next_processed
+        done = remaining is not None and remaining == 0
+        if next_processed != last_processed:
+            last_processed = next_processed
+            yield next_processed
+
+        if not done:
+            await asyncio.sleep(servicex_status_poll_time)
+
+
+async def watch_transform_status(stream: AsyncIterator[Tuple[Optional[int], int, Optional[int]]]) \
+        -> AsyncIterator[Tuple[Optional[int], int, Optional[int]]]:
+    '''
+    Looks for any failed files. If it catches one, it will remember it and throw once the stream
+    is done. This allows all the files to come down first.
+    '''
+    failed = None
+    async for p in stream:
+        _, _, did_fail = p
+        if did_fail is not None and did_fail != 0:
+            failed = did_fail
+
+        yield p
+
+    if failed is not None:
+        raise ServiceXException(f'ServiceX failed to transform {failed} files - data incomplete.')
