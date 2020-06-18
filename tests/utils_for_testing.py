@@ -47,7 +47,7 @@ def good_transform_request(mocker):
         counter += 1
         return f"1234-4433-111-34-22-444-{counter}"
 
-    return mocker.patch('servicex.servicex._submit_query',
+    return mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.submit_query',
                         side_effect=call_submit)
 
 
@@ -57,7 +57,7 @@ def bad_transform_request(mocker):
     Setup a bad transform request
     '''
 
-    return mocker.patch('servicex.servicex._submit_query',
+    return mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.submit_query',
                         side_effect=ServiceXException('Error transform 400'))
 
 
@@ -84,7 +84,7 @@ def files_in_minio(mocker):
         for i in file_range():
             yield f'file-name-{i}'
 
-    p_list_files = mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+    p_list_files = mocker.patch('servicex.minio_adaptor.ResultObjectList.files', side_effect=return_files)
 
     async def get_status(c, ep, req_id):
         nonlocal status_call_count
@@ -95,14 +95,14 @@ def files_in_minio(mocker):
             status_call_count = -1
             return 0, count - mark_failed, mark_failed
 
-    p_get_transform_status = mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
+    p_get_transform_status = mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.get_transform_status', side_effect=get_status)
 
     async def download(client, request_id, fname, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('w') as o:
             o.write('hi')
 
-    p_download_file = mocker.patch('servicex.servicex._download_file', side_effect=download)
+    p_download_file = mocker.patch('servicex.minio_adaptor.MinioAdaptor.download_file', side_effect=download)
 
     def reset_files(n_files: int, reverse: bool = False,
                     status_calls_before_complete: int = 0,
@@ -133,9 +133,13 @@ def files_in_minio(mocker):
 
 
 class MockServiceXAdaptor:
-    def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None):
+    def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None, mock_query: Mock = None):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
+
+        self.query = mock_query \
+            if mock_query \
+            else mocker.Mock(return_value=self.request_id)
 
         self.transform_status = mock_transform_status \
             if mock_transform_status \
@@ -143,7 +147,7 @@ class MockServiceXAdaptor:
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
-        return self.request_id
+        return self.query()
 
     async def get_transform_status(self, client: str, request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
         # remaining, processed, skipped
@@ -199,7 +203,7 @@ def servicex_state_machine(mocker):
         file_count_stop = False
         return valid_request_id
 
-    p_submit_query = mocker.patch('servicex.servicex._submit_query',
+    p_submit_query = mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.submit_query',
                                   side_effect=call_submit)
 
     steps = []
@@ -239,7 +243,7 @@ def servicex_state_machine(mocker):
         file_count_trigger = True
         return steps[i]['remaining'], steps[i]['processed'], steps[i]['failed']
 
-    mocker.patch('servicex.servicex._get_transform_status', side_effect=get_status)
+    mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.get_transform_status', side_effect=get_status)
 
     async def return_files():
         nonlocal file_count_trigger
@@ -257,15 +261,15 @@ def servicex_state_machine(mocker):
         nonlocal file_count_stop
         file_count_stop = True
 
-    mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
-    mocker.patch('servicex.servicex._result_object_list.shutdown', side_effect=files_shutdown)
+    mocker.patch('servicex.minio_adaptor.ResultObjectList.files', side_effect=return_files)
+    mocker.patch('servicex.minio_adaptor.ResultObjectList.shutdown', side_effect=files_shutdown)
 
     async def download(client, request_id, fname, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open('w') as o:
             o.write('hi')
 
-    mocker.patch('servicex.servicex._download_file', side_effect=download)
+    mocker.patch('servicex.minio_adaptor.MinioAdaptor.download_file', side_effect=download)
 
     return {
         'reset': reset,
@@ -283,13 +287,13 @@ def no_files_in_minio(mocker):
         for i in range(0):
             yield f'file-name-{i}'
 
-    mocker.patch('servicex.servicex._result_object_list.files', side_effect=return_files)
+    mocker.patch('servicex.minio_adaptor.ResultObjectList.files', side_effect=return_files)
 
 
 @pytest.fixture
 def bad_transform_status(mocker):
 
-    mocker.patch('servicex.servicex._get_transform_status', side_effect=ServiceXException('bad attempt'))
+    mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.get_transform_status', side_effect=ServiceXException('bad attempt'))
 
 
 @pytest.fixture(autouse=True)
