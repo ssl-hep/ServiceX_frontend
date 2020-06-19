@@ -1,10 +1,18 @@
 # setuptools loads some plugins necessary for use here.
 from setuptools import find_packages  # noqa: F401
 from distutils.core import setup
+import sys
 
 # Use the readme as the long description.
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+if sys.version_info[0] < 3:
+    raise NotImplementedError("Do not support version 2 of python")
+
+extra_test_packages = []
+if sys.version_info[1] < 8:
+    extra_test_packages.append('asyncmock')
 
 setup(name="servicex",
       version='1.0.0-beta.3',
@@ -44,7 +52,7 @@ setup(name="servicex",
               'autopep8',
               'twine',
               'jupyterlab'
-          ],
+          ] + extra_test_packages,
       },
       classifiers=[
           "Development Status :: 3 - Alpha",

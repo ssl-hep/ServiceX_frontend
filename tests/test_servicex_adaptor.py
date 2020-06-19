@@ -178,16 +178,19 @@ async def test_status_unknown_request(servicex_status_unknown):
     assert 'transformation status' in str(e.value)
 
 
-def set_future(v):
-    f = asyncio.Future()
-    f.set_result(v)
-    return f
+def version_mock(mocker, spec):
+    import sys
+    if sys.version_info[1] < 8:
+        from asyncmock import AsyncMock  # type: ignore
+        return AsyncMock(spec=spec)
+    else:
+        return mocker.MagicMock(spec=spec)
 
 
 @pytest.mark.asyncio
 async def test_status_stream_simple_sequence(mocker):
-    adaptor = mocker.MagicMock(spec=ServiceXAdaptor)
-    adaptor.get_transform_status.configure_mock(return_value=set_future((0, 1, 1)))
+    adaptor = version_mock(mocker, spec=ServiceXAdaptor)
+    adaptor.get_transform_status.configure_mock(return_value=(0, 1, 1))
 
     async with aiohttp.ClientSession() as client:
         v = [a async for a in transform_status_stream(adaptor, client, '123-455')]
@@ -198,8 +201,8 @@ async def test_status_stream_simple_sequence(mocker):
 
 @pytest.mark.asyncio
 async def test_status_stream_simple_2sequence(short_status_poll_time, mocker):
-    adaptor = mocker.MagicMock(spec=ServiceXAdaptor)
-    adaptor.get_transform_status.configure_mock(side_effect=[set_future((1, 1, 1)), set_future((0, 1, 1))])
+    adaptor = version_mock(mocker, spec=ServiceXAdaptor)
+    adaptor.get_transform_status.configure_mock(side_effect=[(1, 1, 1), (0, 1, 1)])
 
     async with aiohttp.ClientSession() as client:
         v = [a async for a in transform_status_stream(adaptor, client, '123-455')]
