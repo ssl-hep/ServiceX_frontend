@@ -6,3 +6,4 @@ from .utils import (  # NOQA
     StatusUpdateFactory,
     clean_linq,
 )
+from .servicex_adaptor import ServiceXAdaptor  # NOQA

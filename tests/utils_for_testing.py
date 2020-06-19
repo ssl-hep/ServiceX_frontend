@@ -2,11 +2,10 @@ import asyncio
 from json import loads
 import os
 from pathlib import Path
-from unittest.mock import Mock
-
 import shutil
 import tempfile
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+from unittest.mock import Mock
 
 import aiohttp
 import pytest
@@ -154,33 +153,18 @@ class MockServiceXAdaptor:
         return self.transform_status()
 
 
-class MockResultObjectList:
-    def __init__(self, files: List[str] = []):
-        self._files = files
-        pass
-
-    async def files(self):
-        for f in self._files:
-            yield f
-
-    async def shutdown(self):
-        pass
-
-    def trigger_scan(self):
-        pass
-
-
 class MockMinioAdaptor:
     def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
         self.mock_download_file = mocker.Mock()
         pass
 
-    def get_result_objects(self, request_id):
-        return MockResultObjectList(self._files)
-
     async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
         self.mock_download_file(request_id, minio_object_name, final_path)
+
+    def get_files(self, request_id) -> List[str]:
+        'Return files in the bucket'
+        return self._files
 
 
 @pytest.fixture
@@ -339,7 +323,12 @@ def good_awkward_file_data(mocker):
 
 @pytest.fixture
 def short_status_poll_time():
-    import servicex.servicex as sxs
+    import servicex.servicex_adaptor as sxs
     old_value, sxs.servicex_status_poll_time = sxs.servicex_status_poll_time, 0.1
     yield
     sxs.servicex_status_poll_time = old_value
+
+
+async def as_async_seq(seq: List[Any]):
+    for i in seq:
+        yield i
