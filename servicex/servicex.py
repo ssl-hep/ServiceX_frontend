@@ -26,7 +26,7 @@ from .utils import (
     stream_transform_updates,
 )
 
-
+# TODO: Rename to ServiceXDataSet
 class ServiceX(ServiceXABC):
     '''
     ServiceX on the web.
@@ -253,9 +253,9 @@ class ServiceX(ServiceXABC):
         stream_notified = stream_transform_updates(stream_watched, notifier)
 
         # Next, download the files as they are found (and return them):
-        stream_new_files = find_new_bucket_files(self._minio_adaptor, request_id,
-                                                 stream_notified)
-        stream_downloaded = self._download_a_file(stream_new_files, request_id, notifier)
+        stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,
+                                                  stream_notified)
+        stream_downloaded = self._download_a_file(stream_new_object, request_id, notifier)
 
         # Return the files to anyone that wants them!
 

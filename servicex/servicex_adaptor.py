@@ -146,7 +146,7 @@ async def transform_status_stream(sa: ServiceXAdaptor, client: aiohttp.ClientSes
             await asyncio.sleep(servicex_status_poll_time)
 
 
-async def watch_transform_status(stream: AsyncIterator[TransformTuple]) \
+async def trap_servicex_failures(stream: AsyncIterator[TransformTuple]) \
         -> AsyncIterator[TransformTuple]:
     '''
     Looks for any failed files. If it catches one, it will remember it and throw once the stream
@@ -156,9 +156,6 @@ async def watch_transform_status(stream: AsyncIterator[TransformTuple]) \
     async for p in stream:
         _, _, did_fail = p
         if did_fail is not None and did_fail != 0:
-            failed = did_fail
+            raise ServiceXException(f'ServiceX failed to transform {failed} files - data incomplete.')
 
         yield p
-
-    if failed is not None:
-        raise ServiceXException(f'ServiceX failed to transform {failed} files - data incomplete.')

@@ -111,6 +111,7 @@ class _status_update_wrapper:
 TransformTuple = Tuple[Optional[int], int, Optional[int]]
 
 
+# TODO: Rename to user feedback
 async def stream_transform_updates(stream: AsyncIterator[TransformTuple],
                                    notifier: _status_update_wrapper):
     '''
