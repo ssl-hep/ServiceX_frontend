@@ -26,6 +26,7 @@ from .utils import (
     _status_update_wrapper,
 )
 
+
 class ServiceX(ServiceXABC):
     '''
     ServiceX on the web.
@@ -44,7 +45,8 @@ class ServiceX(ServiceXABC):
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            end_point_parse = urllib.parse.urlparse(self._servicex_adaptor._endpoint)  # type: ignore
+            end_point_parse = \
+                urllib.parse.urlparse(self._servicex_adaptor._endpoint)  # type: ignore
             minio_endpoint = f'{end_point_parse.hostname}:9000'
             self._minio_adaptor = MinioAdaptor(minio_endpoint, 'miniouser', 'leftfoot1')
         else:
