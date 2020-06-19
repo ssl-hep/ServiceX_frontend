@@ -57,52 +57,52 @@ async def test_good_run_root_files(mocker):
     assert r[0] == '/foo/bar.root'
 
 
-# @pytest.mark.asyncio
-# async def test_skipped_file(mocker):
-#     '''
-#     ServiceX should throw if a file is marked as "skipped".
-#     '''
-#     mock_transform_status = mocker.Mock(return_value=(0, 1, 1))
-#     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
-#     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+@pytest.mark.asyncio
+async def test_skipped_file(mocker):
+    '''
+    ServiceX should throw if a file is marked as "skipped".
+    '''
+    mock_transform_status = mocker.Mock(return_value=(0, 1, 1))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
 
-#     with pytest.raises(fe.ServiceXException) as e:
-#         ds = fe.ServiceX('http://one-ds',
-#                          servicex_adaptor=mock_servicex_adaptor,
-#                          minio_adaptor=mock_minio_adaptor)
-#         ds.get_data_rootfiles('(valid qastle string)')
+    with pytest.raises(fe.ServiceXException) as e:
+        ds = fe.ServiceX('http://one-ds',
+                         servicex_adaptor=mock_servicex_adaptor,
+                         minio_adaptor=mock_minio_adaptor)
+        ds.get_data_rootfiles('(valid qastle string)')
 
-#     assert "failed to transform" in str(e.value)
-
-
-# def test_good_run_root_files_no_async(mocker):
-#     'Make sure the non-async version works'
-#     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-#     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
-#     filename_func = mocker.Mock(return_value="/foo/bar.root")
-
-#     ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor,
-#                      minio_adaptor=mock_minio_adaptor,
-#                      file_name_func=filename_func)
-
-#     r = ds.get_data_rootfiles('(valid qastle string)')
-#     assert len(r) == 2
-#     assert r[0] == '/foo/bar.root'
+    assert "failed to transform" in str(e.value)
 
 
-# @pytest.mark.asyncio
-# async def test_good_run_root_files_pause(mocker):
-#     'Get a root file with a single file'
-#     mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
-#     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
-#     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+def test_good_run_root_files_no_async(mocker):
+    'Make sure the non-async version works'
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    filename_func = mocker.Mock(return_value="/foo/bar.root")
 
-#     ds = fe.ServiceX('localds://mc16_tev:13',
-#                      servicex_adaptor=mock_servicex_adaptor,
-#                      minio_adaptor=mock_minio_adaptor)
-#     r = await ds.get_data_rootfiles_async('(valid qastle string)')
-#     assert len(r) == 1
-#     assert len(mock_servicex_adaptor.transform_status.mock_calls) == 2
+    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor,
+                     minio_adaptor=mock_minio_adaptor,
+                     file_name_func=filename_func)
+
+    r = ds.get_data_rootfiles('(valid qastle string)')
+    assert len(r) == 2
+    assert r[0] == '/foo/bar.root'
+
+
+@pytest.mark.asyncio
+async def test_good_run_root_files_pause(mocker, short_status_poll_time):
+    'Get a root file with a single file'
+    mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+
+    ds = fe.ServiceX('localds://mc16_tev:13',
+                     servicex_adaptor=mock_servicex_adaptor,
+                     minio_adaptor=mock_minio_adaptor)
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
+    assert len(r) == 1
+    assert len(mock_servicex_adaptor.transform_status.mock_calls) == 2
 
 
 # @pytest.mark.asyncio
