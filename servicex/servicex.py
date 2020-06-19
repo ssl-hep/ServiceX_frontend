@@ -15,7 +15,7 @@ from typing import AsyncIterator
 from .cache import cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
 from .minio_adaptor import MinioAdaptor, find_new_bucket_files
-from .servicex_adaptor import ServiceXAdaptor, transform_status_stream, watch_transform_status
+from .servicex_adaptor import ServiceXAdaptor, transform_status_stream, trap_servicex_failures
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
@@ -27,6 +27,8 @@ from .utils import (
 )
 
 # TODO: Rename to ServiceXDataSet
+
+
 class ServiceX(ServiceXABC):
     '''
     ServiceX on the web.
@@ -249,7 +251,7 @@ class ServiceX(ServiceXABC):
         '''
         # Setup the status sequence from servicex
         stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
-        stream_watched = watch_transform_status(stream_status)
+        stream_watched = trap_servicex_failures(stream_status)
         stream_notified = stream_transform_updates(stream_watched, notifier)
 
         # Next, download the files as they are found (and return them):

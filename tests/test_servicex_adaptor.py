@@ -1,7 +1,7 @@
 import asyncio
 from json import dumps
 from pathlib import Path
-from servicex.servicex_adaptor import transform_status_stream, watch_transform_status
+from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
 import servicex
 from typing import Optional, List, Any
 
@@ -214,7 +214,7 @@ async def test_status_stream_simple_2sequence(short_status_poll_time, mocker):
 
 @pytest.mark.asyncio
 async def test_watch_no_fail(short_status_poll_time, mocker):
-    v = [a async for a in watch_transform_status(as_async_seq([(1, 0, 0), (0, 1, 0)]))]
+    v = [a async for a in trap_servicex_failures(as_async_seq([(1, 0, 0), (0, 1, 0)]))]
 
     assert len(v) == 2
     assert v[0] == (1, 0, 0)
@@ -225,7 +225,7 @@ async def test_watch_no_fail(short_status_poll_time, mocker):
 async def test_watch_fail_end(short_status_poll_time, mocker):
     v = []
     with pytest.raises(ServiceXException) as e:
-        async for a in watch_transform_status(as_async_seq([(1, 0, 0), (0, 0, 1)])):
+        async for a in trap_servicex_failures(as_async_seq([(1, 0, 0), (0, 0, 1)])):
             v.append(a)
 
     assert len(v) == 2
@@ -236,7 +236,7 @@ async def test_watch_fail_end(short_status_poll_time, mocker):
 async def test_watch_fail_start(short_status_poll_time, mocker):
     v = []
     with pytest.raises(ServiceXException) as e:
-        async for a in watch_transform_status(as_async_seq([(2, 0, 0), (1, 0, 1), (0, 1, 1)])):
+        async for a in trap_servicex_failures(as_async_seq([(2, 0, 0), (1, 0, 1), (0, 1, 1)])):
             v.append(a)
 
     assert len(v) == 3
