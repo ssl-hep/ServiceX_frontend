@@ -24,7 +24,6 @@ from .utils import (
     _run_default_wrapper,
     _status_update_wrapper,
     stream_transform_updates,
-    stream_inc_update
 )
 
 
