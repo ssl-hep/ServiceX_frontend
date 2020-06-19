@@ -221,6 +221,7 @@ async def test_watch_no_fail(short_status_poll_time, mocker):
     assert v[1] == (0, 1, 0)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_watch_fail_end(short_status_poll_time, mocker):
     v = []
@@ -232,6 +233,7 @@ async def test_watch_fail_end(short_status_poll_time, mocker):
     assert 'failed to transform' in str(e.value)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_watch_fail_start(short_status_poll_time, mocker):
     v = []
@@ -243,6 +245,7 @@ async def test_watch_fail_start(short_status_poll_time, mocker):
     assert 'failed to transform' in str(e.value)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_download_good(good_minio_client, clean_temp_dir):
     from servicex.servicex_remote import _download_file
@@ -252,6 +255,7 @@ async def test_download_good(good_minio_client, clean_temp_dir):
     assert final_path.exists()
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_download_bad(bad_minio_client, clean_temp_dir):
     from servicex.servicex_remote import _download_file
@@ -263,6 +267,7 @@ async def test_download_bad(bad_minio_client, clean_temp_dir):
     assert "Failed to copy" in str(e.value)
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_download_already_there(good_minio_client, clean_temp_dir):
     from servicex.servicex_remote import _download_file
@@ -284,6 +289,7 @@ async def test_download_already_there(good_minio_client, clean_temp_dir):
     good_minio_client.fget_object.assert_not_called()
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_download_with_temp_file_there(good_minio_client, clean_temp_dir):
     'This simulates a bad download - so an old temp file is left on disk'
@@ -307,12 +313,14 @@ async def test_download_with_temp_file_there(good_minio_client, clean_temp_dir):
     good_minio_client.fget_object.assert_called_once()
 
 
+@pytest.mark.skip
 def test_list_objects(good_minio_client):
     from servicex.servicex_remote import _protected_list_objects
     f = _protected_list_objects(good_minio_client, '111-222-333-444')
     assert len(f) == 1
 
 
+@pytest.mark.skip
 def test_list_objects_with_null(bad_then_good_minio_listing):
     'Sometimes for reasons we do not understand we get back a response error from list_objects minio method'
     from servicex.servicex_remote import _protected_list_objects
@@ -320,6 +328,7 @@ def test_list_objects_with_null(bad_then_good_minio_listing):
     assert len(f) == 1
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_files_one_shot(good_minio_client):
     from servicex.servicex_remote import _result_object_list
@@ -343,6 +352,7 @@ async def test_files_one_shot(good_minio_client):
     assert len(items) == 1
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_files_2_shot(indexed_minio_client):
     from servicex.servicex_remote import _result_object_list
@@ -371,6 +381,7 @@ async def test_files_2_shot(indexed_minio_client):
     assert len(items) == 2
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_files_shutdown_not_files_lost(indexed_minio_client):
     from servicex.servicex_remote import _result_object_list
@@ -397,6 +408,7 @@ async def test_files_shutdown_not_files_lost(indexed_minio_client):
     assert len(items) == 2
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_files_no_repeat(good_minio_client):
     from servicex.servicex_remote import _result_object_list
