@@ -28,6 +28,7 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
+from typing import AsyncIterator, Any
 
 import backoff
 from backoff import on_exception
@@ -94,8 +95,24 @@ class MinioAdaptor:
         # Do the copy, which might take a while, on a separate thread.
         return await asyncio.wrap_future(self._download_executor.submit(do_copy))
 
-    def get_result_objects(self, request_id: str):
-        return ResultObjectList(self, request_id)
+
+async def find_new_bucket_files(adaptor: MinioAdaptor,
+                                request_id: str,
+                                update: AsyncIterator[Any]) -> AsyncIterator[str]:
+    '''
+    Each time we get something from the async iterator, check to see if
+    there are any files present.
+    '''
+    seen = []
+    async for _ in update:
+        # Sadly, this is blocking, and so may hold things up
+        files = adaptor.get_files(request_id)
+
+        # If there are new files, pass them on
+        for f in files:
+            if f not in seen:
+                seen.append(f)
+                yield f
 
 
 class ResultObjectList:

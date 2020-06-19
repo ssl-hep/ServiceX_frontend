@@ -54,12 +54,12 @@ def servicex_status_request(mocker):
     return set_it_up
 
 
-# @pytest.fixture
-# def good_submit(mocker):
-#     client = mocker.MagicMock()
-#     r = ClientSessionMocker(dumps({'request_id': "111-222-333-444"}), 200)
-#     client.post = lambda d, json: r
-#     return client
+@pytest.fixture
+def good_submit(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'request_id': "111-222-333-444"}), 200)
+    client.post = mocker.MagicMock(return_value=r)
+    return client
 
 
 # @pytest.fixture
@@ -420,14 +420,28 @@ async def test_watch_fail_start(short_status_poll_time, mocker):
 #     assert len(items) == 1
 
 
-# @pytest.mark.asyncio
-# async def test_submit_good(good_submit):
-#     from servicex.servicex_remote import _submit_query
+@pytest.mark.asyncio
+async def test_submit_good_no_login(good_submit):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
 
-#     rid = await _submit_query(good_submit, 'http://bogus', {'hi': 'there'})
-#     assert rid is not None
-#     assert isinstance(rid, str)
-#     assert rid == '111-222-333-444'
+    rid = await sa.submit_query(good_submit, {'hi': 'there'})
+
+    good_submit.post.assert_called_once()
+    args, kwargs = good_submit.post.call_args
+
+    assert len(args) == 1
+    assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
+
+    assert len(kwargs) == 2
+    assert 'headers' in kwargs
+    assert len(kwargs['headers']) == 0
+
+    assert 'json' in kwargs
+    assert kwargs['json'] == {'hi': 'there'}
+
+    assert rid is not None
+    assert isinstance(rid, str)
+    assert rid == '111-222-333-444'
 
 
 # @pytest.mark.asyncio
