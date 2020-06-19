@@ -1,11 +1,11 @@
-from typing import AsyncGenerator, AsyncIterator, Optional, Tuple, Dict
+from typing import AsyncIterator, Optional, Tuple, Dict
 import asyncio
 
 import aiohttp
 from datetime import datetime
 from google.auth import jwt
 
-from .utils import ServiceXException, ServiceXUnknownRequestID
+from .utils import ServiceXException, ServiceXUnknownRequestID, TransformTuple
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
@@ -126,7 +126,7 @@ class ServiceXAdaptor:
 
 async def transform_status_stream(sa: ServiceXAdaptor, client: aiohttp.ClientSession,
                                   request_id: str) \
-        -> AsyncIterator[Tuple[Optional[int], int, Optional[int]]]:
+        -> AsyncIterator[TransformTuple]:
     '''
     Returns an async stream of `(files-remaining, files_processed, files_failed)` until the
     servicex `request_id` request is finished, against the servicex instance located at
@@ -146,8 +146,8 @@ async def transform_status_stream(sa: ServiceXAdaptor, client: aiohttp.ClientSes
             await asyncio.sleep(servicex_status_poll_time)
 
 
-async def watch_transform_status(stream: AsyncIterator[Tuple[Optional[int], int, Optional[int]]]) \
-        -> AsyncIterator[Tuple[Optional[int], int, Optional[int]]]:
+async def watch_transform_status(stream: AsyncIterator[TransformTuple]) \
+        -> AsyncIterator[TransformTuple]:
     '''
     Looks for any failed files. If it catches one, it will remember it and throw once the stream
     is done. This allows all the files to come down first.

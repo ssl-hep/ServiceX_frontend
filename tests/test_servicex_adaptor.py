@@ -11,7 +11,7 @@ import pytest
 
 from servicex import ServiceXException, ServiceXUnknownRequestID, ServiceXAdaptor
 
-from .utils_for_testing import ClientSessionMocker, short_status_poll_time
+from .utils_for_testing import ClientSessionMocker, short_status_poll_time, as_async_seq
 
 
 @pytest.fixture
@@ -207,11 +207,6 @@ async def test_status_stream_simple_2sequence(short_status_poll_time, mocker):
     assert len(v) == 2
     assert v[0] == (1, 1, 1)
     assert v[1] == (0, 1, 1)
-
-
-async def as_async_seq(seq: List[Any]):
-    for i in seq:
-        yield i
 
 
 @pytest.mark.asyncio

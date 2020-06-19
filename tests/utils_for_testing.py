@@ -2,11 +2,10 @@ import asyncio
 from json import loads
 import os
 from pathlib import Path
-from unittest.mock import Mock
-
 import shutil
 import tempfile
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+from unittest.mock import Mock
 
 import aiohttp
 import pytest
@@ -339,3 +338,8 @@ def short_status_poll_time():
     old_value, sxs.servicex_status_poll_time = sxs.servicex_status_poll_time, 0.1
     yield
     sxs.servicex_status_poll_time = old_value
+
+
+async def as_async_seq(seq: List[Any]):
+    for i in seq:
+        yield i

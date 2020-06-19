@@ -2,7 +2,7 @@ from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import Callable, Optional, Dict, List
+from typing import AsyncIterator, Callable, Optional, Dict, List, Tuple
 
 from tqdm.auto import tqdm
 
@@ -106,6 +106,22 @@ class _status_update_wrapper:
                 self._downloaded = downloaded
             else:
                 self._downloaded += downloaded
+
+
+TransformTuple = Tuple[Optional[int], int, Optional[int]]
+
+
+async def stream_transform_updates(stream: AsyncIterator[TransformTuple],
+                                   notifier: _status_update_wrapper):
+    '''
+    As the transformed status goes by, update the notifier with the new
+    values.
+    '''
+    async for p in stream:
+        remaining, processed, failed = p
+        notifier.update(processed=processed, failed=failed, remaining=remaining)
+        notifier.broadcast()
+        yield p
 
 
 def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:

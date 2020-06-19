@@ -4,7 +4,12 @@ from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
     clean_linq,
+    stream_transform_updates,
 )
+
+from .utils_for_testing import as_async_seq
+
+import pytest
 
 
 def test_callback_no_updates():
@@ -226,6 +231,17 @@ def test_callback_with_total_sequence():
     u.update(processed=2, remaining=4)
     u.broadcast()
     assert p_total == 6
+
+
+@pytest.mark.asyncio
+async def test_transform_sequence():
+    u = _status_update_wrapper()
+
+    v = [i async for i in stream_transform_updates(as_async_seq([(1, 0, 0), (0, 1, 0)]), u)]
+
+    assert len(v) == 2
+    assert u.failed == 0
+    assert u.total == 1
 
 
 def test_cache_stable():
