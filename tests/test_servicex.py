@@ -1,34 +1,24 @@
 import asyncio
 import os
-from servicex.servicex_adaptor import transform_status_stream
-from servicex.utils import ServiceXException, ServiceXUnknownRequestID
-from servicex.servicex import ServiceX
+from pathlib import Path
 import shutil
 import tempfile
 from typing import List, Optional
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
 import servicex as fe
+from servicex.utils import ServiceXException, ServiceXUnknownRequestID
 
-from .utils_for_testing import (  # NOQA
-    ClientSessionMocker,
-    delete_default_downloaded_files,
-    files_in_minio,
-    good_pandas_file_data,
-    good_transform_request,
-    good_awkward_file_data,
-    no_files_in_minio,
-    short_status_poll_time,
-    bad_transform_request,
-    servicex_state_machine,
-    servicex_adaptor,
-    MockServiceXAdaptor,
+from .utils_for_testing import (
     MockMinioAdaptor,
-    build_cache_mock
-) # NOQA
+    MockServiceXAdaptor,
+    build_cache_mock,
+    good_awkward_file_data,
+    good_pandas_file_data,
+    short_status_poll_time,
+)
 
 
 def clean_fname(fname: str):

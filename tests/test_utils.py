@@ -1,5 +1,7 @@
 from typing import Optional
 
+import pytest
+
 from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
@@ -8,8 +10,6 @@ from servicex.utils import (
 )
 
 from .utils_for_testing import as_async_seq
-
-import pytest
 
 
 def test_callback_no_updates():

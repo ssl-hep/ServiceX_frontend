@@ -1,20 +1,13 @@
-from minio.api import Minio
-import pytest
-import asyncio
-from json import dumps
 from pathlib import Path
-from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
-import servicex
-from typing import Optional, List, Any
-import minio
 
-import aiohttp
+import minio
 from minio.error import ResponseError
 import pytest
 
-from servicex import ServiceXException, ServiceXUnknownRequestID, ServiceXAdaptor, MinioAdaptor
-
-from .utils_for_testing import ClientSessionMocker, short_status_poll_time, as_async_seq
+from servicex import (
+    MinioAdaptor,
+    ServiceXException,
+)
 
 
 def make_minio_file(fname):
@@ -70,25 +63,6 @@ def bad_then_good_minio_listing(mocker):
     mocker.patch('servicex.minio_adaptor.Path.mkdir', mocker.MagicMock())
 
     return p_rename, minio_client
-
-
-@pytest.fixture
-def indexed_minio_client(mocker):
-
-    count = 1
-
-    def do_list(request_id):
-        return [make_minio_file(f'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-{i}.part.minio') for i in range(count)]
-
-    minio_client = mocker.MagicMock()
-    minio_client.fget_object = copy_minio_file
-    minio_client.list_objects = do_list
-
-    def update_count(c: int):
-        nonlocal count
-        count = c
-
-    return minio_client, update_count
 
 
 @pytest.mark.asyncio
