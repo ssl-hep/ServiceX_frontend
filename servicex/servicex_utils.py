@@ -30,7 +30,6 @@ def _wrap_in_memory_sx_cache(fn):
         # Is it in the local cache?
         h = _string_hash([sx._dataset, clean_linq(selection_query)])
         if h in _in_progress_items:
-            print (f'waiting for {h}')
             await _in_progress_items[h].wait()
 
         # Is it already done?
@@ -42,12 +41,9 @@ def _wrap_in_memory_sx_cache(fn):
         # others from working on it.
         _in_progress_items[h] = asyncio.Event()
         try:
-            print(f'Going to calculate {h}')
             result = await fn(*args, **kwargs)
             sx._cache.set_inmem(h, result)
-            print (f'setting {h}')
         finally:
-            print (f'about to release event {h}')
             _in_progress_items[h].set()
             del _in_progress_items[h]
 

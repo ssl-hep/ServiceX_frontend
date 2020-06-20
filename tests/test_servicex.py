@@ -11,7 +11,7 @@ import pytest
 import servicex as fe
 from servicex.utils import ServiceXException, ServiceXUnknownRequestID
 
-from .utils_for_testing import (
+from .utils_for_testing import (  # NOQA
     MockMinioAdaptor,
     MockServiceXAdaptor,
     build_cache_mock,

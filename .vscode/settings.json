@@ -50,6 +50,7 @@
         "rucio",
         "servicex",
         "servicexabc",
+        "setuptools",
         "sslhep",
         "tqdm",
         "xaod",

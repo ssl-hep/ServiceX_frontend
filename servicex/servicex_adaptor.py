@@ -32,14 +32,12 @@ class ServiceXAdaptor:
 
     async def _login(self, client: aiohttp.ClientSession):
         url = f'{self._endpoint}/login'
-        print(url)
-        async with client.post(f'{self._endpoint}/login', json={
+        async with client.post(url, json={
             'username': self._username,
             'password': self._password
         }) as response:
             if response.status == 200:
                 j = await response.json()
-                print(j['message'])
                 self._token = j['access_token']
                 self._refresh_token = j['refresh_token']
             else:
