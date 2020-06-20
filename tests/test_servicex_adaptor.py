@@ -221,19 +221,18 @@ async def test_watch_no_fail(short_status_poll_time, mocker):
     assert v[1] == (0, 1, 0)
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_watch_fail_end(short_status_poll_time, mocker):
+async def test_watch_fail(short_status_poll_time, mocker):
     v = []
     with pytest.raises(ServiceXException) as e:
         async for a in trap_servicex_failures(as_async_seq([(1, 0, 0), (0, 0, 1)])):
             v.append(a)
 
-    assert len(v) == 2
+    # Should force a failure as soon as it is detected.
+    assert len(v) == 1
     assert 'failed to transform' in str(e.value)
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_watch_fail_start(short_status_poll_time, mocker):
     v = []
@@ -241,7 +240,7 @@ async def test_watch_fail_start(short_status_poll_time, mocker):
         async for a in trap_servicex_failures(as_async_seq([(2, 0, 0), (1, 0, 1), (0, 1, 1)])):
             v.append(a)
 
-    assert len(v) == 3
+    assert len(v) == 1
     assert 'failed to transform' in str(e.value)
 
 
