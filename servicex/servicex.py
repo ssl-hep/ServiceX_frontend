@@ -41,7 +41,8 @@ class ServiceX(ServiceXABC):
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
-                 status_callback_factory: StatusUpdateFactory = _run_default_wrapper):
+                 status_callback_factory: StatusUpdateFactory = _run_default_wrapper,
+                 cache_adaptor: cache = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
         self._servicex_adaptor = servicex_adaptor
@@ -55,7 +56,10 @@ class ServiceX(ServiceXABC):
             self._minio_adaptor = minio_adaptor
 
         from servicex.utils import default_file_cache_name
-        self._cache = cache(default_file_cache_name)
+
+        self._cache = cache(default_file_cache_name) \
+            if cache_adaptor is None \
+            else cache_adaptor
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache

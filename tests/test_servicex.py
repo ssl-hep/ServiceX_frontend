@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from typing import List, Optional
 from pathlib import Path
+from unittest import mock
 
 import pandas as pd
 import pytest
@@ -25,6 +26,7 @@ from .utils_for_testing import (  # NOQA
     servicex_adaptor,
     MockServiceXAdaptor,
     MockMinioAdaptor,
+    build_cache_mock
 ) # NOQA
 
 
@@ -38,6 +40,7 @@ from .utils_for_testing import (  # NOQA
 @pytest.mark.asyncio
 async def test_good_run_root_files(mocker):
     'Get a root file with a single file'
+    mock_cache = build_cache_mock(mocker)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     filename_func = mocker.Mock(return_value="/foo/bar.root")
@@ -45,7 +48,8 @@ async def test_good_run_root_files(mocker):
     ds = fe.ServiceX('localds://mc16_tev:13',
                      servicex_adaptor=mock_servicex_adaptor,
                      minio_adaptor=mock_minio_adaptor,
-                     file_name_func=filename_func)
+                     file_name_func=filename_func,
+                     cache_adaptor=mock_cache)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
 
     mock_minio_adaptor.mock_download_file.assert_called_with(
@@ -62,6 +66,7 @@ async def test_skipped_file(mocker):
     '''
     ServiceX should throw if a file is marked as "skipped".
     '''
+    mock_cache = build_cache_mock(mocker)
     mock_transform_status = mocker.Mock(return_value=(0, 1, 1))
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
@@ -69,7 +74,8 @@ async def test_skipped_file(mocker):
     with pytest.raises(fe.ServiceXException) as e:
         ds = fe.ServiceX('http://one-ds',
                          servicex_adaptor=mock_servicex_adaptor,
-                         minio_adaptor=mock_minio_adaptor)
+                         minio_adaptor=mock_minio_adaptor,
+                         cache_adaptor=mock_cache)
         ds.get_data_rootfiles('(valid qastle string)')
 
     assert "failed to transform" in str(e.value)
@@ -77,13 +83,15 @@ async def test_skipped_file(mocker):
 
 def test_good_run_root_files_no_async(mocker):
     'Make sure the non-async version works'
+    mock_cache = build_cache_mock(mocker)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
     filename_func = mocker.Mock(return_value="/foo/bar.root")
 
     ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor,
                      minio_adaptor=mock_minio_adaptor,
-                     file_name_func=filename_func)
+                     file_name_func=filename_func,
+                     cache_adaptor=mock_cache)
 
     r = ds.get_data_rootfiles('(valid qastle string)')
     assert len(r) == 2
@@ -93,13 +101,15 @@ def test_good_run_root_files_no_async(mocker):
 @pytest.mark.asyncio
 async def test_good_run_root_files_pause(mocker, short_status_poll_time):
     'Get a root file with a single file'
+    mock_cache = build_cache_mock(mocker)
     mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
     ds = fe.ServiceX('localds://mc16_tev:13',
                      servicex_adaptor=mock_servicex_adaptor,
-                     minio_adaptor=mock_minio_adaptor)
+                     minio_adaptor=mock_minio_adaptor,
+                     cache_adaptor=mock_cache)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert len(r) == 1
     assert len(mock_servicex_adaptor.transform_status.mock_calls) == 2
@@ -108,11 +118,15 @@ async def test_good_run_root_files_pause(mocker, short_status_poll_time):
 @pytest.mark.asyncio
 async def test_good_run_files_back_4_order_1(mocker):
     'Simple run with expected results'
+    mock_cache = build_cache_mock(mocker)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry', 'three_minio_entry',
                                                          'four_minio_entry'])
 
-    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor, minio_adaptor=mock_minio_adaptor)
+    ds = fe.ServiceX('localds://mc16_tev:13',
+                     servicex_adaptor=mock_servicex_adaptor,
+                     minio_adaptor=mock_minio_adaptor,
+                     cache_adaptor=mock_cache)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
     assert len(r) == 4
@@ -123,11 +137,15 @@ async def test_good_run_files_back_4_order_1(mocker):
 @pytest.mark.asyncio
 async def test_good_run_files_back_4_order_2(mocker):
     'Simple run with expected results'
+    mock_cache = build_cache_mock(mocker)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['four_minio_entry', 'three_minio_entry', 'two_minio_entry',
                                                          'one_minio_entry'])
 
-    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor, minio_adaptor=mock_minio_adaptor)
+    ds = fe.ServiceX('localds://mc16_tev:13',
+                     servicex_adaptor=mock_servicex_adaptor,
+                     minio_adaptor=mock_minio_adaptor,
+                     cache_adaptor=mock_cache)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
     assert len(r) == 4
@@ -135,15 +153,19 @@ async def test_good_run_files_back_4_order_2(mocker):
     assert [f.name for f in r] == s_r
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_good_run_files_back_4_unordered(mocker):
     'Simple run; should return alphabetized list'
+    mock_cache = build_cache_mock(mocker)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry', 'three_minio_entry',
                                                          'four_minio_entry'])
+    mocker.patch('servicex.utils.default_file_cache_name', Path('/tmp/servicex-testing'))
 
-    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor, minio_adaptor=mock_minio_adaptor)
+    ds = fe.ServiceX('localds://mc16_tev:13',
+                     servicex_adaptor=mock_servicex_adaptor,
+                     minio_adaptor=mock_minio_adaptor,
+                     cache_adaptor=mock_cache)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
     assert len(r) == 4
@@ -153,15 +175,19 @@ async def test_good_run_files_back_4_unordered(mocker):
     assert r[3] == Path('/tmp/servicex-testing/123-456/two_minio_entry')
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_good_download_files_parquet(mocker):
+async def test_good_download_files_parquet(mocker, short_status_poll_time):
     'Simple run with expected results'
+    mock_cache = build_cache_mock(mocker)
     mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mocker.patch('servicex.utils.default_file_cache_name', Path('/tmp/servicex-testing'))
 
-    ds = fe.ServiceX('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor, minio_adaptor=mock_minio_adaptor)
+    ds = fe.ServiceX('localds://mc16_tev:13',
+                     servicex_adaptor=mock_servicex_adaptor,
+                     minio_adaptor=mock_minio_adaptor,
+                     cache_adaptor=mock_cache)
     r = await ds.get_data_parquet_async('(valid qastle string)')
     assert isinstance(r, list)
     assert len(r) == 1

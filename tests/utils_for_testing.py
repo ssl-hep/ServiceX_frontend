@@ -167,6 +167,16 @@ class MockMinioAdaptor:
         return self._files
 
 
+def build_cache_mock(mocker) -> cache:
+    c = mocker.MagicMock(spec=cache)
+
+    c.lookup_inmem.return_value = None
+    c.lookup_files.return_value = None
+    c.lookup_query.return_value = None
+
+    return c
+
+
 @pytest.fixture
 def servicex_adaptor(mocker):
     return mocker.AsyncMock(spec=ServiceXAdaptor)
