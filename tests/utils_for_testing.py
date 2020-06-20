@@ -284,12 +284,6 @@ def no_files_in_minio(mocker):
     mocker.patch('servicex.minio_adaptor.ResultObjectList.files', side_effect=return_files)
 
 
-@pytest.fixture
-def bad_transform_status(mocker):
-
-    mocker.patch('servicex.servicex_adaptor.ServiceXAdaptor.get_transform_status', side_effect=ServiceXException('bad attempt'))
-
-
 @pytest.fixture(autouse=True)
 def delete_default_downloaded_files():
     download_location = Path(tempfile.gettempdir()) / 'servicex-testing'
