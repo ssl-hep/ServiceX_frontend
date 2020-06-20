@@ -1,11 +1,16 @@
-from typing import AsyncIterator, Optional, Tuple, Dict
 import asyncio
+from datetime import datetime
+from typing import AsyncIterator, Dict, Optional, Tuple
 
 import aiohttp
-from datetime import datetime
 from google.auth import jwt
 
-from .utils import ServiceXException, ServiceXUnknownRequestID, TransformTuple
+from .utils import (
+    ServiceXException,
+    ServiceXFailedFileTransform,
+    ServiceXUnknownRequestID,
+    TransformTuple,
+)
 
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
@@ -152,10 +157,10 @@ async def trap_servicex_failures(stream: AsyncIterator[TransformTuple]) \
     Looks for any failed files. If it catches one, it will remember it and throw once the stream
     is done. This allows all the files to come down first.
     '''
-    failed = None
     async for p in stream:
         _, _, did_fail = p
         if did_fail is not None and did_fail != 0:
-            raise ServiceXException(f'ServiceX failed to transform {failed} files - data incomplete.')
+            raise ServiceXFailedFileTransform(f'ServiceX failed to transform {did_fail} '
+                                              'files - data incomplete.')
 
         yield p

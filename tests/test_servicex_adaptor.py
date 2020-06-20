@@ -1,13 +1,18 @@
 from json import dumps
-from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
 from typing import Optional
 
 import aiohttp
 import pytest
 
-from servicex import ServiceXException, ServiceXUnknownRequestID, ServiceXAdaptor
+from servicex import (
+    ServiceXFailedFileTransform,
+    ServiceXAdaptor,
+    ServiceXException,
+    ServiceXUnknownRequestID,
+)
+from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
 
-from .utils_for_testing import ClientSessionMocker, short_status_poll_time, as_async_seq  # NOQA
+from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
 
 
 # TODO: Nothing about the auth process is tested
@@ -145,7 +150,7 @@ async def test_watch_no_fail(short_status_poll_time, mocker):
 @pytest.mark.asyncio
 async def test_watch_fail(short_status_poll_time, mocker):
     v = []
-    with pytest.raises(ServiceXException) as e:
+    with pytest.raises(ServiceXFailedFileTransform) as e:
         async for a in trap_servicex_failures(as_async_seq([(1, 0, 0), (0, 0, 1)])):
             v.append(a)
 
@@ -157,7 +162,7 @@ async def test_watch_fail(short_status_poll_time, mocker):
 @pytest.mark.asyncio
 async def test_watch_fail_start(short_status_poll_time, mocker):
     v = []
-    with pytest.raises(ServiceXException) as e:
+    with pytest.raises(ServiceXFailedFileTransform) as e:
         async for a in trap_servicex_failures(as_async_seq([(2, 0, 0), (1, 0, 1), (0, 1, 1)])):
             v.append(a)
 

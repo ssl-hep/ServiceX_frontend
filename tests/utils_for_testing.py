@@ -174,12 +174,16 @@ class MockMinioAdaptor:
         return self._files
 
 
-def build_cache_mock(mocker) -> cache:
+def build_cache_mock(mocker, query_cache_return=None) -> cache:
     c = mocker.MagicMock(spec=cache)
 
     c.lookup_inmem.return_value = None
     c.lookup_files.return_value = None
-    c.lookup_query.return_value = None
+
+    if query_cache_return is None:
+        c.lookup_query.return_value = None
+    else:
+        c.lookup_query.return_value = query_cache_return
 
     return c
 

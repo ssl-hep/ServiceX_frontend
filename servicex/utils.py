@@ -26,6 +26,12 @@ class ServiceXUnknownRequestID(Exception):
         super().__init__(self, msg)
 
 
+class ServiceXFailedFileTransform(Exception):
+    'Raised when a file(s) fail to transform'
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 def sanitize_filename(fname: str):
     'No matter the string given, make it an acceptable filename'
     return fname.replace('*', '_') \

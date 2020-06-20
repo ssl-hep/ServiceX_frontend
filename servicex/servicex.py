@@ -7,6 +7,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 import urllib
 
 import aiohttp
+from aiohttp.client import request
 from backoff import on_exception
 import backoff
 
@@ -19,7 +20,7 @@ from .servicex_adaptor import ServiceXAdaptor, transform_status_stream, trap_ser
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
-    ServiceXUnknownRequestID,
+    ServiceXException, ServiceXFailedFileTransform, ServiceXUnknownRequestID,
     StatusUpdateFactory,
     _run_default_wrapper,
     _status_update_wrapper,
@@ -187,14 +188,24 @@ class ServiceX(ServiceXABC):
 
             # Look up the cache, and then fetch an iterator going thorugh the results
             # from either servicex or the cache, depending.
-            cached_files = self._cache.lookup_files(request_id)
-            stream_local_files = self._get_cached_files(cached_files, notifier) \
-                if cached_files is not None \
-                else self._get_files_from_servicex(request_id, client, query, notifier)
+            try:
+                cached_files = self._cache.lookup_files(request_id)
+                stream_local_files = self._get_cached_files(cached_files, notifier) \
+                    if cached_files is not None \
+                    else self._get_files_from_servicex(request_id, client, query, notifier)
 
-            # Reflect the files back up a level.
-            async for r in stream_local_files:
-                yield r
+                # Reflect the files back up a level.
+                async for r in stream_local_files:
+                    yield r
+
+            except ServiceXUnknownRequestID as e:
+                self._cache.remove_query(query)
+                raise ServiceXException('ServiceX instance does not know about cached query '
+                                        f'{request_id}. Please resubmit.') from e
+
+            except ServiceXFailedFileTransform as e:
+                self._cache.remove_query(query)
+                raise ServiceXException('Failed to transform all files') from e
 
     async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]):
         '''

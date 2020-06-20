@@ -1,5 +1,8 @@
 import asyncio
 import os
+from servicex.servicex_adaptor import transform_status_stream
+from servicex.utils import ServiceXException, ServiceXUnknownRequestID
+from servicex.servicex import ServiceX
 import shutil
 import tempfile
 from typing import List, Optional
@@ -76,7 +79,7 @@ async def test_skipped_file(mocker):
                          cache_adaptor=mock_cache)
         ds.get_data_rootfiles('(valid qastle string)')
 
-    assert "failed to transform" in str(e.value)
+    assert "Failed to transform" in str(e.value)
 
 
 def test_good_run_root_files_no_async(mocker):
@@ -441,126 +444,86 @@ def test_callback_good(mocker):
     assert f_failed == 0
 
 
-@pytest.mark.skip
-def test_failed_iteration(mocker):
+@pytest.mark.asyncio
+async def test_cache_query_even_with_status_update_failure(mocker, short_status_poll_time):
     '''
-    ServiceX fails one of its files:
-    There are times service x returns a few number of files total for one query, but then resumes having a good number'
+    1. Start a query.
+    1. Get something back files
+    1. Second status fails
+    1. Make sure the query is marked in the cache (so that a lookup can occur next time)
     '''
+
     mock_cache = build_cache_mock(mocker)
-    mock_transform_status = mocker.Mock(side_effect=[(0, 1, 1)])
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
+    transform_status = mocker.MagicMock(side_effect=[(1, 1, 0), ServiceXException('boom')])
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
-    f_total = []
-    f_processed = []
-    f_downloaded = []
-    f_failed = []
-
-    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
-        nonlocal f_total, f_processed, f_downloaded, f_failed
-        f_total.append(total)
-        f_processed.append(processed)
-        f_downloaded.append(downloaded)
-        f_failed.append(failed)
-
-    with pytest.raises(fe.ServiceXException) as e:
-        ds = fe.ServiceX('http://one-ds',
-                         servicex_adaptor=mock_servicex_adaptor,
-                         minio_adaptor=mock_minio_adaptor,
-                         status_callback_factory=lambda ds: check_in)
-        ds.get_data_rootfiles('(valid qastle string)')
-
-    assert len(f_total) == 2
-    assert all(i == 2 for i in f_total)
-    assert all(i == 1 for i in f_failed)
-    assert all(i <= 1 for i in f_downloaded)
-    assert "failed to transform" in str(e.value)
-
-
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_resume_download_missing_files(servicex_state_machine, short_status_poll_time):
-    '''
-    We get a status error message, and then we can re-download them.
-
-    1. Request the transform
-    1. Get the status - but that fails the second time
-    1. This causes the download to bomb.
-    1. Re-request the download, and then discover it is done.
-    '''
-
-    servicex_state_machine['reset']()
-    servicex_state_machine['add_status_step'](processed=1, remaining=1, failed=0)
-    servicex_state_machine['add_status_fail'](fe.ServiceXException('Lost the internet'))
-
-    ds = fe.ServiceX('http://one-ds')
+    ds = fe.ServiceX('http://one-ds',
+                     servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                     minio_adaptor=mock_minio_adaptor,  # type: ignore
+                     cache_adaptor=mock_cache)
     with pytest.raises(fe.ServiceXException):
         # Will fail with one file downloaded.
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
-    servicex_state_machine['reset'](keep_request_id=True)
-    servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
-
-    r = await ds.get_data_rootfiles_async('(valid qastle string)')
-    assert len(r) == 2
-    servicex_state_machine['patch_submit_query'].assert_called_once()
+    mock_cache.set_query.assert_called_once()
+    mock_cache.remove_query.assert_not_called()
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_servicex_gone_when_redownload_request(servicex_state_machine, short_status_poll_time):
+async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_time):
     '''
-    We call to get a transform, get one of 2 files, then get an error.
-    We try again, and this time servicex has been restarted, so it knows nothing about our request
-    We have to re-request the transform and start from scratch.
+    1. Our transform query is in the cache.
+    2. The files are not yet all in the cache.
+    3. We call to get the status, and there is a "not known" error.
+    4. The query in the cache should have been removed.
+
+    This will force the system to re-start the query next time it is called.
     '''
+    mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
+    transform_status = mocker.MagicMock(side_effect=ServiceXUnknownRequestID('boom'))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
-    servicex_state_machine['reset']()
-    servicex_state_machine['add_status_step'](processed=1, remaining=1, failed=0)
-    servicex_state_machine['add_status_fail'](fe.ServiceXException('Lost the internet'))
+    ds = fe.ServiceX('http://one-ds',
+                     servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                     minio_adaptor=mock_minio_adaptor,  # type: ignore
+                     cache_adaptor=mock_cache)
 
-    ds = fe.ServiceX('http://one-ds')
-
-    with pytest.raises(Exception):
+    with pytest.raises(ServiceXException) as e:
         # Will fail with one file downloaded.
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
-    # Reset to work with a new query
-    servicex_state_machine['reset']()
-    servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
+    assert 'resubmit' in str(e.value)
 
-    # New instance of ServiceX now, and it is ready to do everything.
-    r = await ds.get_data_rootfiles_async('(valid qastle string)')
-    assert len(r) == 2
-    servicex_state_machine['patch_submit_query'].call_count == 2, 'Request for a transform should have been called twice'
+    mock_cache.set_query.assert_not_called()
+    mock_cache.remove_query.assert_called_once()
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_servicex_transformer_failure_reload(servicex_state_machine, short_status_poll_time):
+async def test_servicex_transformer_failure_reload(mocker, short_status_poll_time):
     '''
-    We call to get a transform, and the 1 file fails (gets marked as skip).
-    We then call again, and it works, and we get back the files we want.
+    1. Start a transform
+    2. A file is marked as failing
+    3. The query is not cached (so it can be run again next time)
     '''
 
-    servicex_state_machine['reset']()
-    servicex_state_machine['add_status_step'](processed=1, remaining=0, failed=1)
-    servicex_state_machine['add_status_fail'](fe.ServiceXException('Lost the internet'))
+    mock_cache = build_cache_mock(mocker)
+    transform_status = mocker.MagicMock(return_value=(0, 0, 1))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
-    ds = fe.ServiceX('http://one-ds')
+    ds = fe.ServiceX('http://one-ds',
+                     servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                     minio_adaptor=mock_minio_adaptor,  # type: ignore
+                     cache_adaptor=mock_cache)
 
-    with pytest.raises(Exception):
+    with pytest.raises(fe.ServiceXException):
         # Will fail with one skipped file.
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
-    # Setup for a good query.
-    servicex_state_machine['reset']()
-    servicex_state_machine['add_status_step'](processed=2, remaining=0, failed=0)
-
-    r = await ds.get_data_rootfiles_async('(valid qastle string)')
-    assert len(r) == 2
-    servicex_state_machine['patch_submit_query'].call_count == 2, 'Request for a transform should have been called twice'
+    mock_cache.set_query.assert_called_once()
+    mock_cache.remove_query.assert_called_once()
 
 
 @pytest.mark.asyncio

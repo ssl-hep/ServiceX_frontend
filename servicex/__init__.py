@@ -2,6 +2,7 @@ from .servicex import ServiceX  # NOQA
 from .utils import (  # NOQA
     ServiceXException,
     ServiceXUnknownRequestID,
+    ServiceXFailedFileTransform,
     StatusUpdateCallback,
     StatusUpdateFactory,
     clean_linq,
