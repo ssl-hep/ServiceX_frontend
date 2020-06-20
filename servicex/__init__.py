@@ -7,3 +7,4 @@ from .utils import (  # NOQA
     clean_linq,
 )
 from .servicex_adaptor import ServiceXAdaptor  # NOQA
+from .minio_adaptor import MinioAdaptor  # NOQA

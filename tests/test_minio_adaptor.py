@@ -1,3 +1,4 @@
+from minio.api import Minio
 import pytest
 import asyncio
 from json import dumps
@@ -5,12 +6,13 @@ from pathlib import Path
 from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
 import servicex
 from typing import Optional, List, Any
+import minio
 
 import aiohttp
 from minio.error import ResponseError
 import pytest
 
-from servicex import ServiceXException, ServiceXUnknownRequestID, ServiceXAdaptor
+from servicex import ServiceXException, ServiceXUnknownRequestID, ServiceXAdaptor, MinioAdaptor
 
 from .utils_for_testing import ClientSessionMocker, short_status_poll_time, as_async_seq
 
@@ -22,23 +24,20 @@ def make_minio_file(fname):
     return r
 
 
-def copy_minio_file(req: str, bucket: str, output_file: str):
-    assert isinstance(output_file, str)
-    with open(output_file, 'w') as o:
-        o.write('hi there')
-
-
 @pytest.fixture
 def good_minio_client(mocker):
 
-    def do_list(request_id):
-        return [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+    minio_client = mocker.MagicMock(spec=minio.Minio)
+    minio_client.list_objects.return_value = \
+        [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
 
-    minio_client = mocker.MagicMock()
-    minio_client.fget_object = mocker.MagicMock(side_effect=copy_minio_file)
-    minio_client.list_objects = do_list
+    mocker.patch('servicex.minio_adaptor.Minio', return_value=minio_client)
 
-    return minio_client
+    p_rename = mocker.patch('servicex.minio_adaptor.Path.rename', mocker.MagicMock())
+
+    mocker.patch('servicex.minio_adaptor.Path.mkdir', mocker.MagicMock())
+
+    return p_rename, minio_client
 
 
 @pytest.fixture
@@ -83,25 +82,22 @@ def bad_minio_client(mocker):
     return minio_client
 
 
-@pytest.fixture
-def clean_temp_dir():
-    import tempfile
-    import shutil
-    p = Path(tempfile.gettempdir()) / 'servicex_testing_dir'
-    if p.exists():
-        shutil.rmtree(p)
-    return p
-
-
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_download_good(good_minio_client, clean_temp_dir):
-    from servicex.servicex_remote import _download_file
+async def test_download_good(good_minio_client):
+    ma = MinioAdaptor('localhost:9000')
 
-    final_path = clean_temp_dir / 'output-file.dude'
-    await _download_file(good_minio_client, '111-22-333-444', 'dude-where-is-my-lunch', final_path)
-    assert final_path.exists()
+    final_path = Path('/tmp/output-file.dude')  # type: Path
+    await ma.download_file('111-22-333-444', 'dude-where-is-my-lunch', final_path)
 
+    p_rename, p_minio = good_minio_client
+
+    # Make sure copy was called.
+    p_minio.fget_object.assert_called_once()
+    expected_path = Path('/tmp/output-file.dude.temp')
+    p_minio.fget_object.assert_called_with('111-22-333-444', 'dude-where-is-my-lunch', str(expected_path))
+
+    # Make sure the rename was done.
+    p_rename.assert_called_with(final_path)
 
 @pytest.mark.skip
 @pytest.mark.asyncio

@@ -50,6 +50,7 @@ class MinioAdaptor:
 
         # Threadpool on which downloads occur. This is because the current minio library
         # uses blocking http requests, so we can't use asyncio to interleave them.
+        # TODO: This needs to be a static property
         self._download_executor = ThreadPoolExecutor(max_workers=5)
 
     @on_exception(backoff.constant, ResponseError, interval=0.1)
@@ -79,7 +80,7 @@ class MinioAdaptor:
 
         # We are going to build a temp file, and download it from there.
         def do_copy() -> None:
-            temp_file = output_file.parent.with_name(f'{output_file.name}.temp')
+            temp_file = output_file.parent / f'{output_file.name}.temp'
             try:
                 self._client.fget_object(request_id, bucket_fname, str(temp_file))
                 temp_file.rename(output_file)
@@ -113,53 +114,3 @@ async def find_new_bucket_files(adaptor: MinioAdaptor,
             if f not in seen:
                 seen.append(f)
                 yield f
-
-
-class ResultObjectList:
-    """
-    Will poll the minio bucket each time it's event is triggered for a particular
-    request id. It will return an async stream of new files until it is shut off.
-    """
-    def __init__(self, adaptor: MinioAdaptor, request_id: str):
-        self._adaptor = adaptor
-        self._req_id = request_id
-        self._event = asyncio.Event()
-        self._trigger_done = False
-
-    def trigger_scan(self):
-        'Trigger a scan of the minio to look for new items in the bucket'
-        self._event.set()
-
-    def shutdown(self):
-        """
-        Initiate shutdown - a last check is performed and any new files found are
-        routed.
-        """
-        self._trigger_done = True
-        self._event.set()
-
-    async def files(self):
-        """
-        Returns an awaitable sequence of files that come back from Minio. Each file
-        is only returned once (as you would expect). Use `trigger_scan` to trigger
-        a polling of `minio`.
-        """
-        seen = []
-        done = False
-        done_counter = 1
-        while not done:
-            if not self._trigger_done:
-                await self._event.wait()
-                self._event.clear()
-            if not done:
-                files = self._adaptor.get_files(self._req_id)
-                for f in files:
-                    if f not in seen:
-                        seen.append(f)
-                        yield f
-
-            # Make sure to go around one last time to pick up any stragglers.
-            if done_counter <= 0:
-                done = True
-            if self._trigger_done:
-                done_counter -= 1
