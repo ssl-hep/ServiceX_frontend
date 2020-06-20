@@ -7,7 +7,6 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 import urllib
 
 import aiohttp
-from aiohttp.client import request
 from backoff import on_exception
 import backoff
 
