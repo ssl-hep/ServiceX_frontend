@@ -551,6 +551,29 @@ async def test_download_cached_nonet(mocker):
 
 
 @pytest.mark.asyncio
+async def test_download_write_to_inmem_cache(mocker):
+    '''
+    Check that we do not use the network if we have already cached a file.
+        - Cache is populated
+        - the status calls are not made more than for the first time
+        - the calls to minio are only made the first time (the list_objects, for example)
+    '''
+    mock_cache = build_cache_mock(mocker)
+    mock_transform_status = mocker.Mock(side_effect=[(0, 2, 0)])
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+
+    ds = fe.ServiceX('http://one-ds',
+                     servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                     minio_adaptor=mock_minio_adaptor,  # type: ignore
+                     cache_adaptor=mock_cache)
+    await ds.get_data_rootfiles_async('(valid qastle string')
+
+    # Check the the number of times we called for a transform is good.
+    mock_cache.set_inmem.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_download_cached_awkward(mocker, good_awkward_file_data):
     'Run two right after each other - they should return the same data in memory'
     fork_it = ['data', 'is', 'there']
@@ -568,35 +591,18 @@ async def test_download_cached_awkward(mocker, good_awkward_file_data):
     assert a1 is fork_it
 
 
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_download_cache_qastle_norm(mocker, good_awkward_file_data):
-    'Run two right after each other - they should return the same data in memory'
-    mock_cache = build_cache_mock(mocker)
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
-
-    async def do_query(q: str):
-        ds = fe.ServiceX('localds://dude-is-funny', servicex_adaptor=mock_servicex_adaptor,
-                         minio_adaptor=mock_minio_adaptor)
-        return await ds.get_data_awkward_async(q)
-
-    a1 = await do_query('(lambda (list a0 a1) (+ a0 a1))')
-    a2 = await do_query('(lambda (list b0 b1) (+ b0 b1))')
-    assert a1 is a2
-
-
-@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
     'Run two at once - they should not both generate queires as they are identical'
-    mock_cache = build_cache_mock(mocker)
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
     async def do_query():
-        ds = fe.ServiceX('localds://dude-is-funny', servicex_adaptor=mock_servicex_adaptor,
-                         minio_adaptor=mock_minio_adaptor)
+        mock_cache = build_cache_mock(mocker, make_in_memory_work=True)
+        mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+        mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+        ds = fe.ServiceX('localds://dude-is-funny',
+                         servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                         minio_adaptor=mock_minio_adaptor,  # type: ignore
+                         cache_adaptor=mock_cache)
         return await ds.get_data_awkward_async('(valid qastle string')
 
     a1, a2 = await asyncio.gather(*[do_query(), do_query()])  # type: ignore
