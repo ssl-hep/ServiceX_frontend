@@ -175,10 +175,14 @@ class MockMinioAdaptor:
 
 
 def build_cache_mock(mocker, query_cache_return: str = None,
-                     files: Optional[List[Tuple[str, str]]] = None) -> cache:
+                     files: Optional[List[Tuple[str, str]]] = None,
+                     in_memory: Any = None) -> cache:
     c = mocker.MagicMock(spec=cache)
 
-    c.lookup_inmem.return_value = None
+    if in_memory is None:
+        c.lookup_inmem.return_value = None
+    else:
+        c.lookup_inmem.return_value = in_memory
 
     if query_cache_return is None:
         c.lookup_query.return_value = None
