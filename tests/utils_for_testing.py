@@ -135,10 +135,16 @@ class MockServiceXAdaptor:
     def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None, mock_query: Mock = None):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
+        self.requests_made = 0
+
+        def do_unique_id():
+            id = self.request_id.format(self.requests_made)
+            self.requests_made += 1
+            return id
 
         self.query = mock_query \
             if mock_query \
-            else mocker.Mock(return_value=self.request_id)
+            else mocker.Mock(side_effect=do_unique_id)
 
         self.transform_status = mock_transform_status \
             if mock_transform_status \
@@ -146,6 +152,7 @@ class MockServiceXAdaptor:
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
+        self.query_json = json_query
         return self.query()
 
     async def get_transform_status(self, client: str, request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
