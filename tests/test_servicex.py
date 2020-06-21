@@ -463,7 +463,6 @@ async def test_callback_none(mocker):
     assert r[0] == '/foo/bar.root'
 
 
-
 @pytest.mark.asyncio
 async def test_cache_query_even_with_status_update_failure(mocker, short_status_poll_time):
     '''

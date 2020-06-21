@@ -2,7 +2,7 @@ from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import AsyncIterator, Callable, Optional, Dict, List, Tuple, Any
+from typing import AsyncIterator, Callable, Optional, Dict, List, Tuple
 
 from tqdm.auto import tqdm
 

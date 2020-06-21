@@ -53,6 +53,7 @@
         "setuptools",
         "sslhep",
         "tqdm",
+        "unittests",
         "xaod",
         "xrootd"
     ]
