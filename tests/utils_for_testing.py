@@ -12,14 +12,25 @@ from servicex.cache import cache
 
 class ClientSessionMocker:
     def __init__(self, text, status):
-        self._text = text
-        self.status = status
+        if type(text) == list:
+            self._text_iter = iter(text)
+        else:
+            self._text_iter = iter([text])
+
+        if type(status) == list:
+            self._status_iter = iter(status)
+        else:
+            self._status_iter = iter([status])
 
     async def text(self):
-        return self._text
+        return next(self._text_iter)
 
     async def json(self):
-        return loads(self._text)
+        return loads(next(self._text_iter))
+
+    @property
+    def status(self):
+        return next(self._status_iter)
 
     async def __aexit__(self, exc_type, exc, tb):
         pass

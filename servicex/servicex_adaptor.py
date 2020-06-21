@@ -36,18 +36,19 @@ class ServiceXAdaptor:
             'username': self._username,
             'password': self._password
         }) as response:
-            if response.status == 200:
+            status = response.status
+            if status == 200:
                 j = await response.json()
                 self._token = j['access_token']
                 self._refresh_token = j['refresh_token']
             else:
-                raise ServiceXException(f'ServiceX login request rejected: {response.status}')
+                raise ServiceXException(f'ServiceX login request rejected: {status}')
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
         if self._username:
             now = datetime.utcnow().timestamp()
 
-            if not self._token or jwt.decode(self._token, verify=False)['ex]'] - now < 0:
+            if not self._token or jwt.decode(self._token, verify=False)['ex'] - now < 0:
                 await self._login(client)
             return {
                 'Authorization': f'Bearer {self._token}'
@@ -66,11 +67,12 @@ class ServiceXAdaptor:
         async with client.post(f'{self._endpoint}/servicex/transformation',
                                headers=headers, json=json_query) as response:
             r = await response.json()
-            if response.status != 200:
+            status = response.status
+            if status != 200:
                 # This was an error at ServiceX, bubble it up so code above us can
                 # handle as needed.
                 raise ServiceXException('ServiceX rejected the transformation request: '
-                                        f'({response.status}){r}')
+                                        f'({status}){r}')
             req_id = r["request_id"]
 
             return req_id
@@ -114,9 +116,10 @@ class ServiceXAdaptor:
         async with client.get(
                 f'{self._endpoint}/servicex/transformation/{request_id}/status',
                 headers=headers) as response:
-            if response.status != 200:
+            status = response.status
+            if status != 200:
                 raise ServiceXUnknownRequestID(f'Unable to get transformation status '
-                                               f' - http error {response.status}')
+                                               f' - http error {status}')
             info = await response.json()
             files_remaining = self._get_transform_stat(info, 'files-remaining')
             files_failed = self._get_transform_stat(info, 'files-skipped')
