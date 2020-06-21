@@ -94,10 +94,6 @@ class ServiceXABC(ABC):
         'Internal method to create a updater from the status call-back'
         return _status_update_wrapper(self._status_callback_factory(self._dataset))
 
-    @property
-    def dataset(self):
-        return self._dataset
-
     @abstractmethod
     async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
         '''
@@ -111,7 +107,6 @@ class ServiceXABC(ABC):
         Returns:
             root_files          The list of root files
         '''
-        raise NotImplementedError()
 
     @abstractmethod
     async def get_data_pandas_df_async(self, selection_query: str) -> pd.DataFrame:
@@ -130,7 +125,6 @@ class ServiceXABC(ABC):
             xxx                 If the data is not the correct shape (e.g. a flat,
                                 rectangular table).
         '''
-        raise NotImplementedError()
 
     @abstractmethod
     async def get_data_awkward_async(self, selection_query: str) \
@@ -148,7 +142,6 @@ class ServiceXABC(ABC):
                                 column. The dictionary keys are `bytes` to support possible
                                 unicode characters.
         '''
-        raise NotImplementedError()
 
     @abstractmethod
     async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
@@ -163,7 +156,6 @@ class ServiceXABC(ABC):
         Returns:
             root_files          The list of parquet files
         '''
-        raise NotImplementedError()
 
     # Define the synchronous versions of the async methods for easy of use
 

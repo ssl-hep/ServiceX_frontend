@@ -35,7 +35,7 @@ class ServiceX(ServiceXABC):
     '''
     def __init__(self,
                  dataset: str,
-                 servicex_adaptor: ServiceXAdaptor,
+                 servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: MinioAdaptor = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  storage_directory: Optional[str] = None,
@@ -45,6 +45,10 @@ class ServiceX(ServiceXABC):
                  cache_adaptor: cache = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
+
+        # Eventually will want to parse local files for config info.
+        if not servicex_adaptor:
+            servicex_adaptor = ServiceXAdaptor('http://localhost:5000')
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:

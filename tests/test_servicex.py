@@ -28,6 +28,10 @@ def clean_fname(fname: str):
                 .replace(':', '_')
 
 
+def test_default_ctor():
+    fe.ServiceX('localds://dude')
+
+
 @pytest.mark.asyncio
 async def test_good_run_root_files(mocker):
     'Get a root file with a single file'

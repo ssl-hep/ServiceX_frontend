@@ -7,7 +7,7 @@ from servicex.cache import cache
 
 
 @pytest.fixture
-def cache_dir():
+def cache_dir(autouse=True):
     p = Path(tempfile.gettempdir()) / 'servicex-cache-testing'
     if p.exists():
         import shutil
@@ -17,6 +17,13 @@ def cache_dir():
     if p.exists():
         import shutil
         shutil.rmtree(p)
+
+
+@pytest.fixture()
+def reset_in_memory_cache():
+    cache.reset_cache()
+    yield
+    cache.reset_cache()
 
 
 def test_create_cache(cache_dir):
