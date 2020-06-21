@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from .utils import _query_cache_hash
 
 
-class cache:
+class Cache:
     '''
     Caching for all data returns from the system. It provides both in-memory
     and on-disk cache.

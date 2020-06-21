@@ -12,7 +12,7 @@ import backoff
 
 from typing import AsyncIterator
 
-from .cache import cache
+from .cache import Cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
 from .minio_adaptor import MinioAdaptor, find_new_bucket_files
 from .servicex_adaptor import ServiceXAdaptor, transform_status_stream, trap_servicex_failures
@@ -42,7 +42,7 @@ class ServiceX(ServiceXABC):
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
-                 cache_adaptor: cache = None):
+                 cache_adaptor: Cache = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
 
@@ -61,7 +61,7 @@ class ServiceX(ServiceXABC):
 
         from servicex.utils import default_file_cache_name
 
-        self._cache = cache(default_file_cache_name) \
+        self._cache = Cache(default_file_cache_name) \
             if cache_adaptor is None \
             else cache_adaptor
 

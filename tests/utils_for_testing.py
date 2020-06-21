@@ -7,7 +7,7 @@ import aiohttp
 import pytest
 from pytest_mock import MockFixture
 
-from servicex.cache import cache
+from servicex.cache import Cache
 
 
 class ClientSessionMocker:
@@ -88,8 +88,8 @@ __g_inmem_value = None
 def build_cache_mock(mocker, query_cache_return: str = None,
                      files: Optional[List[Tuple[str, str]]] = None,
                      in_memory: Any = None,
-                     make_in_memory_work: bool = False) -> cache:
-    c = mocker.MagicMock(spec=cache)
+                     make_in_memory_work: bool = False) -> Cache:
+    c = mocker.MagicMock(spec=Cache)
 
     if in_memory is None:
         c.lookup_inmem.return_value = None
