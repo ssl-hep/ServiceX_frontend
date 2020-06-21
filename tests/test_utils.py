@@ -328,6 +328,11 @@ def test_clean_linq_no_lambda():
     assert clean_linq(q) == q
 
 
+def test_clean_linq_bad_lambda():
+    q = '(lambda a (+ a 1) (1 2 3))'
+    assert clean_linq(q) == q
+
+
 def test_clean_linq_invalid_qastle():
     q = '(lambda a (+ a 1))'
     assert clean_linq(q) == q

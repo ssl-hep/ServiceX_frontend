@@ -439,6 +439,32 @@ def test_callback_good(mocker):
 
 
 @pytest.mark.asyncio
+async def test_callback_none(mocker):
+    'Get a root file with a single file'
+    mock_cache = build_cache_mock(mocker)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    filename_func = mocker.Mock(return_value="/foo/bar.root")
+
+    ds = fe.ServiceX('localds://mc16_tev:13',
+                     status_callback_factory=None,
+                     servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                     minio_adaptor=mock_minio_adaptor,  # type: ignore
+                     file_name_func=filename_func,
+                     cache_adaptor=mock_cache)
+    r = await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    mock_minio_adaptor.mock_download_file.assert_called_with(
+        "123-456",
+        "one_minio_entry",
+        "/foo/bar.root")
+
+    assert len(r) == 1
+    assert r[0] == '/foo/bar.root'
+
+
+
+@pytest.mark.asyncio
 async def test_cache_query_even_with_status_update_failure(mocker, short_status_poll_time):
     '''
     1. Start a query.

@@ -41,7 +41,7 @@ class ServiceX(ServiceXABC):
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
-                 status_callback_factory: StatusUpdateFactory = _run_default_wrapper,
+                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  cache_adaptor: cache = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)

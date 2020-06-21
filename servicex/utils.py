@@ -72,6 +72,10 @@ class _status_update_wrapper:
     def failed(self) -> int:
         return self._failed
 
+    @property
+    def downloaded(self) -> Optional[int]:
+        return self._downloaded
+
     def broadcast(self):
         'Send an update back to the system'
         if self._callback is not None:
@@ -127,17 +131,6 @@ async def stream_transform_updates(stream: AsyncIterator[TransformTuple],
     async for p in stream:
         remaining, processed, failed = p
         notifier.update(processed=processed, failed=failed, remaining=remaining)
-        notifier.broadcast()
-        yield p
-
-
-async def stream_inc_update(stream: AsyncIterator[Any],
-                            notifier: _status_update_wrapper) -> AsyncIterator[Any]:
-    '''
-    Each item that goes by gets incremented
-    '''
-    async for p in stream:
-        notifier.inc(downloaded=1)
         notifier.broadcast()
         yield p
 
@@ -286,8 +279,6 @@ def clean_linq(q: str) -> str:
                 if isinstance(child, Token):
                     if child.type == 'NODE_TYPE':  # type: ignore
                         node_type = child.value  # type: ignore
-                    else:
-                        pass
                 elif isinstance(child, ParseTracker):
                     fields.append(child)
 
