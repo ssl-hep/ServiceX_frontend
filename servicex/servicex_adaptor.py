@@ -47,8 +47,7 @@ class ServiceXAdaptor:
     async def _get_authorization(self, client: aiohttp.ClientSession):
         if self._username:
             now = datetime.utcnow().timestamp()
-
-            if not self._token or jwt.decode(self._token, verify=False)['ex'] - now < 0:
+            if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
                 await self._login(client)
             return {
                 'Authorization': f'Bearer {self._token}'

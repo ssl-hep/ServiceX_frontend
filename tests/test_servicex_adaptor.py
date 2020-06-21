@@ -273,7 +273,7 @@ async def test_submit_good_with_login_existing_token(mocker):
                          username="test",
                          password="foobar")
 
-    mocker.patch('google.auth.jwt.decode', return_value={'ex': float('inf')}) # Never expires
+    mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')}) # Never expires
     rid1 = await sa.submit_query(client, {'hi': 'there'})
     assert rid1 == '111-222-333-444'
 
@@ -317,7 +317,7 @@ async def test_submit_good_with_login_expired_token(mocker):
                          username="test",
                          password="foobar")
 
-    mocker.patch('google.auth.jwt.decode', return_value={'ex': 0}) # Always expired
+    mocker.patch('google.auth.jwt.decode', return_value={'exp': 0}) # Always expired
 
     rid1 = await sa.submit_query(client, {'hi': 'there'})
     assert rid1 == '111-222-333-444'
