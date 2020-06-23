@@ -8,6 +8,7 @@ from servicex import (
     MinioAdaptor,
     ServiceXException,
 )
+from servicex.minio_adaptor import find_new_bucket_files
 
 
 def make_minio_file(fname):
@@ -134,4 +135,22 @@ def test_list_objects_with_null(bad_then_good_minio_listing):
     f = ma.get_files('111-222-333-444')
     assert len(f) == 1
 
-# TODO: test out find_new_bucket_files
+
+@pytest.mark.asyncio
+async def test_find_new_bucket_0_files(mocker):
+    from .utils_for_testing import MockMinioAdaptor, as_async_seq
+    ma = MockMinioAdaptor(mocker)
+    r = [f async for f in find_new_bucket_files(ma,  # type: ignore
+                                                '123-456', as_async_seq([(1, 0, 0), (0, 1, 0)]))]
+
+    assert len(r) == 0
+
+
+@pytest.mark.asyncio
+async def test_find_new_bucket_1_files(mocker):
+    from .utils_for_testing import MockMinioAdaptor, as_async_seq
+    ma = MockMinioAdaptor(mocker, files=['one_two_three'])
+    r = [f async for f in find_new_bucket_files(ma,  # type: ignore
+                                                '123-456', as_async_seq([(1, 0, 0), (0, 1, 0)]))]
+
+    assert len(r) == 1

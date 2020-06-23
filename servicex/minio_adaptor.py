@@ -38,6 +38,10 @@ from .utils import ServiceXException
 
 
 class MinioAdaptor:
+    # Threadpool on which downloads occur. This is because the current minio library
+    # uses blocking http requests, so we can't use asyncio to interleave them.
+    _download_executor = ThreadPoolExecutor(max_workers=5)
+
     def __init__(self, mino_endpoint, access_key='miniouser', secretkey='leftfoot1'):
         self._endpoint = mino_endpoint
         self._access_key = access_key
@@ -47,11 +51,6 @@ class MinioAdaptor:
                              access_key=self._access_key,
                              secret_key=self._secretkey,
                              secure=False)
-
-        # Threadpool on which downloads occur. This is because the current minio library
-        # uses blocking http requests, so we can't use asyncio to interleave them.
-        # TODO: This needs to be a static property
-        self._download_executor = ThreadPoolExecutor(max_workers=5)
 
     @on_exception(backoff.constant, ResponseError, interval=0.1)
     def get_files(self, request_id):

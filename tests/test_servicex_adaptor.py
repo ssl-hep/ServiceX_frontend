@@ -15,9 +15,6 @@ from servicex.servicex_adaptor import transform_status_stream, trap_servicex_fai
 from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
 
 
-# TODO: Nothing about the auth process is tested
-
-
 @pytest.fixture
 def servicex_status_request(mocker):
     '''
@@ -65,6 +62,7 @@ def good_submit(mocker):
     client.post = mocker.MagicMock(return_value=r)
     return client
 
+
 @pytest.fixture
 def good_submit_with_login(mocker):
     client = mocker.MagicMock()
@@ -103,6 +101,7 @@ async def test_status_no_login(servicex_status_request):
         assert r[1] == 10
         assert r[2] == 0
 
+
 @pytest.mark.asyncio
 async def test_status_with_login(mocker):
     client = mocker.MagicMock()
@@ -115,7 +114,6 @@ async def test_status_with_login(mocker):
         dumps({'files-remaining': 1,
                'files-skipped': 0,
                'files-processed': 0})], [200]))
-
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
                          username="test",
@@ -229,6 +227,7 @@ async def test_submit_good_no_login(good_submit):
     assert isinstance(rid, str)
     assert rid == '111-222-333-444'
 
+
 @pytest.mark.asyncio
 async def test_submit_good_with_login(mocker):
     client = mocker.MagicMock()
@@ -273,7 +272,7 @@ async def test_submit_good_with_login_existing_token(mocker):
                          username="test",
                          password="foobar")
 
-    mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')}) # Never expires
+    mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')})  # Never expires
     rid1 = await sa.submit_query(client, {'hi': 'there'})
     assert rid1 == '111-222-333-444'
 
@@ -300,6 +299,7 @@ async def test_submit_good_with_login_existing_token(mocker):
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
     assert kwargs['headers']['Authorization'] == 'Bearer jwt:foo'
 
+
 @pytest.mark.asyncio
 async def test_submit_good_with_login_expired_token(mocker):
     client = mocker.MagicMock()
@@ -317,7 +317,7 @@ async def test_submit_good_with_login_expired_token(mocker):
                          username="test",
                          password="foobar")
 
-    mocker.patch('google.auth.jwt.decode', return_value={'exp': 0}) # Always expired
+    mocker.patch('google.auth.jwt.decode', return_value={'exp': 0})  # Always expired
 
     rid1 = await sa.submit_query(client, {'hi': 'there'})
     assert rid1 == '111-222-333-444'
@@ -346,7 +346,6 @@ async def test_submit_good_with_login_expired_token(mocker):
     assert kwargs['json']['username'] == 'test'
     assert kwargs['json']['password'] == 'foobar'
 
-
     # Verify the second Submit POST
     _, args, kwargs = r[3]
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
@@ -361,6 +360,7 @@ async def test_submit_bad(bad_submit):
         await sa.submit_query(bad_submit, {'hi': 'there'})
 
     assert "bad text" in str(e.value)
+
 
 @pytest.mark.asyncio
 async def test_submit_good_with_bad_login(mocker):

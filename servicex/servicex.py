@@ -23,13 +23,11 @@ from .utils import (
     StatusUpdateFactory,
     _run_default_wrapper,
     _status_update_wrapper,
-    stream_transform_updates,
+    stream_status_updates,
 )
 
-# TODO: Rename to ServiceXDataSet
 
-
-class ServiceX(ServiceXABC):
+class ServiceXDataset(ServiceXABC):
     '''
     ServiceX on the web.
     '''
@@ -270,7 +268,7 @@ class ServiceX(ServiceXABC):
         # Setup the status sequence from servicex
         stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
         stream_watched = trap_servicex_failures(stream_status)
-        stream_notified = stream_transform_updates(stream_watched, notifier)
+        stream_notified = stream_status_updates(stream_watched, notifier)
 
         # Next, download the files as they are found (and return them):
         stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,

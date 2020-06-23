@@ -6,7 +6,7 @@ from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
     clean_linq,
-    stream_transform_updates,
+    stream_status_updates,
 )
 
 from .utils_for_testing import as_async_seq
@@ -237,7 +237,7 @@ def test_callback_with_total_sequence():
 async def test_transform_sequence():
     u = _status_update_wrapper()
 
-    v = [i async for i in stream_transform_updates(as_async_seq([(1, 0, 0), (0, 1, 0)]), u)]
+    v = [i async for i in stream_status_updates(as_async_seq([(1, 0, 0), (0, 1, 0)]), u)]
 
     assert len(v) == 2
     assert u.failed == 0

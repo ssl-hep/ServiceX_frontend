@@ -1,4 +1,4 @@
-from .servicex import ServiceX  # NOQA
+from .servicex import ServiceXDataset  # NOQA
 from .utils import (  # NOQA
     ServiceXException,
     ServiceXUnknownRequestID,
