@@ -16,7 +16,6 @@
         "Minio",
         "NOQA",
         "Powheg",
-        "NOQA",
         "Reconstructor",
         "STDM",
         "Servivce",
@@ -35,6 +34,7 @@
         "linq",
         "localds",
         "minio",
+        "mino",
         "ncols",
         "ndarray",
         "nqueries",
@@ -50,13 +50,11 @@
         "rucio",
         "servicex",
         "servicexabc",
+        "setuptools",
         "sslhep",
         "tqdm",
+        "unittests",
         "xaod",
-        "xrootd",
-        "linq",
-        "pytest",
-        "qastle",
-        "servicex"
+        "xrootd"
     ]
 }

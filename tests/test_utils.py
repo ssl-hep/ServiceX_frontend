@@ -1,10 +1,15 @@
 from typing import Optional
 
+import pytest
+
 from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
     clean_linq,
+    stream_status_updates,
 )
+
+from .utils_for_testing import as_async_seq
 
 
 def test_callback_no_updates():
@@ -228,6 +233,17 @@ def test_callback_with_total_sequence():
     assert p_total == 6
 
 
+@pytest.mark.asyncio
+async def test_transform_sequence():
+    u = _status_update_wrapper()
+
+    v = [i async for i in stream_status_updates(as_async_seq([(1, 0, 0), (0, 1, 0)]), u)]
+
+    assert len(v) == 2
+    assert u.failed == 0
+    assert u.total == 1
+
+
 def test_cache_stable():
     json_query = {
         'did': "dude_001",
@@ -309,6 +325,11 @@ def test_request_trans_cache_unknown():
 
 def test_clean_linq_no_lambda():
     q = '(valid qastle)'
+    assert clean_linq(q) == q
+
+
+def test_clean_linq_bad_lambda():
+    q = '(lambda a (+ a 1) (1 2 3))'
     assert clean_linq(q) == q
 
 

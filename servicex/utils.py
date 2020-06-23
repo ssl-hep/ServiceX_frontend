@@ -2,7 +2,7 @@ from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import Callable, Optional, Dict, List
+from typing import AsyncIterator, Callable, Optional, Dict, List, Tuple
 
 from tqdm.auto import tqdm
 
@@ -22,6 +22,12 @@ class ServiceXException(Exception):
 
 class ServiceXUnknownRequestID(Exception):
     'Raised when we try to access ServiceX with a request ID it does not know about'
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
+class ServiceXFailedFileTransform(Exception):
+    'Raised when a file(s) fail to transform'
     def __init__(self, msg):
         super().__init__(self, msg)
 
@@ -66,6 +72,10 @@ class _status_update_wrapper:
     def failed(self) -> int:
         return self._failed
 
+    @property
+    def downloaded(self) -> Optional[int]:
+        return self._downloaded
+
     def broadcast(self):
         'Send an update back to the system'
         if self._callback is not None:
@@ -106,6 +116,22 @@ class _status_update_wrapper:
                 self._downloaded = downloaded
             else:
                 self._downloaded += downloaded
+
+
+TransformTuple = Tuple[Optional[int], int, Optional[int]]
+
+
+async def stream_status_updates(stream: AsyncIterator[TransformTuple],
+                                notifier: _status_update_wrapper):
+    '''
+    As the transformed status goes by, update the notifier with the new
+    values.
+    '''
+    async for p in stream:
+        remaining, processed, failed = p
+        notifier.update(processed=processed, failed=failed, remaining=remaining)
+        notifier.broadcast()
+        yield p
 
 
 def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:
@@ -252,8 +278,6 @@ def clean_linq(q: str) -> str:
                 if isinstance(child, Token):
                     if child.type == 'NODE_TYPE':  # type: ignore
                         node_type = child.value  # type: ignore
-                    else:
-                        pass
                 elif isinstance(child, ParseTracker):
                     fields.append(child)
 
