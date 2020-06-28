@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import AsyncIterator, Dict, Optional, Tuple
 
 import aiohttp
-from aiohttp.client import request
 from google.auth import jwt
 
 from .utils import (

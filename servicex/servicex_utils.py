@@ -35,7 +35,7 @@ def _wrap_in_memory_sx_cache(fn):
             logger.debug(f"{h} - waiting for processing")
             await _in_progress_items[h].wait()
             logger.debug(f'{h} - done waiting for processing')
-            
+
         # Is it already done?
         r = sx._cache.lookup_inmem(h)
         if r is not None:
