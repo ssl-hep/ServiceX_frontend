@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import AsyncIterator, Dict, Optional, Tuple
 
 import aiohttp
+from aiohttp.client import request
 from google.auth import jwt
 
 from .utils import (
@@ -117,7 +118,8 @@ class ServiceXAdaptor:
                 headers=headers) as response:
             status = response.status
             if status != 200:
-                raise ServiceXUnknownRequestID(f'Unable to get transformation status '
+                raise ServiceXUnknownRequestID(f'Unable to get transform status '
+                                               f'for request id {request_id}'
                                                f' - http error {status}')
             info = await response.json()
             files_remaining = self._get_transform_stat(info, 'files-remaining')

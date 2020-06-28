@@ -135,7 +135,7 @@ async def test_status_unknown_request(servicex_status_unknown):
         async with aiohttp.ClientSession() as client:
             await sa.get_transform_status(client, '123-123-123-444')
 
-    assert 'transformation status' in str(e.value)
+    assert 'transform status' in str(e.value)
 
 
 def version_mock(mocker, spec):
