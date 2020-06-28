@@ -545,6 +545,31 @@ async def test_servicex_transformer_failure_reload(mocker, short_status_poll_tim
 
 
 @pytest.mark.asyncio
+async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time):
+    '''
+    1. Start a transform
+    2. A file is marked as failing
+    3. The query is not cached (so it can be run again next time)
+    '''
+    mock_cache = build_cache_mock(mocker)
+    transform_status = mocker.MagicMock(return_value=(0, 0, 1))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache)
+
+    with pytest.raises(fe.ServiceXException):
+        # Will fail with one skipped file.
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    import servicex.servicex_utils as sxu
+    assert len(sxu._in_progress_items) == 0
+
+
+@pytest.mark.asyncio
 async def test_download_cached_nonet(mocker):
     '''
     Check that we do not use the network if we have already cached a file.
