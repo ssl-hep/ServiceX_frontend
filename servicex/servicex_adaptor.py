@@ -159,9 +159,10 @@ async def trap_servicex_failures(stream: AsyncIterator[TransformTuple]) \
     is done. This allows all the files to come down first.
     '''
     async for p in stream:
-        _, _, did_fail = p
+        remain, processed, did_fail = p
         if did_fail is not None and did_fail != 0:
             raise ServiceXFailedFileTransform(f'ServiceX failed to transform {did_fail} '
-                                              'files - data incomplete.')
+                                              f'files - data incomplete (remaining: {remain}, '
+                                              f'processed: {processed}).')
 
         yield p
