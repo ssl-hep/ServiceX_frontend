@@ -30,6 +30,7 @@ class ServiceXABC(ABC):
     def __init__(self,
                  dataset: str,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 tree_name: str = None,
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
@@ -40,6 +41,7 @@ class ServiceXABC(ABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
+            tree_name                   TTree name for uproot transformer
             service_endpoint            Where the ServiceX web API is found
             image                       Name of transformer image to use to transform the data
             storage_directory           Location to cache data that comes back from ServiceX. Data
@@ -64,6 +66,7 @@ class ServiceXABC(ABC):
         '''
         self._dataset = dataset
         self._image = image
+        self._tree_name = tree_name
         self._max_workers = max_workers
 
         # We can't create the notifier until the actual query,

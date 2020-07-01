@@ -36,12 +36,13 @@ class ServiceXDataset(ServiceXABC):
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: MinioAdaptor = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 tree_name: str = None,
                  storage_directory: Optional[str] = None,
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  cache_adaptor: Cache = None):
-        ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
+        ServiceXABC.__init__(self, dataset, image, tree_name, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
 
         # Eventually will want to parse local files for config info.
@@ -293,6 +294,7 @@ class ServiceXDataset(ServiceXABC):
         '''
         json_query: Dict[str, str] = {
             "did": self._dataset,
+            "tree-name": self._tree_name,
             "selection": selection_query,
             "image": self._image,
             "result-destination": "object-store",
