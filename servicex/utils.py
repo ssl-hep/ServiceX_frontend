@@ -172,10 +172,10 @@ class _default_wrapper_mgr:
             return
 
         self._tqdm_p = tqdm(total=9e9, desc=self._sample_name, unit='file',
-                            leave=True, dynamic_ncols=True,
+                            leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
-                            leave=True, dynamic_ncols=True,
+                            leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
     def _update_bar(self, bar: Optional[tqdm], total: Optional[int], num: int, failed: int):
