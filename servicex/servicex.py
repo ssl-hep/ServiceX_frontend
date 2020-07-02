@@ -1,30 +1,38 @@
 # Main front end interface
 import asyncio
+from datetime import timedelta
 import functools
 import logging
 from pathlib import Path
+import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import AsyncIterator
 import urllib
 
 import aiohttp
 from backoff import on_exception
 import backoff
 
-from typing import AsyncIterator
-
 from .cache import Cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
 from .minio_adaptor import MinioAdaptor, find_new_bucket_files
-from .servicex_adaptor import ServiceXAdaptor, transform_status_stream, trap_servicex_failures
+from .servicex_adaptor import (
+    ServiceXAdaptor,
+    transform_status_stream,
+    trap_servicex_failures,
+)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (
-    ServiceXException, ServiceXFailedFileTransform, ServiceXUnknownRequestID,
+    ServiceXException,
+    ServiceXFailedFileTransform,
+    ServiceXUnknownRequestID,
     StatusUpdateFactory,
     _run_default_wrapper,
     _status_update_wrapper,
     stream_status_updates,
-    stream_unique_updates_only
+    stream_unique_updates_only,
+    log_adaptor
 )
 
 
@@ -41,7 +49,8 @@ class ServiceXDataset(ServiceXABC):
                  file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
-                 cache_adaptor: Cache = None):
+                 cache_adaptor: Cache = None,
+                 local_log: log_adaptor = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
 
@@ -63,6 +72,8 @@ class ServiceXDataset(ServiceXABC):
         self._cache = Cache(default_file_cache_name) \
             if cache_adaptor is None \
             else cache_adaptor
+
+        self._log = log_adaptor() if local_log is None else local_log
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
@@ -266,21 +277,37 @@ class ServiceXDataset(ServiceXABC):
         Fetch query result files from `servicex`. Given the `request_id` we will download
         files as they become available. We also coordinate caching.
         '''
-        # Setup the status sequence from servicex
-        stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
-        stream_notified = stream_status_updates(stream_status, notifier)
-        stream_watched = trap_servicex_failures(stream_notified)
-        stream_unique = stream_unique_updates_only(stream_watched)
+        start_time = time.monotonic()
+        good = True
+        try:
 
-        # Next, download the files as they are found (and return them):
-        stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,
-                                                  stream_unique)
-        stream_downloaded = self._download_a_file(stream_new_object, request_id, notifier)
+            # Setup the status sequence from servicex
+            stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
+            stream_notified = stream_status_updates(stream_status, notifier)
+            stream_watched = trap_servicex_failures(stream_notified)
+            stream_unique = stream_unique_updates_only(stream_watched)
 
-        # Return the files to anyone that wants them!
+            # Next, download the files as they are found (and return them):
+            stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,
+                                                      stream_unique)
+            stream_downloaded = self._download_a_file(stream_new_object, request_id, notifier)
 
-        async for info in stream_downloaded:
-            yield info
+            # Return the files to anyone that wants them!
+
+            async for info in stream_downloaded:
+                yield info
+
+        except BaseException:
+            good = False
+            raise
+
+        finally:
+            end_time = time.monotonic()
+            run_time = timedelta(seconds=end_time - start_time)
+            logging.getLogger(__name__).info(f'Running servicex query for '
+                                             f'{request_id} took {run_time}')
+            self._log.write_query_log(request_id, notifier.total, notifier.failed,
+                                      run_time, good)
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''

@@ -1,4 +1,6 @@
+from datetime import timedelta
 from typing import Optional
+from pathlib import Path
 
 import pytest
 
@@ -8,9 +10,50 @@ from servicex.utils import (
     clean_linq,
     stream_status_updates,
     stream_unique_updates_only,
+    write_query_log
 )
 
 from .utils_for_testing import as_async_seq
+
+
+@pytest.fixture
+def log_location_file():
+    default_file_cache_name = Path('.')
+    l_file = default_file_cache_name / 'log.csv'
+    if l_file.exists():
+        l_file.unlink()
+    yield l_file
+    if l_file.exists():
+        l_file.unlink()
+
+
+def test_log_file_created(log_location_file):
+    write_query_log('123', 10, 0, timedelta(seconds=20), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,10,0,20.0,1'
+
+
+def test_log_file_none_files(log_location_file):
+    write_query_log('123', None, 0, timedelta(seconds=20), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,-1,0,20.0,1'
+
+
+def test_log_file_write_minutes(log_location_file):
+    write_query_log('123', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,10,0,120.0,1'
+
+
+def test_log_file_write_2lines(log_location_file):
+    write_query_log('123', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    write_query_log('124', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text()
+    assert len(t.split('\n')) == 4
 
 
 def test_callback_no_updates():

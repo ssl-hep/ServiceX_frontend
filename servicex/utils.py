@@ -1,3 +1,4 @@
+from datetime import timedelta
 from hashlib import blake2b
 from pathlib import Path
 import re
@@ -11,7 +12,33 @@ from qastle import parse
 
 
 # Where shall we store files by default when we pull them down?
-default_file_cache_name = Path(tempfile.gettempdir()) / 'servicex'
+default_file_cache_name: Path = Path(tempfile.gettempdir()) / 'servicex'
+
+
+def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
+                    time: timedelta, success: bool,
+                    path_to_log_dir: Optional[Path] = None):
+    '''
+    Log to a csv file the status of a run.
+    '''
+    l_file = (default_file_cache_name if path_to_log_dir is None else path_to_log_dir) / 'log.csv'
+    if l_file.parent.exists():
+        if not l_file.exists():
+            l_file.write_text('RequestID,n_files,n_skip,time_sec,no_error\n')
+        with l_file.open(mode='a') as f:
+            s_text = "1" if success else "0"
+            f.write(f'{request_id},{n_files if n_files is not None else -1},'
+                    f'{n_skip},{time.total_seconds()},{s_text}\n')
+
+
+class log_adaptor:
+    '''
+    Helper method to allow easy mocking.
+    '''
+    @staticmethod
+    def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
+                        time: timedelta, success: bool):
+        write_query_log(request_id, n_files, n_skip, time, success)
 
 
 class ServiceXException(Exception):
