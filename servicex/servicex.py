@@ -24,6 +24,7 @@ from .utils import (
     _run_default_wrapper,
     _status_update_wrapper,
     stream_status_updates,
+    stream_unique_updates_only
 )
 
 
@@ -267,12 +268,13 @@ class ServiceXDataset(ServiceXABC):
         '''
         # Setup the status sequence from servicex
         stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
-        stream_watched = trap_servicex_failures(stream_status)
-        stream_notified = stream_status_updates(stream_watched, notifier)
+        stream_notified = stream_status_updates(stream_status, notifier)
+        stream_watched = trap_servicex_failures(stream_notified)
+        stream_unique = stream_unique_updates_only(stream_watched)
 
         # Next, download the files as they are found (and return them):
         stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,
-                                                  stream_notified)
+                                                  stream_unique)
         stream_downloaded = self._download_a_file(stream_new_object, request_id, notifier)
 
         # Return the files to anyone that wants them!

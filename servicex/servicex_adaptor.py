@@ -137,16 +137,27 @@ async def transform_status_stream(sa: ServiceXAdaptor, client: aiohttp.ClientSes
     Returns an async stream of `(files-remaining, files_processed, files_failed)` until the
     servicex `request_id` request is finished, against the servicex instance located at
     `sa`.
+
+    Arguments:
+
+        sa                  The servicex low level adaptor
+        client              An async http function we can call and use
+        request_id          The request id for this request
+
+    Returns:
+
+        remaining, processed, skipped     Returns an async stream triple of the
+                                          status numbers. Every time we find something
+                                          we send it on.
+
+    Note:
     '''
     done = False
-    last_processed = None
     while not done:
         next_processed = await sa.get_transform_status(client, request_id)
         remaining, _, _ = next_processed
         done = remaining is not None and remaining == 0
-        if next_processed != last_processed:
-            last_processed = next_processed
-            yield next_processed
+        yield next_processed
 
         if not done:
             await asyncio.sleep(servicex_status_poll_time)

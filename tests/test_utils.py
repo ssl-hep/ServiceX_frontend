@@ -7,6 +7,7 @@ from servicex.utils import (
     _status_update_wrapper,
     clean_linq,
     stream_status_updates,
+    stream_unique_updates_only,
 )
 
 from .utils_for_testing import as_async_seq
@@ -242,6 +243,22 @@ async def test_transform_sequence():
     assert len(v) == 2
     assert u.failed == 0
     assert u.total == 1
+
+
+@pytest.mark.asyncio
+async def test_transform_updates_unique():
+
+    v = [i async for i in stream_unique_updates_only(as_async_seq([(1, 0, 0), (0, 1, 0)]))]
+
+    assert len(v) == 2
+
+
+@pytest.mark.asyncio
+async def test_transform_updates_unique():
+
+    v = [i async for i in stream_unique_updates_only(as_async_seq([(1, 0, 0), (1, 0, 0)]))]
+
+    assert len(v) == 1
 
 
 def test_cache_stable():

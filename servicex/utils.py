@@ -134,6 +134,17 @@ async def stream_status_updates(stream: AsyncIterator[TransformTuple],
         yield p
 
 
+async def stream_unique_updates_only(stream: AsyncIterator[TransformTuple]):
+    '''
+    As status goes by, only let through changes
+    '''
+    last_p: Optional[TransformTuple] = None
+    async for p in stream:
+        if p != last_p:
+            last_p = p
+            yield p
+
+
 def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:
     '''
     Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
