@@ -1,6 +1,7 @@
 from datetime import timedelta
 from typing import Optional
 from pathlib import Path
+import aiohttp
 
 import pytest
 
@@ -10,7 +11,8 @@ from servicex.utils import (
     clean_linq,
     stream_status_updates,
     stream_unique_updates_only,
-    write_query_log
+    write_query_log,
+    default_client_session
 )
 
 from .utils_for_testing import as_async_seq
@@ -25,6 +27,35 @@ def log_location_file():
     yield l_file
     if l_file.exists():
         l_file.unlink()
+
+
+@pytest.mark.asyncio
+async def test_client_session():
+    c = await default_client_session()
+    assert isinstance(c, aiohttp.ClientSession)
+
+
+@pytest.mark.asyncio
+async def test_client_session_same():
+    # On same thread they should be the same.
+    c1 = await default_client_session()
+    c2 = await default_client_session()
+
+    assert c1 is c2
+
+
+@pytest.mark.asyncio
+async def test_client_session_different_threads():
+    async def get_a_client_async():
+        return await default_client_session()
+
+    from make_it_sync import make_sync
+    get_a_client = make_sync(get_a_client_async)
+
+    c1 = get_a_client()
+    c2 = await get_a_client_async()
+
+    assert c1 is not c2
 
 
 def test_log_file_created(log_location_file):

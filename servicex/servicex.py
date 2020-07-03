@@ -32,7 +32,8 @@ from .utils import (
     _status_update_wrapper,
     stream_status_updates,
     stream_unique_updates_only,
-    log_adaptor
+    log_adaptor,
+    default_client_session
 )
 
 
@@ -50,7 +51,8 @@ class ServiceXDataset(ServiceXABC):
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  cache_adaptor: Cache = None,
-                 local_log: log_adaptor = None):
+                 local_log: log_adaptor = None,
+                 session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
 
@@ -74,6 +76,9 @@ class ServiceXDataset(ServiceXABC):
             else cache_adaptor
 
         self._log = log_adaptor() if local_log is None else local_log
+
+        self._session_generator = session_generator if session_generator is not None \
+            else default_client_session
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache

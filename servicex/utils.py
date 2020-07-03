@@ -3,16 +3,33 @@ from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import AsyncIterator, Callable, Optional, Dict, List, Tuple
+import threading
+from typing import AsyncIterator, Callable, Dict, List, Optional, Tuple
 
-from tqdm.auto import tqdm
-
-from lark import Transformer, Token
+import aiohttp
+from lark import Token, Transformer
 from qastle import parse
+from tqdm.auto import tqdm
 
 
 # Where shall we store files by default when we pull them down?
 default_file_cache_name: Path = Path(tempfile.gettempdir()) / 'servicex'
+
+
+# Access to thread local storage.
+threadLocal = threading.local()
+
+
+async def default_client_session() -> aiohttp.ClientSession:
+    '''
+    Return a client session per thread.
+    '''
+    client = getattr(threadLocal, 'client_session', None)
+    if client is None:
+        connector = aiohttp.TCPConnector(limit=20)
+        client = await aiohttp.ClientSession(connector=connector).__aenter__()
+        threadLocal.client_session = client
+    return client
 
 
 def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
