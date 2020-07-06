@@ -24,7 +24,7 @@ Before you can use this library you'll need:
 - An environment based on python 3.6 or later
 - A `ServiceX` end-point. For example, `http://localhost:5000/servicex`, if `ServiceX` is running on a local `k8` cluster and the proper ports are open, or the public servicex instance (contact IRIS-HEP at xxx if you are part of the LHC to request an account, or with help setting up an instance).
 
-### How to access your end-point.
+### How to access your endpoint
 
 The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to, in the following order:
 
@@ -108,7 +108,7 @@ Implemented:
 - It has been tested to run against 100 datasets with multiple simultaneous queries.
 - It supports local caching of query data
 - It will provide feedback on progress.
-- Configuration files supported so that user identification information does not have to be checked 
+- Configuration files supported so that user identification information does not have to be checked
   into repositories.
 
 ## Testing

@@ -7,7 +7,6 @@ from pathlib import Path
 import time
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 from typing import AsyncIterator
-import urllib
 
 import aiohttp
 from backoff import on_exception
