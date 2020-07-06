@@ -12,12 +12,15 @@ import urllib
 import aiohttp
 from backoff import on_exception
 import backoff
+from confuse import ConfigView
 
+from .ConfigSettings import ConfigSettings
 from .cache import Cache
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
-from .minio_adaptor import MinioAdaptor, find_new_bucket_files
+from .minio_adaptor import MinioAdaptor, find_new_bucket_files, minio_adaptor_factory
 from .servicex_adaptor import (
     ServiceXAdaptor,
+    servicex_adaptor_factory,
     transform_status_stream,
     trap_servicex_failures,
 )
@@ -30,10 +33,10 @@ from .utils import (
     StatusUpdateFactory,
     _run_default_wrapper,
     _status_update_wrapper,
+    default_client_session,
+    log_adaptor,
     stream_status_updates,
     stream_unique_updates_only,
-    log_adaptor,
-    default_client_session
 )
 
 
@@ -52,20 +55,21 @@ class ServiceXDataset(ServiceXABC):
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  cache_adaptor: Cache = None,
                  local_log: log_adaptor = None,
-                 session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None):
+                 session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
+                 config_adaptor: ConfigView = None):
         ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
                              max_workers, status_callback_factory)
 
-        # Eventually will want to parse local files for config info.
+        # Get the local settings
+        config = config_adaptor if config_adaptor is not None \
+            else ConfigSettings('servicex', 'servicex')
+
         if not servicex_adaptor:
-            servicex_adaptor = ServiceXAdaptor('http://localhost:5000')
+            servicex_adaptor = servicex_adaptor_factory(config)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            end_point_parse = \
-                urllib.parse.urlparse(self._servicex_adaptor._endpoint)  # type: ignore
-            minio_endpoint = f'{end_point_parse.hostname}:9000'
-            self._minio_adaptor = MinioAdaptor(minio_endpoint, 'miniouser', 'leftfoot1')
+            self._minio_adaptor = minio_adaptor_factory(config)
         else:
             self._minio_adaptor = minio_adaptor
 

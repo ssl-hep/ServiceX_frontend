@@ -1,6 +1,8 @@
 from json import dumps
 from typing import Optional
 
+from servicex.ConfigSettings import ConfigSettings
+
 import aiohttp
 import pytest
 
@@ -10,7 +12,7 @@ from servicex import (
     ServiceXFailedFileTransform,
     ServiceXUnknownRequestID,
 )
-from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
+from servicex.servicex_adaptor import servicex_adaptor_factory, transform_status_stream, trap_servicex_failures
 
 from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
 
@@ -376,3 +378,26 @@ async def test_submit_good_with_bad_login(mocker):
         await sa.submit_query(client, {'hi': 'there'})
 
     assert "ServiceX login request rejected" in str(e.value)
+
+
+def test_servicex_adaptor_factory_defaults():
+    c = ConfigSettings('servicex', 'servicex')
+    sx = servicex_adaptor_factory(c)
+
+    assert sx._endpoint == 'http://localhost:5000'
+    assert sx._username is None
+    assert sx._password is None
+
+
+def test_servicex_adaptor_settings():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoint']['endpoint'] = 'http://my-left-foot.com:5000'
+    c['api_endpoint']['username'] = 'thegoodplace'
+    c['api_endpoint']['password'] = 'forkingshirtballs'
+
+    sx = servicex_adaptor_factory(c)
+    assert sx._endpoint == 'http://my-left-foot.com:5000'
+    assert sx._username == 'thegoodplace'
+    assert sx._password == 'forkingshirtballs'

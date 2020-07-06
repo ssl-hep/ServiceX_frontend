@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import AsyncIterator, Dict, Optional, Tuple
 
 import aiohttp
+from confuse import ConfigView
 from google.auth import jwt
 
 from .utils import (
@@ -15,6 +16,16 @@ from .utils import (
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
+
+
+def servicex_adaptor_factory(c: ConfigView):
+    # It is an error if this is not specified somewhere.
+    endpoint = c['api_endpoint']['endpoint'].get(str)
+
+    # We can default these to "None"
+    username = c['api_endpoint']['username'].get(str) if 'username' in c['api_endpoint'] else None
+    password = c['api_endpoint']['password'].get(str) if 'password' in c['api_endpoint'] else None
+    return ServiceXAdaptor(endpoint, username, password)
 
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
