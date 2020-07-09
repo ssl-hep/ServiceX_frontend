@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 from typing import AsyncIterator, Dict, Optional, Tuple
+import logging
 
 import aiohttp
 from confuse import ConfigView
@@ -76,13 +77,15 @@ class ServiceXAdaptor:
 
         async with client.post(f'{self._endpoint}/servicex/transformation',
                                headers=headers, json=json_query) as response:
-            r = await response.json()
             status = response.status
             if status != 200:
                 # This was an error at ServiceX, bubble it up so code above us can
                 # handle as needed.
+                t = await response.text()
                 raise ServiceXException('ServiceX rejected the transformation request: '
-                                        f'({status}){r}')
+                                        f'({status}){t}')
+
+            r = await response.json()
             req_id = r["request_id"]
 
             return req_id
@@ -132,6 +135,7 @@ class ServiceXAdaptor:
                                                f'for request id {request_id}'
                                                f' - http error {status}')
             info = await response.json()
+            logging.getLogger(__name__).debug(f'Status response for {request_id}: {info}')
             files_remaining = self._get_transform_stat(info, 'files-remaining')
             files_failed = self._get_transform_stat(info, 'files-skipped')
             files_processed = self._get_transform_stat(info, 'files-processed')

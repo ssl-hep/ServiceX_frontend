@@ -2,6 +2,7 @@ from json import dumps
 from typing import Optional
 
 import aiohttp
+from aiohttp.client_exceptions import ContentTypeError
 import pytest
 
 from servicex import (
@@ -10,7 +11,6 @@ from servicex import (
     ServiceXFailedFileTransform,
     ServiceXUnknownRequestID,
 )
-from servicex.ConfigSettings import ConfigSettings
 from servicex.servicex_adaptor import (
     servicex_adaptor_factory,
     transform_status_stream,
@@ -86,6 +86,33 @@ def bad_submit(mocker):
     client = mocker.MagicMock()
     r = ClientSessionMocker(dumps({'message': "bad text"}), 400)
     client.post = lambda d, json, headers: r
+    return client
+
+
+@pytest.fixture
+def bad_submit_html(mocker):
+    '''
+    Instead of returning json, it returns text/html.
+    '''
+    client = mocker.MagicMock(spec=aiohttp.ClientSession)
+
+    class bad_return:
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def json(self):
+            raise Exception("ContentTypeError")
+
+        def status(self):
+            return 500
+
+        async def text(self):
+            return "html error content bogus world"
+
+    client.post.return_value = bad_return()
     return client
 
 
@@ -366,6 +393,16 @@ async def test_submit_bad(bad_submit):
         await sa.submit_query(bad_submit, {'hi': 'there'})
 
     assert "bad text" in str(e.value)
+
+
+@pytest.mark.asyncio
+async def test_submit_bad_html(bad_submit_html):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
+
+    with pytest.raises(ServiceXException) as e:
+        await sa.submit_query(bad_submit_html, {'hi': 'there'})
+
+    assert "html" in str(e.value)
 
 
 @pytest.mark.asyncio
