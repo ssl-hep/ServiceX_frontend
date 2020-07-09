@@ -157,15 +157,6 @@ async def test_find_new_bucket_1_files(mocker):
     assert len(r) == 1
 
 
-def test_minio_adaptor_factory_defaults():
-    c = ConfigSettings('servicex', 'servicex')
-    m = minio_adaptor_factory(c)
-
-    assert m._endpoint == 'localhost:9000'
-    assert m._access_key == "miniouser"
-    assert m._secretkey == "leftfoot1"
-
-
 def test_minio_adaptor_factory_set_endpoint():
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')

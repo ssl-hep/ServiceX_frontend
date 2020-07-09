@@ -1,8 +1,6 @@
 from json import dumps
 from typing import Optional
 
-from servicex.ConfigSettings import ConfigSettings
-
 import aiohttp
 import pytest
 
@@ -12,7 +10,12 @@ from servicex import (
     ServiceXFailedFileTransform,
     ServiceXUnknownRequestID,
 )
-from servicex.servicex_adaptor import servicex_adaptor_factory, transform_status_stream, trap_servicex_failures
+from servicex.ConfigSettings import ConfigSettings
+from servicex.servicex_adaptor import (
+    servicex_adaptor_factory,
+    transform_status_stream,
+    trap_servicex_failures,
+)
 
 from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
 
@@ -20,7 +23,8 @@ from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_p
 @pytest.fixture
 def servicex_status_request(mocker):
     '''
-    Fixture that emulates the async python library get call when used with a status.
+    Fixture that emulates the async python library get call when used with a
+    status.
 
       - Does not check the incoming http address
       - Does not check the Returns a standard triple status from servicex
@@ -378,15 +382,6 @@ async def test_submit_good_with_bad_login(mocker):
         await sa.submit_query(client, {'hi': 'there'})
 
     assert "ServiceX login request rejected" in str(e.value)
-
-
-def test_servicex_adaptor_factory_defaults():
-    c = ConfigSettings('servicex', 'servicex')
-    sx = servicex_adaptor_factory(c)
-
-    assert sx._endpoint == 'http://localhost:5000'
-    assert sx._username is None
-    assert sx._password is None
 
 
 def test_servicex_adaptor_settings():
