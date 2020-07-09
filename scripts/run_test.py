@@ -11,7 +11,8 @@ from typing import Optional
 
 def run_query(endpoint: Optional[ServiceXAdaptor]) -> None:
     ds = ServiceXDataset(
-        "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00",  # NOQA
+        "mc16_13TeV:mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.deriv.DAOD_STDM3.e3601_e5984_s3126_r10201_r10210_p3975_tid20425969_00",  # NOQA
+        max_workers=100,
         servicex_adaptor=endpoint)
 
     r = ds.get_data_rootfiles("(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')")  # NOQA
@@ -19,5 +20,10 @@ def run_query(endpoint: Optional[ServiceXAdaptor]) -> None:
 
 
 if __name__ == '__main__':
+    # import logging
+    # ch = logging.StreamHandler()
+    # ch.setLevel(logging.DEBUG)
+    # logging.getLogger('servicex').setLevel(logging.DEBUG)
+    # logging.getLogger('servicex').addHandler(ch)
     servicex_adaptor = ServiceXAdaptor(sys.argv[1]) if len(sys.argv) >= 2 else None
     run_query(servicex_adaptor)
