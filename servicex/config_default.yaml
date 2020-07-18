@@ -17,6 +17,9 @@ api_endpoint:
   default_minio_username: miniouser
   default_minio_password: leftfoot1
 
+# This is the path of the cache. The "/tmp" will be translated, platform appropriate.
+cache_path: /tmp/servicex
+
 # This is a dummy value, here only to make sure that unit testing
 # works properly before package release.
 testing_value: 10

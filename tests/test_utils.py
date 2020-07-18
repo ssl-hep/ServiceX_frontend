@@ -1,4 +1,6 @@
 from datetime import timedelta
+import os
+import tempfile
 from typing import Optional
 import aiohttp
 
@@ -7,7 +9,7 @@ import pytest
 from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
-    clean_linq,
+    clean_linq, get_configured_cache_path,
     stream_status_updates,
     stream_unique_updates_only,
     write_query_log,
@@ -462,3 +464,36 @@ def test_clean_linq_arb_var_names():
 def test_clean_linq_empty():
     q = ''
     assert clean_linq(q) == ""
+
+
+def test_configured_cache_default():
+    from confuse import Configuration
+    c = Configuration('servicex', 'servicex')
+    assert c['cache_path'].exists()
+
+
+def test_configured_cache_temp_location():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['cache_path'] = '/tmp/servicex-dude'
+
+    p = get_configured_cache_path(c)
+
+    # Should default to temp directory - should work on all platforms!
+    assert p.exists()
+    assert str(p).startswith(tempfile.gettempdir())
+    assert 'servicex-dude' in str(p)
+
+
+def test_configured_cache_location():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['cache_path'] = '/home/cache/servicex-dude'
+
+    p = get_configured_cache_path(c)
+
+    # Should default to temp directory - should work on all platforms!
+    assert p.exists()
+    assert str(p) == '/home/cache/servicex-dude'.replace('/', os.path.sep)

@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-import tempfile
-from servicex.cache import Cache
 from typing import Dict, List, Optional, Union
 
 import awkward
@@ -30,9 +28,9 @@ class ServiceXABC(ABC):
     def __init__(self,
                  dataset: str,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-                 cache_adaptor: Optional[Cache] = None,
                  max_workers: int = 20,
-                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper):
+                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
+                 ):
         '''
         Create and configure a ServiceX object for a dataset.
 
@@ -44,6 +42,7 @@ class ServiceXABC(ABC):
                                         down.
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
+            cache_path                  Path to the cache
             status_callback_factory     Factory to create a status notification callback for each
                                         query. One is created per query.
 
@@ -67,11 +66,6 @@ class ServiceXABC(ABC):
         self._status_callback_factory = \
             status_callback_factory if status_callback_factory is not None \
             else _null_progress_feedback
-
-        # Establish the cache that will store all our queries
-        self._cache = Cache(Path(tempfile.gettempdir()) / 'servicex') \
-            if cache_adaptor is None \
-            else cache_adaptor
 
     def _create_notifier(self) -> _status_update_wrapper:
         'Internal method to create a updater from the status call-back'

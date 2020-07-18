@@ -1,11 +1,13 @@
 from datetime import timedelta
 from hashlib import blake2b
-from pathlib import Path
+from pathlib import Path, PurePath
 import re
+import tempfile
 import threading
 from typing import AsyncIterator, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
+from confuse.core import ConfigView
 from lark import Token, Transformer
 from qastle import parse
 from tqdm.auto import tqdm
@@ -354,3 +356,20 @@ def clean_linq(q: str) -> str:
         return new_tree
     except Exception:
         return q
+
+
+def get_configured_cache_path(config: ConfigView) -> Path:
+    '''
+    From the configuration info return a valid path for us to store our cached files.
+    '''
+    assert config["cache_path"].exists(), 'Cannot find default config - install is broken'
+    s_path = config["cache_path"].get(str)
+    assert isinstance(s_path, str)
+
+    p_p = PurePath(s_path)
+    if len(p_p.parts) > 1 and p_p.parts[1] == 'tmp':
+        p = Path(tempfile.gettempdir()) / Path(*p_p.parts[2:])
+    else:
+        p = Path(p_p)
+    p.mkdir(exist_ok=True, parents=True)
+    return p

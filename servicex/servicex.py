@@ -32,7 +32,7 @@ from .utils import (
     StatusUpdateFactory,
     _run_default_wrapper,
     _status_update_wrapper,
-    default_client_session,
+    default_client_session, get_configured_cache_path,
     log_adaptor,
     stream_status_updates,
     stream_unique_updates_only,
@@ -91,13 +91,18 @@ class ServiceXDataset(ServiceXABC):
                `total_files` parameter may be `None` until the system knows how many files need to
                be processed (and some files can even be completed before that is known).
         '''
-
-        ServiceXABC.__init__(self, dataset, image, cache_adaptor, max_workers,
-                             status_callback_factory)
+        ServiceXABC.__init__(self, dataset, image, max_workers,
+                             status_callback_factory,
+                             )
 
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
             else ConfigSettings('servicex', 'servicex')
+
+        # Establish the cache that will store all our queries
+        self._cache = Cache(get_configured_cache_path(config)) \
+            if cache_adaptor is None \
+            else cache_adaptor
 
         if not servicex_adaptor:
             servicex_adaptor = servicex_adaptor_factory(config)
