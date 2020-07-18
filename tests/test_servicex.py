@@ -11,13 +11,10 @@ import pytest
 import servicex as fe
 from servicex.utils import ServiceXException, ServiceXUnknownRequestID, log_adaptor
 
-from .utils_for_testing import (  # NOQA
+from .conftest import (  # NOQA
     MockMinioAdaptor,
     MockServiceXAdaptor,
     build_cache_mock,
-    good_awkward_file_data,
-    good_pandas_file_data,
-    short_status_poll_time,
 )
 
 
@@ -88,7 +85,8 @@ def test_good_run_root_files_no_async(mocker):
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
     filename_func = mocker.Mock(return_value="/foo/bar.root")
 
-    ds = fe.ServiceXDataset('localds://mc16_tev:13', servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             file_name_func=filename_func,
                             cache_adaptor=mock_cache,
@@ -124,7 +122,8 @@ async def test_good_run_files_back_4_order_1(mocker):
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry', 'three_minio_entry',
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry',
+                                                         'three_minio_entry',
                                                          'four_minio_entry'])
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
@@ -145,7 +144,8 @@ async def test_good_run_files_back_4_order_2(mocker):
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['four_minio_entry', 'three_minio_entry', 'two_minio_entry',
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['four_minio_entry', 'three_minio_entry',
+                                                         'two_minio_entry',
                                                          'one_minio_entry'])
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
@@ -166,7 +166,8 @@ async def test_good_run_files_back_4_unordered(mocker):
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry', 'three_minio_entry',
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry',
+                                                         'three_minio_entry',
                                                          'four_minio_entry'])
     mocker.patch('servicex.utils.default_file_cache_name', Path('/tmp/servicex-testing'))
 
@@ -287,8 +288,11 @@ async def test_status_exception(mocker):
     'Make sure status error - like transform not found - is reported all the way to the top'
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, '123-456',
-                                                mock_transform_status=mocker.MagicMock(side_effect=fe.ServiceXException('bad attempt')))
+    mock_servicex_adaptor = \
+        MockServiceXAdaptor(
+            mocker, '123-456',
+            mock_transform_status=mocker.MagicMock(side_effect=fe.ServiceXException('bad attempt'))
+        )
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=[])
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
@@ -409,12 +413,13 @@ async def test_download_to_lambda_dir(mocker):
         shutil.rmtree(tmp)
     os.mkdir(tmp)
 
-    ds = fe.ServiceXDataset('localds://dude-is-funny',
-                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
-                            minio_adaptor=mock_minio_adaptor,  # type: ignore
-                            cache_adaptor=mock_cache,
-                            local_log=mock_logger,
-                            file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
+    ds = fe.ServiceXDataset(
+        'localds://dude-is-funny',
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+        file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
     r = await ds.get_data_rootfiles_async('(valid qastle string')
 
     assert isinstance(r, List)
@@ -435,13 +440,14 @@ async def test_download_bad_params_filerename(mocker):
         shutil.rmtree(tmp)
     os.mkdir(tmp)
     with pytest.raises(Exception) as e:
-        fe.ServiceXDataset('http://one-ds',
-                           servicex_adaptor=mock_servicex_adaptor,  # type: ignore
-                           minio_adaptor=mock_minio_adaptor,  # type: ignore
-                           cache_adaptor=mock_cache,
-                           local_log=mock_logger,
-                           storage_directory=tmp,
-                           file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
+        fe.ServiceXDataset(
+            'http://one-ds',
+            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+            minio_adaptor=mock_minio_adaptor,  # type: ignore
+            cache_adaptor=mock_cache,
+            local_log=mock_logger,
+            storage_directory=tmp,
+            file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
     assert "only specify" in str(e.value)
 
 
@@ -517,7 +523,8 @@ async def test_cache_query_even_with_status_update_failure(mocker, short_status_
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     transform_status = mocker.MagicMock(side_effect=[(1, 1, 0), ServiceXException('boom')])
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+                                                mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
     ds = fe.ServiceXDataset('http://one-ds',
@@ -546,7 +553,8 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     transform_status = mocker.MagicMock(side_effect=ServiceXUnknownRequestID('boom'))
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+                                                mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
     ds = fe.ServiceXDataset('http://one-ds',
@@ -575,7 +583,8 @@ async def test_servicex_transformer_failure_reload(mocker, short_status_poll_tim
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     transform_status = mocker.MagicMock(return_value=(0, 0, 1))
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+                                                mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
     ds = fe.ServiceXDataset('http://one-ds',
@@ -602,7 +611,8 @@ async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time)
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     transform_status = mocker.MagicMock(return_value=(0, 0, 1))
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status=transform_status)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+                                                mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
 
     ds = fe.ServiceXDataset('http://one-ds',

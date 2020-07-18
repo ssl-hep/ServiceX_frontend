@@ -30,6 +30,7 @@
         "desy",
         "fget",
         "fname",
+        "inmem",
         "jupyter",
         "jupyterlab",
         "leftfoot",
@@ -61,5 +62,6 @@
         "unittests",
         "xaod",
         "xrootd"
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "basic"
 }

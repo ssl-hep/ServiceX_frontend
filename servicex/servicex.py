@@ -164,11 +164,11 @@ class ServiceXDataset(ServiceXABC):
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
-                   async for f in as_files)  # type: ignore
+                   async for f in as_files)
 
         # Finally, we need them in the proper order so we append them
         # all together
-        all_data = {f[0]: await f[1] async for f in as_data}  # type: ignore
+        all_data = {f[0]: await f[1] async for f in as_data}
         ordered_data = [all_data[k] for k in sorted(all_data)]
 
         return ordered_data

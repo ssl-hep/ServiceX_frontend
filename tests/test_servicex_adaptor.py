@@ -2,7 +2,6 @@ from json import dumps
 from typing import Optional
 
 import aiohttp
-from aiohttp.client_exceptions import ContentTypeError
 import pytest
 
 from servicex import (
@@ -17,7 +16,7 @@ from servicex.servicex_adaptor import (
     trap_servicex_failures,
 )
 
-from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
+from .conftest import ClientSessionMocker, as_async_seq
 
 
 @pytest.fixture
@@ -156,8 +155,9 @@ async def test_status_with_login(mocker):
     client.post.assert_called_with("http://localhost:5000/sx/login",
                                    json={'password': 'foobar', 'username': 'test'})
 
-    client.get.assert_called_with("http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
-                                  headers={'Authorization': 'Bearer jwt:foo'})
+    client.get.assert_called_with(
+        "http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
+        headers={'Authorization': 'Bearer jwt:foo'})
 
 
 @pytest.mark.asyncio

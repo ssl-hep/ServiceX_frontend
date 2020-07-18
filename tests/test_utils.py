@@ -15,7 +15,7 @@ from servicex.utils import (
     default_client_session
 )
 
-from .utils_for_testing import as_async_seq
+from .conftest import as_async_seq
 
 
 @pytest.fixture
@@ -59,29 +59,34 @@ async def test_client_session_different_threads():
 
 
 def test_log_file_created(log_location_file):
-    write_query_log('123', 10, 0, timedelta(seconds=20), True, path_to_log_dir=log_location_file.parent)
+    write_query_log('123', 10, 0, timedelta(seconds=20), True,
+                    path_to_log_dir=log_location_file.parent)
     assert log_location_file.exists()
     t = log_location_file.read_text().split('\n')[1]
     assert t == '123,10,0,20.0,1'
 
 
 def test_log_file_none_files(log_location_file):
-    write_query_log('123', None, 0, timedelta(seconds=20), True, path_to_log_dir=log_location_file.parent)
+    write_query_log('123', None, 0, timedelta(seconds=20), True,
+                    path_to_log_dir=log_location_file.parent)
     assert log_location_file.exists()
     t = log_location_file.read_text().split('\n')[1]
     assert t == '123,-1,0,20.0,1'
 
 
 def test_log_file_write_minutes(log_location_file):
-    write_query_log('123', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    write_query_log('123', 10, 0, timedelta(minutes=2), True,
+                    path_to_log_dir=log_location_file.parent)
     assert log_location_file.exists()
     t = log_location_file.read_text().split('\n')[1]
     assert t == '123,10,0,120.0,1'
 
 
 def test_log_file_write_2lines(log_location_file):
-    write_query_log('123', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
-    write_query_log('124', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    write_query_log('123', 10, 0, timedelta(minutes=2), True,
+                    path_to_log_dir=log_location_file.parent)
+    write_query_log('124', 10, 0, timedelta(minutes=2), True,
+                    path_to_log_dir=log_location_file.parent)
     assert log_location_file.exists()
     t = log_location_file.read_text()
     assert len(t.split('\n')) == 4
@@ -328,7 +333,7 @@ async def test_transform_updates_unique():
 
 
 @pytest.mark.asyncio
-async def test_transform_updates_unique():
+async def test_transform_updates_unique_2():
 
     v = [i async for i in stream_unique_updates_only(as_async_seq([(1, 0, 0), (1, 0, 0)]))]
 
@@ -435,8 +440,10 @@ def test_clean_linq_single_lambda():
 
 
 def test_clean_linq_many_args():
-    q = '(lambda (list e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11) (+ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11))'
-    assert clean_linq(q) == '(lambda (list a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11) (+ a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))'
+    q = '(lambda (list e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11) ' \
+        '(+ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11))'
+    assert clean_linq(q) == '(lambda (list a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11) ' \
+        '(+ a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11))'
 
 
 def test_clean_linq_funny_var_names():

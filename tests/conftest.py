@@ -40,7 +40,8 @@ class ClientSessionMocker:
 
 
 class MockServiceXAdaptor:
-    def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None, mock_query: Mock = None):
+    def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None,
+                 mock_query: Mock = None):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
         self.requests_made = 0
@@ -63,7 +64,8 @@ class MockServiceXAdaptor:
         self.query_json = json_query
         return self.query()
 
-    async def get_transform_status(self, client: str, request_id: str) -> Tuple[Optional[int], int, Optional[int]]:
+    async def get_transform_status(self, client: str, request_id: str) \
+            -> Tuple[Optional[int], int, Optional[int]]:
         # remaining, processed, skipped
         return self.transform_status()
 
