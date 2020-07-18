@@ -3,6 +3,7 @@ import os
 import tempfile
 from typing import Optional
 import aiohttp
+from pathlib import Path
 
 import pytest
 
@@ -490,10 +491,11 @@ def test_configured_cache_location():
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
     c.clear()
-    c['cache_path'] = '/home/cache/servicex-dude'
+    here = Path('./servicex-dude').absolute()
+    c['cache_path'] = str(here)
 
     p = get_configured_cache_path(c)
 
     # Should default to temp directory - should work on all platforms!
     assert p.exists()
-    assert str(p) == '/home/cache/servicex-dude'.replace('/', os.path.sep)
+    assert str(p) == str(here)

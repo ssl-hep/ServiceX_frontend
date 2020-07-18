@@ -90,6 +90,19 @@ If you'd like to be able to submit multiple queries and have them run on the `Se
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
 
+## Configuration
+
+As mentioned above, the `.servicex` file is read to pull a configuraiton. The search path for this file:
+
+1. Your current working directory
+2. Your home directory
+
+The file can contain an `api_endpoint` as mentioned above. In addition the other following things can be put in:
+
+- `cache_path`: Location where queries, data, and a record of queries are written. This should be an absolute path the person running the library has r/w access to. On windows, make sure to escape `\` - and best to follow standard `yaml` conventions and put the path in quotes - especially if it contains a space. Top level yaml item (don't indent it accidentally!). Defaults to `/tmp/servicex` (with the temp directory as appropriate for your platform) Examples:
+  - Windows: `cache_path: "C:\\Users\\gordo\\Desktop\\cacheme"`
+  - Linux: `cache_path: "/home/servicex-cache"`
+
 ## Features
 
 Implemented:
