@@ -90,7 +90,8 @@ __g_inmem_value = None
 def build_cache_mock(mocker, query_cache_return: str = None,
                      files: Optional[List[Tuple[str, str]]] = None,
                      in_memory: Any = None,
-                     make_in_memory_work: bool = False) -> Cache:
+                     make_in_memory_work: bool = False,
+                     data_file_return: str = None) -> Cache:
     c = mocker.MagicMock(spec=Cache)
 
     if in_memory is None:
@@ -120,6 +121,14 @@ def build_cache_mock(mocker, query_cache_return: str = None,
         c.lookup_files.return_value = None
     else:
         c.lookup_files.return_value = files
+
+    def data_file_return_generator(request_id: str, fname: str):
+        return Path(f'/tmp/servicex-testing/{request_id}/{fname}')
+
+    if data_file_return is None:
+        c.data_file_location.side_effect = data_file_return_generator
+    else:
+        c.data_file_location.return_value = data_file_return
 
     return c
 

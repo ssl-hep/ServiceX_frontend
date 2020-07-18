@@ -32,16 +32,14 @@ def test_default_ctor():
 @pytest.mark.asyncio
 async def test_good_run_root_files(mocker):
     'Get a root file with a single file'
-    mock_cache = build_cache_mock(mocker)
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    filename_func = mocker.Mock(return_value="/foo/bar.root")
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
-                            file_name_func=filename_func,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
@@ -79,16 +77,14 @@ async def test_skipped_file(mocker):
 
 def test_good_run_root_files_no_async(mocker):
     'Make sure the non-async version works'
-    mock_cache = build_cache_mock(mocker)
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
-    filename_func = mocker.Mock(return_value="/foo/bar.root")
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
-                            file_name_func=filename_func,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
@@ -374,83 +370,6 @@ async def test_nqueries_on_n_ds(n_ds: int, n_query: int, mocker):
     assert len(s) == count
 
 
-@pytest.mark.asyncio
-async def test_download_to_temp_dir(mocker):
-    'Download to a specified storage directory'
-    mock_cache = build_cache_mock(mocker)
-    mock_logger = mocker.MagicMock(spec=log_adaptor)
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
-
-    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
-    if os.path.exists(tmp):
-        shutil.rmtree(tmp)
-    os.mkdir(tmp)
-
-    ds = fe.ServiceXDataset('localds://dude-is-funny',
-                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
-                            minio_adaptor=mock_minio_adaptor,  # type: ignore
-                            cache_adaptor=mock_cache,
-                            local_log=mock_logger,
-                            storage_directory=tmp)
-    r = await ds.get_data_rootfiles_async('(valid qastle string')
-
-    assert isinstance(r, List)
-    assert len(r) == 1
-    assert str(r[0]).startswith(tmp)
-
-
-@pytest.mark.asyncio
-async def test_download_to_lambda_dir(mocker):
-    'Download to files using a file name function callback'
-    mock_cache = build_cache_mock(mocker)
-    mock_logger = mocker.MagicMock(spec=log_adaptor)
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
-
-    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
-    if os.path.exists(tmp):
-        shutil.rmtree(tmp)
-    os.mkdir(tmp)
-
-    ds = fe.ServiceXDataset(
-        'localds://dude-is-funny',
-        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
-        minio_adaptor=mock_minio_adaptor,  # type: ignore
-        cache_adaptor=mock_cache,
-        local_log=mock_logger,
-        file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
-    r = await ds.get_data_rootfiles_async('(valid qastle string')
-
-    assert isinstance(r, List)
-    assert len(r) == 1
-    assert str(r[0]).startswith(tmp)
-
-
-@pytest.mark.asyncio
-async def test_download_bad_params_filerename(mocker):
-    'Specify both a storage directory and a filename rename func - illegal'
-    mock_cache = build_cache_mock(mocker)
-    mock_logger = mocker.MagicMock(spec=log_adaptor)
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
-    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
-
-    tmp = os.path.join(tempfile.gettempdir(), 'my_test_dir')
-    if os.path.exists(tmp):
-        shutil.rmtree(tmp)
-    os.mkdir(tmp)
-    with pytest.raises(Exception) as e:
-        fe.ServiceXDataset(
-            'http://one-ds',
-            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
-            minio_adaptor=mock_minio_adaptor,  # type: ignore
-            cache_adaptor=mock_cache,
-            local_log=mock_logger,
-            storage_directory=tmp,
-            file_name_func=lambda rid, obj_name: Path(f'{tmp}\\{clean_fname(obj_name)}'))
-    assert "only specify" in str(e.value)
-
-
 def test_callback_good(mocker):
     'Simple run with expected results, but with the non-async version'
     mock_cache = build_cache_mock(mocker)
@@ -487,17 +406,15 @@ def test_callback_good(mocker):
 @pytest.mark.asyncio
 async def test_callback_none(mocker):
     'Get a root file with a single file'
-    mock_cache = build_cache_mock(mocker)
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
-    filename_func = mocker.Mock(return_value="/foo/bar.root")
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             status_callback_factory=None,
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
-                            file_name_func=filename_func,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')

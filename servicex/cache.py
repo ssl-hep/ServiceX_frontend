@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
-from .utils import _query_cache_hash
+from aiohttp.client import request
+
+from .utils import _query_cache_hash, sanitize_filename
 
 
 class Cache:
@@ -76,3 +78,11 @@ class Cache:
         if id not in self._in_memory_cache:
             return None
         return self._in_memory_cache[id]
+
+    def data_file_location(self, request_id: str, data_name: str) -> Path:
+        '''
+        Return the path to the file that should be written out for this
+        data_name. This is where the output file should get stored.
+        '''
+        (self._path / 'data' / request_id).mkdir(parents=True, exist_ok=True)
+        return self._path / 'data' / request_id / sanitize_filename(data_name)

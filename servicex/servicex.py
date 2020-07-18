@@ -46,18 +46,16 @@ class ServiceXDataset(ServiceXABC):
     def __init__(self,
                  dataset: str,
                  servicex_adaptor: ServiceXAdaptor = None,
+                 cache_adaptor: Optional[Cache] = None,
                  minio_adaptor: MinioAdaptor = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-                 storage_directory: Optional[str] = None,
-                 file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
-                 cache_adaptor: Cache = None,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: ConfigView = None):
-        ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
-                             max_workers, status_callback_factory)
+        ServiceXABC.__init__(self, dataset, image, cache_adaptor, max_workers,
+                             status_callback_factory)
 
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
@@ -72,12 +70,6 @@ class ServiceXDataset(ServiceXABC):
         else:
             self._minio_adaptor = minio_adaptor
 
-        from servicex.utils import default_file_cache_name
-
-        self._cache = Cache(default_file_cache_name) \
-            if cache_adaptor is None \
-            else cache_adaptor
-
         self._log = log_adaptor() if local_log is None else local_log
 
         self._session_generator = session_generator if session_generator is not None \
@@ -90,7 +82,7 @@ class ServiceXDataset(ServiceXABC):
 
     @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_parquet_async(self, selection_query: str):
+    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
         return await self._file_return(selection_query, 'parquet')
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
@@ -169,7 +161,7 @@ class ServiceXDataset(ServiceXABC):
         # Finally, we need them in the proper order so we append them
         # all together
         all_data = {f[0]: await f[1] async for f in as_data}
-        ordered_data = [all_data[k] for k in sorted(all_data)]
+        ordered_data = [all_data[k] for k in sorted(all_data.keys())]
 
         return ordered_data
 
@@ -270,7 +262,7 @@ class ServiceXDataset(ServiceXABC):
 
         file_object_list = []
         async for f in stream:
-            copy_to_path = self._file_name_func(request_id, f)
+            copy_to_path = self._cache.data_file_location(request_id, f)
             file_object_list.append((f, str(copy_to_path)))
 
             yield f, do_copy(copy_to_path)
