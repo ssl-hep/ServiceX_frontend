@@ -165,7 +165,6 @@ async def test_good_run_files_back_4_unordered(mocker):
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry',
                                                          'three_minio_entry',
                                                          'four_minio_entry'])
-    mocker.patch('servicex.utils.default_file_cache_name', Path('/tmp/servicex-testing'))
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
@@ -189,7 +188,6 @@ async def test_good_download_files_parquet(mocker, short_status_poll_time):
     mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
-    mocker.patch('servicex.utils.default_file_cache_name', Path('/tmp/servicex-testing'))
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore

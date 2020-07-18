@@ -1,6 +1,5 @@
 from datetime import timedelta
 from typing import Optional
-from pathlib import Path
 import aiohttp
 
 import pytest
@@ -19,9 +18,8 @@ from .conftest import as_async_seq
 
 
 @pytest.fixture
-def log_location_file():
-    default_file_cache_name = Path('.')
-    l_file = default_file_cache_name / 'log.csv'
+def log_location_file(tmp_path):
+    l_file = tmp_path / 'log.csv'
     if l_file.exists():
         l_file.unlink()
     yield l_file

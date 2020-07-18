@@ -2,7 +2,6 @@ from datetime import timedelta
 from hashlib import blake2b
 from pathlib import Path
 import re
-import tempfile
 import threading
 from typing import AsyncIterator, Callable, Dict, List, Optional, Tuple
 
@@ -10,10 +9,6 @@ import aiohttp
 from lark import Token, Transformer
 from qastle import parse
 from tqdm.auto import tqdm
-
-
-# Where shall we store files by default when we pull them down?
-default_file_cache_name: Path = Path(tempfile.gettempdir()) / 'servicex'
 
 
 # Access to thread local storage.
@@ -34,11 +29,11 @@ async def default_client_session() -> aiohttp.ClientSession:
 
 def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
                     time: timedelta, success: bool,
-                    path_to_log_dir: Optional[Path] = None):
+                    path_to_log_dir: Path):
     '''
     Log to a csv file the status of a run.
     '''
-    l_file = (default_file_cache_name if path_to_log_dir is None else path_to_log_dir) / 'log.csv'
+    l_file = path_to_log_dir / 'log.csv'
     if l_file.parent.exists():
         if not l_file.exists():
             l_file.write_text('RequestID,n_files,n_skip,time_sec,no_error\n')
