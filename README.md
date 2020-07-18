@@ -124,34 +124,50 @@ This code has been tested in several environments:
 Everything is based around the `ServiceXDataset` object. Below is the documentation for the most common parameters.
 
 ```python
-|  ServiceXDataset(dataset: str,
-            image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-            storage_directory: Union[str, NoneType] = None,
-            file_name_func: Union[Callable[[str, str], pathlib.Path], NoneType] = None,
-            status_callback_factory: Callable[[str], Callable[[Union[int, NoneType], int, int, int], NoneType]] = _run_default_wrapper)
- |      Create and configure a ServiceX object for a dataset.
- |
- |      Arguments
- |
- |          dataset                     Name of a dataset from which queries will be selected.
- |          image                       Name of transformer image to use to transform the data
- |          storage_directory           Location to cache data that comes back from ServiceX. Data
- |                                      can be reused between invocations.
- |          file_name_func              Allows for unique naming of the files that come back.
- |                                      Rarely used.
- |          status_callback_factory     Factory to create a status notification callback for each
- |                                      query. One is created per query.
- |
- |
- |      Notes:
- |
- |          -  The `status_callback` argument, by default, uses the `tqdm` library to render
- |             progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
- |             jupyter extensions installed). If `status_callback` is specified as None, no
- |             updates will be rendered. A custom callback function can also be specified which
- |             takes `(total_files, transformed, downloaded, skipped)` as an argument. The
- |             `total_files` parameter may be `None` until the system knows how many files need to
- |             be processed (and some files can even be completed before that is known).
+  ServiceXDataset(dataset: str,
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 max_workers: int = 20,
+                 servicex_adaptor: ServiceXAdaptor = None,
+                 minio_adaptor: MinioAdaptor = None,
+                 cache_adaptor: Optional[Cache] = None,
+                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
+                 local_log: log_adaptor = None,
+                 session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
+                 config_adaptor: ConfigView = None)
+      Create and configure a ServiceX object for a dataset.
+
+      Arguments
+
+          dataset                     Name of a dataset from which queries will be selected.
+          image                       Name of transformer image to use to transform the data
+          max_workers                 Maximum number of transformers to run simultaneously on
+                                      ServiceX.
+          servicex_adaptor            Object to control communication with the servicex instance
+                                      at a particular ip address with certain login credentials.
+                                      Will be configured via the `.servicex` file by default.
+          minio_adaptor               Object to control communication with the minio servicex
+                                      instance. By default configured with values from the
+                                      `.servicex` file.
+          cache_adaptor               Runs the caching for data and queries that are sent up and
+                                      down.
+          status_callback_factory     Factory to create a status notification callback for each
+                                      query. One is created per query.
+          local_log                   Log adaptor for logging.
+          session_generator           If you want to control the `ClientSession` object that
+                                      is used for callbacks. Otherwise a single one for all
+                                      `servicex` queries is used.
+          config_adaptor              Control how configuration options are read from the
+                                      `.servicex` file.
+
+      Notes:
+
+          -  The `status_callback` argument, by default, uses the `tqdm` library to render
+             progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
+             jupyter extensions installed). If `status_callback` is specified as None, no
+             updates will be rendered. A custom callback function can also be specified which
+             takes `(total_files, transformed, downloaded, skipped)` as an argument. The
+             `total_files` parameter may be `None` until the system knows how many files need to
+             be processed (and some files can even be completed before that is known).
  ```
 
 To get the data use one of the `get_data` method. They all have the same API, differing only by what they return.

@@ -49,8 +49,8 @@ class log_adaptor:
     '''
     @staticmethod
     def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
-                        time: timedelta, success: bool):
-        write_query_log(request_id, n_files, n_skip, time, success)
+                        time: timedelta, success: bool, path_to_log_dir: Path):
+        write_query_log(request_id, n_files, n_skip, time, success, path_to_log_dir)
 
 
 class ServiceXException(Exception):

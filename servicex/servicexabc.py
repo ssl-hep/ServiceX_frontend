@@ -39,11 +39,9 @@ class ServiceXABC(ABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
-            service_endpoint            Where the ServiceX web API is found
             image                       Name of transformer image to use to transform the data
-            cache_location              Location to cache data that comes back from ServiceX. Data
-                                        can be reused between invocations. Default is in
-                                        os defined temp directory.
+            cache_adaptor               Runs the caching for data and queries that are sent up and
+                                        down.
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
             status_callback_factory     Factory to create a status notification callback for each

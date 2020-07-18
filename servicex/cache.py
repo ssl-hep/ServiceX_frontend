@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
-from aiohttp.client import request
-
 from .utils import _query_cache_hash, sanitize_filename
 
 
@@ -29,6 +27,11 @@ class Cache:
                                 will be created in this path.
         '''
         self._path = cache_path
+
+    @property
+    def path(self) -> Path:
+        'Return root path of cache directory'
+        return self._path
 
     def _query_cache_file(self, json: Dict[str, str]) -> Path:
         'Return the query cache file'

@@ -41,19 +41,57 @@ from .utils import (
 
 class ServiceXDataset(ServiceXABC):
     '''
-    ServiceX on the web.
+    Used to access an instance of ServiceX at an end point on the internet. Support convieration
+    by `.servicex` file or by creating the adaptors defined in the `__init__` function.
     '''
     def __init__(self,
                  dataset: str,
-                 servicex_adaptor: ServiceXAdaptor = None,
-                 cache_adaptor: Optional[Cache] = None,
-                 minio_adaptor: MinioAdaptor = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  max_workers: int = 20,
+                 servicex_adaptor: ServiceXAdaptor = None,
+                 minio_adaptor: MinioAdaptor = None,
+                 cache_adaptor: Optional[Cache] = None,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: ConfigView = None):
+        '''
+        Create and configure a ServiceX object for a dataset.
+
+        Arguments
+
+            dataset                     Name of a dataset from which queries will be selected.
+            image                       Name of transformer image to use to transform the data
+            max_workers                 Maximum number of transformers to run simultaneously on
+                                        ServiceX.
+            servicex_adaptor            Object to control communication with the servicex instance
+                                        at a particular ip address with certian login credentials.
+                                        Will be configured via the `.servicex` file by default.
+            minio_adaptor               Object to control communication with the minio servicex
+                                        instance. By default configured with values from the
+                                        `.servicex` file.
+            cache_adaptor               Runs the caching for data and queries that are sent up and
+                                        down.
+            status_callback_factory     Factory to create a status notification callback for each
+                                        query. One is created per query.
+            local_log                   Log adaptor for logging.
+            session_generator           If you want to control the `ClientSession` object that
+                                        is used for callbacks. Otherwise a single one for all
+                                        `servicex` queries is used.
+            config_adaptor              Control how configuration options are read from the
+                                        `.servicex` file.
+
+        Notes:
+
+            -  The `status_callback` argument, by default, uses the `tqdm` library to render
+               progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
+               jupyter extensions installed). If `status_callback` is specified as None, no
+               updates will be rendered. A custom callback function can also be specified which
+               takes `(total_files, transformed, downloaded, skipped)` as an argument. The
+               `total_files` parameter may be `None` until the system knows how many files need to
+               be processed (and some files can even be completed before that is known).
+        '''
+
         ServiceXABC.__init__(self, dataset, image, cache_adaptor, max_workers,
                              status_callback_factory)
 
@@ -307,7 +345,7 @@ class ServiceXDataset(ServiceXABC):
             logging.getLogger(__name__).info(f'Running servicex query for '
                                              f'{request_id} took {run_time}')
             self._log.write_query_log(request_id, notifier.total, notifier.failed,
-                                      run_time, good)
+                                      run_time, good, self._cache.path)
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''

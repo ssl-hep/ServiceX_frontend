@@ -1,9 +1,6 @@
 import asyncio
-import os
 from pathlib import Path
-import shutil
-import tempfile
-from typing import List, Optional
+from typing import Optional
 
 import pandas as pd
 import pytest
