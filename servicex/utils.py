@@ -1,17 +1,61 @@
+from datetime import timedelta
 from hashlib import blake2b
 from pathlib import Path
 import re
 import tempfile
-from typing import AsyncIterator, Callable, Optional, Dict, List, Tuple
+import threading
+from typing import AsyncIterator, Callable, Dict, List, Optional, Tuple
 
-from tqdm.auto import tqdm
-
-from lark import Transformer, Token
+import aiohttp
+from lark import Token, Transformer
 from qastle import parse
+from tqdm.auto import tqdm
 
 
 # Where shall we store files by default when we pull them down?
-default_file_cache_name = Path(tempfile.gettempdir()) / 'servicex'
+default_file_cache_name: Path = Path(tempfile.gettempdir()) / 'servicex'
+
+
+# Access to thread local storage.
+threadLocal = threading.local()
+
+
+async def default_client_session() -> aiohttp.ClientSession:
+    '''
+    Return a client session per thread.
+    '''
+    client = getattr(threadLocal, 'client_session', None)
+    if client is None:
+        connector = aiohttp.TCPConnector(limit=20)
+        client = await aiohttp.ClientSession(connector=connector).__aenter__()
+        threadLocal.client_session = client
+    return client
+
+
+def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
+                    time: timedelta, success: bool,
+                    path_to_log_dir: Optional[Path] = None):
+    '''
+    Log to a csv file the status of a run.
+    '''
+    l_file = (default_file_cache_name if path_to_log_dir is None else path_to_log_dir) / 'log.csv'
+    if l_file.parent.exists():
+        if not l_file.exists():
+            l_file.write_text('RequestID,n_files,n_skip,time_sec,no_error\n')
+        with l_file.open(mode='a') as f:
+            s_text = "1" if success else "0"
+            f.write(f'{request_id},{n_files if n_files is not None else -1},'
+                    f'{n_skip},{time.total_seconds()},{s_text}\n')
+
+
+class log_adaptor:
+    '''
+    Helper method to allow easy mocking.
+    '''
+    @staticmethod
+    def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
+                        time: timedelta, success: bool):
+        write_query_log(request_id, n_files, n_skip, time, success)
 
 
 class ServiceXException(Exception):
@@ -134,6 +178,17 @@ async def stream_status_updates(stream: AsyncIterator[TransformTuple],
         yield p
 
 
+async def stream_unique_updates_only(stream: AsyncIterator[TransformTuple]):
+    '''
+    As status goes by, only let through changes
+    '''
+    last_p: Optional[TransformTuple] = None
+    async for p in stream:
+        if p != last_p:
+            last_p = p
+            yield p
+
+
 def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:
     '''
     Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
@@ -161,10 +216,10 @@ class _default_wrapper_mgr:
             return
 
         self._tqdm_p = tqdm(total=9e9, desc=self._sample_name, unit='file',
-                            leave=True, dynamic_ncols=True,
+                            leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
-                            leave=True, dynamic_ncols=True,
+                            leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
     def _update_bar(self, bar: Optional[tqdm], total: Optional[int], num: int, failed: int):

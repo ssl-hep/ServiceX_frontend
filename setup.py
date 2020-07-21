@@ -15,7 +15,7 @@ if sys.version_info[1] < 8:
     extra_test_packages.append('asyncmock')
 
 setup(name="servicex",
-      version='2.0.0-beta.4',
+      version='2.0.0-beta.9',
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
@@ -38,7 +38,8 @@ setup(name="servicex",
           "tqdm~=4.0",
           "qastle==0.7",
           'make_it_sync==1.0.0',
-          'google-auth==1.17'
+          'google-auth==1.17',
+          'confuse==1.3.0'
       ],
       extras_require={
           'test': [
@@ -68,5 +69,9 @@ setup(name="servicex",
           "Programming Language :: Python :: 3.7",
           "Programming Language :: Python :: 3.8",
       ],
+      package_data={
+          'servicex': ['config_default.yaml'],
+      },
+
       platforms="Any",
       )

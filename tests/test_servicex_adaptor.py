@@ -2,6 +2,7 @@ from json import dumps
 from typing import Optional
 
 import aiohttp
+from aiohttp.client_exceptions import ContentTypeError
 import pytest
 
 from servicex import (
@@ -10,7 +11,11 @@ from servicex import (
     ServiceXFailedFileTransform,
     ServiceXUnknownRequestID,
 )
-from servicex.servicex_adaptor import transform_status_stream, trap_servicex_failures
+from servicex.servicex_adaptor import (
+    servicex_adaptor_factory,
+    transform_status_stream,
+    trap_servicex_failures,
+)
 
 from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
 
@@ -18,7 +23,8 @@ from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_p
 @pytest.fixture
 def servicex_status_request(mocker):
     '''
-    Fixture that emulates the async python library get call when used with a status.
+    Fixture that emulates the async python library get call when used with a
+    status.
 
       - Does not check the incoming http address
       - Does not check the Returns a standard triple status from servicex
@@ -80,6 +86,33 @@ def bad_submit(mocker):
     client = mocker.MagicMock()
     r = ClientSessionMocker(dumps({'message': "bad text"}), 400)
     client.post = lambda d, json, headers: r
+    return client
+
+
+@pytest.fixture
+def bad_submit_html(mocker):
+    '''
+    Instead of returning json, it returns text/html.
+    '''
+    client = mocker.MagicMock(spec=aiohttp.ClientSession)
+
+    class bad_return:
+        async def __aexit__(self, exc_type, exc, tb):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def json(self):
+            raise Exception("ContentTypeError")
+
+        def status(self):
+            return 500
+
+        async def text(self):
+            return "html error content bogus world"
+
+    client.post.return_value = bad_return()
     return client
 
 
@@ -363,6 +396,16 @@ async def test_submit_bad(bad_submit):
 
 
 @pytest.mark.asyncio
+async def test_submit_bad_html(bad_submit_html):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
+
+    with pytest.raises(ServiceXException) as e:
+        await sa.submit_query(bad_submit_html, {'hi': 'there'})
+
+    assert "html" in str(e.value)
+
+
+@pytest.mark.asyncio
 async def test_submit_good_with_bad_login(mocker):
     client = mocker.MagicMock()
     client.post = mocker.Mock(return_value=ClientSessionMocker(
@@ -376,3 +419,17 @@ async def test_submit_good_with_bad_login(mocker):
         await sa.submit_query(client, {'hi': 'there'})
 
     assert "ServiceX login request rejected" in str(e.value)
+
+
+def test_servicex_adaptor_settings():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoint']['endpoint'] = 'http://my-left-foot.com:5000'
+    c['api_endpoint']['username'] = 'thegoodplace'
+    c['api_endpoint']['password'] = 'forkingshirtballs'
+
+    sx = servicex_adaptor_factory(c)
+    assert sx._endpoint == 'http://my-left-foot.com:5000'
+    assert sx._username == 'thegoodplace'
+    assert sx._password == 'forkingshirtballs'

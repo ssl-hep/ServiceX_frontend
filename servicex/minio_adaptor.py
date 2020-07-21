@@ -28,13 +28,33 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
-from typing import AsyncIterator, Any
+from typing import Any, AsyncIterator
 
 import backoff
 from backoff import on_exception
+from confuse import ConfigView
 from minio import Minio, ResponseError
 
 from .utils import ServiceXException
+
+
+def minio_adaptor_factory(c: ConfigView):
+    # This must always be configured!
+    c_api = c['api_endpoint']
+    end_point = c_api['minio_endpoint'].get(str)
+
+    # Grab the username and password if they are explicitly listed.
+    if 'minio_username' in c_api:
+        username = c_api['minio_username'].get(str)
+        password = c_api['minio_password'].get(str)
+    elif 'username' in c_api:
+        username = c_api['username'].get(str)
+        password = c_api['password'].get(str)
+    else:
+        username = c_api['default_minio_username'].get(str)
+        password = c_api['default_minio_password'].get(str)
+
+    return MinioAdaptor(end_point, access_key=username, secretkey=password)
 
 
 class MinioAdaptor:

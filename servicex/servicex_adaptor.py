@@ -1,8 +1,10 @@
 import asyncio
 from datetime import datetime
 from typing import AsyncIterator, Dict, Optional, Tuple
+import logging
 
 import aiohttp
+from confuse import ConfigView
 from google.auth import jwt
 
 from .utils import (
@@ -15,6 +17,16 @@ from .utils import (
 # Number of seconds to wait between polling servicex for the status of a transform job
 # while waiting for it to finish.
 servicex_status_poll_time = 5.0
+
+
+def servicex_adaptor_factory(c: ConfigView):
+    # It is an error if this is not specified somewhere.
+    endpoint = c['api_endpoint']['endpoint'].get(str)
+
+    # We can default these to "None"
+    username = c['api_endpoint']['username'].get(str) if 'username' in c['api_endpoint'] else None
+    password = c['api_endpoint']['password'].get(str) if 'password' in c['api_endpoint'] else None
+    return ServiceXAdaptor(endpoint, username, password)
 
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
@@ -65,13 +77,15 @@ class ServiceXAdaptor:
 
         async with client.post(f'{self._endpoint}/servicex/transformation',
                                headers=headers, json=json_query) as response:
-            r = await response.json()
             status = response.status
             if status != 200:
                 # This was an error at ServiceX, bubble it up so code above us can
                 # handle as needed.
+                t = await response.text()
                 raise ServiceXException('ServiceX rejected the transformation request: '
-                                        f'({status}){r}')
+                                        f'({status}){t}')
+
+            r = await response.json()
             req_id = r["request_id"]
 
             return req_id
@@ -121,6 +135,7 @@ class ServiceXAdaptor:
                                                f'for request id {request_id}'
                                                f' - http error {status}')
             info = await response.json()
+            logging.getLogger(__name__).debug(f'Status response for {request_id}: {info}')
             files_remaining = self._get_transform_stat(info, 'files-remaining')
             files_failed = self._get_transform_stat(info, 'files-skipped')
             files_processed = self._get_transform_stat(info, 'files-processed')
@@ -137,16 +152,27 @@ async def transform_status_stream(sa: ServiceXAdaptor, client: aiohttp.ClientSes
     Returns an async stream of `(files-remaining, files_processed, files_failed)` until the
     servicex `request_id` request is finished, against the servicex instance located at
     `sa`.
+
+    Arguments:
+
+        sa                  The servicex low level adaptor
+        client              An async http function we can call and use
+        request_id          The request id for this request
+
+    Returns:
+
+        remaining, processed, skipped     Returns an async stream triple of the
+                                          status numbers. Every time we find something
+                                          we send it on.
+
+    Note:
     '''
     done = False
-    last_processed = None
     while not done:
         next_processed = await sa.get_transform_status(client, request_id)
         remaining, _, _ = next_processed
         done = remaining is not None and remaining == 0
-        if next_processed != last_processed:
-            last_processed = next_processed
-            yield next_processed
+        yield next_processed
 
         if not done:
             await asyncio.sleep(servicex_status_poll_time)

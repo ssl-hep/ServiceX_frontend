@@ -3,12 +3,13 @@ from pathlib import Path
 import minio
 from minio.error import ResponseError
 import pytest
+from servicex.ConfigSettings import ConfigSettings
 
 from servicex import (
     MinioAdaptor,
     ServiceXException,
 )
-from servicex.minio_adaptor import find_new_bucket_files
+from servicex.minio_adaptor import find_new_bucket_files, minio_adaptor_factory
 
 
 def make_minio_file(fname):
@@ -154,3 +155,52 @@ async def test_find_new_bucket_1_files(mocker):
                                                 '123-456', as_async_seq([(1, 0, 0), (0, 1, 0)]))]
 
     assert len(r) == 1
+
+
+def test_minio_adaptor_factory_set_endpoint():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
+    c['api_endpoint']['minio_username'] = 'amazing'
+    c['api_endpoint']['minio_password'] = 'forkingshirtballs'
+
+    c['api_endpoint']['default_minio_username'] = 'badnews'
+    c['api_endpoint']['default_minio_password'] = 'bears'
+
+    m = minio_adaptor_factory(c)
+    assert m._endpoint == 'the-good-host.org:9000'
+    assert m._access_key == "amazing"
+    assert m._secretkey == "forkingshirtballs"
+
+
+def test_minio_adaptor_factory_use_api_usernamepassword():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+
+    c['api_endpoint']['endpoint'] = 'http://my-left-foot.com:5000'
+    c['api_endpoint']['username'] = 'thegoodplace'
+    c['api_endpoint']['password'] = 'forkingshirtballs!'
+
+    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
+
+    m = minio_adaptor_factory(c)
+    assert m._endpoint == 'the-good-host.org:9000'
+    assert m._access_key == "thegoodplace"
+    assert m._secretkey == "forkingshirtballs!"
+
+
+def test_minio_adaptor_factory_use_default_username_password():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+
+    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
+    c['api_endpoint']['default_minio_username'] = 'thegoodplace'
+    c['api_endpoint']['default_minio_password'] = 'forkingshirtballs!'
+
+    m = minio_adaptor_factory(c)
+    assert m._endpoint == 'the-good-host.org:9000'
+    assert m._access_key == "thegoodplace"
+    assert m._secretkey == "forkingshirtballs!"

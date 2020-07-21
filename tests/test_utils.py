@@ -1,4 +1,7 @@
+from datetime import timedelta
 from typing import Optional
+from pathlib import Path
+import aiohttp
 
 import pytest
 
@@ -7,9 +10,81 @@ from servicex.utils import (
     _status_update_wrapper,
     clean_linq,
     stream_status_updates,
+    stream_unique_updates_only,
+    write_query_log,
+    default_client_session
 )
 
 from .utils_for_testing import as_async_seq
+
+
+@pytest.fixture
+def log_location_file():
+    default_file_cache_name = Path('.')
+    l_file = default_file_cache_name / 'log.csv'
+    if l_file.exists():
+        l_file.unlink()
+    yield l_file
+    if l_file.exists():
+        l_file.unlink()
+
+
+@pytest.mark.asyncio
+async def test_client_session():
+    c = await default_client_session()
+    assert isinstance(c, aiohttp.ClientSession)
+
+
+@pytest.mark.asyncio
+async def test_client_session_same():
+    # On same thread they should be the same.
+    c1 = await default_client_session()
+    c2 = await default_client_session()
+
+    assert c1 is c2
+
+
+@pytest.mark.asyncio
+async def test_client_session_different_threads():
+    async def get_a_client_async():
+        return await default_client_session()
+
+    from make_it_sync import make_sync
+    get_a_client = make_sync(get_a_client_async)
+
+    c1 = get_a_client()
+    c2 = await get_a_client_async()
+
+    assert c1 is not c2
+
+
+def test_log_file_created(log_location_file):
+    write_query_log('123', 10, 0, timedelta(seconds=20), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,10,0,20.0,1'
+
+
+def test_log_file_none_files(log_location_file):
+    write_query_log('123', None, 0, timedelta(seconds=20), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,-1,0,20.0,1'
+
+
+def test_log_file_write_minutes(log_location_file):
+    write_query_log('123', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,10,0,120.0,1'
+
+
+def test_log_file_write_2lines(log_location_file):
+    write_query_log('123', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    write_query_log('124', 10, 0, timedelta(minutes=2), True, path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text()
+    assert len(t.split('\n')) == 4
 
 
 def test_callback_no_updates():
@@ -242,6 +317,22 @@ async def test_transform_sequence():
     assert len(v) == 2
     assert u.failed == 0
     assert u.total == 1
+
+
+@pytest.mark.asyncio
+async def test_transform_updates_unique():
+
+    v = [i async for i in stream_unique_updates_only(as_async_seq([(1, 0, 0), (0, 1, 0)]))]
+
+    assert len(v) == 2
+
+
+@pytest.mark.asyncio
+async def test_transform_updates_unique():
+
+    v = [i async for i in stream_unique_updates_only(as_async_seq([(1, 0, 0), (1, 0, 0)]))]
+
+    assert len(v) == 1
 
 
 def test_cache_stable():
