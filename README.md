@@ -40,7 +40,7 @@ Create a `.servicex` file, in the `yaml` format, in the appropriate place for yo
 ```yaml
 api_endpoint:
   endpoint: <your-endpoint>
-  username: <api-username>
+  email: <api-email>
   password: <api-password>
 
   minio_endpoint: <minio-endpoint>
@@ -48,7 +48,7 @@ api_endpoint:
   minio_password: <minio-secretkey>
 ```
 
-Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and usernames and passwords, avoiding the configuration system. This is probably only useful for advanced users.
+Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
 
 ## Usage
 

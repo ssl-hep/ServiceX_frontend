@@ -3,7 +3,7 @@
 
 api_endpoint:
   endpoint: http://localhost:5000
-  # username: xxx
+  # email: xxx
   # password: yyy
 
   minio_endpoint: localhost:9000
