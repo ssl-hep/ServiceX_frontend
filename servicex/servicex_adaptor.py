@@ -20,6 +20,16 @@ from .utils import (
 servicex_status_poll_time = 5.0
 
 
+def servicex_adaptor_factory(c: ConfigView):
+    # It is an error if this is not specified somewhere.
+    endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
+
+    # We can default these to "None"
+    email = c['api_endpoint']['email'].get(str) if 'email' in c['api_endpoint'] else None
+    password = c['api_endpoint']['password'].get(str) if 'password' in c['api_endpoint'] else None
+    return ServiceXAdaptor(endpoint, email, password)
+
+
 # Low level routines for interacting with a ServiceX instance via the WebAPI
 class ServiceXAdaptor:
     def __init__(self, endpoint, email=None, password=None):
