@@ -30,6 +30,7 @@
         "desy",
         "fget",
         "fname",
+        "inmem",
         "jupyter",
         "jupyterlab",
         "leftfoot",
@@ -56,9 +57,11 @@
         "servicexabc",
         "setuptools",
         "sslhep",
+        "tcut",
         "tqdm",
         "unittests",
         "xaod",
         "xrootd"
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "basic"
 }

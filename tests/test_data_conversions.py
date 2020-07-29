@@ -2,8 +2,6 @@ from servicex.data_conversions import _convert_root_to_pandas, _convert_root_to_
 import pytest
 import pandas as pd
 
-from .utils_for_testing import good_root_file_path  # NOQA
-
 
 @pytest.mark.asyncio
 async def test_root_to_pandas(good_root_file_path):

@@ -32,7 +32,7 @@ from .utils import (
     StatusUpdateFactory,
     _run_default_wrapper,
     _status_update_wrapper,
-    default_client_session,
+    default_client_session, get_configured_cache_path,
     log_adaptor,
     stream_status_updates,
     stream_unique_updates_only,
@@ -41,27 +41,68 @@ from .utils import (
 
 class ServiceXDataset(ServiceXABC):
     '''
-    ServiceX on the web.
+    Used to access an instance of ServiceX at an end point on the internet. Support convieration
+    by `.servicex` file or by creating the adaptors defined in the `__init__` function.
     '''
     def __init__(self,
                  dataset: str,
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: MinioAdaptor = None,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-                 storage_directory: Optional[str] = None,
-                 file_name_func: Optional[Callable[[str, str], Path]] = None,
-                 max_workers: int = 20,
+                 cache_adaptor: Optional[Cache] = None,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
-                 cache_adaptor: Cache = None,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: ConfigView = None):
-        ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
-                             max_workers, status_callback_factory)
+        '''
+        Create and configure a ServiceX object for a dataset.
+
+        Arguments
+
+            dataset                     Name of a dataset from which queries will be selected.
+            image                       Name of transformer image to use to transform the data
+            max_workers                 Maximum number of transformers to run simultaneously on
+                                        ServiceX.
+            servicex_adaptor            Object to control communication with the servicex instance
+                                        at a particular ip address with certian login credentials.
+                                        Will be configured via the `.servicex` file by default.
+            minio_adaptor               Object to control communication with the minio servicex
+                                        instance. By default configured with values from the
+                                        `.servicex` file.
+            cache_adaptor               Runs the caching for data and queries that are sent up and
+                                        down.
+            status_callback_factory     Factory to create a status notification callback for each
+                                        query. One is created per query.
+            local_log                   Log adaptor for logging.
+            session_generator           If you want to control the `ClientSession` object that
+                                        is used for callbacks. Otherwise a single one for all
+                                        `servicex` queries is used.
+            config_adaptor              Control how configuration options are read from the
+                                        `.servicex` file.
+
+        Notes:
+
+            -  The `status_callback` argument, by default, uses the `tqdm` library to render
+               progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
+               jupyter extensions installed). If `status_callback` is specified as None, no
+               updates will be rendered. A custom callback function can also be specified which
+               takes `(total_files, transformed, downloaded, skipped)` as an argument. The
+               `total_files` parameter may be `None` until the system knows how many files need to
+               be processed (and some files can even be completed before that is known).
+        '''
+        ServiceXABC.__init__(self, dataset, image, max_workers,
+                             status_callback_factory,
+                             )
 
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
             else ConfigSettings('servicex', 'servicex')
+
+        # Establish the cache that will store all our queries
+        self._cache = Cache(get_configured_cache_path(config)) \
+            if cache_adaptor is None \
+            else cache_adaptor
 
         if not servicex_adaptor:
             servicex_adaptor = servicex_adaptor_factory(config)
@@ -71,12 +112,6 @@ class ServiceXDataset(ServiceXABC):
             self._minio_adaptor = minio_adaptor_factory(config)
         else:
             self._minio_adaptor = minio_adaptor
-
-        from servicex.utils import default_file_cache_name
-
-        self._cache = Cache(default_file_cache_name) \
-            if cache_adaptor is None \
-            else cache_adaptor
 
         self._log = log_adaptor() if local_log is None else local_log
 
@@ -90,7 +125,7 @@ class ServiceXDataset(ServiceXABC):
 
     @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_parquet_async(self, selection_query: str):
+    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
         return await self._file_return(selection_query, 'parquet')
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
@@ -164,12 +199,12 @@ class ServiceXDataset(ServiceXABC):
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
-                   async for f in as_files)  # type: ignore
+                   async for f in as_files)
 
         # Finally, we need them in the proper order so we append them
         # all together
-        all_data = {f[0]: await f[1] async for f in as_data}  # type: ignore
-        ordered_data = [all_data[k] for k in sorted(all_data)]
+        all_data = {f[0]: await f[1] async for f in as_data}
+        ordered_data = [all_data[k] for k in sorted(all_data.keys())]
 
         return ordered_data
 
@@ -270,7 +305,7 @@ class ServiceXDataset(ServiceXABC):
 
         file_object_list = []
         async for f in stream:
-            copy_to_path = self._file_name_func(request_id, f)
+            copy_to_path = self._cache.data_file_location(request_id, f)
             file_object_list.append((f, str(copy_to_path)))
 
             yield f, do_copy(copy_to_path)
@@ -315,7 +350,7 @@ class ServiceXDataset(ServiceXABC):
             logging.getLogger(__name__).info(f'Running servicex query for '
                                              f'{request_id} took {run_time}')
             self._log.write_query_log(request_id, notifier.total, notifier.failed,
-                                      run_time, good)
+                                      run_time, good, self._cache.path)
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''

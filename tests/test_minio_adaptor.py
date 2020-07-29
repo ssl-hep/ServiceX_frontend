@@ -3,7 +3,6 @@ from pathlib import Path
 import minio
 from minio.error import ResponseError
 import pytest
-from servicex.ConfigSettings import ConfigSettings
 
 from servicex import (
     MinioAdaptor,
@@ -24,7 +23,9 @@ def good_minio_client(mocker):
 
     minio_client = mocker.MagicMock(spec=minio.Minio)
     minio_client.list_objects.return_value = \
-        [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+        [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas'
+                         ':dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052'
+                         '._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
 
     mocker.patch('servicex.minio_adaptor.Minio', return_value=minio_client)
 
@@ -39,7 +40,9 @@ def good_minio_client(mocker):
 def bad_minio_client(mocker):
     minio_client = mocker.MagicMock(spec=minio.Minio)
     minio_client.list_objects.return_value = \
-        [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+        [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2'
+                         ':atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001'
+                         '.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
     minio_client.fget_object.side_effect = Exception('this copy really failed')
 
     mocker.patch('servicex.minio_adaptor.Minio', return_value=minio_client)
@@ -54,7 +57,10 @@ def bad_minio_client(mocker):
 def bad_then_good_minio_listing(mocker):
     response1 = mocker.MagicMock()
     response1.data = '<xml></xml>'
-    response2 = [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas:dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+    response2 = [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas'
+                                 ':dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.'
+                                 '05630052._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1'
+                                 '.part.minio')]
 
     minio_client = mocker.MagicMock(spec=minio.Minio)
     minio_client.list_objects.side_effect = [ResponseError(response1, 'POST', 'Due'), response2]
@@ -79,7 +85,8 @@ async def test_download_good(good_minio_client):
     # Make sure copy was called.
     p_minio.fget_object.assert_called_once()
     expected_path = Path('/tmp/output-file.dude.temp')
-    p_minio.fget_object.assert_called_with('111-22-333-444', 'dude-where-is-my-lunch', str(expected_path))
+    p_minio.fget_object.assert_called_with('111-22-333-444', 'dude-where-is-my-lunch',
+                                           str(expected_path))
 
     # Make sure the rename was done.
     p_rename.assert_called_with(final_path)
@@ -131,7 +138,8 @@ def test_list_objects(good_minio_client):
 
 
 def test_list_objects_with_null(bad_then_good_minio_listing):
-    'Sometimes for reasons we do not understand we get back a response error from list_objects minio method'
+    '''Sometimes for reasons we do not understand we get back a response error from
+    list_objects minio method'''
     ma = MinioAdaptor('localhost:9000')
     f = ma.get_files('111-222-333-444')
     assert len(f) == 1
@@ -139,7 +147,7 @@ def test_list_objects_with_null(bad_then_good_minio_listing):
 
 @pytest.mark.asyncio
 async def test_find_new_bucket_0_files(mocker):
-    from .utils_for_testing import MockMinioAdaptor, as_async_seq
+    from .conftest import MockMinioAdaptor, as_async_seq
     ma = MockMinioAdaptor(mocker)
     r = [f async for f in find_new_bucket_files(ma,  # type: ignore
                                                 '123-456', as_async_seq([(1, 0, 0), (0, 1, 0)]))]
@@ -149,7 +157,7 @@ async def test_find_new_bucket_0_files(mocker):
 
 @pytest.mark.asyncio
 async def test_find_new_bucket_1_files(mocker):
-    from .utils_for_testing import MockMinioAdaptor, as_async_seq
+    from .conftest import MockMinioAdaptor, as_async_seq
     ma = MockMinioAdaptor(mocker, files=['one_two_three'])
     r = [f async for f in find_new_bucket_files(ma,  # type: ignore
                                                 '123-456', as_async_seq([(1, 0, 0), (0, 1, 0)]))]
