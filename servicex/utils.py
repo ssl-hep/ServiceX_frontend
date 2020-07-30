@@ -363,7 +363,7 @@ def get_configured_cache_path(config: ConfigView) -> Path:
     From the configuration info return a valid path for us to store our cached files.
     '''
     assert config["cache_path"].exists(), 'Cannot find default config - install is broken'
-    s_path = config["cache_path"].get(str)
+    s_path = config["cache_path"].as_str_expanded()
     assert isinstance(s_path, str)
 
     p_p = PurePath(s_path)

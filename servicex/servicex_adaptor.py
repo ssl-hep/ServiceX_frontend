@@ -21,11 +21,11 @@ servicex_status_poll_time = 5.0
 
 def servicex_adaptor_factory(c: ConfigView):
     # It is an error if this is not specified somewhere.
-    endpoint = c['api_endpoint']['endpoint'].get(str)
+    endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
 
     # We can default these to "None"
-    username = c['api_endpoint']['username'].get(str) if 'username' in c['api_endpoint'] else None
-    password = c['api_endpoint']['password'].get(str) if 'password' in c['api_endpoint'] else None
+    username = c['api_endpoint']['username'].as_str_expanded() if 'username' in c['api_endpoint'] else None
+    password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] else None
     return ServiceXAdaptor(endpoint, username, password)
 
 
