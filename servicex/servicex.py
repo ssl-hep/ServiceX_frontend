@@ -263,14 +263,15 @@ class ServiceXDataset(ServiceXABC):
                 self._cache.remove_query(query)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
-    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]):
+    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]) -> str:
         '''
         For this query, fetch the request id. If we have it cached, use that. Otherwise, query
         ServiceX for a enw one (and cache it for later use).
         '''
         request_id = self._cache.lookup_query(query)
         if request_id is None:
-            request_id = await self._servicex_adaptor.submit_query(client, query)
+            request_info = await self._servicex_adaptor.submit_query(client, query)
+            request_id = request_info['request_id']
             self._cache.set_query(query, request_id)
         return request_id
 

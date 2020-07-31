@@ -49,7 +49,7 @@ class MockServiceXAdaptor:
         def do_unique_id():
             id = self.request_id.format(self.requests_made)
             self.requests_made += 1
-            return id
+            return {'request_id': id}
 
         self.query = mock_query \
             if mock_query \

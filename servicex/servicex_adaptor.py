@@ -68,7 +68,7 @@ class ServiceXAdaptor:
             return {}
 
     async def submit_query(self, client: aiohttp.ClientSession,
-                           json_query: Dict[str, str]) -> str:
+                           json_query: Dict[str, str]) -> Dict[str, str]:
         """
         Submit a query to ServiceX, and return a request ID
         """
@@ -86,9 +86,36 @@ class ServiceXAdaptor:
                                         f'({status}){t}')
 
             r = await response.json()
-            req_id = r["request_id"]
+            return r
 
-            return req_id
+    async def get_query_status(self, client: aiohttp.ClientSession,
+                               request_id: str) -> Dict[str, str]:
+        '''Returns the full query information from the endpoint.
+
+        Args:
+            client (aiohttp.ClientSession): Client session on which to make the request.
+            request_id (str): The request id to return the tranform status
+
+        Raises:
+            ServiceXException: If we fail to find the information.
+
+        Returns:
+            Dict[str, str]: The JSON dictionary of information returned from ServiceX
+        '''
+        headers = await self._get_authorization(client)
+
+        async with client.get(f'{self._endpoint}/servicex/transformation/{request_id}',
+                              headers=headers) as response:
+            status = response.status
+            if status != 200:
+                # This was an error at ServiceX, bubble it up so code above us can
+                # handle as needed.
+                t = await response.text()
+                raise ServiceXException('ServiceX rejected the transformation status fetch: '
+                                        f'({status}){t}')
+
+            r = await response.json()
+            return r
 
     @staticmethod
     def _get_transform_stat(info: Dict[str, str], stat_name: str):
