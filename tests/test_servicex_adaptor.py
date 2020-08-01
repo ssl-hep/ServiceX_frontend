@@ -482,3 +482,22 @@ def test_servicex_adaptor_settings():
     assert sx._endpoint == 'http://my-left-foot.com:5000'
     assert sx._username == 'thegoodplace'
     assert sx._password == 'forkingshirtballs'
+
+
+def test_servicex_adaptor_settings_env():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoint']['endpoint'] = '${ENDPOINT}:5000'
+    c['api_endpoint']['username'] = '${SXUSER}'
+    c['api_endpoint']['password'] = '${SXPASS}'
+
+    from os import environ
+    environ['ENDPOINT'] = 'http://tachi.com'
+    environ['SXUSER'] = 'Holden'
+    environ['SXPASS'] = 'protomolecule'
+
+    sx = servicex_adaptor_factory(c)
+    assert sx._endpoint == 'http://tachi.com:5000'
+    assert sx._username == 'Holden'
+    assert sx._password == 'protomolecule'

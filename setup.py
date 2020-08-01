@@ -15,7 +15,7 @@ if sys.version_info[1] < 8:
     extra_test_packages.append('asyncmock')
 
 setup(name="servicex",
-      version='2.0.0-beta.10',
+      version='2.0.0-beta.11',
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
