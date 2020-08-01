@@ -41,18 +41,18 @@ from .utils import ServiceXException
 def minio_adaptor_factory(c: ConfigView):
     # This must always be configured!
     c_api = c['api_endpoint']
-    end_point = c_api['minio_endpoint'].get(str)
+    end_point = c_api['minio_endpoint'].as_str_expanded()
 
     # Grab the username and password if they are explicitly listed.
     if 'minio_username' in c_api:
-        username = c_api['minio_username'].get(str)
-        password = c_api['minio_password'].get(str)
+        username = c_api['minio_username'].as_str_expanded()
+        password = c_api['minio_password'].as_str_expanded()
     elif 'username' in c_api:
-        username = c_api['username'].get(str)
-        password = c_api['password'].get(str)
+        username = c_api['username'].as_str_expanded()
+        password = c_api['password'].as_str_expanded()
     else:
-        username = c_api['default_minio_username'].get(str)
-        password = c_api['default_minio_password'].get(str)
+        username = c_api['default_minio_username'].as_str_expanded()
+        password = c_api['default_minio_password'].as_str_expanded()
 
     return MinioAdaptor(end_point, access_key=username, secretkey=password)
 
