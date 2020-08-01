@@ -114,3 +114,19 @@ def test_data_file_bad_file(tmp_path):
     assert not p.exists()
     p.touch()
     assert p.exists()
+
+
+def test_query_cache_status(tmp_path):
+    c = Cache(tmp_path)
+
+    info = {'request_id': '111-222-333', 'key': 'bogus'}
+    c.set_query_status(info)
+    info1 = c.lookup_query_status('111-222-333')
+    assert info1['key'] == 'bogus'
+
+
+def test_query_cache_status_bad(tmp_path):
+    c = Cache(tmp_path)
+
+    with pytest.raises(Exception):
+        c.lookup_query_status('111-222-333')

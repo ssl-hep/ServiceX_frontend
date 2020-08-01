@@ -116,6 +116,22 @@ def bad_submit_html(mocker):
 
 
 @pytest.fixture
+def good_update(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'request_id': "111-222-333"}), 200)
+    client.get = mocker.MagicMock(return_value=r)
+    return client
+
+
+@pytest.fixture
+def bad_update(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'message': "Not known"}), 400)
+    client.get = mocker.MagicMock(return_value=r)
+    return client
+
+
+@pytest.fixture
 def servicex_status_unknown(mocker):
     r = ClientSessionMocker(dumps({'message': "unknown status"}), 500)
     mocker.patch('aiohttp.ClientSession.get', return_value=r)
@@ -257,8 +273,9 @@ async def test_submit_good_no_login(good_submit):
     assert kwargs['json'] == {'hi': 'there'}
 
     assert rid is not None
-    assert isinstance(rid, str)
-    assert rid == '111-222-333-444'
+    assert isinstance(rid, dict)
+    assert 'request_id' in rid
+    assert rid['request_id'] == '111-222-333-444'
 
 
 @pytest.mark.asyncio
@@ -307,10 +324,10 @@ async def test_submit_good_with_login_existing_token(mocker):
 
     mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')})  # Never expires
     rid1 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid1 == '111-222-333-444'
+    assert rid1['request_id'] == '111-222-333-444'
 
     rid2 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid2 == '222-333-444-555'
+    assert rid2['request_id'] == '222-333-444-555'
 
     r = client.post.mock_calls
 
@@ -353,10 +370,10 @@ async def test_submit_good_with_login_expired_token(mocker):
     mocker.patch('google.auth.jwt.decode', return_value={'exp': 0})  # Always expired
 
     rid1 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid1 == '111-222-333-444'
+    assert rid1['request_id'] == '111-222-333-444'
 
     rid2 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid2 == '222-333-444-555'
+    assert rid2['request_id'] == '222-333-444-555'
 
     r = client.post.mock_calls
 
@@ -419,6 +436,38 @@ async def test_submit_good_with_bad_login(mocker):
         await sa.submit_query(client, {'hi': 'there'})
 
     assert "ServiceX login request rejected" in str(e.value)
+
+
+@pytest.mark.asyncio
+async def test_update_query_status(good_update):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
+
+    rid = await sa.get_query_status(good_update, '111-222-333')
+
+    good_update.get.assert_called_once()
+    args, kwargs = good_update.get.call_args
+
+    assert len(args) == 1
+    assert args[0] == 'http://localhost:5000/sx/servicex/transformation/111-222-333'
+
+    assert len(kwargs) == 1
+    assert 'headers' in kwargs
+    assert len(kwargs['headers']) == 0
+
+    assert rid is not None
+    assert isinstance(rid, dict)
+    assert 'request_id' in rid
+    assert rid['request_id'] == '111-222-333'
+
+
+@pytest.mark.asyncio
+async def test_update_query_status_bad(bad_update):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
+
+    with pytest.raises(ServiceXException) as e:
+        await sa.get_query_status(bad_update, '111-222-333')
+
+    assert "rejected" in str(e.value)
 
 
 def test_servicex_adaptor_settings():

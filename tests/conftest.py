@@ -49,7 +49,7 @@ class MockServiceXAdaptor:
         def do_unique_id():
             id = self.request_id.format(self.requests_made)
             self.requests_made += 1
-            return id
+            return {'request_id': id}
 
         self.query = mock_query \
             if mock_query \
@@ -68,6 +68,12 @@ class MockServiceXAdaptor:
             -> Tuple[Optional[int], int, Optional[int]]:
         # remaining, processed, skipped
         return self.transform_status()
+
+    async def get_query_status(self, client, request_id):
+        return {
+            'request_id': request_id,
+            'dude': 'way',
+        }
 
 
 class MockMinioAdaptor:
