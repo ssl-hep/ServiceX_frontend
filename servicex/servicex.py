@@ -254,6 +254,9 @@ class ServiceXDataset(ServiceXABC):
                 async for r in stream_local_files:
                     yield r
 
+                # Cache the final status
+                await self._update_query_status(client, request_id)
+
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
                 raise ServiceXException('ServiceX instance does not know about cached query '
@@ -275,6 +278,17 @@ class ServiceXDataset(ServiceXABC):
             self._cache.set_query(query, request_id)
             self._cache.set_query_status(request_info)
         return request_id
+
+    async def _update_query_status(self, client: aiohttp.ClientSession,
+                                   request_id: str):
+        '''Fetch the status from servicex and cache it locally, over
+        writing what was there before.
+
+        Args:
+            request_id (str): Request id of the status to fetch and cache.
+        '''
+        info = await self._servicex_adaptor.get_query_status(client, request_id)
+        self._cache.set_query_status(info)
 
     async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
                                 notifier: _status_update_wrapper):
@@ -342,7 +356,7 @@ class ServiceXDataset(ServiceXABC):
             async for info in stream_downloaded:
                 yield info
 
-        except BaseException:
+        except Exception:
             good = False
             raise
 

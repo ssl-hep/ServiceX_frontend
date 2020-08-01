@@ -69,6 +69,12 @@ class MockServiceXAdaptor:
         # remaining, processed, skipped
         return self.transform_status()
 
+    async def get_query_status(self, client, request_id):
+        return {
+            'request_id': request_id,
+            'dude': 'way',
+        }
+
 
 class MockMinioAdaptor:
     def __init__(self, mocker: MockFixture, files: List[str] = []):
