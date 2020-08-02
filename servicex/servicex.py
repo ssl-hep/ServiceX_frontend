@@ -1,42 +1,33 @@
 # Main front end interface
 import asyncio
-from datetime import timedelta
 import functools
 import logging
-from pathlib import Path
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
-from typing import AsyncIterator
+from datetime import timedelta
+from pathlib import Path
+from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
+                    Optional, Tuple, Union)
 
 import aiohttp
-from backoff import on_exception
 import backoff
+from backoff import on_exception
 from confuse import ConfigView
 
-from .ConfigSettings import ConfigSettings
 from .cache import Cache
+from .ConfigSettings import ConfigSettings
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
-from .minio_adaptor import MinioAdaptor, find_new_bucket_files, minio_adaptor_factory
-from .servicex_adaptor import (
-    ServiceXAdaptor,
-    servicex_adaptor_factory,
-    transform_status_stream,
-    trap_servicex_failures,
-)
+from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
+                            find_new_bucket_files)
+from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
+                               transform_status_stream, trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
-from .utils import (
-    ServiceXException,
-    ServiceXFailedFileTransform,
-    ServiceXUnknownRequestID,
-    StatusUpdateFactory,
-    _run_default_wrapper,
-    _status_update_wrapper,
-    default_client_session, get_configured_cache_path,
-    log_adaptor,
-    stream_status_updates,
-    stream_unique_updates_only,
-)
+from .utils import (ServiceXException, ServiceXFailedFileTransform,
+                    ServiceXUnknownRequestID, StatusUpdateFactory,
+                    _run_default_wrapper, _status_update_wrapper,
+                    default_client_session, get_configured_cache_path,
+                    log_adaptor, stream_status_updates,
+                    stream_unique_updates_only)
 
 
 class ServiceXDataset(ServiceXABC):
@@ -49,7 +40,7 @@ class ServiceXDataset(ServiceXABC):
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
-                 minio_adaptor: MinioAdaptor = None,
+                 minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
                  cache_adaptor: Optional[Cache] = None,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  local_log: log_adaptor = None,
@@ -109,9 +100,12 @@ class ServiceXDataset(ServiceXABC):
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            self._minio_adaptor = minio_adaptor_factory(config)
+            self._minio_adaptor = MinioAdaptorFactory(config)
         else:
-            self._minio_adaptor = minio_adaptor
+            if isinstance(minio_adaptor, MinioAdaptor):
+                self._minio_adaptor = MinioAdaptorFactory(always_return=minio_adaptor)
+            else:
+                self._minio_adaptor = minio_adaptor
 
         self._log = log_adaptor() if local_log is None else local_log
 
@@ -242,13 +236,17 @@ class ServiceXDataset(ServiceXABC):
             # Get a request id - which might be cached, but if not, submit it.
             request_id = await self._get_request_id(client, query)
 
+            # Get the minio adaptor we are going to use for downloading.
+            minio_adaptor = self._minio_adaptor \
+                .from_best(self._cache.lookup_query_status(request_id))
+
             # Look up the cache, and then fetch an iterator going thorugh the results
             # from either servicex or the cache, depending.
             try:
                 cached_files = self._cache.lookup_files(request_id)
                 stream_local_files = self._get_cached_files(cached_files, notifier) \
                     if cached_files is not None \
-                    else self._get_files_from_servicex(request_id, client, query, notifier)
+                    else self._get_files_from_servicex(request_id, client, minio_adaptor, notifier)
 
                 # Reflect the files back up a level.
                 async for r in stream_local_files:
@@ -305,6 +303,7 @@ class ServiceXDataset(ServiceXABC):
 
     async def _download_a_file(self, stream: AsyncIterator[str],
                                request_id: str,
+                               minio_adaptor: MinioAdaptor,
                                notifier: _status_update_wrapper) \
             -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
         '''
@@ -312,9 +311,10 @@ class ServiceXDataset(ServiceXABC):
         The copy can take a while, so send it off to another thread - don't pause queuing up other
         files to download.
         '''
+
         async def do_copy(final_path):
             assert request_id is not None
-            await self._minio_adaptor.download_file(request_id, f, final_path)
+            await minio_adaptor.download_file(request_id, f, final_path)
             notifier.inc(downloaded=1)
             notifier.broadcast()
             return final_path
@@ -330,7 +330,7 @@ class ServiceXDataset(ServiceXABC):
 
     async def _get_files_from_servicex(self, request_id: str,
                                        client: aiohttp.ClientSession,
-                                       query: Dict[str, str],
+                                       minio_adaptor: MinioAdaptor,
                                        notifier: _status_update_wrapper):
         '''
         Fetch query result files from `servicex`. Given the `request_id` we will download
@@ -347,9 +347,10 @@ class ServiceXDataset(ServiceXABC):
             stream_unique = stream_unique_updates_only(stream_watched)
 
             # Next, download the files as they are found (and return them):
-            stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,
+            stream_new_object = find_new_bucket_files(minio_adaptor, request_id,
                                                       stream_unique)
-            stream_downloaded = self._download_a_file(stream_new_object, request_id, notifier)
+            stream_downloaded = self._download_a_file(stream_new_object, request_id,
+                                                      minio_adaptor, notifier)
 
             # Return the files to anyone that wants them!
 

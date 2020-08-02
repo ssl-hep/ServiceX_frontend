@@ -1,4 +1,4 @@
-# Copyright (c) 2019, IRIS-HEP
+# Copyright (c) 2019-2020, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,8 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Optional, cast, Dict
+import logging
 
 import backoff
 from backoff import on_exception
@@ -38,31 +39,14 @@ from minio import Minio, ResponseError
 from .utils import ServiceXException
 
 
-def minio_adaptor_factory(c: ConfigView):
-    # This must always be configured!
-    c_api = c['api_endpoint']
-    end_point = c_api['minio_endpoint'].as_str_expanded()
-
-    # Grab the username and password if they are explicitly listed.
-    if 'minio_username' in c_api:
-        username = c_api['minio_username'].as_str_expanded()
-        password = c_api['minio_password'].as_str_expanded()
-    elif 'username' in c_api:
-        username = c_api['username'].as_str_expanded()
-        password = c_api['password'].as_str_expanded()
-    else:
-        username = c_api['default_minio_username'].as_str_expanded()
-        password = c_api['default_minio_password'].as_str_expanded()
-
-    return MinioAdaptor(end_point, access_key=username, secretkey=password)
-
-
 class MinioAdaptor:
     # Threadpool on which downloads occur. This is because the current minio library
     # uses blocking http requests, so we can't use asyncio to interleave them.
     _download_executor = ThreadPoolExecutor(max_workers=5)
 
-    def __init__(self, mino_endpoint, access_key='miniouser', secretkey='leftfoot1'):
+    def __init__(self, mino_endpoint: str,
+                 access_key: str = 'miniouser',
+                 secretkey: str = 'leftfoot1'):
         self._endpoint = mino_endpoint
         self._access_key = access_key
         self._secretkey = secretkey
@@ -114,6 +98,84 @@ class MinioAdaptor:
 
         # Do the copy, which might take a while, on a separate thread.
         return await asyncio.wrap_future(self._download_executor.submit(do_copy))
+
+
+class MinioAdaptorFactory:
+    '''A factor that will return, when asked, the proper minio adaptor to use for a request
+    to get files from ServiceX.
+    '''
+    def __init__(self, c: Optional[ConfigView] = None,
+                 always_return: Optional[MinioAdaptor] = None):
+        '''Create the factor with a possible adaptor to always use
+
+        Args:
+            always_return (Optional[MinioAdaptor], optional): The adaptor to always use. If none,
+            then one will be created by the best other available method. Defaults to None.
+        '''
+        # Get the defaults setup.
+        self._always = always_return
+        self._config_adaptor = None
+        if self._always is None and c is not None:
+            self._config_adaptor = self._from_config(c)
+
+    def from_best(self, transation_info: Optional[Dict[str, str]] = None) -> MinioAdaptor:
+        '''Using the information we have, create the proper Minio Adaptor with the correct
+        endpoint and login information. Order of adaptor generation:
+
+        1. The `always_return` option from the ctor
+        1. Use info from the `translation_info`
+        1. Use the info from the config handed in to the ctor
+
+        Raises:
+            Exception: If we do not have enough information to create an adaptor, this is raised.
+
+        Returns:
+            MinioAdaptor: The adaptor that can be used to extract the data from minio for this
+            request.
+        '''
+        if self._always is not None:
+            logging.getLogger(__name__).debug('Using the pre-defined minio_adaptor')
+            return self._always
+        if transation_info is not None:
+            if 'minio-endpoint' in transation_info \
+                    and 'minio-access-key' in transation_info \
+                    and 'minio-secret-key' in transation_info:
+                logging.getLogger(__name__).debug('Using the request-specific minio_adaptor')
+                return MinioAdaptor(transation_info['minio-endpoint'],
+                                    transation_info['minio-access-key'],
+                                    transation_info['minio-secret-key'])
+        if self._config_adaptor is not None:
+            logging.getLogger(__name__).debug('Using the config-file minio_adaptor')
+            return self._config_adaptor
+        raise Exception("Do not know how to create a Minio Login info")
+
+    def _from_config(self, c: ConfigView) -> MinioAdaptor:
+        '''Extract the Minio config information from the config file(s). This will be used
+        if minio login information isn't returned from the request.
+
+        Args:
+            c (ConfigView): The loaded config
+
+        Returns:
+            MinioAdaptor: The adaptor that uses the config's login information.
+        '''
+        c_api = c['api_endpoint']
+        end_point = cast(str, c_api['minio_endpoint'].as_str_expanded())
+
+        # Grab the username and password if they are explicitly listed.
+        if 'minio_username' in c_api:
+            username = c_api['minio_username'].as_str_expanded()
+            password = c_api['minio_password'].as_str_expanded()
+        elif 'username' in c_api:
+            username = c_api['username'].as_str_expanded()
+            password = c_api['password'].as_str_expanded()
+        else:
+            username = c_api['default_minio_username'].as_str_expanded()
+            password = c_api['default_minio_password'].as_str_expanded()
+
+        return MinioAdaptor(end_point,
+                            access_key=cast(str, username),
+                            secretkey=cast(str, password))
 
 
 async def find_new_bucket_files(adaptor: MinioAdaptor,

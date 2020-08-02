@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+from servicex.minio_adaptor import MinioAdaptorFactory
 from typing import Optional
 
 import pandas as pd
@@ -631,3 +632,27 @@ async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
 
     a1, a2 = await asyncio.gather(*[do_query(), do_query()])  # type: ignore
     assert a1 is a2
+
+
+@pytest.mark.asyncio
+async def test_good_minio_factory_from_best(mocker):
+    'Get a root file with a single file'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root",
+                                  query_status_lookup_return={'request_id': 'bogus'})
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+
+    mock_minio_factory = mocker.MagicMock(spec=MinioAdaptorFactory)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_minio_factory.from_best.return_value = mock_minio_adaptor
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_factory,
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+    await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    mock_minio_adaptor.mock_download_file.assert_called_once()
+    mock_minio_factory.from_best.assert_called_once()
+    assert mock_minio_factory.from_best.call_args[0][0] == {'request_id': 'bogus'}

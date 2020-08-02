@@ -1,5 +1,6 @@
 from json import loads
 from pathlib import Path
+from servicex.minio_adaptor import MinioAdaptor
 from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import Mock
 
@@ -76,7 +77,7 @@ class MockServiceXAdaptor:
         }
 
 
-class MockMinioAdaptor:
+class MockMinioAdaptor(MinioAdaptor):
     def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
         self.mock_download_file = mocker.Mock()
@@ -97,7 +98,8 @@ def build_cache_mock(mocker, query_cache_return: str = None,
                      files: Optional[List[Tuple[str, str]]] = None,
                      in_memory: Any = None,
                      make_in_memory_work: bool = False,
-                     data_file_return: str = None) -> Cache:
+                     data_file_return: str = None,
+                     query_status_lookup_return: Optional[Dict[str, str]] = None) -> Cache:
     c = mocker.MagicMock(spec=Cache)
 
     if in_memory is None:
@@ -135,6 +137,9 @@ def build_cache_mock(mocker, query_cache_return: str = None,
         c.data_file_location.side_effect = data_file_return_generator
     else:
         c.data_file_location.return_value = data_file_return
+
+    if query_status_lookup_return is not None:
+        c.lookup_query_status.return_value = query_status_lookup_return
 
     return c
 
