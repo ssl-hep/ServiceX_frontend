@@ -274,7 +274,7 @@ class ServiceXDataset(ServiceXABC):
             request_info = await self._servicex_adaptor.submit_query(client, query)
             request_id = request_info['request_id']
             self._cache.set_query(query, request_id)
-            self._cache.set_query_status(request_info)
+            await self._update_query_status(client, request_id)
         return request_id
 
     async def _update_query_status(self, client: aiohttp.ClientSession,
