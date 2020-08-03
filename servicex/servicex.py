@@ -37,7 +37,7 @@ class ServiceXDataset(ServiceXABC):
     '''
     def __init__(self,
                  dataset: str,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:130_reset_cwd',
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
