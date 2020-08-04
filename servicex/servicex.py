@@ -262,6 +262,7 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXFailedFileTransform as e:
                 self._cache.remove_query(query)
+                self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
     async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]) -> str:

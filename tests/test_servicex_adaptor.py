@@ -519,7 +519,7 @@ async def test_fetch_errors_for_bad_bad_bad(mocker):
     client.get = mocker.Mock(return_value=ClientSessionMocker("Internal Error", 500))
 
     x = ServiceXAdaptor('http://localhost:5000')
-    with pytest.raises(ServiceXUnknownRequestID):
+    with pytest.raises(ServiceXException):
         await x.dump_query_errors(client, '111-222-333')
 
 
