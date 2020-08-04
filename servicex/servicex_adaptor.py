@@ -24,48 +24,38 @@ def servicex_adaptor_factory(c: ConfigView):
     endpoint = c['api_endpoint']['endpoint'].get(str)
 
     # We can default these to "None"
-    email = c['api_endpoint']['email'].get(str) if 'email' in c['api_endpoint'] else None
-    password = c['api_endpoint']['password'].get(str) if 'password' in c['api_endpoint'] else None
-    return ServiceXAdaptor(endpoint, email, password)
+    refresh_token = c['api_endpoint']['token'].get(str) if 'token' in c['api_endpoint'] else None
+    return ServiceXAdaptor(endpoint, refresh_token)
 
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
 class ServiceXAdaptor:
-    def __init__(self, endpoint, email=None, password=None):
+    def __init__(self, endpoint, refresh_token=None):
         '''
         Authenticated access to ServiceX
         '''
         self._endpoint = endpoint
-        self._email = email
-        self._password = password
-
         self._token = None
-        self._refresh_token = None
+        self._refresh_token = refresh_token
 
-    async def _login(self, client: aiohttp.ClientSession):
-        url = f'{self._endpoint}/login'
-        async with client.post(url, json={
-            'email': self._email,
-            'password': self._password
-        }) as response:
+    async def _get_token(self, client: aiohttp.ClientSession):
+        url = f'{self._endpoint}/token/refresh'
+        headers = {'Authorization': f'Bearer {self._refresh_token}'}
+        async with client.post(url, headers=headers) as response:
             status = response.status
             if status == 200:
                 j = await response.json()
                 self._token = j['access_token']
-                self._refresh_token = j['refresh_token']
             else:
                 raise ServiceXException(f'ServiceX login request rejected: {status}')
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
-        if self._email:
-            now = datetime.utcnow().timestamp()
-            if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
-                await self._login(client)
-            return {
-                'Authorization': f'Bearer {self._token}'
-            }
-        else:
-            return {}
+        now = datetime.utcnow().timestamp()
+        if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
+            await self._get_token(client)
+        return {
+            'Authorization': f'Bearer {self._token}'
+        }
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:

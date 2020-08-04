@@ -40,8 +40,7 @@ Create a `.servicex` file, in the `yaml` format, in the appropriate place for yo
 ```yaml
 api_endpoint:
   endpoint: <your-endpoint>
-  email: <api-email>
-  password: <api-password>
+  token: <api-token>
 
   minio_endpoint: <minio-endpoint>
   minio_username: <minio-accesskey>
