@@ -41,21 +41,21 @@ class ServiceXAdaptor:
     async def _get_token(self, client: aiohttp.ClientSession):
         url = f'{self._endpoint}/token/refresh'
         headers = {'Authorization': f'Bearer {self._refresh_token}'}
-        async with client.post(url, headers=headers) as response:
+        async with client.post(url, headers=headers, json=None) as response:
             status = response.status
             if status == 200:
                 j = await response.json()
                 self._token = j['access_token']
             else:
-                raise ServiceXException(f'ServiceX login request rejected: {status}')
+                raise ServiceXException(f'ServiceX access token request rejected: {status}')
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
+        if not self._refresh_token:
+            return {}
         now = datetime.utcnow().timestamp()
         if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
             await self._get_token(client)
-        return {
-            'Authorization': f'Bearer {self._token}'
-        }
+        return {'Authorization': f'Bearer {self._token}'}
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
@@ -114,6 +114,7 @@ class ServiceXAdaptor:
             files_failed        Number of files that were skipped
         """
         headers = await self._get_authorization(client)
+        print(headers)
 
         # Make the actual query
         async with client.get(
