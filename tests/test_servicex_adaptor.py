@@ -2,7 +2,6 @@ from json import dumps
 from typing import Optional
 
 import aiohttp
-from aiohttp.client_exceptions import ContentTypeError
 import pytest
 
 from servicex import (
@@ -17,7 +16,7 @@ from servicex.servicex_adaptor import (
     trap_servicex_failures,
 )
 
-from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
+from .conftest import ClientSessionMocker, as_async_seq
 
 
 @pytest.fixture
@@ -147,12 +146,12 @@ async def test_status_with_auth(mocker):
                          refresh_token='jwt:refresh')
 
     await sa.get_transform_status(client, '123-123-123-444')
-    print(client.post.mock_calls)
-    client.post.assert_called_with("http://localhost:5000/sx/token/refresh", json=None,
+    client.post.assert_called_with("http://localhost:5000/sx/token/refresh",json=None,
                                    headers={'Authorization': 'Bearer jwt:refresh'})
 
-    client.get.assert_called_with("http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
-                                  headers={'Authorization': 'Bearer jwt:access'})
+    client.get.assert_called_with(
+        "http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
+        headers={'Authorization': 'Bearer jwt:access'})
 
 
 @pytest.mark.asyncio
@@ -410,3 +409,20 @@ def test_servicex_adaptor_settings():
     sx = servicex_adaptor_factory(c)
     assert sx._endpoint == 'http://my-left-foot.com:5000'
     assert sx._refresh_token == 'forkingshirtballs.thegoodplace.bortles'
+
+
+def test_servicex_adaptor_settings_env():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoint']['endpoint'] = '${ENDPOINT}:5000'
+    c['api_endpoint']['token'] = '${SXTOKEN}'
+
+    from os import environ
+    environ['ENDPOINT'] = 'http://tachi.com'
+    environ['SXTOKEN'] = 'jwt:refresh'
+
+    sx = servicex_adaptor_factory(c)
+    print(sx.__dict__)
+    assert sx._endpoint == 'http://tachi.com:5000'
+    assert sx._refresh_token == 'jwt:refresh'

@@ -21,10 +21,10 @@ servicex_status_poll_time = 5.0
 
 def servicex_adaptor_factory(c: ConfigView):
     # It is an error if this is not specified somewhere.
-    endpoint = c['api_endpoint']['endpoint'].get(str)
+    endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
 
-    # We can default these to "None"
-    refresh_token = c['api_endpoint']['token'].get(str) if 'token' in c['api_endpoint'] else None
+    # We can default the token "None"
+    refresh_token = c['api_endpoint']['token'].as_str_expanded() if 'token' in c['api_endpoint'] else None
     return ServiceXAdaptor(endpoint, refresh_token)
 
 

@@ -9,3 +9,4 @@ from .utils import (  # NOQA
 )
 from .servicex_adaptor import ServiceXAdaptor  # NOQA
 from .minio_adaptor import MinioAdaptor  # NOQA
+from .cache import Cache  # NOQA

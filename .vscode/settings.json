@@ -18,6 +18,7 @@
         "Powheg",
         "Reconstructor",
         "STDM",
+        "SXTOKEN",
         "Servivce",
         "Topo",
         "accesskey",
@@ -30,6 +31,7 @@
         "desy",
         "fget",
         "fname",
+        "inmem",
         "jupyter",
         "jupyterlab",
         "leftfoot",
@@ -45,6 +47,7 @@
         "numpy",
         "pathlib",
         "pnfs",
+        "protomolecule",
         "ptetaphi",
         "pytest",
         "qastle",
@@ -56,9 +59,11 @@
         "servicexabc",
         "setuptools",
         "sslhep",
+        "tcut",
         "tqdm",
         "unittests",
         "xaod",
         "xrootd"
-    ]
+    ],
+    "python.analysis.typeCheckingMode": "basic"
 }

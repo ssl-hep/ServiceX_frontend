@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import awkward
 from make_it_sync import make_sync
@@ -8,11 +8,9 @@ import numpy as np
 import pandas as pd
 
 from .utils import (
-    ServiceXException,
     StatusUpdateFactory,
     _null_progress_feedback,
     _run_default_wrapper,
-    sanitize_filename,
     _status_update_wrapper,
 )
 
@@ -30,24 +28,21 @@ class ServiceXABC(ABC):
     def __init__(self,
                  dataset: str,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-                 storage_directory: Optional[str] = None,
-                 file_name_func: Optional[Callable[[str, str], Path]] = None,
                  max_workers: int = 20,
-                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper):
+                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
+                 ):
         '''
         Create and configure a ServiceX object for a dataset.
 
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
-            service_endpoint            Where the ServiceX web API is found
             image                       Name of transformer image to use to transform the data
-            storage_directory           Location to cache data that comes back from ServiceX. Data
-                                        can be reused between invocations.
-            file_name_func              Allows for unique naming of the files that come back.
-                                        Rarely used.
+            cache_adaptor               Runs the caching for data and queries that are sent up and
+                                        down.
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
+            cache_path                  Path to the cache
             status_callback_factory     Factory to create a status notification callback for each
                                         query. One is created per query.
 
@@ -71,24 +66,6 @@ class ServiceXABC(ABC):
         self._status_callback_factory = \
             status_callback_factory if status_callback_factory is not None \
             else _null_progress_feedback
-
-        # Normalize how we do the files
-        if file_name_func is None:
-            if storage_directory is None:
-                def file_name(req_id: str, minio_name: str):
-                    import servicex.utils as sx
-                    return sx.default_file_cache_name / req_id / sanitize_filename(minio_name)
-                self._file_name_func = file_name
-            else:
-                def file_name(req_id: str, minio_name: str):
-                    assert storage_directory is not None
-                    return Path(storage_directory) / sanitize_filename(minio_name)
-                self._file_name_func = file_name
-        else:
-            if storage_directory is not None:
-                raise ServiceXException('Can only specify `storage_directory` or `file_name_func`'
-                                        ' when creating Servicex, not both.')
-            self._file_name_func = file_name_func
 
     def _create_notifier(self) -> _status_update_wrapper:
         'Internal method to create a updater from the status call-back'
