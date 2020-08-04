@@ -20,15 +20,6 @@ from .utils import (
 servicex_status_poll_time = 5.0
 
 
-def servicex_adaptor_factory(c: ConfigView):
-    # It is an error if this is not specified somewhere.
-    endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
-
-    # We can default these to "None"
-    refresh_token = c['api_endpoint']['token'].get(str) if 'token' in c['api_endpoint'] else None
-    return ServiceXAdaptor(endpoint, refresh_token)
-
-
 # Low level routines for interacting with a ServiceX instance via the WebAPI
 class ServiceXAdaptor:
     def __init__(self, endpoint, refresh_token=None):
@@ -42,21 +33,21 @@ class ServiceXAdaptor:
     async def _get_token(self, client: aiohttp.ClientSession):
         url = f'{self._endpoint}/token/refresh'
         headers = {'Authorization': f'Bearer {self._refresh_token}'}
-        async with client.post(url, headers=headers) as response:
+        async with client.post(url, headers=headers, json=None) as response:
             status = response.status
             if status == 200:
                 j = await response.json()
                 self._token = j['access_token']
             else:
-                raise ServiceXException(f'ServiceX login request rejected: {status}')
+                raise ServiceXException(f'ServiceX access token request rejected: {status}')
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
+        if not self._refresh_token:
+            return {}
         now = datetime.utcnow().timestamp()
         if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
             await self._get_token(client)
-        return {
-            'Authorization': f'Bearer {self._token}'
-        }
+        return {'Authorization': f'Bearer {self._token}'}
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> Dict[str, str]:
@@ -269,12 +260,10 @@ def servicex_adaptor_factory(c: ConfigView, backend_type: str) -> ServiceXAdapto
     for ep in endpoints:
         if ep['type'].as_str_expanded() == backend_type:
             endpoint = ep['endpoint'].as_str_expanded()
-            email = ep['email'].as_str_expanded() if 'email' in ep else None
-            password = ep['password'].as_str_expanded() if 'password' in ep \
-                else None
+            token = ep['token'].as_str_expanded() if 'token' in ep else None
 
             # We can default these to "None"
-            return ServiceXAdaptor(endpoint, email, password)
+            return ServiceXAdaptor(endpoint, refresh_token=token)
         else:
             seen_types.append(ep['type'].as_str_expanded())
 

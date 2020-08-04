@@ -1,5 +1,4 @@
 from datetime import timedelta
-import os
 import tempfile
 from typing import Optional
 import aiohttp
