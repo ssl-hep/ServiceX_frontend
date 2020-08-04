@@ -38,10 +38,10 @@ If no endpoint is specified, then the library defaults to the developer endpoint
 Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following:
 
 ```yaml
+<<<<<<< HEAD
 api_endpoints:
   - endpoint: <your-endpoint>
-    email: <api-email>
-    password: <api-password>
+    token: <api-token>
     type: xaod
 ```
 
