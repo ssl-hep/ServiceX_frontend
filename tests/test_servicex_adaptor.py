@@ -423,6 +423,5 @@ def test_servicex_adaptor_settings_env():
     environ['SXTOKEN'] = 'jwt:refresh'
 
     sx = servicex_adaptor_factory(c)
-    print(sx.__dict__)
     assert sx._endpoint == 'http://tachi.com:5000'
     assert sx._refresh_token == 'jwt:refresh'
