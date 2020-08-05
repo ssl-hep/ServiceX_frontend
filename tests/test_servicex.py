@@ -514,7 +514,6 @@ async def test_servicex_transformer_failure_reload(mocker, short_status_poll_tim
     mock_cache.remove_query.assert_called_once()
 
 
-
 @pytest.mark.asyncio
 async def test_servicex_transformer_failure_errors_dumped(mocker, short_status_poll_time):
     '''

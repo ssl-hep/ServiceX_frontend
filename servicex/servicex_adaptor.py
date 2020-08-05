@@ -143,11 +143,11 @@ class ServiceXAdaptor:
 
             # Dump the messages out to the logger if there are any!
             errors = (await response.json())["errors"]
-            l = logging.getLogger(__name__)
+            log = logging.getLogger(__name__)
             for e in errors:
-                l.warning(f'Error transforming file: {e["file"]}')
+                log.warning(f'Error transforming file: {e["file"]}')
                 for ln in e["info"].split('\n'):
-                    l.warning(f'  -> {ln}')
+                    log.warning(f'  -> {ln}')
 
     @staticmethod
     def _get_transform_stat(info: Dict[str, str], stat_name: str):
