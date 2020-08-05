@@ -489,7 +489,7 @@ def test_servicex_adaptor_settings_env():
     c = Configuration('bogus', 'bogus')
     c.clear()
     c['api_endpoint']['endpoint'] = '${ENDPOINT}:5000'
-    c['api_endpoint']['username'] = '${SXUSER}'
+    c['api_endpoint']['email'] = '${SXUSER}'
     c['api_endpoint']['password'] = '${SXPASS}'
 
     from os import environ
@@ -499,7 +499,7 @@ def test_servicex_adaptor_settings_env():
 
     sx = servicex_adaptor_factory(c)
     assert sx._endpoint == 'http://tachi.com:5000'
-    assert sx._username == 'Holden'
+    assert sx._email == 'Holden'
     assert sx._password == 'protomolecule'
 
 
