@@ -61,6 +61,12 @@ class ServiceXException(Exception):
         super().__init__(self, msg)
 
 
+class ServiceXFatalTransformException(Exception):
+    'Raised when something has gone wrong in the ServiceX remote service'
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 class ServiceXUnknownRequestID(Exception):
     'Raised when we try to access ServiceX with a request ID it does not know about'
     def __init__(self, msg):

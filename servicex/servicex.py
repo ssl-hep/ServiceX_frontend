@@ -23,11 +23,11 @@ from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (ServiceXException, ServiceXFailedFileTransform,
-                    ServiceXUnknownRequestID, StatusUpdateFactory,
-                    _run_default_wrapper, _status_update_wrapper,
-                    default_client_session, get_configured_cache_path,
-                    log_adaptor, stream_status_updates,
-                    stream_unique_updates_only)
+                    ServiceXFatalTransformException, ServiceXUnknownRequestID,
+                    StatusUpdateFactory, _run_default_wrapper,
+                    _status_update_wrapper, default_client_session,
+                    get_configured_cache_path, log_adaptor,
+                    stream_status_updates, stream_unique_updates_only)
 
 
 class ServiceXDataset(ServiceXABC):
@@ -260,9 +260,15 @@ class ServiceXDataset(ServiceXABC):
                 raise ServiceXException('ServiceX instance does not know about cached query '
                                         f'{request_id}. Please resubmit.') from e
 
+            except ServiceXFatalTransformException as e:
+                transform_status = await self._servicex_adaptor.get_query_status(client,
+                                                                                 request_id)
+                raise ServiceXFatalTransformException(
+                    f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
+
             except ServiceXFailedFileTransform as e:
                 self._cache.remove_query(query)
-                self._servicex_adaptor.dump_query_errors(client, request_id)
+                await self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
     async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]) -> str:
