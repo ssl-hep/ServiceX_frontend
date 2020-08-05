@@ -3,6 +3,7 @@ from .utils import (  # NOQA
     ServiceXException,
     ServiceXUnknownRequestID,
     ServiceXFailedFileTransform,
+    ServiceXFatalTransformException,
     StatusUpdateCallback,
     StatusUpdateFactory,
     clean_linq,

@@ -1,5 +1,6 @@
 from json import dumps
-from typing import Optional
+from servicex.utils import ServiceXFatalTransformException
+from typing import Optional, Union
 
 import aiohttp
 import pytest
@@ -39,13 +40,14 @@ def servicex_status_request(mocker):
     def get_status(a, headers=None):
         r = {}
 
-        def store(name: str, values: Optional[int]):
+        def store(name: str, values: Optional[Union[int, str]]):
             nonlocal r
             if values is not None:
                 r[name] = values
         store('files-remaining', files_remaining)
         store('files-skipped', files_failed)
         store('files-processed', files_processed)
+        store('status', 'Running')
 
         return ClientSessionMocker(dumps(r), 200)
 
@@ -58,6 +60,20 @@ def servicex_status_request(mocker):
         files_processed = processed
 
     return set_it_up
+
+
+@pytest.fixture
+def servicex_status_fatal(mocker):
+    'Returns a fatal status'
+    result = {
+        "files-processed": 0,
+        "files-remaining": None,
+        "files-skipped": 0,
+        "request-id": "24e59fa2-e1d7-4831-8c7e-82b2efc7c658",
+        "stats": None,
+        "status": "Fatal"
+    }
+    mocker.patch('aiohttp.ClientSession.get', return_value=ClientSessionMocker(dumps(result), 200))
 
 
 @pytest.fixture
@@ -148,6 +164,17 @@ async def test_status_no_login(servicex_status_request):
         assert r[0] is None
         assert r[1] == 10
         assert r[2] == 0
+
+
+@pytest.mark.asyncio
+async def test_status_fatal_status(servicex_status_fatal):
+
+    sa = ServiceXAdaptor('http://localhost:500/sx')
+    async with aiohttp.ClientSession() as client:
+        with pytest.raises(ServiceXFatalTransformException) as e:
+            await sa.get_transform_status(client, '123-123-123-444')
+
+        assert 'Fatal' in str(e.value)
 
 
 @pytest.mark.asyncio

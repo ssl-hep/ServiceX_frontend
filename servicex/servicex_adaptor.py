@@ -10,6 +10,7 @@ from google.auth import jwt
 from .utils import (
     ServiceXException,
     ServiceXFailedFileTransform,
+    ServiceXFatalTransformException,
     ServiceXUnknownRequestID,
     TransformTuple,
 )
@@ -118,7 +119,7 @@ class ServiceXAdaptor:
             return r
 
     @staticmethod
-    def _get_transform_stat(info: Dict[str, str], stat_name: str):
+    def _get_transform_stat(info: Dict[str, str], stat_name: str) -> Optional[int]:
         'Return the info from a servicex status reply, protecting against bad internet returns'
         return None \
             if ((stat_name not in info) or (info[stat_name] is None)) \
@@ -140,7 +141,11 @@ class ServiceXAdaptor:
         Arguments:
 
             endpoint            Web API address where servicex lives
-            request_id         The id of the request to check up on
+            request_id          The id of the request to check up on
+
+        Raises:
+
+            ServiceXException   If the status returns `Fatal`.
 
         Returns:
 
@@ -163,6 +168,11 @@ class ServiceXAdaptor:
                                                f' - http error {status}')
             info = await response.json()
             logging.getLogger(__name__).debug(f'Status response for {request_id}: {info}')
+
+            if 'status' in info and info['status'] == 'Fatal':
+                raise ServiceXFatalTransformException(f'Transform status for {request_id}'
+                                                      ' is marked "Fatal".')
+
             files_remaining = self._get_transform_stat(info, 'files-remaining')
             files_failed = self._get_transform_stat(info, 'files-skipped')
             files_processed = self._get_transform_stat(info, 'files-processed')
