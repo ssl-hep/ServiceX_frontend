@@ -515,6 +515,32 @@ async def test_servicex_transformer_failure_reload(mocker, short_status_poll_tim
 
 
 @pytest.mark.asyncio
+async def test_servicex_transformer_failure_errors_dumped(mocker, short_status_poll_time):
+    '''
+    1. Start a transform
+    2. A file is marked as failing
+    3. Make sure that the dump errors is called.
+    '''
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    transform_status = mocker.MagicMock(return_value=(0, 0, 1))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+                                                mock_transform_status=transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    with pytest.raises(fe.ServiceXException):
+        # Will fail with one skipped file.
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    mock_servicex_adaptor.dump_query_errors.assert_called_once()
+
+@pytest.mark.asyncio
 async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time):
     '''
     1. Start a transform

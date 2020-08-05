@@ -37,7 +37,7 @@ class ServiceXDataset(ServiceXABC):
     '''
     def __init__(self,
                  dataset: str,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:130_reset_cwd',
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:29_dont_truncate_error_logs',  # NOQA
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
@@ -262,6 +262,7 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXFailedFileTransform as e:
                 self._cache.remove_query(query)
+                self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
     async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]) -> str:

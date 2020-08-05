@@ -25,8 +25,10 @@ def servicex_adaptor_factory(c: ConfigView):
     endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
 
     # We can default these to "None"
-    username = c['api_endpoint']['username'].as_str_expanded() if 'username' in c['api_endpoint'] else None
-    password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] else None
+    username = c['api_endpoint']['username'].as_str_expanded() if 'username' in c['api_endpoint'] \
+        else None
+    password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] \
+        else None
     return ServiceXAdaptor(endpoint, username, password)
 
 
@@ -117,6 +119,36 @@ class ServiceXAdaptor:
 
             r = await response.json()
             return r
+
+    async def dump_query_errors(self, client: aiohttp.ClientSession,
+                                request_id: str):
+        '''Dumps to the logging system any error messages we find from ServiceX.
+
+        Args:
+            client (aiohttp.ClientSession): Client along which to send queries.
+            request_id (str): Fetch all errors from there.
+        '''
+
+        headers = await self._get_authorization(client)
+        async with client.get(f'{self._endpoint}/servicex/transformation/{request_id}/errors',
+                              headers=headers) as response:
+            status = response.status
+            if status != 200:
+                t = await response.text()
+                if "Request not found" in t:
+                    raise ServiceXUnknownRequestID(f'Unable to get errors for request {request_id}'
+                                                   f': {status} - {t}')
+                else:
+                    raise ServiceXException(f'Failed to get request errors for {request_id}: '
+                                            f'{status} - {t}')
+
+            # Dump the messages out to the logger if there are any!
+            errors = (await response.json())["errors"]
+            log = logging.getLogger(__name__)
+            for e in errors:
+                log.warning(f'Error transforming file: {e["file"]}')
+                for ln in e["info"].split('\n'):
+                    log.warning(f'  -> {ln}')
 
     @staticmethod
     def _get_transform_stat(info: Dict[str, str], stat_name: str) -> Optional[int]:
