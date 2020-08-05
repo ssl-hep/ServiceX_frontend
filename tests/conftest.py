@@ -87,6 +87,7 @@ class MockServiceXAdaptor:
     async def dump_query_errors(self, client, request_id):
         self.dump_query_errors_count += 1
 
+
 class MockMinioAdaptor(MinioAdaptor):
     def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
