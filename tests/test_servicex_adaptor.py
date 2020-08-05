@@ -501,3 +501,47 @@ def test_servicex_adaptor_settings_env():
     assert sx._endpoint == 'http://tachi.com:5000'
     assert sx._username == 'Holden'
     assert sx._password == 'protomolecule'
+
+
+@pytest.mark.asyncio
+async def test_fetch_errors_for_bad_req_id(mocker):
+    client = mocker.MagicMock()
+    client.get = mocker.Mock(return_value=ClientSessionMocker("Request not found", 404))
+
+    x = ServiceXAdaptor('http://localhost:5000')
+    with pytest.raises(ServiceXUnknownRequestID):
+        await x.dump_query_errors(client, '111-222-333')
+
+
+@pytest.mark.asyncio
+async def test_fetch_errors_for_bad_bad_bad(mocker):
+    client = mocker.MagicMock()
+    client.get = mocker.Mock(return_value=ClientSessionMocker("Internal Error", 500))
+
+    x = ServiceXAdaptor('http://localhost:5000')
+    with pytest.raises(ServiceXException):
+        await x.dump_query_errors(client, '111-222-333')
+
+
+@pytest.mark.asyncio
+async def test_fetch_errors_for_req_good(mocker, caplog):
+    client = mocker.MagicMock()
+    rtn = {
+        "errors": [
+            {
+                "pod-name": "transformer-8716d52a-974e-4f1d-beed-3425485d8f9b-f9785979892dp4",
+                "file": "root://xrootd.echo.stfc.ac.uk:1094/atlas:datadisk/rucio/mc16_13TeV/bf/23/DAOD_STDM3.20425969._000001.pool.root.1",  # NOQA
+                "events": 0,
+                "info": "error: Failed to transform input file root://xrootd.echo.stfc.ac.uk:1094/atlas:datadisk/rucio/mc16_13TeV/7e/e5/DAOD_STDM3.20425969._000077.pool.root.1: Output\nAnother line",  # NOQA
+            }
+        ]
+    }
+    client.get = mocker.Mock(return_value=ClientSessionMocker(dumps(rtn), 200))
+
+    x = ServiceXAdaptor('http://localhost:5000')
+    await x.dump_query_errors(client, '111-222-333')
+    client.get.assert_called_with('http://localhost:5000/servicex/transformation/111-222-333/errors', headers={})  # NOQA
+
+    warning_messages = (r for r in caplog.records if r.levelname == "WARNING")
+
+    assert sum((1 for w in warning_messages)) > 0

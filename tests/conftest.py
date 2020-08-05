@@ -60,6 +60,8 @@ class MockServiceXAdaptor:
             if mock_transform_status \
             else mocker.Mock(return_value=(0, 1, 0))
 
+        self.dump_query_errors = mocker.MagicMock(return_value=None)
+
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
         self.query_json = json_query
