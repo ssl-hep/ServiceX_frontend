@@ -1,19 +1,16 @@
 from datetime import timedelta
 from hashlib import blake2b
-from pathlib import Path
+from pathlib import Path, PurePath
 import re
 import tempfile
 import threading
 from typing import AsyncIterator, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
+from confuse.core import ConfigView
 from lark import Token, Transformer
 from qastle import parse
 from tqdm.auto import tqdm
-
-
-# Where shall we store files by default when we pull them down?
-default_file_cache_name: Path = Path(tempfile.gettempdir()) / 'servicex'
 
 
 # Access to thread local storage.
@@ -34,11 +31,11 @@ async def default_client_session() -> aiohttp.ClientSession:
 
 def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
                     time: timedelta, success: bool,
-                    path_to_log_dir: Optional[Path] = None):
+                    path_to_log_dir: Path):
     '''
     Log to a csv file the status of a run.
     '''
-    l_file = (default_file_cache_name if path_to_log_dir is None else path_to_log_dir) / 'log.csv'
+    l_file = path_to_log_dir / 'log.csv'
     if l_file.parent.exists():
         if not l_file.exists():
             l_file.write_text('RequestID,n_files,n_skip,time_sec,no_error\n')
@@ -54,8 +51,8 @@ class log_adaptor:
     '''
     @staticmethod
     def write_query_log(request_id: str, n_files: Optional[int], n_skip: int,
-                        time: timedelta, success: bool):
-        write_query_log(request_id, n_files, n_skip, time, success)
+                        time: timedelta, success: bool, path_to_log_dir: Path):
+        write_query_log(request_id, n_files, n_skip, time, success, path_to_log_dir)
 
 
 class ServiceXException(Exception):
@@ -359,3 +356,20 @@ def clean_linq(q: str) -> str:
         return new_tree
     except Exception:
         return q
+
+
+def get_configured_cache_path(config: ConfigView) -> Path:
+    '''
+    From the configuration info return a valid path for us to store our cached files.
+    '''
+    assert config["cache_path"].exists(), 'Cannot find default config - install is broken'
+    s_path = config["cache_path"].as_str_expanded()
+    assert isinstance(s_path, str)
+
+    p_p = PurePath(s_path)
+    if len(p_p.parts) > 1 and p_p.parts[1] == 'tmp':
+        p = Path(tempfile.gettempdir()) / Path(*p_p.parts[2:])
+    else:
+        p = Path(p_p)
+    p.mkdir(exist_ok=True, parents=True)
+    return p

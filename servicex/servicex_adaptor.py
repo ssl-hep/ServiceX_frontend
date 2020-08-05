@@ -21,11 +21,12 @@ servicex_status_poll_time = 5.0
 
 def servicex_adaptor_factory(c: ConfigView):
     # It is an error if this is not specified somewhere.
-    endpoint = c['api_endpoint']['endpoint'].get(str)
+    endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
 
     # We can default these to "None"
-    email = c['api_endpoint']['email'].get(str) if 'email' in c['api_endpoint'] else None
-    password = c['api_endpoint']['password'].get(str) if 'password' in c['api_endpoint'] else None
+    email = c['api_endpoint']['email'].as_str_expanded() if 'email' in c['api_endpoint'] else None
+    password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] \
+        else None
     return ServiceXAdaptor(endpoint, email, password)
 
 
@@ -68,7 +69,7 @@ class ServiceXAdaptor:
             return {}
 
     async def submit_query(self, client: aiohttp.ClientSession,
-                           json_query: Dict[str, str]) -> str:
+                           json_query: Dict[str, str]) -> Dict[str, str]:
         """
         Submit a query to ServiceX, and return a request ID
         """
@@ -86,9 +87,66 @@ class ServiceXAdaptor:
                                         f'({status}){t}')
 
             r = await response.json()
-            req_id = r["request_id"]
+            return r
 
-            return req_id
+    async def get_query_status(self, client: aiohttp.ClientSession,
+                               request_id: str) -> Dict[str, str]:
+        '''Returns the full query information from the endpoint.
+
+        Args:
+            client (aiohttp.ClientSession): Client session on which to make the request.
+            request_id (str): The request id to return the tranform status
+
+        Raises:
+            ServiceXException: If we fail to find the information.
+
+        Returns:
+            Dict[str, str]: The JSON dictionary of information returned from ServiceX
+        '''
+        headers = await self._get_authorization(client)
+
+        async with client.get(f'{self._endpoint}/servicex/transformation/{request_id}',
+                              headers=headers) as response:
+            status = response.status
+            if status != 200:
+                # This was an error at ServiceX, bubble it up so code above us can
+                # handle as needed.
+                t = await response.text()
+                raise ServiceXException('ServiceX rejected the transformation status fetch: '
+                                        f'({status}){t}')
+
+            r = await response.json()
+            return r
+
+    async def dump_query_errors(self, client: aiohttp.ClientSession,
+                                request_id: str):
+        '''Dumps to the logging system any error messages we find from ServiceX.
+
+        Args:
+            client (aiohttp.ClientSession): Client along which to send queries.
+            request_id (str): Fetch all errors from there.
+        '''
+
+        headers = await self._get_authorization(client)
+        async with client.get(f'{self._endpoint}/servicex/transformation/{request_id}/errors',
+                              headers=headers) as response:
+            status = response.status
+            if status != 200:
+                t = await response.text()
+                if "Request not found" in t:
+                    raise ServiceXUnknownRequestID(f'Unable to get errors for request {request_id}'
+                                                   f': {status} - {t}')
+                else:
+                    raise ServiceXException(f'Failed to get request errors for {request_id}: '
+                                            f'{status} - {t}')
+
+            # Dump the messages out to the logger if there are any!
+            errors = (await response.json())["errors"]
+            log = logging.getLogger(__name__)
+            for e in errors:
+                log.warning(f'Error transforming file: {e["file"]}')
+                for ln in e["info"].split('\n'):
+                    log.warning(f'  -> {ln}')
 
     @staticmethod
     def _get_transform_stat(info: Dict[str, str], stat_name: str):

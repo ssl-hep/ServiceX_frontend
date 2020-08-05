@@ -15,7 +15,7 @@ if sys.version_info[1] < 8:
     extra_test_packages.append('asyncmock')
 
 setup(name="servicex",
-      version='2.0.0-beta.9',
+      version='2.0.0-beta.11',
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
@@ -65,6 +65,7 @@ setup(name="servicex",
           "Programming Language :: Python",
           "Topic :: Software Development",
           "Topic :: Utilities",
+          "Programming Language :: Python",
           "Programming Language :: Python :: 3.6",
           "Programming Language :: Python :: 3.7",
           "Programming Language :: Python :: 3.8",

@@ -1,82 +1,111 @@
 # Main front end interface
 import asyncio
-from datetime import timedelta
 import functools
 import logging
-from pathlib import Path
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
-from typing import AsyncIterator
+from datetime import timedelta
+from pathlib import Path
+from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
+                    Optional, Tuple, Union)
 
 import aiohttp
-from backoff import on_exception
 import backoff
+from backoff import on_exception
 from confuse import ConfigView
 
-from .ConfigSettings import ConfigSettings
 from .cache import Cache
+from .ConfigSettings import ConfigSettings
 from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
-from .minio_adaptor import MinioAdaptor, find_new_bucket_files, minio_adaptor_factory
-from .servicex_adaptor import (
-    ServiceXAdaptor,
-    servicex_adaptor_factory,
-    transform_status_stream,
-    trap_servicex_failures,
-)
+from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
+                            find_new_bucket_files)
+from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
+                               transform_status_stream, trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
-from .utils import (
-    ServiceXException,
-    ServiceXFailedFileTransform,
-    ServiceXUnknownRequestID,
-    StatusUpdateFactory,
-    _run_default_wrapper,
-    _status_update_wrapper,
-    default_client_session,
-    log_adaptor,
-    stream_status_updates,
-    stream_unique_updates_only,
-)
+from .utils import (ServiceXException, ServiceXFailedFileTransform,
+                    ServiceXUnknownRequestID, StatusUpdateFactory,
+                    _run_default_wrapper, _status_update_wrapper,
+                    default_client_session, get_configured_cache_path,
+                    log_adaptor, stream_status_updates,
+                    stream_unique_updates_only)
 
 
 class ServiceXDataset(ServiceXABC):
     '''
-    ServiceX on the web.
+    Used to access an instance of ServiceX at an end point on the internet. Support convieration
+    by `.servicex` file or by creating the adaptors defined in the `__init__` function.
     '''
     def __init__(self,
                  dataset: str,
-                 servicex_adaptor: ServiceXAdaptor = None,
-                 minio_adaptor: MinioAdaptor = None,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
-                 storage_directory: Optional[str] = None,
-                 file_name_func: Optional[Callable[[str, str], Path]] = None,
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:29_dont_truncate_error_logs',  # NOQA
                  max_workers: int = 20,
+                 servicex_adaptor: ServiceXAdaptor = None,
+                 minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
+                 cache_adaptor: Optional[Cache] = None,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
-                 cache_adaptor: Cache = None,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: ConfigView = None):
-        ServiceXABC.__init__(self, dataset, image, storage_directory, file_name_func,
-                             max_workers, status_callback_factory)
+        '''
+        Create and configure a ServiceX object for a dataset.
+
+        Arguments
+
+            dataset                     Name of a dataset from which queries will be selected.
+            image                       Name of transformer image to use to transform the data
+            max_workers                 Maximum number of transformers to run simultaneously on
+                                        ServiceX.
+            servicex_adaptor            Object to control communication with the servicex instance
+                                        at a particular ip address with certian login credentials.
+                                        Will be configured via the `.servicex` file by default.
+            minio_adaptor               Object to control communication with the minio servicex
+                                        instance. By default configured with values from the
+                                        `.servicex` file.
+            cache_adaptor               Runs the caching for data and queries that are sent up and
+                                        down.
+            status_callback_factory     Factory to create a status notification callback for each
+                                        query. One is created per query.
+            local_log                   Log adaptor for logging.
+            session_generator           If you want to control the `ClientSession` object that
+                                        is used for callbacks. Otherwise a single one for all
+                                        `servicex` queries is used.
+            config_adaptor              Control how configuration options are read from the
+                                        `.servicex` file.
+
+        Notes:
+
+            -  The `status_callback` argument, by default, uses the `tqdm` library to render
+               progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
+               jupyter extensions installed). If `status_callback` is specified as None, no
+               updates will be rendered. A custom callback function can also be specified which
+               takes `(total_files, transformed, downloaded, skipped)` as an argument. The
+               `total_files` parameter may be `None` until the system knows how many files need to
+               be processed (and some files can even be completed before that is known).
+        '''
+        ServiceXABC.__init__(self, dataset, image, max_workers,
+                             status_callback_factory,
+                             )
 
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
             else ConfigSettings('servicex', 'servicex')
+
+        # Establish the cache that will store all our queries
+        self._cache = Cache(get_configured_cache_path(config)) \
+            if cache_adaptor is None \
+            else cache_adaptor
 
         if not servicex_adaptor:
             servicex_adaptor = servicex_adaptor_factory(config)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            self._minio_adaptor = minio_adaptor_factory(config)
+            self._minio_adaptor = MinioAdaptorFactory(config)
         else:
-            self._minio_adaptor = minio_adaptor
-
-        from servicex.utils import default_file_cache_name
-
-        self._cache = Cache(default_file_cache_name) \
-            if cache_adaptor is None \
-            else cache_adaptor
+            if isinstance(minio_adaptor, MinioAdaptor):
+                self._minio_adaptor = MinioAdaptorFactory(always_return=minio_adaptor)
+            else:
+                self._minio_adaptor = minio_adaptor
 
         self._log = log_adaptor() if local_log is None else local_log
 
@@ -90,7 +119,7 @@ class ServiceXDataset(ServiceXABC):
 
     @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_parquet_async(self, selection_query: str):
+    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
         return await self._file_return(selection_query, 'parquet')
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
@@ -164,12 +193,12 @@ class ServiceXDataset(ServiceXABC):
 
         # Convert them to the proper format
         as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
-                   async for f in as_files)  # type: ignore
+                   async for f in as_files)
 
         # Finally, we need them in the proper order so we append them
         # all together
-        all_data = {f[0]: await f[1] async for f in as_data}  # type: ignore
-        ordered_data = [all_data[k] for k in sorted(all_data)]
+        all_data = {f[0]: await f[1] async for f in as_data}
+        ordered_data = [all_data[k] for k in sorted(all_data.keys())]
 
         return ordered_data
 
@@ -207,17 +236,24 @@ class ServiceXDataset(ServiceXABC):
             # Get a request id - which might be cached, but if not, submit it.
             request_id = await self._get_request_id(client, query)
 
+            # Get the minio adaptor we are going to use for downloading.
+            minio_adaptor = self._minio_adaptor \
+                .from_best(self._cache.lookup_query_status(request_id))
+
             # Look up the cache, and then fetch an iterator going thorugh the results
             # from either servicex or the cache, depending.
             try:
                 cached_files = self._cache.lookup_files(request_id)
                 stream_local_files = self._get_cached_files(cached_files, notifier) \
                     if cached_files is not None \
-                    else self._get_files_from_servicex(request_id, client, query, notifier)
+                    else self._get_files_from_servicex(request_id, client, minio_adaptor, notifier)
 
                 # Reflect the files back up a level.
                 async for r in stream_local_files:
                     yield r
+
+                # Cache the final status
+                await self._update_query_status(client, request_id)
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
@@ -226,18 +262,32 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXFailedFileTransform as e:
                 self._cache.remove_query(query)
+                self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
-    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]):
+    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]) -> str:
         '''
         For this query, fetch the request id. If we have it cached, use that. Otherwise, query
         ServiceX for a enw one (and cache it for later use).
         '''
         request_id = self._cache.lookup_query(query)
         if request_id is None:
-            request_id = await self._servicex_adaptor.submit_query(client, query)
+            request_info = await self._servicex_adaptor.submit_query(client, query)
+            request_id = request_info['request_id']
             self._cache.set_query(query, request_id)
+            await self._update_query_status(client, request_id)
         return request_id
+
+    async def _update_query_status(self, client: aiohttp.ClientSession,
+                                   request_id: str):
+        '''Fetch the status from servicex and cache it locally, over
+        writing what was there before.
+
+        Args:
+            request_id (str): Request id of the status to fetch and cache.
+        '''
+        info = await self._servicex_adaptor.get_query_status(client, request_id)
+        self._cache.set_query_status(info)
 
     async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
                                 notifier: _status_update_wrapper):
@@ -254,6 +304,7 @@ class ServiceXDataset(ServiceXABC):
 
     async def _download_a_file(self, stream: AsyncIterator[str],
                                request_id: str,
+                               minio_adaptor: MinioAdaptor,
                                notifier: _status_update_wrapper) \
             -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
         '''
@@ -261,16 +312,17 @@ class ServiceXDataset(ServiceXABC):
         The copy can take a while, so send it off to another thread - don't pause queuing up other
         files to download.
         '''
+
         async def do_copy(final_path):
             assert request_id is not None
-            await self._minio_adaptor.download_file(request_id, f, final_path)
+            await minio_adaptor.download_file(request_id, f, final_path)
             notifier.inc(downloaded=1)
             notifier.broadcast()
             return final_path
 
         file_object_list = []
         async for f in stream:
-            copy_to_path = self._file_name_func(request_id, f)
+            copy_to_path = self._cache.data_file_location(request_id, f)
             file_object_list.append((f, str(copy_to_path)))
 
             yield f, do_copy(copy_to_path)
@@ -279,7 +331,7 @@ class ServiceXDataset(ServiceXABC):
 
     async def _get_files_from_servicex(self, request_id: str,
                                        client: aiohttp.ClientSession,
-                                       query: Dict[str, str],
+                                       minio_adaptor: MinioAdaptor,
                                        notifier: _status_update_wrapper):
         '''
         Fetch query result files from `servicex`. Given the `request_id` we will download
@@ -296,16 +348,17 @@ class ServiceXDataset(ServiceXABC):
             stream_unique = stream_unique_updates_only(stream_watched)
 
             # Next, download the files as they are found (and return them):
-            stream_new_object = find_new_bucket_files(self._minio_adaptor, request_id,
+            stream_new_object = find_new_bucket_files(minio_adaptor, request_id,
                                                       stream_unique)
-            stream_downloaded = self._download_a_file(stream_new_object, request_id, notifier)
+            stream_downloaded = self._download_a_file(stream_new_object, request_id,
+                                                      minio_adaptor, notifier)
 
             # Return the files to anyone that wants them!
 
             async for info in stream_downloaded:
                 yield info
 
-        except BaseException:
+        except Exception:
             good = False
             raise
 
@@ -315,7 +368,7 @@ class ServiceXDataset(ServiceXABC):
             logging.getLogger(__name__).info(f'Running servicex query for '
                                              f'{request_id} took {run_time}')
             self._log.write_query_log(request_id, notifier.total, notifier.failed,
-                                      run_time, good)
+                                      run_time, good, self._cache.path)
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''

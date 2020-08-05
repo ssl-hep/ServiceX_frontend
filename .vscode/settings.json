@@ -5,9 +5,6 @@
     "python.analysis.logLevel": "Information",
     "python.analysis.memory.keepLibraryAst": true,
     "python.linting.flake8Enabled": true,
-    "python.testing.pytestArgs": [
-        "--no-cov"
-    ],
     "cSpell.words": [
         "AOD's",
         "AZNLOCTEQ",
@@ -18,6 +15,8 @@
         "Powheg",
         "Reconstructor",
         "STDM",
+        "SXPASS",
+        "SXUSER",
         "Servivce",
         "Topo",
         "accesskey",
@@ -28,8 +27,10 @@
         "codecov",
         "dcache",
         "desy",
+        "dont",
         "fget",
         "fname",
+        "inmem",
         "jupyter",
         "jupyterlab",
         "leftfoot",
@@ -45,6 +46,7 @@
         "numpy",
         "pathlib",
         "pnfs",
+        "protomolecule",
         "ptetaphi",
         "pytest",
         "qastle",
@@ -56,9 +58,15 @@
         "servicexabc",
         "setuptools",
         "sslhep",
+        "stfc",
+        "tcut",
         "tqdm",
         "unittests",
         "xaod",
         "xrootd"
+    ],
+    "python.analysis.typeCheckingMode": "basic",
+    "python.testing.pytestArgs": [
+        "--no-cov"
     ]
 }

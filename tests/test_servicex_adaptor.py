@@ -2,7 +2,6 @@ from json import dumps
 from typing import Optional
 
 import aiohttp
-from aiohttp.client_exceptions import ContentTypeError
 import pytest
 
 from servicex import (
@@ -17,7 +16,7 @@ from servicex.servicex_adaptor import (
     trap_servicex_failures,
 )
 
-from .utils_for_testing import ClientSessionMocker, as_async_seq, short_status_poll_time  # NOQA
+from .conftest import ClientSessionMocker, as_async_seq
 
 
 @pytest.fixture
@@ -117,6 +116,22 @@ def bad_submit_html(mocker):
 
 
 @pytest.fixture
+def good_update(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'request_id': "111-222-333"}), 200)
+    client.get = mocker.MagicMock(return_value=r)
+    return client
+
+
+@pytest.fixture
+def bad_update(mocker):
+    client = mocker.MagicMock()
+    r = ClientSessionMocker(dumps({'message': "Not known"}), 400)
+    client.get = mocker.MagicMock(return_value=r)
+    return client
+
+
+@pytest.fixture
 def servicex_status_unknown(mocker):
     r = ClientSessionMocker(dumps({'message': "unknown status"}), 500)
     mocker.patch('aiohttp.ClientSession.get', return_value=r)
@@ -156,8 +171,9 @@ async def test_status_with_login(mocker):
     client.post.assert_called_with("http://localhost:5000/sx/login",
                                    json={'password': 'foobar', 'email': 'test@example.com'})
 
-    client.get.assert_called_with("http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
-                                  headers={'Authorization': 'Bearer jwt:foo'})
+    client.get.assert_called_with(
+        "http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
+        headers={'Authorization': 'Bearer jwt:foo'})
 
 
 @pytest.mark.asyncio
@@ -257,8 +273,9 @@ async def test_submit_good_no_login(good_submit):
     assert kwargs['json'] == {'hi': 'there'}
 
     assert rid is not None
-    assert isinstance(rid, str)
-    assert rid == '111-222-333-444'
+    assert isinstance(rid, dict)
+    assert 'request_id' in rid
+    assert rid['request_id'] == '111-222-333-444'
 
 
 @pytest.mark.asyncio
@@ -307,10 +324,10 @@ async def test_submit_good_with_login_existing_token(mocker):
 
     mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')})  # Never expires
     rid1 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid1 == '111-222-333-444'
+    assert rid1['request_id'] == '111-222-333-444'
 
     rid2 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid2 == '222-333-444-555'
+    assert rid2['request_id'] == '222-333-444-555'
 
     r = client.post.mock_calls
 
@@ -353,10 +370,10 @@ async def test_submit_good_with_login_expired_token(mocker):
     mocker.patch('google.auth.jwt.decode', return_value={'exp': 0})  # Always expired
 
     rid1 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid1 == '111-222-333-444'
+    assert rid1['request_id'] == '111-222-333-444'
 
     rid2 = await sa.submit_query(client, {'hi': 'there'})
-    assert rid2 == '222-333-444-555'
+    assert rid2['request_id'] == '222-333-444-555'
 
     r = client.post.mock_calls
 
@@ -421,6 +438,38 @@ async def test_submit_good_with_bad_login(mocker):
     assert "ServiceX login request rejected" in str(e.value)
 
 
+@pytest.mark.asyncio
+async def test_update_query_status(good_update):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
+
+    rid = await sa.get_query_status(good_update, '111-222-333')
+
+    good_update.get.assert_called_once()
+    args, kwargs = good_update.get.call_args
+
+    assert len(args) == 1
+    assert args[0] == 'http://localhost:5000/sx/servicex/transformation/111-222-333'
+
+    assert len(kwargs) == 1
+    assert 'headers' in kwargs
+    assert len(kwargs['headers']) == 0
+
+    assert rid is not None
+    assert isinstance(rid, dict)
+    assert 'request_id' in rid
+    assert rid['request_id'] == '111-222-333'
+
+
+@pytest.mark.asyncio
+async def test_update_query_status_bad(bad_update):
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
+
+    with pytest.raises(ServiceXException) as e:
+        await sa.get_query_status(bad_update, '111-222-333')
+
+    assert "rejected" in str(e.value)
+
+
 def test_servicex_adaptor_settings():
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
@@ -433,3 +482,66 @@ def test_servicex_adaptor_settings():
     assert sx._endpoint == 'http://my-left-foot.com:5000'
     assert sx._email == 'thegoodplace@example.com'
     assert sx._password == 'forkingshirtballs'
+
+
+def test_servicex_adaptor_settings_env():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoint']['endpoint'] = '${ENDPOINT}:5000'
+    c['api_endpoint']['username'] = '${SXUSER}'
+    c['api_endpoint']['password'] = '${SXPASS}'
+
+    from os import environ
+    environ['ENDPOINT'] = 'http://tachi.com'
+    environ['SXUSER'] = 'Holden'
+    environ['SXPASS'] = 'protomolecule'
+
+    sx = servicex_adaptor_factory(c)
+    assert sx._endpoint == 'http://tachi.com:5000'
+    assert sx._username == 'Holden'
+    assert sx._password == 'protomolecule'
+
+
+@pytest.mark.asyncio
+async def test_fetch_errors_for_bad_req_id(mocker):
+    client = mocker.MagicMock()
+    client.get = mocker.Mock(return_value=ClientSessionMocker("Request not found", 404))
+
+    x = ServiceXAdaptor('http://localhost:5000')
+    with pytest.raises(ServiceXUnknownRequestID):
+        await x.dump_query_errors(client, '111-222-333')
+
+
+@pytest.mark.asyncio
+async def test_fetch_errors_for_bad_bad_bad(mocker):
+    client = mocker.MagicMock()
+    client.get = mocker.Mock(return_value=ClientSessionMocker("Internal Error", 500))
+
+    x = ServiceXAdaptor('http://localhost:5000')
+    with pytest.raises(ServiceXException):
+        await x.dump_query_errors(client, '111-222-333')
+
+
+@pytest.mark.asyncio
+async def test_fetch_errors_for_req_good(mocker, caplog):
+    client = mocker.MagicMock()
+    rtn = {
+        "errors": [
+            {
+                "pod-name": "transformer-8716d52a-974e-4f1d-beed-3425485d8f9b-f9785979892dp4",
+                "file": "root://xrootd.echo.stfc.ac.uk:1094/atlas:datadisk/rucio/mc16_13TeV/bf/23/DAOD_STDM3.20425969._000001.pool.root.1",  # NOQA
+                "events": 0,
+                "info": "error: Failed to transform input file root://xrootd.echo.stfc.ac.uk:1094/atlas:datadisk/rucio/mc16_13TeV/7e/e5/DAOD_STDM3.20425969._000077.pool.root.1: Output\nAnother line",  # NOQA
+            }
+        ]
+    }
+    client.get = mocker.Mock(return_value=ClientSessionMocker(dumps(rtn), 200))
+
+    x = ServiceXAdaptor('http://localhost:5000')
+    await x.dump_query_errors(client, '111-222-333')
+    client.get.assert_called_with('http://localhost:5000/servicex/transformation/111-222-333/errors', headers={})  # NOQA
+
+    warning_messages = (r for r in caplog.records if r.levelname == "WARNING")
+
+    assert sum((1 for w in warning_messages)) > 0
