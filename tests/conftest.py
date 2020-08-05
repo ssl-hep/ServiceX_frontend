@@ -42,7 +42,7 @@ class ClientSessionMocker:
 
 class MockServiceXAdaptor:
     def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None,
-                 mock_query: Mock = None):
+                 mock_query: Mock = None, mock_transform_query_status: Mock = None):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
         self.requests_made = 0
@@ -60,7 +60,11 @@ class MockServiceXAdaptor:
             if mock_transform_status \
             else mocker.Mock(return_value=(0, 1, 0))
 
-        self.dump_query_errors = mocker.MagicMock(return_value=None)
+        self.query_status = mock_transform_query_status \
+            if mock_transform_query_status \
+            else None
+
+        self.dump_query_errors_count = 0
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
@@ -73,11 +77,15 @@ class MockServiceXAdaptor:
         return self.transform_status()
 
     async def get_query_status(self, client, request_id):
-        return {
-            'request_id': request_id,
-            'dude': 'way',
-        }
+        if self.query_status is None:
+            return {
+                'request_id': request_id,
+                'dude': 'way',
+            }
+        return self.query_status()
 
+    async def dump_query_errors(self, client, request_id):
+        self.dump_query_errors_count += 1
 
 class MockMinioAdaptor(MinioAdaptor):
     def __init__(self, mocker: MockFixture, files: List[str] = []):
