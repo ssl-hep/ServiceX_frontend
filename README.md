@@ -40,7 +40,7 @@ Create a `.servicex` file, in the `yaml` format, in the appropriate place for yo
 ```yaml
 api_endpoint:
   endpoint: <your-endpoint>
-  username: <api-username>
+  email: <api-email>
   password: <api-password>
 
   minio_endpoint: <minio-endpoint>
@@ -49,7 +49,7 @@ api_endpoint:
 ```
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
-Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and usernames and passwords, avoiding the configuration system. This is probably only useful for advanced users.
+Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
 
 ## Usage
 

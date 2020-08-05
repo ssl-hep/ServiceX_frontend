@@ -25,21 +25,20 @@ def servicex_adaptor_factory(c: ConfigView):
     endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
 
     # We can default these to "None"
-    username = c['api_endpoint']['username'].as_str_expanded() if 'username' in c['api_endpoint'] \
-        else None
+    email = c['api_endpoint']['email'].as_str_expanded() if 'email' in c['api_endpoint'] else None
     password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] \
         else None
-    return ServiceXAdaptor(endpoint, username, password)
+    return ServiceXAdaptor(endpoint, email, password)
 
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
 class ServiceXAdaptor:
-    def __init__(self, endpoint, username=None, password=None):
+    def __init__(self, endpoint, email=None, password=None):
         '''
         Authenticated access to ServiceX
         '''
         self._endpoint = endpoint
-        self._username = username
+        self._email = email
         self._password = password
 
         self._token = None
@@ -48,7 +47,7 @@ class ServiceXAdaptor:
     async def _login(self, client: aiohttp.ClientSession):
         url = f'{self._endpoint}/login'
         async with client.post(url, json={
-            'username': self._username,
+            'email': self._email,
             'password': self._password
         }) as response:
             status = response.status
@@ -60,7 +59,7 @@ class ServiceXAdaptor:
                 raise ServiceXException(f'ServiceX login request rejected: {status}')
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
-        if self._username:
+        if self._email:
             now = datetime.utcnow().timestamp()
             if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
                 await self._login(client)

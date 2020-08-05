@@ -191,12 +191,12 @@ async def test_status_with_login(mocker):
                'files-processed': 0})], [200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         username="test",
+                         email="test@example.com",
                          password="foobar")
 
     await sa.get_transform_status(client, '123-123-123-444')
     client.post.assert_called_with("http://localhost:5000/sx/login",
-                                   json={'password': 'foobar', 'username': 'test'})
+                                   json={'password': 'foobar', 'email': 'test@example.com'})
 
     client.get.assert_called_with(
         "http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
@@ -315,7 +315,7 @@ async def test_submit_good_with_login(mocker):
         dumps({'request_id': "111-222-333-444"})], [200, 200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         username="test",
+                         email="test@example.com",
                          password="foobar")
 
     await sa.submit_query(client, {'hi': 'there'})
@@ -326,7 +326,7 @@ async def test_submit_good_with_login(mocker):
     # Verify the login POST
     _, args, kwargs = r[0]
     assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['username'] == 'test'
+    assert kwargs['json']['email'] == 'test@example.com'
     assert kwargs['json']['password'] == 'foobar'
 
     # Verify the Submit POST
@@ -346,7 +346,7 @@ async def test_submit_good_with_login_existing_token(mocker):
         dumps({'request_id': "222-333-444-555"})], [200, 200, 200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         username="test",
+                         email="test@example.com",
                          password="foobar")
 
     mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')})  # Never expires
@@ -363,7 +363,7 @@ async def test_submit_good_with_login_existing_token(mocker):
     # Verify the login POST
     _, args, kwargs = r[0]
     assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['username'] == 'test'
+    assert kwargs['json']['email'] == 'test@example.com'
     assert kwargs['json']['password'] == 'foobar'
 
     # Verify the Submit POST
@@ -391,7 +391,7 @@ async def test_submit_good_with_login_expired_token(mocker):
         dumps({'request_id': "222-333-444-555"})], [200, 200, 200, 200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         username="test",
+                         email="test@example.com",
                          password="foobar")
 
     mocker.patch('google.auth.jwt.decode', return_value={'exp': 0})  # Always expired
@@ -409,7 +409,7 @@ async def test_submit_good_with_login_expired_token(mocker):
     # Verify the login POST
     _, args, kwargs = r[0]
     assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['username'] == 'test'
+    assert kwargs['json']['email'] == 'test@example.com'
     assert kwargs['json']['password'] == 'foobar'
 
     # Verify the Submit POST
@@ -420,7 +420,7 @@ async def test_submit_good_with_login_expired_token(mocker):
     # Verify the second login POST
     _, args, kwargs = r[2]
     assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['username'] == 'test'
+    assert kwargs['json']['email'] == 'test@example.com'
     assert kwargs['json']['password'] == 'foobar'
 
     # Verify the second Submit POST
@@ -456,7 +456,7 @@ async def test_submit_good_with_bad_login(mocker):
         dumps({'message': 'Wrong credentials'}), 401))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         username="test",
+                         email="test@example.com",
                          password="XXXXX")
 
     with pytest.raises(ServiceXException) as e:
@@ -502,12 +502,12 @@ def test_servicex_adaptor_settings():
     c = Configuration('bogus', 'bogus')
     c.clear()
     c['api_endpoint']['endpoint'] = 'http://my-left-foot.com:5000'
-    c['api_endpoint']['username'] = 'thegoodplace'
+    c['api_endpoint']['email'] = 'thegoodplace@example.com'
     c['api_endpoint']['password'] = 'forkingshirtballs'
 
     sx = servicex_adaptor_factory(c)
     assert sx._endpoint == 'http://my-left-foot.com:5000'
-    assert sx._username == 'thegoodplace'
+    assert sx._email == 'thegoodplace@example.com'
     assert sx._password == 'forkingshirtballs'
 
 
@@ -516,7 +516,7 @@ def test_servicex_adaptor_settings_env():
     c = Configuration('bogus', 'bogus')
     c.clear()
     c['api_endpoint']['endpoint'] = '${ENDPOINT}:5000'
-    c['api_endpoint']['username'] = '${SXUSER}'
+    c['api_endpoint']['email'] = '${SXUSER}'
     c['api_endpoint']['password'] = '${SXPASS}'
 
     from os import environ
@@ -526,7 +526,7 @@ def test_servicex_adaptor_settings_env():
 
     sx = servicex_adaptor_factory(c)
     assert sx._endpoint == 'http://tachi.com:5000'
-    assert sx._username == 'Holden'
+    assert sx._email == 'Holden'
     assert sx._password == 'protomolecule'
 
 
