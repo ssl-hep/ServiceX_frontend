@@ -167,7 +167,7 @@ async def test_find_new_bucket_1_files(mocker):
 
 def test_factory_no_inputs():
     f = MinioAdaptorFactory()
-    with pytest.raises(Exception):
+    with pytest.raises(ServiceXException):
         # Should fail b.c. no way to figure out what to create!
         f.from_best()
 

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
-from .utils import _query_cache_hash, sanitize_filename
+from .utils import ServiceXException, _query_cache_hash, sanitize_filename
 
 
 class Cache:
@@ -81,6 +81,8 @@ class Cache:
 
         '''
         f = self._query_status_cache_file(request_id)
+        if not f.exists():
+            raise ServiceXException(f'Not cache information for query {request_id}')
         with f.open('r') as o:
             return json.load(o)
 

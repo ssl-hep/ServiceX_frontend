@@ -147,7 +147,7 @@ class MinioAdaptorFactory:
         if self._config_adaptor is not None:
             logging.getLogger(__name__).debug('Using the config-file minio_adaptor')
             return self._config_adaptor
-        raise Exception("Do not know how to create a Minio Login info")
+        raise ServiceXException("Do not know how to create a Minio Login info")
 
     def _from_config(self, c: ConfigView) -> MinioAdaptor:
         '''Extract the Minio config information from the config file(s). This will be used

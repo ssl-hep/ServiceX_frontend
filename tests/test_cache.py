@@ -1,3 +1,4 @@
+from servicex.utils import ServiceXException
 import pytest
 
 from servicex.cache import Cache
@@ -128,5 +129,5 @@ def test_query_cache_status(tmp_path):
 def test_query_cache_status_bad(tmp_path):
     c = Cache(tmp_path)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ServiceXException):
         c.lookup_query_status('111-222-333')
