@@ -343,8 +343,9 @@ def clean_linq(q: str) -> str:
 
             if node_type == 'lambda':
                 if len(fields) != 2:
-                    raise ServiceXException(f'The qastle "{q}" is not valid - found a lambda expression'
-                                    f'with {len(fields)} arguments - not the required 2!')
+                    raise ServiceXException(
+                        f'The qastle "{q}" is not valid - found a lambda '
+                        f'expression with {len(fields)} arguments - not the required 2!')
                 arg_list = [f.info for f in fields[0].info]
                 arg_mapping = {old: new_arg() for old in arg_list}
                 fields[0] = ParseTracker(
