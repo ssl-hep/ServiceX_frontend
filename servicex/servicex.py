@@ -1,245 +1,402 @@
 # Main front end interface
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import os
-import tempfile
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
-import urllib
+import functools
+import logging
+import time
+from datetime import timedelta
+from pathlib import Path
+from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
+                    Optional, Tuple, Union)
 
 import aiohttp
-import awkward
-from minio import Minio, ResponseError
-import nest_asyncio
-import numpy as np
-import pandas as pd
-from retry import retry
-import uproot
+import backoff
+from backoff import on_exception
+from confuse import ConfigView
+
+from .cache import Cache
+from .ConfigSettings import ConfigSettings
+from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
+from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
+                            find_new_bucket_files)
+from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
+                               transform_status_stream, trap_servicex_failures)
+from .servicex_utils import _wrap_in_memory_sx_cache
+from .servicexabc import ServiceXABC
+from .utils import (ServiceXException, ServiceXFailedFileTransform,
+                    ServiceXFatalTransformException, ServiceXUnknownRequestID,
+                    StatusUpdateFactory, _run_default_wrapper,
+                    _status_update_wrapper, default_client_session,
+                    get_configured_cache_path, log_adaptor,
+                    stream_status_updates, stream_unique_updates_only)
 
 
-# Number of seconds to wait between polling servicex for the status of a transform job
-# while waiting for it to finish.
-servicex_status_poll_time = 5.0
-
-
-class ServiceX_Exception(BaseException):
-    def __init__(self, msg):
-        super().__init__(self, msg)
-
-
-async def _get_transform_status(client: aiohttp.ClientSession, endpoint: str,
-                                request_id: str) -> Tuple[Optional[int], int]:
+class ServiceXDataset(ServiceXABC):
     '''
-    Internal routine that queries for the current stat of things. We expect the following things
-    to come back:
-        - files-processed
-        - files-remaining
-        - files-skipped
-        - request-id
-        - stats
-
-    Arguments:
-        endpoint            Web API address where servicex lives
-        request_id          The id of the request to check up on
-
-    Returns
-        files_remaining     How many files remain to be processed. None if the number has not yet
-                            been determined
-        file_processed      How many files have been successfully processed by the system.
+    Used to access an instance of ServiceX at an end point on the internet. Support convieration
+    by `.servicex` file or by creating the adaptors defined in the `__init__` function.
     '''
-    async with client.get(f'{endpoint}/transformation/{request_id}/status') as response:
-        if response.status != 200:
-            raise BaseException(f'Unable to get transformation status '
-                                f' - http error {response.status}')
-        info = await response.json()
-        files_remaining = None \
-            if (('files-remaining' not in info) or (info['files-remaining'] is None)) \
-            else int(info['files-remaining'])
-        files_processed = int(info['files-processed'])
-        return files_remaining, files_processed
+    def __init__(self,
+                 dataset: str,
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v1.0.0-rc.2',  # NOQA
+                 max_workers: int = 20,
+                 servicex_adaptor: ServiceXAdaptor = None,
+                 minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
+                 cache_adaptor: Optional[Cache] = None,
+                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
+                 local_log: log_adaptor = None,
+                 session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
+                 config_adaptor: ConfigView = None):
+        '''
+        Create and configure a ServiceX object for a dataset.
 
+        Arguments
 
-def santize_filename(fname: str):
-    'No matter the string given, make it an acceptable filename'
-    return fname.replace('*', '_') \
-                .replace(';', '_') \
-                .replace(':', '_')
+            dataset                     Name of a dataset from which queries will be selected.
+            image                       Name of transformer image to use to transform the data
+            max_workers                 Maximum number of transformers to run simultaneously on
+                                        ServiceX.
+            servicex_adaptor            Object to control communication with the servicex instance
+                                        at a particular ip address with certian login credentials.
+                                        Will be configured via the `.servicex` file by default.
+            minio_adaptor               Object to control communication with the minio servicex
+                                        instance. By default configured with values from the
+                                        `.servicex` file.
+            cache_adaptor               Runs the caching for data and queries that are sent up and
+                                        down.
+            status_callback_factory     Factory to create a status notification callback for each
+                                        query. One is created per query.
+            local_log                   Log adaptor for logging.
+            session_generator           If you want to control the `ClientSession` object that
+                                        is used for callbacks. Otherwise a single one for all
+                                        `servicex` queries is used.
+            config_adaptor              Control how configuration options are read from the
+                                        `.servicex` file.
 
+        Notes:
 
-# Threadpool on which downloads occur. This is because the current minio library
-# uses blocking http requests, so we can't use asyncio to interleave them.
-_download_executor = ThreadPoolExecutor(max_workers=5)
+            -  The `status_callback` argument, by default, uses the `tqdm` library to render
+               progress bars in a terminal window or a graphic in a Jupyter notebook (with proper
+               jupyter extensions installed). If `status_callback` is specified as None, no
+               updates will be rendered. A custom callback function can also be specified which
+               takes `(total_files, transformed, downloaded, skipped)` as an argument. The
+               `total_files` parameter may be `None` until the system knows how many files need to
+               be processed (and some files can even be completed before that is known).
+        '''
+        ServiceXABC.__init__(self, dataset, image, max_workers,
+                             status_callback_factory,
+                             )
 
+        # Get the local settings
+        config = config_adaptor if config_adaptor is not None \
+            else ConfigSettings('servicex', 'servicex')
 
-def _download_file(minio_client: Minio, request_id: str, bucket_fname: str, data_type: str) \
-        -> pd.DataFrame:
-    '''
-    Download a single file to a local temp file from the minio object store
-    '''
-    local_filename = santize_filename(bucket_fname)
-    local_filepath = os.path.join(tempfile.gettempdir(), local_filename)
-    # TODO: clean up these temporary files when done?
-    minio_client.fget_object(request_id, bucket_fname, local_filepath)
+        # Establish the cache that will store all our queries
+        self._cache = Cache(get_configured_cache_path(config)) \
+            if cache_adaptor is None \
+            else cache_adaptor
 
-    # Load it into uproot and get the first and only key out of it.
-    f_in = uproot.open(local_filepath)
-    try:
-        r = f_in[f_in.keys()[0]]
-        if data_type == 'pandas':
-            return r.pandas.df()
-        elif data_type == 'awkward':
-            return r.arrays()
+        if not servicex_adaptor:
+            servicex_adaptor = servicex_adaptor_factory(config)
+        self._servicex_adaptor = servicex_adaptor
+
+        if not minio_adaptor:
+            self._minio_adaptor = MinioAdaptorFactory(config)
         else:
-            raise BaseException(f'Internal coding error - {data_type} should not be known.')
-    finally:
-        f_in._context.source.close()
-
-
-@retry(delay=1, tries=10, exceptions=ResponseError)
-def protected_list_objects(client: Minio, request_id: str):
-    'Return a list of objects in a minio bucket'
-    return client.list_objects(request_id)
-
-
-async def _download_new_files(files_queued: Iterable[str], end_point: str,
-                              request_id: str,
-                              data_type: str) -> Dict[str, Any]:
-    '''
-    Get the list of files in a minio bucket and download any files we've not already started. We
-    queue them up, and return a list of the futures that point to the files when they
-    are downloaded.
-    '''
-    # We need to assume where the minio port is and go from there.
-    end_point_parse = urllib.parse.urlparse(end_point)
-    minio_endpoint = f'{end_point_parse.hostname}:9000'
-
-    minio_client = Minio(minio_endpoint,
-                         access_key='miniouser',
-                         secret_key='leftfoot1',
-                         secure=False)
-
-    files = list([f.object_name for f in protected_list_objects(minio_client, request_id)])  \
-        # type: List[str]
-    new_files = [fname for fname in files if fname not in files_queued]
-
-    # Submit in a thread pool so they can run and block concurrently.
-    futures = {fname: asyncio.wrap_future(_download_executor.submit(_download_file, minio_client,
-                                          request_id, fname, data_type))
-               for fname in new_files}
-    return futures
-
-
-async def get_data_async(selection_query: str, datasets: Union[str, List[str]],
-                         servicex_endpoint: str = 'http://localhost:5000/servicex',
-                         data_type: str = 'pandas',
-                         image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2') \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
-    '''
-    Return data from a query with data sets
-
-    Arguments:
-        selection_query     `qastle` string that specifies what columnes to extract, how to format
-                            them, and how to format them.
-        datasets            Dataset or datasets to run the query against.
-        service_endpoint    The URL where the instance of ServivceX we are querying lives
-        data_type           How should the data come back? 'pandas' and 'awkward' are the only
-                            legal values. Defaults to 'pandas'
-        image               ServiceX image that should run this
-
-    Returns:
-        df                  Pandas DataFrame that contains the resulting flat data, or an awkward
-                            array. Everything is in memory.
-    '''
-    # Parameter clean up
-    if isinstance(datasets, str):
-        datasets = [datasets]
-    assert len(datasets) == 1
-
-    if (data_type != 'pandas') and (data_type != 'awkward'):
-        raise BaseException('Unknown return type.')
-
-    # Build the query, get a request ID back.
-    json_query = {
-        "did": datasets[0],
-        "selection": selection_query,
-        "image": image,
-        "result-destination": "object-store",
-        "result-format": "root-file",
-        "chunk-size": 1000,
-        "workers": 5
-    }
-
-    # Start the async context manager. We should use only one for the whole app, however,
-    # that just isn't going to work here. The advantage is better handling of connections.
-    # TODO: Option to pass in the connectino pool?
-    async with aiohttp.ClientSession() as client:
-        async with client.post(f'{servicex_endpoint}/transformation', json=json_query) as response:
-            # TODO: Make sure to throw the correct type of exception
-            r = await response.json()
-            if response.status != 200:
-                raise ServiceX_Exception('ServiceX rejected the transformation request: '
-                                         f'({response.status}){r}')
-            request_id = r["request_id"]
-
-        # Sit here waiting for the results to come in. In case there are missing items
-        # in the minio stream, we will avoid counting that. That should be an explicit error taken
-        # care of further on down in the code.
-        done = False
-        files_downloading = {}
-        last_files_processed = 0
-        while not done:
-            await asyncio.sleep(servicex_status_poll_time)
-            files_remaining, files_processed = await _get_transform_status(client,
-                                                                           servicex_endpoint,
-                                                                           request_id)
-            if files_processed != last_files_processed:
-                new_downloads = await _download_new_files(files_downloading.keys(),
-                                                          servicex_endpoint, request_id,
-                                                          data_type)
-                files_downloading.update(new_downloads)
-                last_files_processed = files_processed
-
-            done = (files_remaining is not None) and files_remaining == 0
-
-        # Now, wait for all of them to complete so we can stich the files together.
-        all_files = await asyncio.gather(*files_downloading.values())
-
-        # return the result
-        assert len(all_files) > 0
-        if len(all_files) == 1:
-            return all_files[0]
-        else:
-            if data_type == 'pandas':
-                r = pd.concat(all_files)
-                assert isinstance(r, pd.DataFrame)
-                return r
-            elif data_type == 'awkward':
-                col_names = all_files[0].keys()
-                return {c: awkward.concatenate([ar[c] for ar in all_files]) for c in col_names}
+            if isinstance(minio_adaptor, MinioAdaptor):
+                self._minio_adaptor = MinioAdaptorFactory(always_return=minio_adaptor)
             else:
-                raise BaseException(f'Internal programming error - {data_type} should not be'
-                                    ' unknown.')
+                self._minio_adaptor = minio_adaptor
 
+        self._log = log_adaptor() if local_log is None else local_log
 
-def get_data(selection_query: str, datasets: Union[str, List[str]],
-             servicex_endpoint: str = 'http://localhost:5000/servicex',
-             data_type: str = 'pandas',
-             image: str = 'sslhep/servicex_xaod_cpp_transformer:v0.2') \
-        -> Union[pd.DataFrame, Dict[bytes, np.ndarray]]:
-    '''
-    Return data from a query with data sets
+        self._session_generator = session_generator if session_generator is not None \
+            else default_client_session
 
-    Arguments:
-        selection_query     `qastle` string that specifies what columnes to extract, how to format
-                            them, and how to format them.
-        datasets            Dataset or datasets to run the query against.
-        service_endpoint    The URL where the instance of ServivceX we are querying lives
-        data_type           How should the data come back? 'pandas' and 'awkward' are the only
-                            legal values. Defaults to 'pandas'
+    @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
+    @_wrap_in_memory_sx_cache
+    async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
+        return await self._file_return(selection_query, 'root-file')
 
-    Returns:
-        df                  Pandas DataFrame that contains the resulting flat data.
-    '''
-    nest_asyncio.apply()
-    loop = asyncio.get_event_loop()
-    return loop.run_until_complete(get_data_async(selection_query, datasets, servicex_endpoint, data_type,
-                                   image=image))
+    @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
+    @_wrap_in_memory_sx_cache
+    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
+        return await self._file_return(selection_query, 'parquet')
+
+    @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
+    @_wrap_in_memory_sx_cache
+    async def get_data_pandas_df_async(self, selection_query: str):
+        import pandas as pd
+        return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
+
+    @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
+    @_wrap_in_memory_sx_cache
+    async def get_data_awkward_async(self, selection_query: str):
+        import awkward
+        all_data = await self._data_return(selection_query, _convert_root_to_awkward)
+        col_names = all_data[0].keys()
+        return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
+
+    async def _file_return(self, selection_query: str, data_format: str):
+        '''
+        Given a query, return the list of files, in a unique order, that hold
+        the data for the query.
+
+        For certian types of exceptions, the queries will be repeated. For example,
+        if `ServiceX` indicates that it was restarted in the middle of the query, then
+        the query will be re-submitted.
+
+        Arguments:
+
+            selection_query     `qastle` data that makes up the selection request.
+            data_format         The file-based data format (root or parquet)
+
+        Returns:
+
+            data                Data converted to the "proper" format, depending
+                                on the converter call.
+        '''
+        async def convert_to_file(f: Path) -> Path:
+            return f
+
+        return await self._data_return(selection_query, convert_to_file, data_format)
+
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    async def _data_return(self, selection_query: str,
+                           converter: Callable[[Path], Awaitable[Any]],
+                           data_format: str = 'root-file'):
+        '''
+        Given a query, return the data, in a unique order, that hold
+        the data for the query.
+
+        For certian types of exceptions, the queries will be repeated. For example,
+        if `ServiceX` indicates that it was restarted in the middle of the query, then
+        the query will be re-submitted.
+
+        Arguments:
+
+            selection_query     `qastle` data that makes up the selection request.
+            converter           A `Callable` that will convert the data returned from
+                                `ServiceX` as a set of files.
+
+        Returns:
+
+            data                Data converted to the "proper" format, depending
+                                on the converter call.
+        '''
+        # Get a notifier to update anyone who wants to listen.
+        notifier = self._create_notifier()
+
+        # Get all the files
+        as_files = \
+            (f async for f in
+             self._get_files(selection_query, data_format, notifier))
+
+        # Convert them to the proper format
+        as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
+                   async for f in as_files)
+
+        # Finally, we need them in the proper order so we append them
+        # all together
+        all_data = {f[0]: await f[1] async for f in as_data}
+        ordered_data = [all_data[k] for k in sorted(all_data.keys())]
+
+        return ordered_data
+
+    async def _get_files(self, selection_query: str, data_type: str,
+                         notifier: _status_update_wrapper) \
+            -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
+        '''
+        Return a list of files from servicex as they have been downloaded to this machine. The
+        return type is an awaitable that will yield the path to the file.
+
+        For certian types of `ServiceX` failures we will automatically attempt a few retries:
+
+            - When `ServiceX` forgets the query. This sometimes happens when a user submits a
+              query, and then disconnects from the network, `ServiceX` is restarted, and then the
+              user attempts to download the files from that "no-longer-existing" request.
+
+        Up to 3 re-tries are attempted automatically.
+
+        Arguments:
+
+            selection_query             The query string to send to ServiceX
+            data_type                   The type of data that we want to come back.
+            notifier                    Status callback to let our progress be advertised
+
+        Returns
+            Awaitable[Path]             An awaitable that is a path. When it completes, the
+                                        path will be valid and point to an existing file.
+                                        This is returned this way so a number of downloads can run
+                                        simultaneously.
+        '''
+        query = self._build_json_query(selection_query, data_type)
+
+        async with aiohttp.ClientSession() as client:
+
+            # Get a request id - which might be cached, but if not, submit it.
+            request_id = await self._get_request_id(client, query)
+
+            # Get the minio adaptor we are going to use for downloading.
+            minio_adaptor = self._minio_adaptor \
+                .from_best(self._cache.lookup_query_status(request_id))
+
+            # Look up the cache, and then fetch an iterator going thorugh the results
+            # from either servicex or the cache, depending.
+            try:
+                cached_files = self._cache.lookup_files(request_id)
+                stream_local_files = self._get_cached_files(cached_files, notifier) \
+                    if cached_files is not None \
+                    else self._get_files_from_servicex(request_id, client, minio_adaptor, notifier)
+
+                # Reflect the files back up a level.
+                async for r in stream_local_files:
+                    yield r
+
+                # Cache the final status
+                await self._update_query_status(client, request_id)
+
+            except ServiceXUnknownRequestID as e:
+                self._cache.remove_query(query)
+                raise ServiceXException('ServiceX instance does not know about cached query '
+                                        f'{request_id}. Please resubmit.') from e
+
+            except ServiceXFatalTransformException as e:
+                transform_status = await self._servicex_adaptor.get_query_status(client,
+                                                                                 request_id)
+                raise ServiceXFatalTransformException(
+                    f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
+
+            except ServiceXFailedFileTransform as e:
+                self._cache.remove_query(query)
+                await self._servicex_adaptor.dump_query_errors(client, request_id)
+                raise ServiceXException(f'Failed to transform all files in {request_id}') from e
+
+    async def _get_request_id(self, client: aiohttp.ClientSession, query: Dict[str, Any]) -> str:
+        '''
+        For this query, fetch the request id. If we have it cached, use that. Otherwise, query
+        ServiceX for a enw one (and cache it for later use).
+        '''
+        request_id = self._cache.lookup_query(query)
+        if request_id is None:
+            request_info = await self._servicex_adaptor.submit_query(client, query)
+            request_id = request_info['request_id']
+            self._cache.set_query(query, request_id)
+            await self._update_query_status(client, request_id)
+        return request_id
+
+    async def _update_query_status(self, client: aiohttp.ClientSession,
+                                   request_id: str):
+        '''Fetch the status from servicex and cache it locally, over
+        writing what was there before.
+
+        Args:
+            request_id (str): Request id of the status to fetch and cache.
+        '''
+        info = await self._servicex_adaptor.get_query_status(client, request_id)
+        self._cache.set_query_status(info)
+
+    async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
+                                notifier: _status_update_wrapper):
+        '''
+        Return the list of files as an iterator that we have pulled from the cache
+        '''
+        notifier.update(processed=len(cached_files), remaining=0, failed=0)
+        loop = asyncio.get_event_loop()
+        for f, p in cached_files:
+            path_future = loop.create_future()
+            path_future.set_result(Path(p))
+            notifier.inc(downloaded=1)
+            yield f, path_future
+
+    async def _download_a_file(self, stream: AsyncIterator[str],
+                               request_id: str,
+                               minio_adaptor: MinioAdaptor,
+                               notifier: _status_update_wrapper) \
+            -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
+        '''
+        Given an object name and request id, fetch the data locally from the minio bucket.
+        The copy can take a while, so send it off to another thread - don't pause queuing up other
+        files to download.
+        '''
+
+        async def do_copy(final_path):
+            assert request_id is not None
+            await minio_adaptor.download_file(request_id, f, final_path)
+            notifier.inc(downloaded=1)
+            notifier.broadcast()
+            return final_path
+
+        file_object_list = []
+        async for f in stream:
+            copy_to_path = self._cache.data_file_location(request_id, f)
+            file_object_list.append((f, str(copy_to_path)))
+
+            yield f, do_copy(copy_to_path)
+
+        self._cache.set_files(request_id, file_object_list)
+
+    async def _get_files_from_servicex(self, request_id: str,
+                                       client: aiohttp.ClientSession,
+                                       minio_adaptor: MinioAdaptor,
+                                       notifier: _status_update_wrapper):
+        '''
+        Fetch query result files from `servicex`. Given the `request_id` we will download
+        files as they become available. We also coordinate caching.
+        '''
+        start_time = time.monotonic()
+        good = True
+        try:
+
+            # Setup the status sequence from servicex
+            stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
+            stream_notified = stream_status_updates(stream_status, notifier)
+            stream_watched = trap_servicex_failures(stream_notified)
+            stream_unique = stream_unique_updates_only(stream_watched)
+
+            # Next, download the files as they are found (and return them):
+            stream_new_object = find_new_bucket_files(minio_adaptor, request_id,
+                                                      stream_unique)
+            stream_downloaded = self._download_a_file(stream_new_object, request_id,
+                                                      minio_adaptor, notifier)
+
+            # Return the files to anyone that wants them!
+
+            async for info in stream_downloaded:
+                yield info
+
+        except Exception:
+            good = False
+            raise
+
+        finally:
+            end_time = time.monotonic()
+            run_time = timedelta(seconds=end_time - start_time)
+            logging.getLogger(__name__).info(f'Running servicex query for '
+                                             f'{request_id} took {run_time}')
+            self._log.write_query_log(request_id, notifier.total, notifier.failed,
+                                      run_time, good, self._cache.path)
+
+    def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
+        '''
+        Returns a list of locally written files for a given selection query.
+
+        Arguments:
+            selection_query         The query to be send into the ServiceX API
+            data_type               What is the output data type (parquet, root-file, etc.)
+
+        Notes:
+            - Internal routine.
+        '''
+        json_query: Dict[str, str] = {
+            "did": self._dataset,
+            "selection": selection_query,
+            "image": self._image,
+            "result-destination": "object-store",
+            "result-format": 'parquet' if data_type == 'parquet' else "root-file",
+            "chunk-size": '1000',
+            "workers": str(self._max_workers)
+        }
+
+        logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
+
+        return json_query

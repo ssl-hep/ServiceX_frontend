@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, macOS-latest, windows-latest]
-        python-version: [3.6, 3.7]
+        python-version: [3.6, 3.7, 3.8]
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -30,11 +30,14 @@ jobs:
     - name: Lint with Flake8
       if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
       run: |
-        flake8 --exclude=tests/* --ignore=E501
+        flake8 --exclude=tests/* --ignore=E501,W503
     - name: Test with pytest
       run: |
         python -m pytest
     - name: Report coverage with Codecov
       if: github.event_name == 'push' && matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
-      run: |
-        codecov --token=${{ secrets.CODECOV_TOKEN }}
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml # optional
+        flags: unittests # optional

@@ -1,13 +1,21 @@
 # setuptools loads some plugins necessary for use here.
 from setuptools import find_packages  # noqa: F401
 from distutils.core import setup
+import sys
 
 # Use the readme as the long description.
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
+if sys.version_info[0] < 3:
+    raise NotImplementedError("Do not support version 2 of python")
+
+extra_test_packages = []
+if sys.version_info[1] < 8:
+    extra_test_packages.append('asyncmock')
+
 setup(name="servicex",
-      version='1.0.0',
+      version='2.0.0',
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
@@ -19,15 +27,19 @@ setup(name="servicex",
       maintainer_email="gwatts@uw.edu",
       url="https://github.com/iris-hep/func_adl_xAOD",
       license="TBD",
-      python_requires='>=3.6, <=3.8.1',
+      python_requires='>=3.6',
       test_suite="tests",
       install_requires=[
           "pandas~=1.0",
           "uproot~=3.7",
-          "retry~=0.9",
+          "backoff~=1.10",
           "aiohttp~=3.6",
           "minio~=5.0",
-          "nest_asyncio>=1.3"
+          "tqdm~=4.0",
+          "qastle==0.7",
+          'make_it_sync==1.0.0',
+          'google-auth==1.17',
+          'confuse==1.3.0'
       ],
       extras_require={
           'test': [
@@ -41,7 +53,7 @@ setup(name="servicex",
               'autopep8',
               'twine',
               'jupyterlab'
-          ],
+          ] + extra_test_packages,
       },
       classifiers=[
           "Development Status :: 3 - Alpha",
@@ -53,6 +65,14 @@ setup(name="servicex",
           "Programming Language :: Python",
           "Topic :: Software Development",
           "Topic :: Utilities",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 3.6",
+          "Programming Language :: Python :: 3.7",
+          "Programming Language :: Python :: 3.8",
       ],
+      package_data={
+          'servicex': ['config_default.yaml'],
+      },
+
       platforms="Any",
       )
