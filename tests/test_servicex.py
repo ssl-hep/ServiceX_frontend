@@ -6,13 +6,13 @@ import pandas as pd
 import pytest
 
 import servicex as fe
-from servicex.utils import ServiceXException, ServiceXUnknownRequestID, log_adaptor
+from servicex.minio_adaptor import MinioAdaptorFactory
+from servicex.utils import (
+    ServiceXException, ServiceXFatalTransformException,
+    ServiceXUnknownRequestID, log_adaptor)
 
-from .conftest import (  # NOQA
-    MockMinioAdaptor,
-    MockServiceXAdaptor,
-    build_cache_mock,
-)
+from .conftest import (MockMinioAdaptor, MockServiceXAdaptor,  # NOQA
+                       build_cache_mock)
 
 
 def clean_fname(fname: str):
@@ -514,6 +514,74 @@ async def test_servicex_transformer_failure_reload(mocker, short_status_poll_tim
 
 
 @pytest.mark.asyncio
+async def test_servicex_transformer_failure_errors_dumped(mocker, short_status_poll_time):
+    '''
+    1. Start a transform
+    2. A file is marked as failing
+    3. Make sure that the dump errors is called.
+    '''
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    transform_status = mocker.MagicMock(return_value=(0, 0, 1))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+                                                mock_transform_status=transform_status)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    with pytest.raises(fe.ServiceXException):
+        # Will fail with one skipped file.
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    assert mock_servicex_adaptor.dump_query_errors_count == 1
+
+
+@pytest.mark.asyncio
+async def test_good_run_root_bad_DID(mocker):
+    'Get a root file with a single file'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+
+    fatal_transform_status = {
+        "request_id": "24e59fa2-e1d7-4831-8c7e-82b2efc7c658",
+        "did": "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_0000",  # NOQA
+        "columns": "Electrons.pt(), Electrons.eta(), Electrons.phi(), Electrons.e(), Muons.pt(), Muons.eta(), Muons.phi(), Muons.e()",  # NOQA
+        "selection": None,
+        "tree-name": None,
+        "image": "sslhep/servicex_func_adl_xaod_transformer:130_reset_cwd",
+        "chunk-size": 7000,
+        "workers": 1,
+        "result-destination": "kafka",
+        "result-format": "arrow",
+        "kafka-broker": "servicex-kafka-1.slateci.net:19092",
+        "workflow-name": "straight_transform",
+        "generated-code-cm": None,
+        "status": "Fatal",
+        "failure-info": "DID Not found mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_0000"  # NOQA
+    }
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
+        mock_transform_status=mocker.MagicMock(side_effect=ServiceXFatalTransformException('DID was BAD')),  # NOQA
+        mock_transform_query_status=mocker.MagicMock(return_value=fatal_transform_status))
+
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    with pytest.raises(ServiceXFatalTransformException) as e:
+        await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    assert 'DID Not found mc15' in str(e.value)
+
+
+@pytest.mark.asyncio
 async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time):
     '''
     1. Start a transform
@@ -631,3 +699,27 @@ async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
 
     a1, a2 = await asyncio.gather(*[do_query(), do_query()])  # type: ignore
     assert a1 is a2
+
+
+@pytest.mark.asyncio
+async def test_good_minio_factory_from_best(mocker):
+    'Get a root file with a single file'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root",
+                                  query_status_lookup_return={'request_id': 'bogus'})
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+
+    mock_minio_factory = mocker.MagicMock(spec=MinioAdaptorFactory)
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_minio_factory.from_best.return_value = mock_minio_adaptor
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_factory,
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+    await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    mock_minio_adaptor.mock_download_file.assert_called_once()
+    mock_minio_factory.from_best.assert_called_once()
+    assert mock_minio_factory.from_best.call_args[0][0] == {'request_id': 'bogus'}

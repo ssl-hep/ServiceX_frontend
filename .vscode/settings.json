@@ -5,9 +5,6 @@
     "python.analysis.logLevel": "Information",
     "python.analysis.memory.keepLibraryAst": true,
     "python.linting.flake8Enabled": true,
-    "python.testing.pytestArgs": [
-        "--no-cov"
-    ],
     "cSpell.words": [
         "AOD's",
         "AZNLOCTEQ",
@@ -30,6 +27,7 @@
         "codecov",
         "dcache",
         "desy",
+        "dont",
         "fget",
         "fname",
         "inmem",
@@ -59,12 +57,17 @@
         "servicex",
         "servicexabc",
         "setuptools",
+        "slateci",
         "sslhep",
+        "stfc",
         "tcut",
         "tqdm",
         "unittests",
         "xaod",
         "xrootd"
     ],
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "python.testing.pytestArgs": [
+        "--no-cov"
+    ]
 }

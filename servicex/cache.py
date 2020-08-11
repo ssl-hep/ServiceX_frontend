@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 
-from .utils import _query_cache_hash, sanitize_filename
+from .utils import ServiceXException, _query_cache_hash, sanitize_filename
 
 
 class Cache:
@@ -38,6 +38,10 @@ class Cache:
         h = _query_cache_hash(json)
         return self._path / 'query_cache' / h
 
+    def _query_status_cache_file(self, request_id: str) -> Path:
+        'Return the query cache file'
+        return self._path / 'query_cache_status' / request_id
+
     def _files_cache_file(self, id: str) -> Path:
         'Return the file that contains the list of files'
         return self._path / 'file_list_cache' / id
@@ -55,6 +59,32 @@ class Cache:
         f.parent.mkdir(parents=True, exist_ok=True)
         with f.open('w') as o:
             o.write(f'{v}\n')
+
+    def set_query_status(self, query_info: Dict[str, str]):
+        '''Cache a query status (json dict)
+
+        Args:
+            query_info (Dict[str, str]): The info we should cache. Must contain `request_id`.
+        '''
+        assert 'request_id' in query_info, \
+            "Internal error - request_id should always be part of info returned"
+        f = self._query_status_cache_file(query_info['request_id'])
+        f.parent.mkdir(parents=True, exist_ok=True)
+        with f.open('w') as o:
+            json.dump(query_info, o)
+
+    def lookup_query_status(self, request_id: str) -> Dict[str, str]:
+        '''Returns the info from the last time the query status was cached.
+
+        Args:
+            request_id (str): Request id we should look up.
+
+        '''
+        f = self._query_status_cache_file(request_id)
+        if not f.exists():
+            raise ServiceXException(f'Not cache information for query {request_id}')
+        with f.open('r') as o:
+            return json.load(o)
 
     def remove_query(self, json: Dict[str, str]):
         f = self._query_cache_file(json)

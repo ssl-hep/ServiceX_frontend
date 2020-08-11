@@ -10,6 +10,7 @@ from google.auth import jwt
 from .utils import (
     ServiceXException,
     ServiceXFailedFileTransform,
+    ServiceXFatalTransformException,
     ServiceXUnknownRequestID,
     TransformTuple,
 )
@@ -24,19 +25,20 @@ def servicex_adaptor_factory(c: ConfigView):
     endpoint = c['api_endpoint']['endpoint'].as_str_expanded()
 
     # We can default these to "None"
-    username = c['api_endpoint']['username'].as_str_expanded() if 'username' in c['api_endpoint'] else None
-    password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] else None
-    return ServiceXAdaptor(endpoint, username, password)
+    email = c['api_endpoint']['email'].as_str_expanded() if 'email' in c['api_endpoint'] else None
+    password = c['api_endpoint']['password'].as_str_expanded() if 'password' in c['api_endpoint'] \
+        else None
+    return ServiceXAdaptor(endpoint, email, password)
 
 
 # Low level routines for interacting with a ServiceX instance via the WebAPI
 class ServiceXAdaptor:
-    def __init__(self, endpoint, username=None, password=None):
+    def __init__(self, endpoint, email=None, password=None):
         '''
         Authenticated access to ServiceX
         '''
         self._endpoint = endpoint
-        self._username = username
+        self._email = email
         self._password = password
 
         self._token = None
@@ -45,7 +47,7 @@ class ServiceXAdaptor:
     async def _login(self, client: aiohttp.ClientSession):
         url = f'{self._endpoint}/login'
         async with client.post(url, json={
-            'username': self._username,
+            'email': self._email,
             'password': self._password
         }) as response:
             status = response.status
@@ -57,7 +59,7 @@ class ServiceXAdaptor:
                 raise ServiceXException(f'ServiceX login request rejected: {status}')
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
-        if self._username:
+        if self._email:
             now = datetime.utcnow().timestamp()
             if not self._token or jwt.decode(self._token, verify=False)['exp'] - now < 0:
                 await self._login(client)
@@ -68,7 +70,7 @@ class ServiceXAdaptor:
             return {}
 
     async def submit_query(self, client: aiohttp.ClientSession,
-                           json_query: Dict[str, str]) -> str:
+                           json_query: Dict[str, str]) -> Dict[str, str]:
         """
         Submit a query to ServiceX, and return a request ID
         """
@@ -86,12 +88,69 @@ class ServiceXAdaptor:
                                         f'({status}){t}')
 
             r = await response.json()
-            req_id = r["request_id"]
+            return r
 
-            return req_id
+    async def get_query_status(self, client: aiohttp.ClientSession,
+                               request_id: str) -> Dict[str, str]:
+        '''Returns the full query information from the endpoint.
+
+        Args:
+            client (aiohttp.ClientSession): Client session on which to make the request.
+            request_id (str): The request id to return the tranform status
+
+        Raises:
+            ServiceXException: If we fail to find the information.
+
+        Returns:
+            Dict[str, str]: The JSON dictionary of information returned from ServiceX
+        '''
+        headers = await self._get_authorization(client)
+
+        async with client.get(f'{self._endpoint}/servicex/transformation/{request_id}',
+                              headers=headers) as response:
+            status = response.status
+            if status != 200:
+                # This was an error at ServiceX, bubble it up so code above us can
+                # handle as needed.
+                t = await response.text()
+                raise ServiceXException('ServiceX rejected the transformation status fetch: '
+                                        f'({status}){t}')
+
+            r = await response.json()
+            return r
+
+    async def dump_query_errors(self, client: aiohttp.ClientSession,
+                                request_id: str):
+        '''Dumps to the logging system any error messages we find from ServiceX.
+
+        Args:
+            client (aiohttp.ClientSession): Client along which to send queries.
+            request_id (str): Fetch all errors from there.
+        '''
+
+        headers = await self._get_authorization(client)
+        async with client.get(f'{self._endpoint}/servicex/transformation/{request_id}/errors',
+                              headers=headers) as response:
+            status = response.status
+            if status != 200:
+                t = await response.text()
+                if "Request not found" in t:
+                    raise ServiceXUnknownRequestID(f'Unable to get errors for request {request_id}'
+                                                   f': {status} - {t}')
+                else:
+                    raise ServiceXException(f'Failed to get request errors for {request_id}: '
+                                            f'{status} - {t}')
+
+            # Dump the messages out to the logger if there are any!
+            errors = (await response.json())["errors"]
+            log = logging.getLogger(__name__)
+            for e in errors:
+                log.warning(f'Error transforming file: {e["file"]}')
+                for ln in e["info"].split('\n'):
+                    log.warning(f'  -> {ln}')
 
     @staticmethod
-    def _get_transform_stat(info: Dict[str, str], stat_name: str):
+    def _get_transform_stat(info: Dict[str, str], stat_name: str) -> Optional[int]:
         'Return the info from a servicex status reply, protecting against bad internet returns'
         return None \
             if ((stat_name not in info) or (info[stat_name] is None)) \
@@ -113,7 +172,11 @@ class ServiceXAdaptor:
         Arguments:
 
             endpoint            Web API address where servicex lives
-            request_id         The id of the request to check up on
+            request_id          The id of the request to check up on
+
+        Raises:
+
+            ServiceXException   If the status returns `Fatal`.
 
         Returns:
 
@@ -136,6 +199,11 @@ class ServiceXAdaptor:
                                                f' - http error {status}')
             info = await response.json()
             logging.getLogger(__name__).debug(f'Status response for {request_id}: {info}')
+
+            if 'status' in info and info['status'] == 'Fatal':
+                raise ServiceXFatalTransformException(f'Transform status for {request_id}'
+                                                      ' is marked "Fatal".')
+
             files_remaining = self._get_transform_stat(info, 'files-remaining')
             files_failed = self._get_transform_stat(info, 'files-skipped')
             files_processed = self._get_transform_stat(info, 'files-processed')

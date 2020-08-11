@@ -1,5 +1,6 @@
 from json import loads
 from pathlib import Path
+from servicex.minio_adaptor import MinioAdaptor
 from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import Mock
 
@@ -41,7 +42,7 @@ class ClientSessionMocker:
 
 class MockServiceXAdaptor:
     def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None,
-                 mock_query: Mock = None):
+                 mock_query: Mock = None, mock_transform_query_status: Mock = None):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
         self.requests_made = 0
@@ -49,7 +50,7 @@ class MockServiceXAdaptor:
         def do_unique_id():
             id = self.request_id.format(self.requests_made)
             self.requests_made += 1
-            return id
+            return {'request_id': id}
 
         self.query = mock_query \
             if mock_query \
@@ -58,6 +59,12 @@ class MockServiceXAdaptor:
         self.transform_status = mock_transform_status \
             if mock_transform_status \
             else mocker.Mock(return_value=(0, 1, 0))
+
+        self.query_status = mock_transform_query_status \
+            if mock_transform_query_status \
+            else None
+
+        self.dump_query_errors_count = 0
 
     async def submit_query(self, client: aiohttp.ClientSession,
                            json_query: Dict[str, str]) -> str:
@@ -69,8 +76,19 @@ class MockServiceXAdaptor:
         # remaining, processed, skipped
         return self.transform_status()
 
+    async def get_query_status(self, client, request_id):
+        if self.query_status is None:
+            return {
+                'request_id': request_id,
+                'dude': 'way',
+            }
+        return self.query_status()
 
-class MockMinioAdaptor:
+    async def dump_query_errors(self, client, request_id):
+        self.dump_query_errors_count += 1
+
+
+class MockMinioAdaptor(MinioAdaptor):
     def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
         self.mock_download_file = mocker.Mock()
@@ -91,7 +109,8 @@ def build_cache_mock(mocker, query_cache_return: str = None,
                      files: Optional[List[Tuple[str, str]]] = None,
                      in_memory: Any = None,
                      make_in_memory_work: bool = False,
-                     data_file_return: str = None) -> Cache:
+                     data_file_return: str = None,
+                     query_status_lookup_return: Optional[Dict[str, str]] = None) -> Cache:
     c = mocker.MagicMock(spec=Cache)
 
     if in_memory is None:
@@ -129,6 +148,9 @@ def build_cache_mock(mocker, query_cache_return: str = None,
         c.data_file_location.side_effect = data_file_return_generator
     else:
         c.data_file_location.return_value = data_file_return
+
+    if query_status_lookup_return is not None:
+        c.lookup_query_status.return_value = query_status_lookup_return
 
     return c
 
