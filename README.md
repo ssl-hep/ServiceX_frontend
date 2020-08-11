@@ -208,7 +208,7 @@ Each data type comes in a pair - an `async` version and a synchronous version.
 
 ## Development
 
-For any changes please feel free to submit pull requests!
+For any changes please feel free to submit pull requests! We are using the `gitlab` workflow: the `master` branch represents the latests updates that pass all tests working towards the next version of the software. Any PR's should be based off the most recent version of `master` if they are for new features. All releases are tagged. If bug fixes need to be applied to an existing release, check out the tag for that release and base your PR off that. When ready to submit, let us know and we will create a branch for that release with the same name.
 
 To do development please setup your environment with the following steps:
 
