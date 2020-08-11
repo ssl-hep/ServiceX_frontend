@@ -42,10 +42,6 @@ api_endpoint:
   endpoint: <your-endpoint>
   email: <api-email>
   password: <api-password>
-
-  minio_endpoint: <minio-endpoint>
-  minio_username: <minio-accesskey>
-  minio_password: <minio-secretkey>
 ```
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
@@ -103,6 +99,8 @@ The file can contain an `api_endpoint` as mentioned above. In addition the other
 - `cache_path`: Location where queries, data, and a record of queries are written. This should be an absolute path the person running the library has r/w access to. On windows, make sure to escape `\` - and best to follow standard `yaml` conventions and put the path in quotes - especially if it contains a space. Top level yaml item (don't indent it accidentally!). Defaults to `/tmp/servicex` (with the temp directory as appropriate for your platform) Examples:
   - Windows: `cache_path: "C:\\Users\\gordo\\Desktop\\cacheme"`
   - Linux: `cache_path: "/home/servicex-cache"`
+
+- `minio_endpoint`, `minio_username`, `minio_password` - these are only interesting if you are using a pre-RC2 release of `servicex` - when the `minio` information wasn't part of the API exchange. This feature is depreciated and will be removed around the time `servicex` moves to RC3.
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
