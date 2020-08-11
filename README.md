@@ -43,6 +43,7 @@ api_endpoint:
   email: <api-email>
   password: <api-password>
 ```
+
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
 Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
@@ -89,7 +90,7 @@ For documentation of `get_data` and `get_data_async` see the `servicex.py` sourc
 
 ## Configuration
 
-As mentioned above, the `.servicex` file is read to pull a configuraiton. The search path for this file:
+As mentioned above, the `.servicex` file is read to pull a configuration. The search path for this file:
 
 1. Your current working directory
 2. Your home directory

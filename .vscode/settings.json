@@ -24,6 +24,7 @@
         "aexit",
         "aiohttp",
         "asyncio",
+        "cacheme",
         "codecov",
         "dcache",
         "desy",
