@@ -208,7 +208,7 @@ Each data type comes in a pair - an `async` version and a synchronous version.
 
 ## Development
 
-For any changes please feel free to submit pull requests! We are using the `gitlab` workflow: the `master` branch represents the latests updates that pass all tests working towards the next version of the software. Any PR's should be based off the most recent version of `master` if they are for new features. All releases are tagged. If bug fixes need to be applied to an existing release, check out the tag for that release and base your PR off that. When ready to submit, let us know and we will create a branch for that release with the same name.
+For any changes please feel free to submit pull requests! We are using the `gitlab` workflow: the `master` branch represents the latests updates that pass all tests working towards the next version of the software. Any PR's should be based off the most recent version of `master` if they are for new features. All releases are tagged. If bug fixes need to be applied to an existing release, check out the tag for that release and base your PR off that. When ready to submit, let us know and we will create a branch (vxxx) for that release with the same name.
 
 To do development please setup your environment with the following steps:
 
@@ -218,3 +218,11 @@ To do development please setup your environment with the following steps:
 1. Run the tests to make sure everything is good: `pytest`.
 
 Then add tests as you develop. When you are done, submit a pull request with any required changes to the documentation and the online tests will run.
+
+### To create a release branch
+
+```bash
+get checkout 2.0.0
+get switch -c v2.0.0
+git push
+```
