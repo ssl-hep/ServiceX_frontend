@@ -37,7 +37,7 @@ class ServiceXDataset(ServiceXABC):
     '''
     def __init__(self,
                  dataset: str,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:29_dont_truncate_error_logs',  # NOQA
+                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v1.0.0-rc.2',  # NOQA
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
