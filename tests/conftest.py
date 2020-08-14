@@ -176,7 +176,7 @@ def good_awkward_file_data(mocker):
     import awkward as awk
 
     async def good_awkward_data(fname: str):
-        df = {b'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+        df = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
         return df
 
     mocker.patch('servicex.servicex._convert_root_to_awkward', side_effect=good_awkward_data)

@@ -232,8 +232,8 @@ async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
     r = await ds.get_data_awkward_async('(valid qastle string)')
     assert isinstance(r, dict)
     assert len(r) == 1
-    assert b'JetPt' in r
-    assert len(r[b'JetPt']) == 6
+    assert 'JetPt' in r
+    assert len(r['JetPt']) == 6
 
 
 @pytest.mark.asyncio
@@ -270,8 +270,8 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
     r = await ds.get_data_awkward_async('(valid qastle string)')
     assert isinstance(r, dict)
     assert len(r) == 1
-    assert b'JetPt' in r
-    assert len(r[b'JetPt']) == 6 * 2
+    assert 'JetPt' in r
+    assert len(r['JetPt']) == 6 * 2
 
 
 @pytest.mark.asyncio

@@ -66,7 +66,7 @@ async def _convert_root_to_awkward(file: Path):
         f_in = uproot.open(file)
         try:
             r = f_in[f_in.keys()[0]]
-            return r.arrays()  # type: ignore
+            return r.lazyarrays()  # type: ignore
         finally:
             f_in._context.source.close()
 
