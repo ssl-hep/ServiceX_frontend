@@ -208,14 +208,14 @@ Each data type comes in a pair - an `async` version and a synchronous version.
 
 ## Development
 
-For any changes please feel free to submit pull requests! We are using the `gitlab` workflow: the `master` branch represents the latests updates that pass all tests working towards the next version of the software. Any PR's should be based off the most recent version of `master` if they are for new features. All releases are tagged. If bug fixes need to be applied to an existing release, check out the tag for that release and base your PR off that. When ready to submit, let us know and we will create a branch (vxxx) for that release with the same name.
+For any changes please feel free to submit pull requests! We are using the `gitlab` workflow: the `master` branch represents the latests updates that pass all tests working towards the next version of the software. Any PR's should be based off the most recent version of `master` if they are for new features. Each release is frozen on a dedicated release branch, e.g. v2.0.0. If a bug fix needs to be applied to an existing release, submit a PR to master mentioning the affected version(s). After the PR is merged to master, it will be applied to the relevant release branch(es) using git cherry-pick.
 
 To do development please setup your environment with the following steps:
 
 1. A python 3.7 development environment
-1. Fork/Pull down this package, XX
-1. `python -m pip install -e .[test]`
-1. Run the tests to make sure everything is good: `pytest`.
+2. Fork/Pull down this package, XX
+3. `python -m pip install -e .[test]`
+4. Run the tests to make sure everything is good: `pytest`.
 
 Then add tests as you develop. When you are done, submit a pull request with any required changes to the documentation and the online tests will run.
 
