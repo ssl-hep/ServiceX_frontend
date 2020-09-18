@@ -37,6 +37,7 @@ class ServiceXDataset(ServiceXABC):
     '''
     def __init__(self,
                  dataset: str,
+                 backend_type: Optional[str] = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v1.0.0-rc.2',  # NOQA
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
@@ -52,6 +53,10 @@ class ServiceXDataset(ServiceXABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
+            backend_type                The type of backend. Used only if we need to find an
+                                        end-point. If we do not have a `servicex_adaptor` then this
+                                        cannot be null. Possible types are `uproot`, `xaod`,
+                                        and anything that finds a match in the `.servicex` file.
             image                       Name of transformer image to use to transform the data
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
@@ -86,6 +91,10 @@ class ServiceXDataset(ServiceXABC):
                              status_callback_factory,
                              )
 
+        # Make sure the arguments are reasonable
+        if backend_type is None and servicex_adaptor is None:
+            raise ServiceXException('Specify backend_type or servicex_adaptor')
+
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
             else ConfigSettings('servicex', 'servicex')
@@ -96,7 +105,9 @@ class ServiceXDataset(ServiceXABC):
             else cache_adaptor
 
         if not servicex_adaptor:
-            servicex_adaptor = servicex_adaptor_factory(config)
+            # Given servicex adaptor is none, this should be ok. Fixes type checkers
+            assert backend_type is not None
+            servicex_adaptor = servicex_adaptor_factory(config, backend_type)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:

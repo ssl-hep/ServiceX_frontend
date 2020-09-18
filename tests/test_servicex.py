@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+from servicex.servicex_adaptor import servicex_adaptor_factory
 from typing import Optional
 
 import pandas as pd
@@ -22,8 +23,23 @@ def clean_fname(fname: str):
                 .replace(':', '_')
 
 
-def test_default_ctor():
-    fe.ServiceXDataset('localds://dude')
+def test_default_ctor(mocker):
+    '''Test the default ctor. This requires that a .servicex file be present to work.
+    '''
+    factory = mocker.MagicMock(spec=servicex_adaptor_factory)
+    mocker.patch('servicex.servicex.servicex_adaptor_factory', factory)
+
+    fe.ServiceXDataset('localds://dude', "uproot-ftw")
+
+    factory.assert_called_once()
+    assert factory.call_args[0][1] == 'uproot-ftw'
+
+
+def test_default_ctor_no_type():
+    with pytest.raises(ServiceXException) as e:
+        fe.ServiceXDataset('localds://dude')
+
+    assert "type" in str(e.value)
 
 
 @pytest.mark.asyncio
