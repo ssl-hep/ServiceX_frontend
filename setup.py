@@ -42,7 +42,7 @@ setup(name="servicex",
           "aiohttp~=3.6",
           "minio~=5.0",
           "tqdm~=4.0",
-          "qastle==0.7",
+          "qastle==0.8",
           'make_it_sync==1.0.0',
           'google-auth==1.17',
           'confuse==1.3.0'
