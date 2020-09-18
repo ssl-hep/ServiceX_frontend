@@ -2,6 +2,7 @@
 from setuptools import find_packages  # noqa: F401
 from distutils.core import setup
 import sys
+import os
 
 # Use the readme as the long description.
 with open("README.md", "r") as fh:
@@ -14,8 +15,13 @@ extra_test_packages = []
 if sys.version_info[1] < 8:
     extra_test_packages.append('asyncmock')
 
+version = os.getenv('servicex_version')
+if version is None:
+    raise Exception('servicex_version env var is not set')
+version = version.split('/')[-1]
+
 setup(name="servicex",
-      version='2.0.0',
+      version=version,
       packages=['servicex'],
       scripts=[],
       description="Front-end for the ServiceX Data Server",
