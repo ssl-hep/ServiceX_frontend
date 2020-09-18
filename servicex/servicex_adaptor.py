@@ -279,4 +279,5 @@ def servicex_adaptor_factory(c: ConfigView, backend_type: str) -> ServiceXAdapto
             seen_types.append(ep['type'].as_str_expanded())
 
     # If we are here, we found no matching type.
-    raise ServiceXException(f'Unable to find type {backend_type} in configuration. Saw: {", ".join(seen_types)}')
+    raise ServiceXException(f'Unable to find type {backend_type} '
+                            f'in configuration. Saw: {", ".join(seen_types)}')
