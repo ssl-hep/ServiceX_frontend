@@ -38,13 +38,16 @@ If no endpoint is specified, then the library defaults to the developer endpoint
 Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following:
 
 ```yaml
-api_endpoint:
-  endpoint: <your-endpoint>
-  email: <api-email>
-  password: <api-password>
+api_endpoints:
+  - endpoint: <your-endpoint>
+    email: <api-email>
+    password: <api-password>
+    type: xaod
 ```
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
+
+You can list multiple end points by repeating the block of 4 dictionary items, but using a different type. For example, `uproot`.
 
 Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
 
@@ -56,7 +59,7 @@ The following lines will return a `pandas.DataFrame` containing all the jet pT's
     from servicex import ServiceX
     query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
     dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
-    ds = ServiceXDataset(dataset)
+    ds = ServiceXDataset(dataset, 'xaod')
     r = ds.get_data_pandas_df(query)
     print(r)
 ```
@@ -140,6 +143,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
 
 ```python
   ServiceXDataset(dataset: str,
+                 backend_type: Optional[str] = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
@@ -148,12 +152,17 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
-                 config_adaptor: ConfigView = None)
+                 config_adaptor: ConfigView = None):
+  '''
       Create and configure a ServiceX object for a dataset.
 
       Arguments
 
           dataset                     Name of a dataset from which queries will be selected.
+          backend_type                The type of backend. Used only if we need to find an
+                                      end-point. If we do not have a `servicex_adaptor` then this
+                                      cannot be null. Possible types are `uproot`, `xaod`,
+                                      and anything that finds a match in the `.servicex` file.
           image                       Name of transformer image to use to transform the data
           max_workers                 Maximum number of transformers to run simultaneously on
                                       ServiceX.
@@ -183,6 +192,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
              takes `(total_files, transformed, downloaded, skipped)` as an argument. The
              `total_files` parameter may be `None` until the system knows how many files need to
              be processed (and some files can even be completed before that is known).
+  '''
  ```
 
 To get the data use one of the `get_data` method. They all have the same API, differing only by what they return.
