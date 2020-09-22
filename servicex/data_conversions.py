@@ -3,6 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from typing import Dict, Optional, Union
 
+from awkward.array.chunked import ChunkedArray
+
 _conversion_pool = ThreadPoolExecutor(4)
 
 
@@ -160,7 +162,8 @@ class DataConverterAdaptor:
         '''
         import awkward as ak
 
-        def do_the_work(file: Path) -> Dict[Union[str, bytes], ak.ChunkedArray]:
+        def do_the_work(file: Path) -> \
+                Union[Dict[Union[str, bytes], ak.ChunkedArray], ChunkedArray]:
             # TODO: When we move to awkward1, make sure this becomes lazy
             return ak.fromparquet(str(file))
 

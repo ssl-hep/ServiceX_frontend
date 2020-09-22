@@ -54,6 +54,7 @@
         "prereleased",
         "protomolecule",
         "ptetaphi",
+        "pyarrow",
         "pypa",
         "pypi",
         "pytest",

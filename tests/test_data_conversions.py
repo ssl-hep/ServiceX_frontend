@@ -23,6 +23,7 @@ async def test_parquet_to_pandas_non_default(good_uproot_file_path):
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 115714
 
+
 @pytest.mark.asyncio
 async def test_parquet_to_pandas(good_uproot_file_path):
     df = await DataConverterAdaptor('parquet').convert_to_pandas(good_uproot_file_path)
