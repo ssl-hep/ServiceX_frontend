@@ -47,8 +47,7 @@ class ServiceXDataset(ServiceXABC):
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: Optional[ConfigView] = None,
-                 data_convert_adaptor: Optional[DataConverterAdaptor] = None,
-                 default_return_data_type: Optional[str] = None):
+                 data_convert_adaptor: Optional[DataConverterAdaptor] = None):
         '''
         Create and configure a ServiceX object for a dataset.
 
