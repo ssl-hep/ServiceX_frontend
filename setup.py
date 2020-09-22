@@ -58,6 +58,7 @@ setup(name="servicex",
               'codecov',
               'autopep8',
               'twine',
+              'asyncmock',
               'jupyterlab'
           ] + extra_test_packages,
       },

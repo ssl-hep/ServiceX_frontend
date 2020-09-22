@@ -15,7 +15,7 @@ from confuse import ConfigView
 
 from .cache import Cache
 from .ConfigSettings import ConfigSettings
-from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
+from .data_conversions import DataConverterAdaptor
 from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
                             find_new_bucket_files)
 from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
@@ -46,7 +46,8 @@ class ServiceXDataset(ServiceXABC):
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
-                 config_adaptor: ConfigView = None):
+                 config_adaptor: Optional[ConfigView] = None,
+                 data_convert_adaptor: Optional[DataConverterAdaptor] = None):
         '''
         Create and configure a ServiceX object for a dataset.
 
@@ -76,6 +77,8 @@ class ServiceXDataset(ServiceXABC):
                                         `servicex` queries is used.
             config_adaptor              Control how configuration options are read from the
                                         `.servicex` file.
+            data_convert_adaptor        Manages conversions between root and parquet and `pandas`
+                                        and `awkward`
 
         Notes:
 
@@ -123,6 +126,9 @@ class ServiceXDataset(ServiceXABC):
         self._session_generator = session_generator if session_generator is not None \
             else default_client_session
 
+        self._converter = data_convert_adaptor if data_convert_adaptor is not None \
+            else DataConverterAdaptor()
+
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
@@ -137,13 +143,15 @@ class ServiceXDataset(ServiceXABC):
     @_wrap_in_memory_sx_cache
     async def get_data_pandas_df_async(self, selection_query: str):
         import pandas as pd
-        return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
+        return pd.concat(await self._data_return(
+            selection_query, lambda f: self._converter.convert_to_pandas(f, 'root')))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_awkward_async(self, selection_query: str):
         import awkward
-        all_data = await self._data_return(selection_query, _convert_root_to_awkward)
+        all_data = await self._data_return(
+            selection_query, lambda f: self._converter.convert_to_awkward(f, 'root'))
         col_names = all_data[0].keys()
         return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
 
