@@ -16,10 +16,13 @@ class DataConverterAdaptor:
             file (Path): Path to the file
             file_type (str): What the file contains (root, parquet, etc)
         '''
-        if file_type != 'root':
+        if file_type == 'root':
+            return await self._convert_root_to_pandas(file)
+        elif file_type == 'parquet':
+            return await self._convert_parquet_to_pandas(file)
+        else:
             raise NotImplementedError(f'Conversion from {file_type} into an pandas DF is not '
                                       'yet supported')
-        return await self._convert_root_to_pandas(file)
 
     async def convert_to_awkward(self, file: Path, file_type: str):
         '''Convert to an awkward data array from data stored in a file of a particular file_type
@@ -28,10 +31,13 @@ class DataConverterAdaptor:
             file (Path): Path to the file
             file_type (str): What the file contains (root, parquet, etc)
         '''
-        if file_type != 'root':
+        if file_type == 'root':
+            return await self._convert_root_to_awkward(file)
+        elif file_type == 'parquet':
+            return await self._convert_parquet_to_awkward(file)
+        else:
             raise NotImplementedError(f'Conversion from {file_type} into an awkward array is not '
                                       'yet supported')
-        return await self._convert_root_to_awkward(file)
 
     async def _convert_root_to_pandas(self, file: Path):
         '''
@@ -65,6 +71,31 @@ class DataConverterAdaptor:
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 
+    async def _convert_parquet_to_pandas(self, file: Path):
+        '''
+        Convert the contents of a parquet file to pandas.
+
+        Arguments:
+
+            file        A `Path` to the file containing the pandas data
+
+        Returns:
+
+            DataFrame   A pandas dataframe
+
+        Note:
+
+            - Work is done on a second thread.
+            - Pandas is only imported if this is called.
+
+        '''
+        import pandas as pd
+
+        def do_the_work(file: Path) -> pd.DataFrame:
+            return pd.read_parquet(str(file))
+
+        return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
+
     async def _convert_root_to_awkward(self, file: Path):
         '''
         Convert the contents of a ROOT file to an awkward dictionary.
@@ -95,5 +126,31 @@ class DataConverterAdaptor:
                 return r.lazyarrays()  # type: ignore
             finally:
                 f_in._context.source.close()
+
+        return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
+
+    async def _convert_parquet_to_awkward(self, file: Path):
+        '''
+        Convert the contents of a parquet file to an awkward dictionary.
+
+        Arguments:
+
+            file        A `Path` to the file containing the pandas data
+
+        Returns:
+
+            DataFrame   A pandas dataframe
+
+        Note:
+
+            - Work is done on a second thread.
+            - Pandas is only imported if this is called.
+
+        '''
+        import awkward as ak
+
+        def do_the_work(file: Path) -> Dict[Union[str, bytes], ak.ChunkedArray]:
+            # TODO: When we move to awkward1, make sure this becomes lazy
+            return ak.fromparquet(str(file))
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))

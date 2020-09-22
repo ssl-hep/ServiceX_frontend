@@ -160,7 +160,12 @@ def build_cache_mock(mocker, query_cache_return: str = None,
 
 @pytest.fixture
 def good_root_file_path():
-    return Path("tests/sample_servicex_output.root")
+    return Path("tests/sample_root_servicex_output.root")
+
+
+@pytest.fixture
+def good_uproot_file_path():
+    return Path("tests/sample_uproot_servicex_output.parquet")
 
 
 @pytest.fixture
