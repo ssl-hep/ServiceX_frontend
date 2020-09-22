@@ -1,7 +1,7 @@
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
-from typing import Dict, Union
+from typing import Dict, Optional, Union
 
 _conversion_pool = ThreadPoolExecutor(4)
 
@@ -9,13 +9,23 @@ _conversion_pool = ThreadPoolExecutor(4)
 class DataConverterAdaptor:
     '''Methods to convert from one type of data to the other.
     '''
-    async def convert_to_pandas(self, file: Path, file_type: str):
+    def __init__(self, default_file_type: str):
+        '''Create a data converter adaptor. By default it will do the
+        conversation as requested.
+
+        Args:
+            default_file_type (str): The default file type (`parquet` or `root`)
+        '''
+        self._default_file_type = default_file_type
+
+    async def convert_to_pandas(self, file: Path, file_type: Optional[str] = None):
         '''Convert to a pandas dataframe from data stored in a file of a particular file_type
 
         Args:
             file (Path): Path to the file
             file_type (str): What the file contains (root, parquet, etc)
         '''
+        file_type = file_type if file_type is not None else self._default_file_type
         if file_type == 'root':
             return await self._convert_root_to_pandas(file)
         elif file_type == 'parquet':
@@ -24,13 +34,14 @@ class DataConverterAdaptor:
             raise NotImplementedError(f'Conversion from {file_type} into an pandas DF is not '
                                       'yet supported')
 
-    async def convert_to_awkward(self, file: Path, file_type: str):
+    async def convert_to_awkward(self, file: Path, file_type: Optional[str] = None):
         '''Convert to an awkward data array from data stored in a file of a particular file_type
 
         Args:
             file (Path): Path to the file
             file_type (str): What the file contains (root, parquet, etc)
         '''
+        file_type = file_type if file_type is not None else self._default_file_type
         if file_type == 'root':
             return await self._convert_root_to_awkward(file)
         elif file_type == 'parquet':

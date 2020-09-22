@@ -47,7 +47,8 @@ class ServiceXDataset(ServiceXABC):
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: Optional[ConfigView] = None,
-                 data_convert_adaptor: Optional[DataConverterAdaptor] = None):
+                 data_convert_adaptor: Optional[DataConverterAdaptor] = None,
+                 default_return_data_type: Optional[str] = None):
         '''
         Create and configure a ServiceX object for a dataset.
 
@@ -127,7 +128,7 @@ class ServiceXDataset(ServiceXABC):
             else default_client_session
 
         self._converter = data_convert_adaptor if data_convert_adaptor is not None \
-            else DataConverterAdaptor()
+            else DataConverterAdaptor('root')
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
@@ -144,14 +145,14 @@ class ServiceXDataset(ServiceXABC):
     async def get_data_pandas_df_async(self, selection_query: str):
         import pandas as pd
         return pd.concat(await self._data_return(
-            selection_query, lambda f: self._converter.convert_to_pandas(f, 'root')))
+            selection_query, lambda f: self._converter.convert_to_pandas(f)))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_awkward_async(self, selection_query: str):
         import awkward
         all_data = await self._data_return(
-            selection_query, lambda f: self._converter.convert_to_awkward(f, 'root'))
+            selection_query, lambda f: self._converter.convert_to_awkward(f))
         col_names = all_data[0].keys()
         return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
 
