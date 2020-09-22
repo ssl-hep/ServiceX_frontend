@@ -231,10 +231,12 @@ def test_factory_from_request():
     info = {
         'minio-access-key': 'miniouser',
         'minio-endpoint': 'minio.servicex.com:9000',
+        'minio-secured': False,
         'minio-secret-key': 'leftfoot1',
     }
     m = MinioAdaptorFactory().from_best(info)
     assert m._endpoint == 'minio.servicex.com:9000'
+    assert not m._secured
     assert m._access_key == "miniouser"
     assert m._secretkey == "leftfoot1"
 
