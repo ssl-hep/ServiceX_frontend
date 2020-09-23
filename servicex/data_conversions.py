@@ -35,7 +35,7 @@ class DataConverterAdaptor:
             return await self._convert_parquet_to_pandas(file)
         else:
             raise ServiceXException(f'Conversion from {file_type} into an pandas DF is not '
-                                      'yet supported')
+                                    'yet supported')
 
     async def convert_to_awkward(self, file: Path, file_type: Optional[str] = None):
         '''Convert to an awkward data array from data stored in a file of a particular file_type
@@ -51,7 +51,7 @@ class DataConverterAdaptor:
             return await self._convert_parquet_to_awkward(file)
         else:
             raise ServiceXException(f'Conversion from {file_type} into an awkward array is not '
-                                      'yet supported')
+                                    'yet supported')
 
     async def _convert_root_to_pandas(self, file: Path):
         '''

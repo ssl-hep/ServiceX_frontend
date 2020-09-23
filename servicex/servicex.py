@@ -77,7 +77,8 @@ class ServiceXDataset(ServiceXABC):
             config_adaptor              Control how configuration options are read from the
                                         `.servicex` file.
             data_convert_adaptor        Manages conversions between root and parquet and `pandas`
-                                        and `awkward`
+                                        and `awkward`, including default settings for expected
+                                        datatypes from the backend.
 
         Notes:
 
