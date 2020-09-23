@@ -59,7 +59,7 @@ The following lines will return a `pandas.DataFrame` containing all the jet pT's
     from servicex import ServiceX
     query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
     dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
-    ds = ServiceXDataset(dataset, 'xaod')
+    ds = ServiceXDataset(dataset)
     r = ds.get_data_pandas_df(query)
     print(r)
 ```
@@ -162,8 +162,9 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
           dataset                     Name of a dataset from which queries will be selected.
           backend_type                The type of backend. Used only if we need to find an
                                       end-point. If we do not have a `servicex_adaptor` then this
-                                      cannot be null. Possible types are `uproot`, `xaod`,
-                                      and anything that finds a match in the `.servicex` file.
+                                      will default to xaod, unless you have any endpoint listed
+                                      in your servicex file. It will default to best match there,
+                                      in that case.
           image                       Name of transformer image to use to transform the data
           max_workers                 Maximum number of transformers to run simultaneously on
                                       ServiceX.

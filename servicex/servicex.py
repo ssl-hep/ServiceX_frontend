@@ -56,8 +56,9 @@ class ServiceXDataset(ServiceXABC):
             dataset                     Name of a dataset from which queries will be selected.
             backend_type                The type of backend. Used only if we need to find an
                                         end-point. If we do not have a `servicex_adaptor` then this
-                                        cannot be null. Possible types are `uproot`, `xaod`,
-                                        and anything that finds a match in the `.servicex` file.
+                                        will default to xaod, unless you have any endpoint listed
+                                        in your servicex file. It will default to best match there,
+                                        in that case.
             image                       Name of transformer image to use to transform the data
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
