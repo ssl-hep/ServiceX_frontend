@@ -1,4 +1,4 @@
-
+import logging
 import pytest
 
 from servicex.ConfigSettings import ConfigSettings
@@ -67,7 +67,7 @@ def test_defalt_config_has_backend_types():
     assert count > 0
 
 
-def test_sx_adaptor_settings():
+def test_sx_adaptor_settings(caplog):
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
     c.clear()
@@ -86,8 +86,10 @@ def test_sx_adaptor_settings():
     assert email == 'thegoodplace@example.com'
     assert password == 'forkingshirtballs'
 
+    assert len(caplog.record_tuples) == 0
 
-def test_sx_adaptor_settings_no_backend_name_requested():
+
+def test_sx_adaptor_settings_no_backend_name_requested(caplog):
     'Request None for a backend name'
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
@@ -107,8 +109,12 @@ def test_sx_adaptor_settings_no_backend_name_requested():
     assert email == 'thegoodplace@example.com'
     assert password == 'forkingshirtballs'
 
+    assert caplog.record_tuples[0][2] == "No backend type requested, " \
+                                         "using http://my-left-foot.com:5000 - please be explicit " \
+                                         "in the ServiceXDataset constructor"
 
-def test_sx_adaptor_settings_no_backend_name_requested_or_listed():
+
+def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
     'Request None for a backend name'
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
@@ -127,8 +133,12 @@ def test_sx_adaptor_settings_no_backend_name_requested_or_listed():
     assert email == 'thegoodplace@example.com'
     assert password == 'forkingshirtballs'
 
+    assert caplog.record_tuples[0][2] == "No backend type requested, " \
+                                         "using http://my-left-foot.com:5000 - please be explicit " \
+                                         "in the ServiceXDataset constructor"
 
-def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type():
+
+def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
     'Request None for a backend name'
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
@@ -147,8 +157,12 @@ def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type():
     assert email == 'thegoodplace@example.com'
     assert password == 'forkingshirtballs'
 
+    assert caplog.record_tuples[0][2] == "No 'xaod' backend type found, " \
+                                         "using http://my-left-foot.com:5000 - please add to " \
+                                         "the .servicex file"
 
-def test_sx_adaptor_settings_backend_name_requested_after_labeled_type():
+
+def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):
     'Request None for a backend name'
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
@@ -172,6 +186,8 @@ def test_sx_adaptor_settings_backend_name_requested_after_labeled_type():
     assert endpoint == 'http://my-left-foot.com:5001'
     assert email == 'thegoodplace1@example.com'
     assert password == 'forkingshirtballs1'
+
+    assert len(caplog.record_tuples) == 0
 
 
 def test_sx_adaptor_settings_backend_name_unlabeled_type():

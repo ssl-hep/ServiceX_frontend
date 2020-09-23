@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Tuple, cast
 
 from confuse.core import ConfigView
@@ -111,8 +112,17 @@ class ServiceXConfigAdaptor:
                     return extract_info(ep)
 
         # See if one is unlabeled.
+        log = logging.getLogger(__name__)
         for ep in endpoints:
             if not ep['type'].exists():
+                if backend_type is None:
+                    log.warning('No backend type requested, '
+                                f'using {ep["endpoint"].as_str_expanded()} - please be explicit '
+                                'in the ServiceXDataset constructor')
+                else:
+                    log.warning(f"No '{backend_type}' backend type found, "
+                                f'using {ep["endpoint"].as_str_expanded()} - please add to '
+                                'the .servicex file')
                 return extract_info(ep)
 
         if backend_type is not None:
@@ -125,6 +135,9 @@ class ServiceXConfigAdaptor:
 
         # Nope - now we are going to have to just use the first one there.
         for ep in endpoints:
+            log.warning('No backend type requested, '
+                        f'using {ep["endpoint"].as_str_expanded()} - please be explicit '
+                        'in the ServiceXDataset constructor')
             return extract_info(ep)
 
         # If we are here - then... it just isn't going to work!
