@@ -41,11 +41,19 @@ def test_default_ctor(mocker):
     config.get_default_returned_datatype.assert_called_with('uproot-ftw')
 
 
-def test_default_ctor_no_type():
-    with pytest.raises(ServiceXException) as e:
-        fe.ServiceXDataset('localds://dude')
+def test_default_ctor_no_type(mocker):
+    '''Test the default ctor. This requires that a .servicex file be present to work,
+    so we are going to dummy it out.
+    '''
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
 
-    assert "type" in str(e.value)
+    fe.ServiceXDataset('localds://dude', config_adaptor=config)
+
+    config.get_servicex_adaptor_config.assert_called_with(None)
+    config.get_default_returned_datatype.assert_called_with(None)
 
 
 @pytest.mark.asyncio

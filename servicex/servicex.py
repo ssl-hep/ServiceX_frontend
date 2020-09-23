@@ -95,10 +95,6 @@ class ServiceXDataset(ServiceXABC):
                              status_callback_factory,
                              )
 
-        # Make sure the arguments are reasonable
-        if backend_type is None and servicex_adaptor is None:
-            raise ServiceXException('Specify backend_type or servicex_adaptor')
-
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
             else ServiceXConfigAdaptor()
@@ -110,7 +106,6 @@ class ServiceXDataset(ServiceXABC):
 
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
-            assert backend_type is not None
             end_point, email, password = config.get_servicex_adaptor_config(backend_type)
             servicex_adaptor = ServiceXAdaptor(end_point, email, password)
         self._servicex_adaptor = servicex_adaptor
