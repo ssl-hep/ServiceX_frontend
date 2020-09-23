@@ -128,4 +128,5 @@ class ServiceXConfigAdaptor:
             return extract_info(ep)
 
         # If we are here - then... it just isn't going to work!
-        raise NotImplementedError()
+        raise ServiceXException('Not even a default set of configurations are here! Bad install '
+                                ' of the servicex package!')

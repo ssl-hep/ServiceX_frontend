@@ -247,10 +247,23 @@ def test_sx_adaptor_settings_env():
     assert email == 'Holden'
     assert password == 'protomolecule'
 
-# def test_default_config_endpoint():
-#     c = ConfigSettings('servicex', 'servicex')
-#     x = ServiceXConfigAdaptor(c)
-#     end_point, email, password = x.get_servicex_adaptor_config()
-#     assert end_point == 'http://localhost:5000'
-#     assert email is None
-#     assert password is None
+
+def test_default_config_endpoint():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    c._add_default_source()
+    x = ServiceXConfigAdaptor(c)
+
+    end_point, email, password = x.get_servicex_adaptor_config()
+    assert end_point == 'http://localhost:5000'
+    assert email is None
+    assert password is None
+
+
+def test_sx_adaptor_nothing():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    x = ServiceXConfigAdaptor(c)
+
+    with pytest.raises(ServiceXException):
+        x.get_servicex_adaptor_config()
