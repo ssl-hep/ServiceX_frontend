@@ -79,7 +79,7 @@ class ServiceXConfigAdaptor:
         a = find_in_list(self._settings['backend_types'], key) if a is None else a
         return a
 
-    def get_servicex_adaptor_config(self, backend_type: str) -> \
+    def get_servicex_adaptor_config(self, backend_type: Optional[str] = None) -> \
             Tuple[str, Optional[str], Optional[str]]:
         '''Return the servicex (endpoint, username, email) from a given backend configuration.
 
@@ -94,19 +94,38 @@ class ServiceXConfigAdaptor:
         # Find a list of all endpoints.
         # It is an error if this is not specified somewhere.
         endpoints = self._settings['api_endpoints']
-        seen_types = []
+
+        def extract_info(ep) -> Tuple[str, Optional[str], Optional[str]]:
+            endpoint = ep['endpoint'].as_str_expanded()
+            email = ep['email'].as_str_expanded() if 'email' in ep else None
+            password = ep['password'].as_str_expanded() if 'password' in ep \
+                else None
+
+            # We can default these to "None"
+            return (endpoint, email, password)  # type: ignore
+
+        # If we have a good name, look for exact match
+        if backend_type is not None:
+            for ep in endpoints:
+                if ep['type'].exists() and ep['type'].as_str_expanded() == backend_type:
+                    return extract_info(ep)
+
+        # See if one is unlabeled.
         for ep in endpoints:
-            if ep['type'].as_str_expanded() == backend_type:
-                endpoint = ep['endpoint'].as_str_expanded()
-                email = ep['email'].as_str_expanded() if 'email' in ep else None
-                password = ep['password'].as_str_expanded() if 'password' in ep \
-                    else None
+            if not ep['type'].exists():
+                return extract_info(ep)
 
-                # We can default these to "None"
-                return (endpoint, email, password)  # type: ignore
-            else:
-                seen_types.append(ep['type'].as_str_expanded())
+        if backend_type is not None:
+            # They have a labeled backend, and all the end-points are labeled. So that means
+            # there really is not match. So throw!
+            seen_types = [str(ep['type'].as_str_expanded()) for ep in endpoints
+                          if ep['type'].exists()]
+            raise ServiceXException(f'Unable to find type {backend_type} '
+                                    f'in configuration. Saw: {", ".join(seen_types)}')
 
-        # If we are here, we found no matching type.
-        raise ServiceXException(f'Unable to find type {backend_type} '
-                                f'in configuration. Saw: {", ".join(seen_types)}')
+        # Nope - now we are going to have to just use the first one there.
+        for ep in endpoints:
+            return extract_info(ep)
+
+        # If we are here - then... it just isn't going to work!
+        raise NotImplementedError()

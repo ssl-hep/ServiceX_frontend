@@ -87,6 +87,119 @@ def test_sx_adaptor_settings():
     assert password == 'forkingshirtballs'
 
 
+def test_sx_adaptor_settings_no_backend_name_requested():
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config()
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+
+def test_sx_adaptor_settings_no_backend_name_requested_or_listed():
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config()
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+
+def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type():
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('xaod')
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+
+def test_sx_adaptor_settings_backend_name_requested_after_labeled_type():
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        },
+        {
+            'type': 'xaod',
+            'endpoint': 'http://my-left-foot.com:5001',
+            'email': 'thegoodplace1@example.com',
+            'password': 'forkingshirtballs1',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('xaod')
+
+    assert endpoint == 'http://my-left-foot.com:5001'
+    assert email == 'thegoodplace1@example.com'
+    assert password == 'forkingshirtballs1'
+
+
+def test_sx_adaptor_settings_backend_name_unlabeled_type():
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'xaod',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        },
+        {
+            'endpoint': 'http://my-left-foot.com:5001',
+            'email': 'thegoodplace1@example.com',
+            'password': 'forkingshirtballs1',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config()
+
+    assert endpoint == 'http://my-left-foot.com:5001'
+    assert email == 'thegoodplace1@example.com'
+    assert password == 'forkingshirtballs1'
+
+
 def test_sx_adaptor_settings_wrong_type():
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
