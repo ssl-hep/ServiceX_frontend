@@ -39,7 +39,7 @@ Create a `.servicex` file, in the `yaml` format, in the appropriate place for yo
 
 ```yaml
 api_endpoints:
-  - endpoint: <your-endpoint>
+  - endpoint: <your-endpoint-url>
     email: <api-email>
     password: <api-password>
     type: xaod
@@ -105,6 +105,7 @@ The file can contain an `api_endpoint` as mentioned above. In addition the other
   - Linux: `cache_path: "/home/servicex-cache"`
 
 - `minio_endpoint`, `minio_username`, `minio_password` - these are only interesting if you are using a pre-RC2 release of `servicex` - when the `minio` information wasn't part of the API exchange. This feature is depreciated and will be removed around the time `servicex` moves to RC3.
+- `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
