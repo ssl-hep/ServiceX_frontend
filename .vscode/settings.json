@@ -25,6 +25,7 @@
         "aexit",
         "aiohttp",
         "asyncio",
+        "backends",
         "cacheme",
         "codecov",
         "dcache",
@@ -76,8 +77,5 @@
         "xaod",
         "xrootd"
     ],
-    "python.analysis.typeCheckingMode": "basic",
-    "python.testing.pytestArgs": [
-        "--no-cov"
-    ]
+    "python.analysis.typeCheckingMode": "basic"
 }

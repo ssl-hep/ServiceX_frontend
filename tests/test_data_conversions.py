@@ -1,3 +1,4 @@
+from servicex import ServiceXException
 from servicex.data_conversions import DataConverterAdaptor
 import pytest
 import pandas as pd
@@ -41,3 +42,15 @@ async def test_parquet_to_awkward(good_uproot_file_path):
 async def test_root_to_awkward(good_root_file_path):
     df = await DataConverterAdaptor('root').convert_to_awkward(good_root_file_path)
     assert len(df['JetPt']) == 283458
+
+
+@pytest.mark.asyncio
+async def test_to_awkward_fail(good_root_file_path):
+    with pytest.raises(ServiceXException):
+        await DataConverterAdaptor('root').convert_to_awkward(good_root_file_path, 'notreally')
+
+
+@pytest.mark.asyncio
+async def test_to_panads_fail(good_root_file_path):
+    with pytest.raises(ServiceXException):
+        await DataConverterAdaptor('root').convert_to_pandas(good_root_file_path, 'notreally')

@@ -1,6 +1,7 @@
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from servicex.utils import ServiceXException
 from typing import Dict, Optional, Union
 
 from awkward.array.chunked import ChunkedArray
@@ -33,7 +34,7 @@ class DataConverterAdaptor:
         elif file_type == 'parquet':
             return await self._convert_parquet_to_pandas(file)
         else:
-            raise NotImplementedError(f'Conversion from {file_type} into an pandas DF is not '
+            raise ServiceXException(f'Conversion from {file_type} into an pandas DF is not '
                                       'yet supported')
 
     async def convert_to_awkward(self, file: Path, file_type: Optional[str] = None):
@@ -49,7 +50,7 @@ class DataConverterAdaptor:
         elif file_type == 'parquet':
             return await self._convert_parquet_to_awkward(file)
         else:
-            raise NotImplementedError(f'Conversion from {file_type} into an awkward array is not '
+            raise ServiceXException(f'Conversion from {file_type} into an awkward array is not '
                                       'yet supported')
 
     async def _convert_root_to_pandas(self, file: Path):

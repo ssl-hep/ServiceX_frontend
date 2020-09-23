@@ -2,6 +2,7 @@
 import asyncio
 import functools
 import logging
+from servicex.servicex_config import ServiceXConfigAdaptor
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -11,10 +12,8 @@ from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
 import aiohttp
 import backoff
 from backoff import on_exception
-from confuse import ConfigView
 
 from .cache import Cache
-from .ConfigSettings import ConfigSettings
 from .data_conversions import DataConverterAdaptor
 from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
                             find_new_bucket_files)
@@ -46,7 +45,7 @@ class ServiceXDataset(ServiceXABC):
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
-                 config_adaptor: Optional[ConfigView] = None,
+                 config_adaptor: Optional[ServiceXConfigAdaptor] = None,
                  data_convert_adaptor: Optional[DataConverterAdaptor] = None):
         '''
         Create and configure a ServiceX object for a dataset.
@@ -100,21 +99,21 @@ class ServiceXDataset(ServiceXABC):
 
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
-            else ConfigSettings('servicex', 'servicex')
+            else ServiceXConfigAdaptor()
 
         # Establish the cache that will store all our queries
-        self._cache = Cache(get_configured_cache_path(config)) \
+        self._cache = Cache(get_configured_cache_path(config.settings)) \
             if cache_adaptor is None \
             else cache_adaptor
 
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
             assert backend_type is not None
-            servicex_adaptor = servicex_adaptor_factory(config, backend_type)
+            servicex_adaptor = servicex_adaptor_factory(config.settings, backend_type)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            self._minio_adaptor = MinioAdaptorFactory(config)
+            self._minio_adaptor = MinioAdaptorFactory(config.settings)
         else:
             if isinstance(minio_adaptor, MinioAdaptor):
                 self._minio_adaptor = MinioAdaptorFactory(always_return=minio_adaptor)
@@ -127,7 +126,7 @@ class ServiceXDataset(ServiceXABC):
             else default_client_session
 
         self._converter = data_convert_adaptor if data_convert_adaptor is not None \
-            else DataConverterAdaptor('root')
+            else DataConverterAdaptor(config.get_default_returned_datatype(backend_type))
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
