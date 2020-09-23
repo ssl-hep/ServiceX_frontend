@@ -1,4 +1,4 @@
-from typing import Optional, cast
+from typing import Optional, Tuple, cast
 
 from confuse.core import ConfigView
 
@@ -78,3 +78,35 @@ class ServiceXConfigAdaptor:
         a = find_in_list(self._settings['api_endpoints'], key)
         a = find_in_list(self._settings['backend_types'], key) if a is None else a
         return a
+
+    def get_servicex_adaptor_config(self, backend_type: str) -> \
+            Tuple[str, Optional[str], Optional[str]]:
+        '''Return the servicex (endpoint, username, email) from a given backend configuration.
+
+        Args:
+            backend_type (str): The backend name (like `xaod`) which we hopefully can find in the
+            `.servicex` file.
+
+        Returns:
+            Tuple[str, str, str]: The tuple of info to create a `ServiceXAdaptor`: end point,
+            email, and password.
+        '''
+        # Find a list of all endpoints.
+        # It is an error if this is not specified somewhere.
+        endpoints = self._settings['api_endpoints']
+        seen_types = []
+        for ep in endpoints:
+            if ep['type'].as_str_expanded() == backend_type:
+                endpoint = ep['endpoint'].as_str_expanded()
+                email = ep['email'].as_str_expanded() if 'email' in ep else None
+                password = ep['password'].as_str_expanded() if 'password' in ep \
+                    else None
+
+                # We can default these to "None"
+                return (endpoint, email, password)  # type: ignore
+            else:
+                seen_types.append(ep['type'].as_str_expanded())
+
+        # If we are here, we found no matching type.
+        raise ServiceXException(f'Unable to find type {backend_type} '
+                                f'in configuration. Saw: {", ".join(seen_types)}')

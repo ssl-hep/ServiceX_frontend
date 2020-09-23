@@ -1,7 +1,9 @@
 import asyncio
 from pathlib import Path
+
+from confuse.core import Configuration
+from servicex.servicex_config import ServiceXConfigAdaptor
 from servicex.data_conversions import DataConverterAdaptor
-from servicex.servicex_adaptor import servicex_adaptor_factory
 from typing import Optional
 
 import pandas as pd
@@ -25,15 +27,18 @@ def clean_fname(fname: str):
 
 
 def test_default_ctor(mocker):
-    '''Test the default ctor. This requires that a .servicex file be present to work.
+    '''Test the default ctor. This requires that a .servicex file be present to work,
+    so we are going to dummy it out.
     '''
-    factory = mocker.MagicMock(spec=servicex_adaptor_factory)
-    mocker.patch('servicex.servicex.servicex_adaptor_factory', factory)
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
 
-    fe.ServiceXDataset('localds://dude', "uproot-ftw")
+    fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
 
-    factory.assert_called_once()
-    assert factory.call_args[0][1] == 'uproot-ftw'
+    config.get_servicex_adaptor_config.assert_called_with('uproot-ftw')
+    config.get_default_returned_datatype.assert_called_with('uproot-ftw')
 
 
 def test_default_ctor_no_type():

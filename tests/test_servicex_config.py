@@ -65,3 +65,79 @@ def test_defalt_config_has_backend_types():
         assert info['type'].exists()
         assert info['return_data'].exists()
     assert count > 0
+
+
+def test_sx_adaptor_settings():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('my-type')
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+
+def test_sx_adaptor_settings_wrong_type():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+
+    x = ServiceXConfigAdaptor(c)
+    with pytest.raises(ServiceXException) as e:
+        x.get_servicex_adaptor_config('your-type')
+
+    assert 'Unable to find type' in str(e.value)
+    assert 'my-type' in str(e.value)
+
+
+def test_sx_adaptor_settings_env():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': '${SXTYPE}',
+            'endpoint': '${ENDPOINT}:5000',
+            'email': '${SXUSER}',
+            'password': '${SXPASS}',
+        }
+    ]
+
+    from os import environ
+    environ['ENDPOINT'] = 'http://tachi.com'
+    environ['SXUSER'] = 'Holden'
+    environ['SXPASS'] = 'protomolecule'
+    environ['SXTYPE'] = 'mcrn'
+
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('mcrn')
+
+    assert endpoint == 'http://tachi.com:5000'
+    assert email == 'Holden'
+    assert password == 'protomolecule'
+
+# def test_default_config_endpoint():
+#     c = ConfigSettings('servicex', 'servicex')
+#     x = ServiceXConfigAdaptor(c)
+#     end_point, email, password = x.get_servicex_adaptor_config()
+#     assert end_point == 'http://localhost:5000'
+#     assert email is None
+#     assert password is None

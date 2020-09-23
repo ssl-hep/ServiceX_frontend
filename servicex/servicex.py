@@ -2,7 +2,6 @@
 import asyncio
 import functools
 import logging
-from servicex.servicex_config import ServiceXConfigAdaptor
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -13,12 +12,14 @@ import aiohttp
 import backoff
 from backoff import on_exception
 
+from servicex.servicex_config import ServiceXConfigAdaptor
+
 from .cache import Cache
 from .data_conversions import DataConverterAdaptor
 from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
                             find_new_bucket_files)
-from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
-                               transform_status_stream, trap_servicex_failures)
+from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
+                               trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (ServiceXException, ServiceXFailedFileTransform,
@@ -110,7 +111,8 @@ class ServiceXDataset(ServiceXABC):
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
             assert backend_type is not None
-            servicex_adaptor = servicex_adaptor_factory(config.settings, backend_type)
+            end_point, email, password = config.get_servicex_adaptor_config(backend_type)
+            servicex_adaptor = ServiceXAdaptor(end_point, email, password)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
