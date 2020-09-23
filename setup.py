@@ -17,8 +17,9 @@ if sys.version_info[1] < 8:
 
 version = os.getenv('servicex_version')
 if version is None:
-    raise Exception('servicex_version env var is not set')
-version = version.split('/')[-1]
+    version = '0.1a1'
+else:
+    version = version.split('/')[-1]
 
 setup(name="servicex",
       version=version,
@@ -45,7 +46,8 @@ setup(name="servicex",
           "qastle==0.8",
           'make_it_sync==1.0.0',
           'google-auth==1.17',
-          'confuse==1.3.0'
+          'confuse==1.3.0',
+          'pyarrow>=1.0, <2.0'
       ],
       extras_require={
           'test': [
