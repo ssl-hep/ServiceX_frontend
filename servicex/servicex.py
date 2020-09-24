@@ -2,6 +2,7 @@
 import asyncio
 import functools
 import logging
+from servicex.servicex_config import ServiceXConfigAdaptor
 import time
 from datetime import timedelta
 from pathlib import Path
