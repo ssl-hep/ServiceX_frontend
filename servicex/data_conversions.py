@@ -145,7 +145,9 @@ class DataConverterAdaptor:
         Note:
 
             - Work is done on a second thread.
-            - Pandas is only imported if this is called.
+            - Awkward is only imported if this is called.
+            - A LazyArray is returned, so it isn't completely loaded into memory. That also means this
+              will leak filehandles - as that has to be left open.
 
         '''
         from numpy import ndarray
@@ -155,11 +157,8 @@ class DataConverterAdaptor:
             import uproot
 
             f_in = uproot.open(file)
-            try:
-                r = f_in[f_in.keys()[0]]
-                return r.lazyarrays()  # type: ignore
-            finally:
-                f_in._context.source.close()
+            r = f_in[f_in.keys()[0]]
+            return r.lazyarrays()  # type: ignore
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 
