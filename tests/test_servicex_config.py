@@ -83,16 +83,14 @@ def test_sx_adaptor_settings(caplog):
         {
             'type': 'my-type',
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config('my-type')
+    endpoint, token = x.get_servicex_adaptor_config('my-type')
 
     assert endpoint == 'http://my-left-foot.com:5000'
-    assert email == 'thegoodplace@example.com'
-    assert password == 'forkingshirtballs'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
 
     assert len(caplog.record_tuples) == 0
 
@@ -106,16 +104,14 @@ def test_sx_adaptor_settings_no_backend_name_requested(caplog):
         {
             'type': 'my-type',
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config()
+    endpoint, token = x.get_servicex_adaptor_config()
 
     assert endpoint == 'http://my-left-foot.com:5000'
-    assert email == 'thegoodplace@example.com'
-    assert password == 'forkingshirtballs'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
 
     assert caplog.record_tuples[0][2] == "No backend type requested, " \
                                          "using http://my-left-foot.com:5000 - please be " \
@@ -131,16 +127,14 @@ def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
     c['api_endpoints'] = [
         {
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config()
+    endpoint, token = x.get_servicex_adaptor_config()
 
     assert endpoint == 'http://my-left-foot.com:5000'
-    assert email == 'thegoodplace@example.com'
-    assert password == 'forkingshirtballs'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
 
     assert caplog.record_tuples[0][2] == "No backend type requested, " \
                                          "using http://my-left-foot.com:5000 - please be " \
@@ -156,16 +150,14 @@ def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
     c['api_endpoints'] = [
         {
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config('xaod')
+    endpoint, token = x.get_servicex_adaptor_config('xaod')
 
     assert endpoint == 'http://my-left-foot.com:5000'
-    assert email == 'thegoodplace@example.com'
-    assert password == 'forkingshirtballs'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
 
     assert caplog.record_tuples[0][2] == "No 'xaod' backend type found, " \
                                          "using http://my-left-foot.com:5000 - please add to " \
@@ -180,22 +172,19 @@ def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):
     c['api_endpoints'] = [
         {
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         },
         {
             'type': 'xaod',
             'endpoint': 'http://my-left-foot.com:5001',
-            'email': 'thegoodplace1@example.com',
-            'password': 'forkingshirtballs1',
+            'token': 'forkingshirtballs.thegoodplace.bortles1'
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config('xaod')
+    endpoint, token = x.get_servicex_adaptor_config('xaod')
 
     assert endpoint == 'http://my-left-foot.com:5001'
-    assert email == 'thegoodplace1@example.com'
-    assert password == 'forkingshirtballs1'
+    assert token == 'forkingshirtballs.thegoodplace.bortles1'
 
     assert len(caplog.record_tuples) == 0
 
@@ -209,21 +198,18 @@ def test_sx_adaptor_settings_backend_name_unlabeled_type():
         {
             'type': 'xaod',
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         },
         {
             'endpoint': 'http://my-left-foot.com:5001',
-            'email': 'thegoodplace1@example.com',
-            'password': 'forkingshirtballs1',
+            'token': 'forkingshirtballs.thegoodplace.bortles1'
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config()
+    endpoint, token = x.get_servicex_adaptor_config()
 
     assert endpoint == 'http://my-left-foot.com:5001'
-    assert email == 'thegoodplace1@example.com'
-    assert password == 'forkingshirtballs1'
+    assert token == 'forkingshirtballs.thegoodplace.bortles1'
 
 
 def test_sx_adaptor_settings_wrong_type():
@@ -234,8 +220,7 @@ def test_sx_adaptor_settings_wrong_type():
         {
             'type': 'my-type',
             'endpoint': 'http://my-left-foot.com:5000',
-            'email': 'thegoodplace@example.com',
-            'password': 'forkingshirtballs',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
         }
     ]
 
@@ -255,23 +240,20 @@ def test_sx_adaptor_settings_env():
         {
             'type': '${SXTYPE}',
             'endpoint': '${ENDPOINT}:5000',
-            'email': '${SXUSER}',
-            'password': '${SXPASS}',
+            'token': '${SXTOKEN}',
         }
     ]
 
     from os import environ
     environ['ENDPOINT'] = 'http://tachi.com'
-    environ['SXUSER'] = 'Holden'
-    environ['SXPASS'] = 'protomolecule'
     environ['SXTYPE'] = 'mcrn'
+    environ['SXTOKEN'] = 'protomolecule'
 
     x = ServiceXConfigAdaptor(c)
-    endpoint, email, password = x.get_servicex_adaptor_config('mcrn')
+    endpoint, token = x.get_servicex_adaptor_config('mcrn')
 
     assert endpoint == 'http://tachi.com:5000'
-    assert email == 'Holden'
-    assert password == 'protomolecule'
+    assert token == 'protomolecule'
 
 
 def test_default_config_endpoint():
@@ -280,10 +262,9 @@ def test_default_config_endpoint():
     c._add_default_source()
     x = ServiceXConfigAdaptor(c)
 
-    end_point, email, password = x.get_servicex_adaptor_config()
+    end_point, token = x.get_servicex_adaptor_config()
     assert end_point == 'http://localhost:5000'
-    assert email is None
-    assert password is None
+    assert token is None
 
 
 def test_sx_adaptor_nothing():

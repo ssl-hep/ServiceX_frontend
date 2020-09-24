@@ -32,7 +32,7 @@ def test_default_ctor(mocker):
     '''
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration('servicex', 'servicex')
-    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
                                                        'no_spoon_there_is')
 
     fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
@@ -47,7 +47,7 @@ def test_default_ctor_no_type(mocker):
     '''
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration('servicex', 'servicex')
-    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
                                                        'no_spoon_there_is')
 
     fe.ServiceXDataset('localds://dude', config_adaptor=config)

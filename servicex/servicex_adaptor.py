@@ -239,4 +239,3 @@ async def trap_servicex_failures(stream: AsyncIterator[TransformTuple]) \
                                               f'processed: {processed}).')
 
         yield p
-

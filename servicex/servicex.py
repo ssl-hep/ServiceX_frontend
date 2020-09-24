@@ -107,8 +107,8 @@ class ServiceXDataset(ServiceXABC):
 
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
-            end_point, email, password = config.get_servicex_adaptor_config(backend_type)
-            servicex_adaptor = ServiceXAdaptor(end_point, email, password)
+            end_point, token = config.get_servicex_adaptor_config(backend_type)
+            servicex_adaptor = ServiceXAdaptor(end_point, token)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
