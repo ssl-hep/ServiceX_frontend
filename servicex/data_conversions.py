@@ -146,8 +146,8 @@ class DataConverterAdaptor:
 
             - Work is done on a second thread.
             - Awkward is only imported if this is called.
-            - A LazyArray is returned, so it isn't completely loaded into memory. That also means this
-              will leak filehandles - as that has to be left open.
+            - A LazyArray is returned, so it isn't completely loaded into memory. That also means
+              this will leak filehandles - as that has to be left open.
 
         '''
         from numpy import ndarray
