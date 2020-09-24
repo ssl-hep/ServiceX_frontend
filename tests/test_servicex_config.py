@@ -1,4 +1,3 @@
-
 import pytest
 
 from servicex.ConfigSettings import ConfigSettings
@@ -50,6 +49,15 @@ def test_returned_datatype_from_endpoint():
     assert x.get_default_returned_datatype('forkit') == 'spoons'
 
 
+def test_returned_datatype_no_type_endpoint():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    c['backend_types'] = [{'type': 'forkit', 'return_data': 'spoon'}]
+    c['api_endpoints'] = [{'endpoint': 'http://localhost:5000'}]
+    x = ServiceXConfigAdaptor(c)
+    assert x.get_default_returned_datatype('forkit') == 'spoon'
+
+
 def test_defalt_config_has_default_return_datatype():
     'Test default settings - default_returned_datatype'
     c = ConfigSettings('servicex', 'servicex')
@@ -65,3 +73,223 @@ def test_defalt_config_has_backend_types():
         assert info['type'].exists()
         assert info['return_data'].exists()
     assert count > 0
+
+
+def test_sx_adaptor_settings(caplog):
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('my-type')
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_sx_adaptor_settings_no_backend_name_requested(caplog):
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config()
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+    assert caplog.record_tuples[0][2] == "No backend type requested, " \
+                                         "using http://my-left-foot.com:5000 - please be " \
+                                         "explicit " \
+                                         "in the ServiceXDataset constructor"
+
+
+def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config()
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+    assert caplog.record_tuples[0][2] == "No backend type requested, " \
+                                         "using http://my-left-foot.com:5000 - please be " \
+                                         "explicit " \
+                                         "in the ServiceXDataset constructor"
+
+
+def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('xaod')
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert email == 'thegoodplace@example.com'
+    assert password == 'forkingshirtballs'
+
+    assert caplog.record_tuples[0][2] == "No 'xaod' backend type found, " \
+                                         "using http://my-left-foot.com:5000 - please add to " \
+                                         "the .servicex file"
+
+
+def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        },
+        {
+            'type': 'xaod',
+            'endpoint': 'http://my-left-foot.com:5001',
+            'email': 'thegoodplace1@example.com',
+            'password': 'forkingshirtballs1',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('xaod')
+
+    assert endpoint == 'http://my-left-foot.com:5001'
+    assert email == 'thegoodplace1@example.com'
+    assert password == 'forkingshirtballs1'
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_sx_adaptor_settings_backend_name_unlabeled_type():
+    'Request None for a backend name'
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'xaod',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        },
+        {
+            'endpoint': 'http://my-left-foot.com:5001',
+            'email': 'thegoodplace1@example.com',
+            'password': 'forkingshirtballs1',
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config()
+
+    assert endpoint == 'http://my-left-foot.com:5001'
+    assert email == 'thegoodplace1@example.com'
+    assert password == 'forkingshirtballs1'
+
+
+def test_sx_adaptor_settings_wrong_type():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'email': 'thegoodplace@example.com',
+            'password': 'forkingshirtballs',
+        }
+    ]
+
+    x = ServiceXConfigAdaptor(c)
+    with pytest.raises(ServiceXException) as e:
+        x.get_servicex_adaptor_config('your-type')
+
+    assert 'Unable to find type' in str(e.value)
+    assert 'my-type' in str(e.value)
+
+
+def test_sx_adaptor_settings_env():
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': '${SXTYPE}',
+            'endpoint': '${ENDPOINT}:5000',
+            'email': '${SXUSER}',
+            'password': '${SXPASS}',
+        }
+    ]
+
+    from os import environ
+    environ['ENDPOINT'] = 'http://tachi.com'
+    environ['SXUSER'] = 'Holden'
+    environ['SXPASS'] = 'protomolecule'
+    environ['SXTYPE'] = 'mcrn'
+
+    x = ServiceXConfigAdaptor(c)
+    endpoint, email, password = x.get_servicex_adaptor_config('mcrn')
+
+    assert endpoint == 'http://tachi.com:5000'
+    assert email == 'Holden'
+    assert password == 'protomolecule'
+
+
+def test_default_config_endpoint():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    c._add_default_source()
+    x = ServiceXConfigAdaptor(c)
+
+    end_point, email, password = x.get_servicex_adaptor_config()
+    assert end_point == 'http://localhost:5000'
+    assert email is None
+    assert password is None
+
+
+def test_sx_adaptor_nothing():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    x = ServiceXConfigAdaptor(c)
+
+    with pytest.raises(ServiceXException):
+        x.get_servicex_adaptor_config()

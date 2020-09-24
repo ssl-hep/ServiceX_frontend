@@ -1,10 +1,14 @@
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 import asyncio
-from servicex.utils import ServiceXException
-from typing import Dict, Optional, Union
-
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Dict, Iterable, Optional, Union
 from awkward.array.chunked import ChunkedArray
+from awkward.array.table import Table
+
+import pandas as pd
+import awkward as ak
+
+from servicex.utils import ServiceXException
 
 _conversion_pool = ThreadPoolExecutor(4)
 
@@ -52,6 +56,22 @@ class DataConverterAdaptor:
         else:
             raise ServiceXException(f'Conversion from {file_type} into an awkward array is not '
                                     'yet supported')
+
+    def combine_pandas(self, dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
+        '''Combine many pandas dataframes into a single one, in order.
+
+        Args:
+            dfs (Iterable[pd.DataFrame]): The list of dataframes
+        '''
+        return pd.concat(dfs)
+
+    def combine_awkward(self, awks: Iterable[Union[Table, ChunkedArray]]) -> Table:
+        '''Combine many awkward arrays into a single one, in order.
+
+        Args:
+            awks (Iterable[ChunkedArray]): The input list of awkward arrays
+        '''
+        return ak.concatenate(awks)
 
     async def _convert_root_to_pandas(self, file: Path):
         '''
@@ -125,7 +145,9 @@ class DataConverterAdaptor:
         Note:
 
             - Work is done on a second thread.
-            - Pandas is only imported if this is called.
+            - Awkward is only imported if this is called.
+            - A LazyArray is returned, so it isn't completely loaded into memory. That also means this
+              will leak filehandles - as that has to be left open.
 
         '''
         from numpy import ndarray
@@ -135,11 +157,8 @@ class DataConverterAdaptor:
             import uproot
 
             f_in = uproot.open(file)
-            try:
-                r = f_in[f_in.keys()[0]]
-                return r.lazyarrays()  # type: ignore
-            finally:
-                f_in._context.source.close()
+            r = f_in[f_in.keys()[0]]
+            return r.lazyarrays()  # type: ignore
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 

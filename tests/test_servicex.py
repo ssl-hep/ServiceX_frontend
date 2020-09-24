@@ -1,7 +1,9 @@
 import asyncio
 from pathlib import Path
+
+from confuse.core import Configuration
+from servicex.servicex_config import ServiceXConfigAdaptor
 from servicex.data_conversions import DataConverterAdaptor
-from servicex.servicex_adaptor import servicex_adaptor_factory
 from typing import Optional
 
 import pandas as pd
@@ -25,22 +27,33 @@ def clean_fname(fname: str):
 
 
 def test_default_ctor(mocker):
-    '''Test the default ctor. This requires that a .servicex file be present to work.
+    '''Test the default ctor. This requires that a .servicex file be present to work,
+    so we are going to dummy it out.
     '''
-    factory = mocker.MagicMock(spec=servicex_adaptor_factory)
-    mocker.patch('servicex.servicex.servicex_adaptor_factory', factory)
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
 
-    fe.ServiceXDataset('localds://dude', "uproot-ftw")
+    fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
 
-    factory.assert_called_once()
-    assert factory.call_args[0][1] == 'uproot-ftw'
+    config.get_servicex_adaptor_config.assert_called_with('uproot-ftw')
+    config.get_default_returned_datatype.assert_called_with('uproot-ftw')
 
 
-def test_default_ctor_no_type():
-    with pytest.raises(ServiceXException) as e:
-        fe.ServiceXDataset('localds://dude')
+def test_default_ctor_no_type(mocker):
+    '''Test the default ctor. This requires that a .servicex file be present to work,
+    so we are going to dummy it out.
+    '''
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
 
-    assert "type" in str(e.value)
+    fe.ServiceXDataset('localds://dude', config_adaptor=config)
+
+    config.get_servicex_adaptor_config.assert_called_with(None)
+    config.get_default_returned_datatype.assert_called_with(None)
 
 
 @pytest.mark.asyncio
@@ -249,6 +262,10 @@ async def test_good_run_single_ds_1file_pandas(mocker, good_pandas_file_data):
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 6
 
+    good_pandas_file_data.combine_pandas.assert_called_once()
+    good_pandas_file_data.convert_to_pandas.assert_called_once()
+    assert len(good_pandas_file_data.combine_pandas.call_args[0][0]) == 1
+
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
@@ -270,6 +287,10 @@ async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
     assert 'JetPt' in r
     assert len(r['JetPt']) == 6
 
+    good_awkward_file_data.combine_awkward.assert_called_once()
+    good_awkward_file_data.convert_to_awkward.assert_called_once()
+    assert len(good_awkward_file_data.combine_awkward.call_args[0][0]) == 1
+
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
@@ -285,9 +306,9 @@ async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
                             cache_adaptor=mock_cache,
                             data_convert_adaptor=good_pandas_file_data,
                             local_log=mock_logger)
-    r = await ds.get_data_pandas_df_async('(valid qastle string)')
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 6 * 2
+    await ds.get_data_pandas_df_async('(valid qastle string)')
+    good_pandas_file_data.combine_pandas.assert_called_once()
+    assert len(good_pandas_file_data.combine_pandas.call_args[0][0]) == 2
 
 
 @pytest.mark.asyncio
@@ -304,11 +325,8 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
                             cache_adaptor=mock_cache,
                             data_convert_adaptor=good_awkward_file_data,
                             local_log=mock_logger)
-    r = await ds.get_data_awkward_async('(valid qastle string)')
-    assert isinstance(r, dict)
-    assert len(r) == 1
-    assert 'JetPt' in r
-    assert len(r['JetPt']) == 6 * 2
+    await ds.get_data_awkward_async('(valid qastle string)')
+    assert len(good_awkward_file_data.combine_awkward.call_args[0][0]) == 2
 
 
 @pytest.mark.asyncio
