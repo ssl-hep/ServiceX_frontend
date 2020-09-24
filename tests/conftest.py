@@ -176,6 +176,7 @@ def good_pandas_file_data(mocker):
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
     converter.convert_to_pandas.return_value = pd.DataFrame({'JetPt': [0, 1, 2, 3, 4, 5]})
+    converter.combine_pandas.return_value = converter.convert_to_pandas.return_value
 
     return converter
 
@@ -186,6 +187,7 @@ def good_awkward_file_data(mocker):
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
     converter.convert_to_awkward.return_value = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+    converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
     return converter
 

@@ -262,6 +262,10 @@ async def test_good_run_single_ds_1file_pandas(mocker, good_pandas_file_data):
     assert isinstance(r, pd.DataFrame)
     assert len(r) == 6
 
+    good_pandas_file_data.combine_pandas.assert_called_once()
+    good_pandas_file_data.convert_to_pandas.assert_called_once()
+    assert len(good_pandas_file_data.combine_pandas.call_args[0][0]) == 1
+
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
@@ -283,6 +287,10 @@ async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
     assert 'JetPt' in r
     assert len(r['JetPt']) == 6
 
+    good_awkward_file_data.combine_awkward.assert_called_once()
+    good_awkward_file_data.convert_to_awkward.assert_called_once()
+    assert len(good_awkward_file_data.combine_awkward.call_args[0][0]) == 1
+
 
 @pytest.mark.asyncio
 async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
@@ -298,9 +306,9 @@ async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
                             cache_adaptor=mock_cache,
                             data_convert_adaptor=good_pandas_file_data,
                             local_log=mock_logger)
-    r = await ds.get_data_pandas_df_async('(valid qastle string)')
-    assert isinstance(r, pd.DataFrame)
-    assert len(r) == 6 * 2
+    await ds.get_data_pandas_df_async('(valid qastle string)')
+    good_pandas_file_data.combine_pandas.assert_called_once()
+    assert len(good_pandas_file_data.combine_pandas.call_args[0][0]) == 2
 
 
 @pytest.mark.asyncio
@@ -317,11 +325,8 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
                             cache_adaptor=mock_cache,
                             data_convert_adaptor=good_awkward_file_data,
                             local_log=mock_logger)
-    r = await ds.get_data_awkward_async('(valid qastle string)')
-    assert isinstance(r, dict)
-    assert len(r) == 1
-    assert 'JetPt' in r
-    assert len(r['JetPt']) == 6 * 2
+    await ds.get_data_awkward_async('(valid qastle string)')
+    assert len(good_awkward_file_data.combine_awkward.call_args[0][0]) == 2
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,3 @@
-import logging
 import pytest
 
 from servicex.ConfigSettings import ConfigSettings
@@ -57,7 +56,8 @@ def test_returned_datatype_no_type_endpoint():
     c['api_endpoints'] = [{'endpoint': 'http://localhost:5000'}]
     x = ServiceXConfigAdaptor(c)
     assert x.get_default_returned_datatype('forkit') == 'spoon'
-    
+
+
 def test_defalt_config_has_default_return_datatype():
     'Test default settings - default_returned_datatype'
     c = ConfigSettings('servicex', 'servicex')
@@ -118,7 +118,8 @@ def test_sx_adaptor_settings_no_backend_name_requested(caplog):
     assert password == 'forkingshirtballs'
 
     assert caplog.record_tuples[0][2] == "No backend type requested, " \
-                                         "using http://my-left-foot.com:5000 - please be explicit " \
+                                         "using http://my-left-foot.com:5000 - please be " \
+                                         "explicit " \
                                          "in the ServiceXDataset constructor"
 
 
@@ -142,7 +143,8 @@ def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
     assert password == 'forkingshirtballs'
 
     assert caplog.record_tuples[0][2] == "No backend type requested, " \
-                                         "using http://my-left-foot.com:5000 - please be explicit " \
+                                         "using http://my-left-foot.com:5000 - please be " \
+                                         "explicit " \
                                          "in the ServiceXDataset constructor"
 
 

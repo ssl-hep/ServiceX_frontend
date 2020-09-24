@@ -140,18 +140,14 @@ class ServiceXDataset(ServiceXABC):
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_pandas_df_async(self, selection_query: str):
-        import pandas as pd
-        return pd.concat(await self._data_return(
+        return self._converter.combine_pandas(await self._data_return(
             selection_query, lambda f: self._converter.convert_to_pandas(f)))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_awkward_async(self, selection_query: str):
-        import awkward
-        all_data = await self._data_return(
-            selection_query, lambda f: self._converter.convert_to_awkward(f))
-        col_names = all_data[0].keys()
-        return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
+        return self._converter.combine_awkward(await self._data_return(
+            selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
     async def _file_return(self, selection_query: str, data_format: str):
         '''
