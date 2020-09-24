@@ -1,5 +1,8 @@
 from json import loads
 from pathlib import Path
+
+import asyncmock
+from servicex.data_conversions import DataConverterAdaptor
 from servicex.minio_adaptor import MinioAdaptor
 from typing import Any, Dict, List, Optional, Tuple
 from unittest.mock import Mock
@@ -157,29 +160,36 @@ def build_cache_mock(mocker, query_cache_return: str = None,
 
 @pytest.fixture
 def good_root_file_path():
-    return Path("tests/sample_servicex_output.root")
+    return Path("tests/sample_root_servicex_output.root")
+
+
+@pytest.fixture
+def good_uproot_file_path():
+    return Path("tests/sample_uproot_servicex_output.parquet")
 
 
 @pytest.fixture
 def good_pandas_file_data(mocker):
+    'Return a good pandas dataset'
     import pandas as pd
+    import asyncmock
 
-    async def get_pandas_dummy_data(fname: str):
-        df = pd.DataFrame({'JetPt': [0, 1, 2, 3, 4, 5]})
-        return df
+    converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
+    converter.convert_to_pandas.return_value = pd.DataFrame({'JetPt': [0, 1, 2, 3, 4, 5]})
+    converter.combine_pandas.return_value = converter.convert_to_pandas.return_value
 
-    mocker.patch('servicex.servicex._convert_root_to_pandas', side_effect=get_pandas_dummy_data)
+    return converter
 
 
 @pytest.fixture
 def good_awkward_file_data(mocker):
     import awkward as awk
 
-    async def good_awkward_data(fname: str):
-        df = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
-        return df
+    converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
+    converter.convert_to_awkward.return_value = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+    converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
-    mocker.patch('servicex.servicex._convert_root_to_awkward', side_effect=good_awkward_data)
+    return converter
 
 
 @pytest.fixture

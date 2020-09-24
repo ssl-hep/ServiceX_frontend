@@ -12,7 +12,6 @@ from servicex import (
     ServiceXUnknownRequestID,
 )
 from servicex.servicex_adaptor import (
-    servicex_adaptor_factory,
     transform_status_stream,
     trap_servicex_failures,
 )
@@ -473,63 +472,6 @@ async def test_update_query_status_bad(bad_update):
         await sa.get_query_status(bad_update, '111-222-333')
 
     assert "rejected" in str(e.value)
-
-
-def test_servicex_adaptor_settings():
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-    c['api_endpoints'] = [
-        {
-            'type': 'my-type',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
-        }
-    ]
-    sx = servicex_adaptor_factory(c, 'my-type')
-    assert sx._endpoint == 'http://my-left-foot.com:5000'
-    assert sx._refresh_token == 'forkingshirtballs.thegoodplace.bortles'
-
-
-def test_servicex_adaptor_settings_wrong_type():
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-    c['api_endpoints'] = [
-        {
-            'type': 'my-type',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
-        }
-    ]
-
-    with pytest.raises(ServiceXException) as e:
-        servicex_adaptor_factory(c, 'your-type')
-
-    assert 'Unable to find type' in str(e.value)
-    assert 'my-type' in str(e.value)
-
-
-def test_servicex_adaptor_settings_env():
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-    c['api_endpoints'] = [
-        {
-            'type': '${SXTYPE}',
-            'endpoint': '${ENDPOINT}:5000',
-            'token': '${SXTOKEN}',
-        }
-    ]
-
-    from os import environ
-    environ['ENDPOINT'] = 'http://tachi.com'
-    environ['SXTOKEN'] = 'protomolecule'
-    environ['SXTYPE'] = 'mcrn'
-
-    sx = servicex_adaptor_factory(c, 'mcrn')
-    assert sx._endpoint == 'http://tachi.com:5000'
-    assert sx._refresh_token == 'protomolecule'
 
 
 @pytest.mark.asyncio

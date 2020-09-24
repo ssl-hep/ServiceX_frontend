@@ -11,15 +11,15 @@ from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
 import aiohttp
 import backoff
 from backoff import on_exception
-from confuse import ConfigView
+
+from servicex.servicex_config import ServiceXConfigAdaptor
 
 from .cache import Cache
-from .ConfigSettings import ConfigSettings
-from .data_conversions import _convert_root_to_awkward, _convert_root_to_pandas
+from .data_conversions import DataConverterAdaptor
 from .minio_adaptor import (MinioAdaptor, MinioAdaptorFactory,
                             find_new_bucket_files)
-from .servicex_adaptor import (ServiceXAdaptor, servicex_adaptor_factory,
-                               transform_status_stream, trap_servicex_failures)
+from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
+                               trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (ServiceXException, ServiceXFailedFileTransform,
@@ -46,7 +46,8 @@ class ServiceXDataset(ServiceXABC):
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
-                 config_adaptor: ConfigView = None):
+                 config_adaptor: Optional[ServiceXConfigAdaptor] = None,
+                 data_convert_adaptor: Optional[DataConverterAdaptor] = None):
         '''
         Create and configure a ServiceX object for a dataset.
 
@@ -55,8 +56,9 @@ class ServiceXDataset(ServiceXABC):
             dataset                     Name of a dataset from which queries will be selected.
             backend_type                The type of backend. Used only if we need to find an
                                         end-point. If we do not have a `servicex_adaptor` then this
-                                        cannot be null. Possible types are `uproot`, `xaod`,
-                                        and anything that finds a match in the `.servicex` file.
+                                        will default to xaod, unless you have any endpoint listed
+                                        in your servicex file. It will default to best match there,
+                                        in that case.
             image                       Name of transformer image to use to transform the data
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
@@ -76,6 +78,9 @@ class ServiceXDataset(ServiceXABC):
                                         `servicex` queries is used.
             config_adaptor              Control how configuration options are read from the
                                         `.servicex` file.
+            data_convert_adaptor        Manages conversions between root and parquet and `pandas`
+                                        and `awkward`, including default settings for expected
+                                        datatypes from the backend.
 
         Notes:
 
@@ -91,27 +96,23 @@ class ServiceXDataset(ServiceXABC):
                              status_callback_factory,
                              )
 
-        # Make sure the arguments are reasonable
-        if backend_type is None and servicex_adaptor is None:
-            raise ServiceXException('Specify backend_type or servicex_adaptor')
-
         # Get the local settings
         config = config_adaptor if config_adaptor is not None \
-            else ConfigSettings('servicex', 'servicex')
+            else ServiceXConfigAdaptor()
 
         # Establish the cache that will store all our queries
-        self._cache = Cache(get_configured_cache_path(config)) \
+        self._cache = Cache(get_configured_cache_path(config.settings)) \
             if cache_adaptor is None \
             else cache_adaptor
 
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
-            assert backend_type is not None
-            servicex_adaptor = servicex_adaptor_factory(config, backend_type)
+            end_point, email, password = config.get_servicex_adaptor_config(backend_type)
+            servicex_adaptor = ServiceXAdaptor(end_point, email, password)
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            self._minio_adaptor = MinioAdaptorFactory(config)
+            self._minio_adaptor = MinioAdaptorFactory(config.settings)
         else:
             if isinstance(minio_adaptor, MinioAdaptor):
                 self._minio_adaptor = MinioAdaptorFactory(always_return=minio_adaptor)
@@ -122,6 +123,9 @@ class ServiceXDataset(ServiceXABC):
 
         self._session_generator = session_generator if session_generator is not None \
             else default_client_session
+
+        self._converter = data_convert_adaptor if data_convert_adaptor is not None \
+            else DataConverterAdaptor(config.get_default_returned_datatype(backend_type))
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
@@ -136,16 +140,14 @@ class ServiceXDataset(ServiceXABC):
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_pandas_df_async(self, selection_query: str):
-        import pandas as pd
-        return pd.concat(await self._data_return(selection_query, _convert_root_to_pandas))
+        return self._converter.combine_pandas(await self._data_return(
+            selection_query, lambda f: self._converter.convert_to_pandas(f)))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_awkward_async(self, selection_query: str):
-        import awkward
-        all_data = await self._data_return(selection_query, _convert_root_to_awkward)
-        col_names = all_data[0].keys()
-        return {c: awkward.concatenate([ar[c] for ar in all_data]) for c in col_names}
+        return self._converter.combine_awkward(await self._data_return(
+            selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
     async def _file_return(self, selection_query: str, data_format: str):
         '''

@@ -4,7 +4,6 @@ from typing import AsyncIterator, Dict, Optional, Tuple
 import logging
 
 import aiohttp
-from confuse import ConfigView
 from google.auth import jwt
 
 from .utils import (
@@ -241,32 +240,3 @@ async def trap_servicex_failures(stream: AsyncIterator[TransformTuple]) \
 
         yield p
 
-
-def servicex_adaptor_factory(c: ConfigView, backend_type: str) -> ServiceXAdaptor:
-    '''Given a configuration and the backend, find an appropriate configuration
-    for us to grab and create a `servicex_adaptor`.
-
-    Args:
-        c (ConfigView): The config information loaded form files.
-        backend_type (str): The backend type we need to match
-
-    Returns:
-        [ServiceXAdaptor]: A servicex adaptor.
-    '''
-    # Find a list of all endpoints.
-    # It is an error if this is not specified somewhere.
-    endpoints = c['api_endpoints']
-    seen_types = []
-    for ep in endpoints:
-        if ep['type'].as_str_expanded() == backend_type:
-            endpoint = ep['endpoint'].as_str_expanded()
-            token = ep['token'].as_str_expanded() if 'token' in ep else None
-
-            # We can default these to "None"
-            return ServiceXAdaptor(endpoint, refresh_token=token)
-        else:
-            seen_types.append(ep['type'].as_str_expanded())
-
-    # If we are here, we found no matching type.
-    raise ServiceXException(f'Unable to find type {backend_type} '
-                            f'in configuration. Saw: {", ".join(seen_types)}')

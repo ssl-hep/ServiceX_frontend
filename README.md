@@ -35,10 +35,9 @@ The `servicex` library searches for configuration information in several locatio
 
 If no endpoint is specified, then the library defaults to the developer endpoint, which is `http://localhost:5000` for the web-service API, and `localhost:9000` for the `minio` endpoint. No passwords are required.
 
-Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following:
+Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the uproot backend):
 
 ```yaml
-<<<<<<< HEAD
 api_endpoints:
   - endpoint: <your-endpoint>
     token: <api-token>
@@ -59,7 +58,7 @@ The following lines will return a `pandas.DataFrame` containing all the jet pT's
     from servicex import ServiceX
     query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
     dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
-    ds = ServiceXDataset(dataset, 'xaod')
+    ds = ServiceXDataset(dataset)
     r = ds.get_data_pandas_df(query)
     print(r)
 ```
@@ -105,6 +104,7 @@ The file can contain an `api_endpoint` as mentioned above. In addition the other
   - Linux: `cache_path: "/home/servicex-cache"`
 
 - `minio_endpoint`, `minio_username`, `minio_password` - these are only interesting if you are using a pre-RC2 release of `servicex` - when the `minio` information wasn't part of the API exchange. This feature is depreciated and will be removed around the time `servicex` moves to RC3.
+- `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
@@ -161,8 +161,9 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
           dataset                     Name of a dataset from which queries will be selected.
           backend_type                The type of backend. Used only if we need to find an
                                       end-point. If we do not have a `servicex_adaptor` then this
-                                      cannot be null. Possible types are `uproot`, `xaod`,
-                                      and anything that finds a match in the `.servicex` file.
+                                      will default to xaod, unless you have any endpoint listed
+                                      in your servicex file. It will default to best match there,
+                                      in that case.
           image                       Name of transformer image to use to transform the data
           max_workers                 Maximum number of transformers to run simultaneously on
                                       ServiceX.

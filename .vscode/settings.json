@@ -26,6 +26,8 @@
         "aexit",
         "aiohttp",
         "asyncio",
+        "awks",
+        "backends",
         "cacheme",
         "codecov",
         "dcache",
@@ -55,6 +57,7 @@
         "prereleased",
         "protomolecule",
         "ptetaphi",
+        "pyarrow",
         "pypa",
         "pypi",
         "pytest",
@@ -76,8 +79,5 @@
         "xaod",
         "xrootd"
     ],
-    "python.analysis.typeCheckingMode": "basic",
-    "python.testing.pytestArgs": [
-        "--no-cov"
-    ]
+    "python.analysis.typeCheckingMode": "basic"
 }
