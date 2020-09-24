@@ -1,10 +1,14 @@
-from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor
 import asyncio
-from servicex.utils import ServiceXException
-from typing import Dict, Optional, Union
-
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Dict, Iterable, Optional, Union
 from awkward.array.chunked import ChunkedArray
+from awkward.array.table import Table
+
+import pandas as pd
+import awkward as ak
+
+from servicex.utils import ServiceXException
 
 _conversion_pool = ThreadPoolExecutor(4)
 
@@ -52,6 +56,22 @@ class DataConverterAdaptor:
         else:
             raise ServiceXException(f'Conversion from {file_type} into an awkward array is not '
                                     'yet supported')
+
+    def combine_pandas(self, dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
+        '''Combine many pandas dataframes into a single one, in order.
+
+        Args:
+            dfs (Iterable[pd.DataFrame]): The list of dataframes
+        '''
+        return pd.concat(dfs)
+
+    def combine_awkward(self, awks: Iterable[Union[Table, ChunkedArray]]) -> Table:
+        '''Combine many awkward arrays into a single one, in order.
+
+        Args:
+            awks (Iterable[ChunkedArray]): The input list of awkward arrays
+        '''
+        return ak.concatenate(awks)
 
     async def _convert_root_to_pandas(self, file: Path):
         '''

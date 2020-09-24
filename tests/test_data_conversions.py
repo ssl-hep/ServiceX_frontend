@@ -54,3 +54,63 @@ async def test_to_awkward_fail(good_root_file_path):
 async def test_to_panads_fail(good_root_file_path):
     with pytest.raises(ServiceXException):
         await DataConverterAdaptor('root').convert_to_pandas(good_root_file_path, 'notreally')
+
+
+def test_combine_pandas_from_root(good_root_file_path):
+    'Load a dataframe from root files and make sure that they work when we ask them to combine'
+    def load_df():
+        import uproot
+        with uproot.open(good_root_file_path) as f_in:
+            df = f_in[f_in.keys()[0]].pandas.df()  # type: ignore
+            return df
+
+    df1 = load_df()
+    df2 = load_df()
+
+    combined = DataConverterAdaptor('root').combine_pandas([df1, df2])
+
+    assert len(combined) == len(df1) + len(df2)
+
+
+def test_combine_pandas_from_parquet(good_uproot_file_path):
+    'Load a dataframe from a parquet file and make sure they work when we ask them to combine'
+    def load_df():
+        import pandas as pd
+        return pd.read_parquet(good_uproot_file_path)
+
+    df1 = load_df()
+    df2 = load_df()
+
+    combined = DataConverterAdaptor('root').combine_pandas([df1, df2])
+
+    assert len(combined) == len(df1) + len(df2)
+
+
+def test_combine_awkward_from_root(good_root_file_path):
+    'Load a dataframe from root files and make sure that they work when we ask them to combine'
+    def load_df():
+        import uproot
+        with uproot.open(good_root_file_path) as f_in:
+            df = f_in[f_in.keys()[0]].lazyarrays()  # type: ignore
+            return df
+
+    df1 = load_df()
+    df2 = load_df()
+
+    combined = DataConverterAdaptor('root').combine_awkward([df1, df2])
+
+    assert len(combined) == len(df1) + len(df2)
+
+
+def test_combine_awkward_from_parquet(good_uproot_file_path):
+    'Load a dataframe from a parquet file and make sure they work when we ask them to combine'
+    def load_df():
+        import awkward as ak
+        return ak.fromparquet(good_uproot_file_path)
+
+    df1 = load_df()
+    df2 = load_df()
+
+    combined = DataConverterAdaptor('root').combine_awkward([df1, df2])
+
+    assert len(combined) == len(df1) + len(df2)

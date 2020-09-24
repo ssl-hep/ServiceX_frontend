@@ -25,6 +25,7 @@
         "aexit",
         "aiohttp",
         "asyncio",
+        "awks",
         "backends",
         "cacheme",
         "codecov",
