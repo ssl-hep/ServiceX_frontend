@@ -1,5 +1,6 @@
 import asyncio
 from pathlib import Path
+from servicex.data_conversions import DataConverterAdaptor
 from servicex.servicex_adaptor import servicex_adaptor_factory
 from typing import Optional
 
@@ -49,12 +50,14 @@ async def test_good_run_root_files(mocker):
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
-                            local_log=mock_logger)
+                            local_log=mock_logger,
+                            data_convert_adaptor=data_adaptor)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
 
     mock_minio_adaptor.mock_download_file.assert_called_with(
@@ -76,12 +79,14 @@ async def test_skipped_file(mocker):
     mock_transform_status = mocker.Mock(return_value=(0, 1, 1))
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     with pytest.raises(fe.ServiceXException) as e:
         ds = fe.ServiceXDataset('http://one-ds',
                                 servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                                 minio_adaptor=mock_minio_adaptor,  # type: ignore
                                 cache_adaptor=mock_cache,
+                                data_convert_adaptor=data_adaptor,
                                 local_log=mock_logger)
         ds.get_data_rootfiles('(valid qastle string)')
 
@@ -94,10 +99,12 @@ def test_good_run_root_files_no_async(mocker):
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
@@ -114,11 +121,13 @@ async def test_good_run_root_files_pause(mocker, short_status_poll_time):
     mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert len(r) == 1
@@ -134,10 +143,12 @@ async def test_good_run_files_back_4_order_1(mocker):
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry',
                                                          'three_minio_entry',
                                                          'four_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
@@ -156,11 +167,13 @@ async def test_good_run_files_back_4_order_2(mocker):
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['four_minio_entry', 'three_minio_entry',
                                                          'two_minio_entry',
                                                          'one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
@@ -178,11 +191,13 @@ async def test_good_run_files_back_4_unordered(mocker):
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry',
                                                          'three_minio_entry',
                                                          'four_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
     assert isinstance(r, list)
@@ -201,11 +216,13 @@ async def test_good_download_files_parquet(mocker, short_status_poll_time):
     mock_transform_status = mocker.Mock(side_effect=[(1, 0, 0), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     r = await ds.get_data_parquet_async('(valid qastle string)')
     assert isinstance(r, list)
@@ -226,6 +243,7 @@ async def test_good_run_single_ds_1file_pandas(mocker, good_pandas_file_data):
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=good_pandas_file_data,
                             local_log=mock_logger)
     r = await ds.get_data_pandas_df_async('(valid qastle string)')
     assert isinstance(r, pd.DataFrame)
@@ -244,6 +262,7 @@ async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=good_awkward_file_data,
                             local_log=mock_logger)
     r = await ds.get_data_awkward_async('(valid qastle string)')
     assert isinstance(r, dict)
@@ -264,6 +283,7 @@ async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=good_pandas_file_data,
                             local_log=mock_logger)
     r = await ds.get_data_pandas_df_async('(valid qastle string)')
     assert isinstance(r, pd.DataFrame)
@@ -282,6 +302,7 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=good_awkward_file_data,
                             local_log=mock_logger)
     r = await ds.get_data_awkward_async('(valid qastle string)')
     assert isinstance(r, dict)
@@ -301,11 +322,13 @@ async def test_status_exception(mocker):
             mock_transform_status=mocker.MagicMock(side_effect=fe.ServiceXException('bad attempt'))
         )
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=[])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     with pytest.raises(fe.ServiceXException) as e:
         await ds.get_data_awkward_async('(valid qastle string)')
@@ -324,6 +347,7 @@ async def test_image_spec(mocker, good_awkward_file_data):
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
                             local_log=mock_logger,
+                            data_convert_adaptor=good_awkward_file_data,
                             image='fork-it-over:latest')
     await ds.get_data_rootfiles_async('(valid qastle string)')
 
@@ -337,11 +361,13 @@ async def test_max_workers_spec(mocker, good_awkward_file_data):
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger,
                             max_workers=50)
     await ds.get_data_rootfiles_async('(valid qastle string)')
@@ -359,11 +385,13 @@ async def test_nqueries_on_n_ds(n_ds: int, n_query: int, mocker):
         mock_logger = mocker.MagicMock(spec=log_adaptor)
         mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456-{0}")
         mock_minio_adaptor = MockMinioAdaptor(mocker, files=[f'one_minio_entry_{index}'])
+        data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
         ds = fe.ServiceXDataset(f'localds://mc16_tev:13_{index}',
                                 servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                                 minio_adaptor=mock_minio_adaptor,  # type:ignore
                                 cache_adaptor=mock_cache,
+                                data_convert_adaptor=data_adaptor,
                                 local_log=mock_logger)
         return [ds.get_data_rootfiles_async(f'(valid qastle string {i})') for i in range(n_query)]
 
@@ -387,6 +415,7 @@ def test_callback_good(mocker):
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     f_total = None
     f_processed = None
@@ -404,6 +433,7 @@ def test_callback_good(mocker):
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger,
                             status_callback_factory=lambda ds: check_in)
     ds.get_data_rootfiles('(valid qastle string)')
@@ -421,12 +451,14 @@ async def test_callback_none(mocker):
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             status_callback_factory=None,
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     r = await ds.get_data_rootfiles_async('(valid qastle string)')
 
@@ -454,10 +486,12 @@ async def test_cache_query_even_with_status_update_failure(mocker, short_status_
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
     with pytest.raises(fe.ServiceXException):
@@ -484,10 +518,12 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
@@ -514,10 +550,12 @@ async def test_servicex_transformer_failure_reload(mocker, short_status_poll_tim
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
@@ -542,10 +580,12 @@ async def test_servicex_transformer_failure_errors_dumped(mocker, short_status_p
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
@@ -584,10 +624,12 @@ async def test_good_run_root_bad_DID(mocker):
 
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
@@ -610,11 +652,13 @@ async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
 
     with pytest.raises(fe.ServiceXException):
@@ -639,11 +683,13 @@ async def test_download_cached_nonet(mocker):
     mock_transform_status = mocker.Mock(side_effect=[(0, 2, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     await ds.get_data_rootfiles_async('(valid qastle string')
 
@@ -665,10 +711,12 @@ async def test_download_write_to_inmem_cache(mocker):
     mock_transform_status = mocker.Mock(side_effect=[(0, 2, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('http://one-ds',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
     await ds.get_data_rootfiles_async('(valid qastle string')
@@ -691,6 +739,7 @@ async def test_download_cached_awkward(mocker, good_awkward_file_data):
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_adaptor,  # type: ignore
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=good_awkward_file_data,
                             local_log=mock_logger)
     a1 = await ds.get_data_rootfiles_async('(valid qastle string')
 
@@ -709,6 +758,7 @@ async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
         ds = fe.ServiceXDataset('localds://dude-is-funny',
                                 servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                                 minio_adaptor=mock_minio_adaptor,  # type: ignore
+                                data_convert_adaptor=good_awkward_file_data,
                                 cache_adaptor=mock_cache,
                                 local_log=mock_logger)
         return await ds.get_data_awkward_async('(valid qastle string')
@@ -728,11 +778,13 @@ async def test_good_minio_factory_from_best(mocker):
     mock_minio_factory = mocker.MagicMock(spec=MinioAdaptorFactory)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_minio_factory.from_best.return_value = mock_minio_adaptor
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
                             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
                             minio_adaptor=mock_minio_factory,
                             cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     await ds.get_data_rootfiles_async('(valid qastle string)')
 
