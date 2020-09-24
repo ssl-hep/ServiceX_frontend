@@ -50,6 +50,14 @@ def test_returned_datatype_from_endpoint():
     assert x.get_default_returned_datatype('forkit') == 'spoons'
 
 
+def test_returned_datatype_no_type_endpoint():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    c['backend_types'] = [{'type': 'forkit', 'return_data': 'spoon'}]
+    c['api_endpoints'] = [{'endpoint': 'http://localhost:5000'}]
+    x = ServiceXConfigAdaptor(c)
+    assert x.get_default_returned_datatype('forkit') == 'spoon'
+    
 def test_defalt_config_has_default_return_datatype():
     'Test default settings - default_returned_datatype'
     c = ConfigSettings('servicex', 'servicex')

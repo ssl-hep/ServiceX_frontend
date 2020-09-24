@@ -71,9 +71,10 @@ class ServiceXConfigAdaptor:
         def find_in_list(c, key) -> Optional[str]:
             if c.exists():
                 for ep in c:
-                    if ep['type'].as_str() == backend_type:
-                        if key in ep:
-                            return ep[key].as_str_expanded()
+                    if ep['type'].exists():
+                        if ep['type'].as_str() == backend_type:
+                            if key in ep:
+                                return ep[key].as_str_expanded()
             return None
 
         a = find_in_list(self._settings['api_endpoints'], key)
