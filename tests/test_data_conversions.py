@@ -20,6 +20,7 @@ async def test_root_to_pandas(good_root_file_path):
     assert len(df) == 283458
     check_pandas_accessible(df['JetPt'])
 
+
 @pytest.mark.asyncio
 async def test_root_to_pandas_default(good_root_file_path):
     df = await DataConverterAdaptor('root').convert_to_pandas(good_root_file_path, 'root')

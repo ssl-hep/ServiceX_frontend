@@ -1,4 +1,3 @@
-import logging
 import pytest
 
 from servicex.ConfigSettings import ConfigSettings
@@ -119,7 +118,8 @@ def test_sx_adaptor_settings_no_backend_name_requested(caplog):
     assert password == 'forkingshirtballs'
 
     assert caplog.record_tuples[0][2] == "No backend type requested, " \
-                                         "using http://my-left-foot.com:5000 - please be explicit " \
+                                         "using http://my-left-foot.com:5000 - please be " \
+                                         "explicit " \
                                          "in the ServiceXDataset constructor"
 
 
@@ -143,7 +143,8 @@ def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
     assert password == 'forkingshirtballs'
 
     assert caplog.record_tuples[0][2] == "No backend type requested, " \
-                                         "using http://my-left-foot.com:5000 - please be explicit " \
+                                         "using http://my-left-foot.com:5000 - please be " \
+                                         "explicit " \
                                          "in the ServiceXDataset constructor"
 
 
