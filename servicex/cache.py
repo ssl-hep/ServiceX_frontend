@@ -1,14 +1,53 @@
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
+from contextlib import contextmanager
 
 from .utils import ServiceXException, _query_cache_hash, sanitize_filename
+
+_ignore_cache = False
+
+
+@contextmanager
+def ignore_cache():
+    '''This will cause all caches to be ignored while it is invoked:
+
+    ```
+    with ignore_cache():
+        ServiceXDataset(...).get_data...()
+    ```
+
+    If you want to do this globally, you can just use the `__enter__()` method.
+    This is probably the only way to do this accross cells in a notebook.
+
+    ```
+    i = ignore_cache()
+    i.__enter__()
+    ... Query code, jupyter notebook cells, etc. go here
+    i.__exit(None, None, None)
+    ```
+
+    Note:
+
+    - The only time the cache is checked is when the query is actually made, not when
+      the servicex dataset object is created!
+    - Calls to this can be safely nested.
+    - Note that calling this doesn't clear the cache or delete anything. It
+      just prevents the cache lookup from working while it is in effect.
+    '''
+    global _ignore_cache
+    old_value = _ignore_cache
+    _ignore_cache = True
+    yield
+    _ignore_cache = old_value
 
 
 class Cache:
     '''
     Caching for all data returns from the system. It provides both in-memory
     and on-disk cache.
+
+    TODO: Rename this to be an adaptor, unifying how we name things
     '''
     _in_memory_cache = {}
 
@@ -47,6 +86,9 @@ class Cache:
         return self._path / 'file_list_cache' / id
 
     def lookup_query(self, json: Dict[str, str]) -> Optional[str]:
+        if _ignore_cache:
+            return None
+
         f = self._query_cache_file(json)
         if not f.exists():
             return None
@@ -108,6 +150,9 @@ class Cache:
         self._in_memory_cache[id] = v
 
     def lookup_inmem(self, id: str) -> Optional[Any]:
+        if _ignore_cache:
+            return None
+
         if id not in self._in_memory_cache:
             return None
         return self._in_memory_cache[id]

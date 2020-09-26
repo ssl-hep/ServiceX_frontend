@@ -91,6 +91,32 @@ If you'd like to be able to submit multiple queries and have them run on the `Se
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
 
+### The Local Cache
+
+To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the `.servicex` file (see below).
+
+There are times when you want the system to ignore the cache when it is running. You can do this by using `ignore_cache()`:
+
+```python
+from servicex import ignore_cache
+
+with ignore_cache():
+  do_query():
+```
+
+If you are using a Jupyter notebook, the `with` statement can't really span cells. So use `ignore_cache().__enter__()` instead. Or you can do something like:
+
+```python
+from servicex import ignore_cache
+
+ic = ignore_cache()
+ic.__enter__()
+
+...
+
+ic.__exit__(None, None, None)
+```
+
 ## Configuration
 
 As mentioned above, the `.servicex` file is read to pull a configuration. The search path for this file:
