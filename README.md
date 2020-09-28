@@ -123,6 +123,15 @@ If you wish to disable the cache for a single dataset, use the `ignore_cache` pa
 ds = ServiceXDataset(dataset, ignore_cache=True)
 ```
 
+Finally, you can ignore the cache for a dataset for a short period of time by using the same context manager pattern:
+
+```python
+ds = ServiceXData(dataset)
+with ds.ignore_cache():
+  do_query(ds)  # Cache is ignored
+do_query(ds)  # Cache is not ignored
+```
+
 ## Configuration
 
 As mentioned above, the `.servicex` file is read to pull a configuration. The search path for this file:

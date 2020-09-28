@@ -75,6 +75,15 @@ class Cache:
         'Return root path of cache directory'
         return self._path
 
+    @contextmanager
+    def ignore_cache(self):
+        '''Ignore the cache as long as we are held. Supports nesting.
+        '''
+        old_ignore = self._ignore_cache
+        self._ignore_cache = True
+        yield
+        self._ignore_cache = old_ignore
+
     def _query_cache_file(self, json: Dict[str, str]) -> Path:
         'Return the query cache file'
         h = _query_cache_hash(json)

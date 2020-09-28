@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import contextmanager
 from pathlib import Path
 from servicex.cache import Cache
 
@@ -89,6 +90,32 @@ def test_default_ctor_cache_no(mocker):
 
     cache_create_call.assert_called_once()
     assert cache_create_call.call_args[0][1]
+
+
+def test_ignore_cache_on_ds(mocker):
+    'Test that the ignore_cache context manager works correctly on the ds level'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
+
+    got_called = False
+    @contextmanager
+    def do_context():
+        nonlocal got_called
+        got_called = True
+        yield
+
+    cache = mocker.MagicMock(spec=Cache)
+    cache.ignore_cache = do_context
+    mocker.patch('servicex.servicex.Cache', return_value=cache)
+
+    ds = fe.ServiceXDataset('localds://dude', config_adaptor=config)
+    with ds.ignore_cache():
+        pass
+
+    assert got_called
 
 
 @pytest.mark.asyncio

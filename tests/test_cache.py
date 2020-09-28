@@ -34,6 +34,13 @@ def test_ic_query(tmp_path):
         assert c.lookup_query({'hi': 'there'}) is None
 
 
+def test_ic_query_query_context(tmp_path):
+    c = Cache(tmp_path)
+    c.set_query({'hi': 'there'}, 'dude')
+    with c.ignore_cache():
+        assert c.lookup_query({'hi': 'there'}) is None
+
+
 def test_ic_query_ds_level(tmp_path):
     c = Cache(tmp_path, ignore_cache=True)
     c.set_query({'hi': 'there'}, 'dude')
@@ -106,6 +113,14 @@ def test_ic_memory_hit(tmp_path):
     r = 10
     c.set_inmem('dude', r)
     with ignore_cache():
+        assert c.lookup_inmem('dude') is None
+
+
+def test_ic_memory_hit_ds_context(tmp_path):
+    c = Cache(tmp_path)
+    r = 10
+    c.set_inmem('dude', r)
+    with c.ignore_cache():
         assert c.lookup_inmem('dude') is None
 
 
@@ -192,6 +207,15 @@ def test_ic_nesting(tmp_path):
     c.set_query({'hi': 'there'}, 'dude')
     with ignore_cache():
         with ignore_cache():
+            pass
+        assert c.lookup_query({'hi': 'there'}) is None
+
+
+def test_ic_nesting_ds_context(tmp_path):
+    c = Cache(tmp_path)
+    c.set_query({'hi': 'there'}, 'dude')
+    with c.ignore_cache():
+        with c.ignore_cache():
             pass
         assert c.lookup_query({'hi': 'there'}) is None
 

@@ -131,6 +131,15 @@ class ServiceXDataset(ServiceXABC):
         self._converter = data_convert_adaptor if data_convert_adaptor is not None \
             else DataConverterAdaptor(config.get_default_returned_datatype(backend_type))
 
+    def ignore_cache(self):
+        '''Return a context manager that, as long as it is held, will cause any queries against just
+        this dataset to ignore any locally cached data.
+
+        Returns:
+            ContextManager: As long as this is held, the local query cache will be ignored.
+        '''
+        return self._cache.ignore_cache()
+
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
