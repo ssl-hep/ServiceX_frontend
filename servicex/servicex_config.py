@@ -132,7 +132,8 @@ class ServiceXConfigAdaptor:
             seen_types = [str(ep['type'].as_str_expanded()) for ep in endpoints
                           if ep['type'].exists()]
             raise ServiceXException(f'Unable to find type {backend_type} '
-                                    f'in configuration. Saw: {", ".join(seen_types)}')
+                                    'in .servicex configuration file. Saw only types'
+                                    f': {", ".join(seen_types)}')
 
         # Nope - now we are going to have to just use the first one there.
         for ep in endpoints:
