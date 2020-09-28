@@ -270,8 +270,9 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
-                raise ServiceXException('ServiceX instance does not know about cached query '
-                                        f'{request_id}. Please resubmit.') from e
+                raise ServiceXException('Expected the ServiceX backend to know about query '
+                                        f'{request_id}. It did not. Cleared local cache. '
+                                        'Please resubmit to trigger a new query.') from e
 
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
