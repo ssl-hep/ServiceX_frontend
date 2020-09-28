@@ -56,7 +56,7 @@ class Cache:
         'Reset the internal cache, usually used for testing'
         cls._in_memory_cache = {}
 
-    def __init__(self, cache_path: Path):
+    def __init__(self, cache_path: Path, ignore_cache: bool = False):
         '''
         Create the cache object
 
@@ -64,8 +64,11 @@ class Cache:
 
             cache_path          The path to the cache directory. Only sub-directories
                                 will be created in this path.
+            ignore_cache        If true, then always ignore the cache for any queries
+                                against this dataset.
         '''
         self._path = cache_path
+        self._ignore_cache = ignore_cache
 
     @property
     def path(self) -> Path:
@@ -86,7 +89,8 @@ class Cache:
         return self._path / 'file_list_cache' / id
 
     def lookup_query(self, json: Dict[str, str]) -> Optional[str]:
-        if _ignore_cache:
+        global _ignore_cache
+        if _ignore_cache or self._ignore_cache:
             return None
 
         f = self._query_cache_file(json)
@@ -150,7 +154,8 @@ class Cache:
         self._in_memory_cache[id] = v
 
     def lookup_inmem(self, id: str) -> Optional[Any]:
-        if _ignore_cache:
+        global _ignore_cache
+        if _ignore_cache or self._ignore_cache:
             return None
 
         if id not in self._in_memory_cache:

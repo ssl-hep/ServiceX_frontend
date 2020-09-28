@@ -34,6 +34,12 @@ def test_ic_query(tmp_path):
         assert c.lookup_query({'hi': 'there'}) is None
 
 
+def test_ic_query_ds_level(tmp_path):
+    c = Cache(tmp_path, ignore_cache=True)
+    c.set_query({'hi': 'there'}, 'dude')
+    assert c.lookup_query({'hi': 'there'}) is None
+
+
 def test_query_hit_2(tmp_path):
     c = Cache(tmp_path)
     c.set_query({'hi': 'there'}, 'dude1')
@@ -103,6 +109,13 @@ def test_ic_memory_hit(tmp_path):
         assert c.lookup_inmem('dude') is None
 
 
+def test_ic_memory_hit_ds_level(tmp_path):
+    c = Cache(tmp_path, ignore_cache=True)
+    r = 10
+    c.set_inmem('dude', r)
+    assert c.lookup_inmem('dude') is None
+
+
 def test_memory_hit_accross(tmp_path):
     c1 = Cache(tmp_path)
     r = 10
@@ -166,7 +179,7 @@ def test_ic_query_cache_status(tmp_path):
         assert info1['key'] == 'bogus'
 
 
-def test_ic_restor(tmp_path):
+def test_ic_restore(tmp_path):
     c = Cache(tmp_path)
     c.set_query({'hi': 'there'}, 'dude')
     with ignore_cache():
