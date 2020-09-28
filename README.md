@@ -117,6 +117,12 @@ ic.__enter__()
 ic.__exit__(None, None, None)
 ```
 
+If you wish to disable the cache for a single dataset, use the `ignore_cache` parameter when you create it:
+
+```python
+ds = ServiceXDataset(dataset, ignore_cache=True)
+```
+
 ## Configuration
 
 As mentioned above, the `.servicex` file is read to pull a configuration. The search path for this file:
