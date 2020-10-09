@@ -63,8 +63,7 @@ def test_default_ctor_cache(mocker):
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration('servicex', 'servicex')
-    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
-                                                       'no_spoon_there_is')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', '1232j322432j22token')
 
     cache = mocker.MagicMock(spec=Cache)
     cache_create_call = mocker.patch('servicex.servicex.Cache', return_value=cache)
@@ -80,8 +79,7 @@ def test_default_ctor_cache_no(mocker):
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration('servicex', 'servicex')
-    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
-                                                       'no_spoon_there_is')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@1232j322432j22token.com')
 
     cache = mocker.MagicMock(spec=Cache)
     cache_create_call = mocker.patch('servicex.servicex.Cache', return_value=cache)
@@ -97,8 +95,7 @@ def test_ignore_cache_on_ds(mocker):
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration('servicex', 'servicex')
-    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
-                                                       'no_spoon_there_is')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', '1232j322432j22token')
 
     got_called = False
     @contextmanager

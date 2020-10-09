@@ -90,8 +90,8 @@ class ServiceXConfigAdaptor:
             `.servicex` file.
 
         Returns:
-            Tuple[str, str, str]: The tuple of info to create a `ServiceXAdaptor`: end point,
-            email, and password.
+            Tuple[str, str]: The tuple of info to create a `ServiceXAdaptor`: end point,
+            token.
         '''
         # Find a list of all endpoints.
         # It is an error if this is not specified somewhere.
