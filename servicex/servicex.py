@@ -38,7 +38,7 @@ class ServiceXDataset(ServiceXABC):
     def __init__(self,
                  dataset: str,
                  backend_type: Optional[str] = None,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v1.0.0-rc.2',  # NOQA
+                 image: str = None,
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
@@ -60,7 +60,9 @@ class ServiceXDataset(ServiceXABC):
                                         will default to xaod, unless you have any endpoint listed
                                         in your servicex file. It will default to best match there,
                                         in that case.
-            image                       Name of transformer image to use to transform the data
+            image                       Name of transformer image to use to transform the data. If
+                                        left as default, `None`, then the default image for the
+                                        ServiceX backend will be used.
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
             servicex_adaptor            Object to control communication with the servicex instance
@@ -83,8 +85,8 @@ class ServiceXDataset(ServiceXABC):
                                         and `awkward`, including default settings for expected
                                         datatypes from the backend.
             ignore_cache                Always ignore the cache on any query for this dataset. This
-                                        is only meaningful if no cache adaptor is provided. Defaults
-                                        to false - the cache is used if possible.
+                                        is only meaningful if no cache adaptor is provided.
+                                        Defaults to false - the cache is used if possible.
 
         Notes:
 
@@ -95,6 +97,8 @@ class ServiceXDataset(ServiceXABC):
                takes `(total_files, transformed, downloaded, skipped)` as an argument. The
                `total_files` parameter may be `None` until the system knows how many files need to
                be processed (and some files can even be completed before that is known).
+            -  The full description of calling parameters is recorded in the local cache, including
+               things like `image` name and tag.
         '''
         ServiceXABC.__init__(self, dataset, image, max_workers,
                              status_callback_factory,
@@ -414,15 +418,19 @@ class ServiceXDataset(ServiceXABC):
         Notes:
             - Internal routine.
         '''
+        # Items that must always be present
         json_query: Dict[str, str] = {
             "did": self._dataset,
             "selection": selection_query,
-            "image": self._image,
             "result-destination": "object-store",
             "result-format": 'parquet' if data_type == 'parquet' else "root-file",
             "chunk-size": '1000',
             "workers": str(self._max_workers)
         }
+
+        # Optional items
+        if self._image is not None:
+            json_query['image'] = self._image
 
         logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
 
