@@ -79,5 +79,8 @@
         "xaod",
         "xrootd"
     ],
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "python.testing.pytestArgs": [
+        "--no-cov"
+    ]
 }

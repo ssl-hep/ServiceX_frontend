@@ -1,5 +1,7 @@
 import asyncio
+from contextlib import contextmanager
 from pathlib import Path
+from servicex.cache import Cache
 
 from confuse.core import Configuration
 from servicex.servicex_config import ServiceXConfigAdaptor
@@ -54,6 +56,66 @@ def test_default_ctor_no_type(mocker):
 
     config.get_servicex_adaptor_config.assert_called_with(None)
     config.get_default_returned_datatype.assert_called_with(None)
+
+
+def test_default_ctor_cache(mocker):
+    'Test that the decfault config is passed the right value'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
+
+    cache = mocker.MagicMock(spec=Cache)
+    cache_create_call = mocker.patch('servicex.servicex.Cache', return_value=cache)
+
+    fe.ServiceXDataset('localds://dude', config_adaptor=config)
+
+    cache_create_call.assert_called_once()
+    assert not cache_create_call.call_args[0][1]
+
+
+def test_default_ctor_cache_no(mocker):
+    'Test that the decfault config is passed the right value'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
+
+    cache = mocker.MagicMock(spec=Cache)
+    cache_create_call = mocker.patch('servicex.servicex.Cache', return_value=cache)
+
+    fe.ServiceXDataset('localds://dude', config_adaptor=config, ignore_cache=True)
+
+    cache_create_call.assert_called_once()
+    assert cache_create_call.call_args[0][1]
+
+
+def test_ignore_cache_on_ds(mocker):
+    'Test that the ignore_cache context manager works correctly on the ds level'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@yaol.com',
+                                                       'no_spoon_there_is')
+
+    got_called = False
+    @contextmanager
+    def do_context():
+        nonlocal got_called
+        got_called = True
+        yield
+
+    cache = mocker.MagicMock(spec=Cache)
+    cache.ignore_cache = do_context
+    mocker.patch('servicex.servicex.Cache', return_value=cache)
+
+    ds = fe.ServiceXDataset('localds://dude', config_adaptor=config)
+    with ds.ignore_cache():
+        pass
+
+    assert got_called
 
 
 @pytest.mark.asyncio

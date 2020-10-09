@@ -47,7 +47,8 @@ class ServiceXDataset(ServiceXABC):
                  local_log: log_adaptor = None,
                  session_generator: Callable[[], Awaitable[aiohttp.ClientSession]] = None,
                  config_adaptor: Optional[ServiceXConfigAdaptor] = None,
-                 data_convert_adaptor: Optional[DataConverterAdaptor] = None):
+                 data_convert_adaptor: Optional[DataConverterAdaptor] = None,
+                 ignore_cache: bool = False):
         '''
         Create and configure a ServiceX object for a dataset.
 
@@ -81,6 +82,9 @@ class ServiceXDataset(ServiceXABC):
             data_convert_adaptor        Manages conversions between root and parquet and `pandas`
                                         and `awkward`, including default settings for expected
                                         datatypes from the backend.
+            ignore_cache                Always ignore the cache on any query for this dataset. This
+                                        is only meaningful if no cache adaptor is provided. Defaults
+                                        to false - the cache is used if possible.
 
         Notes:
 
@@ -101,7 +105,7 @@ class ServiceXDataset(ServiceXABC):
             else ServiceXConfigAdaptor()
 
         # Establish the cache that will store all our queries
-        self._cache = Cache(get_configured_cache_path(config.settings)) \
+        self._cache = Cache(get_configured_cache_path(config.settings), ignore_cache) \
             if cache_adaptor is None \
             else cache_adaptor
 
@@ -126,6 +130,15 @@ class ServiceXDataset(ServiceXABC):
 
         self._converter = data_convert_adaptor if data_convert_adaptor is not None \
             else DataConverterAdaptor(config.get_default_returned_datatype(backend_type))
+
+    def ignore_cache(self):
+        '''Return a context manager that, as long as it is held, will cause any queries against just
+        this dataset to ignore any locally cached data.
+
+        Returns:
+            ContextManager: As long as this is held, the local query cache will be ignored.
+        '''
+        return self._cache.ignore_cache()
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
