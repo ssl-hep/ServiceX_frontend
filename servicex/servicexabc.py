@@ -27,7 +27,7 @@ class ServiceXABC(ABC):
 
     def __init__(self,
                  dataset: str,
-                 image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
+                 image: Optional[str] = None,
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  ):
@@ -37,7 +37,8 @@ class ServiceXABC(ABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
-            image                       Name of transformer image to use to transform the data
+            image                       Name of transformer image to use to transform the data. If
+                                        None the default implementation is used.
             cache_adaptor               Runs the caching for data and queries that are sent up and
                                         down.
             max_workers                 Maximum number of transformers to run simultaneously on

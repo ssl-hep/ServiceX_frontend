@@ -91,7 +91,7 @@ class ServiceXConfigAdaptor:
 
         Returns:
             Tuple[str, str]: The tuple of info to create a `ServiceXAdaptor`: end point,
-            token.
+            token (optionally).
         '''
         # Find a list of all endpoints.
         # It is an error if this is not specified somewhere.

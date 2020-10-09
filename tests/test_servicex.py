@@ -79,7 +79,8 @@ def test_default_ctor_cache_no(mocker):
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration('servicex', 'servicex')
-    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', 'j@1232j322432j22token.com')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
+                                                       'j@1232j322432j22token.com')
 
     cache = mocker.MagicMock(spec=Cache)
     cache_create_call = mocker.patch('servicex.servicex.Cache', return_value=cache)
@@ -98,6 +99,7 @@ def test_ignore_cache_on_ds(mocker):
     config.get_servicex_adaptor_config.return_value = ('http://no-way.dude', '1232j322432j22token')
 
     got_called = False
+
     @contextmanager
     def do_context():
         nonlocal got_called
@@ -430,6 +432,25 @@ async def test_image_spec(mocker, good_awkward_file_data):
 
     called = mock_servicex_adaptor.query_json
     assert called['image'] == 'fork-it-over:latest'
+
+
+@pytest.mark.asyncio
+async def test_no_image_spec(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger,
+                            data_convert_adaptor=good_awkward_file_data)
+    await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    called = mock_servicex_adaptor.query_json
+    assert 'image' not in called
 
 
 @pytest.mark.asyncio
