@@ -82,7 +82,7 @@ class ServiceXConfigAdaptor:
         return a
 
     def get_servicex_adaptor_config(self, backend_type: Optional[str] = None) -> \
-            Tuple[str, Optional[str], Optional[str]]:
+            Tuple[str, Optional[str]]:
         '''Return the servicex (endpoint, username, email) from a given backend configuration.
 
         Args:
@@ -97,14 +97,12 @@ class ServiceXConfigAdaptor:
         # It is an error if this is not specified somewhere.
         endpoints = self._settings['api_endpoints']
 
-        def extract_info(ep) -> Tuple[str, Optional[str], Optional[str]]:
+        def extract_info(ep) -> Tuple[str, Optional[str]]:
             endpoint = ep['endpoint'].as_str_expanded()
-            email = ep['email'].as_str_expanded() if 'email' in ep else None
-            password = ep['password'].as_str_expanded() if 'password' in ep \
-                else None
+            token = ep['token'].as_str_expanded() if 'token' in ep else None
 
             # We can default these to "None"
-            return (endpoint, email, password)  # type: ignore
+            return (endpoint, token)  # type: ignore
 
         # If we have a good name, look for exact match
         if backend_type is not None:

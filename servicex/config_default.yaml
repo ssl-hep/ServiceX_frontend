@@ -3,8 +3,7 @@
 
 api_endpoints:
   - endpoint: http://localhost:5000
-    # email: xxx
-    # password: yyy
+    # token: xxx
 
 # These are default settings, depreciated, and should not be used.
 # They will be removed in the next version.

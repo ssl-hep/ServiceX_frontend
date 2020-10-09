@@ -33,13 +33,14 @@ The API access information is normally placed in a `.servicex` file (to keep thi
    directory on Windows).
 1. The `config_defaults.yaml` file distributed with the `servicex` package.
 
-Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following:
+If no endpoint is specified, then the library defaults to the developer endpoint, which is `http://localhost:5000` for the web-service API, and `localhost:9000` for the `minio` endpoint. No passwords are required.
+
+Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the uproot backend):
 
 ```yaml
 api_endpoints:
-  - endpoint: <your-endpoint-url>
-    email: <api-email>
-    password: <api-password>
+  - endpoint: <your-endpoint>
+    token: <api-token>
     type: xaod
 ```
 

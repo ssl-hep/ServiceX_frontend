@@ -84,12 +84,10 @@ def good_submit(mocker):
 
 
 @pytest.fixture
-def good_submit_with_login(mocker):
+def good_submit_with_auth(mocker):
     client = mocker.MagicMock()
     r = ClientSessionMocker([
-        dumps({'message': "Login Successful",
-               'access_token': "jwt:foo",
-               'refresh_token': "jwt:bar"}),
+        dumps({'access_token': "jwt:access"}),
         dumps({'request_id': "111-222-333-444"})], [200, 200])
     client.post = mocker.MagicMock(return_value=r)
     return client
@@ -153,10 +151,9 @@ def servicex_status_unknown(mocker):
 
 
 @pytest.mark.asyncio
-async def test_status_no_login(servicex_status_request):
-
+async def test_status_no_auth(servicex_status_request):
     servicex_status_request(None, 0, 10)
-    sa = ServiceXAdaptor('http://localhost:500/sx')
+    sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
     async with aiohttp.ClientSession() as client:
         r = await sa.get_transform_status(client, '123-123-123-444')
         assert len(r) == 3
@@ -177,12 +174,10 @@ async def test_status_fatal_status(servicex_status_fatal):
 
 
 @pytest.mark.asyncio
-async def test_status_with_login(mocker):
+async def test_status_with_auth(mocker):
     client = mocker.MagicMock()
     client.post = mocker.Mock(return_value=ClientSessionMocker([
-        dumps({'message': "Login Successful",
-               'access_token': "jwt:foo",
-               'refresh_token': "jwt:bar"})], [200]))
+        dumps({'access_token': "jwt:access"})], [200]))
 
     client.get = mocker.Mock(return_value=ClientSessionMocker([
         dumps({'files-remaining': 1,
@@ -190,22 +185,21 @@ async def test_status_with_login(mocker):
                'files-processed': 0})], [200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         email="test@example.com",
-                         password="foobar")
+                         refresh_token='jwt:refresh')
 
     await sa.get_transform_status(client, '123-123-123-444')
-    client.post.assert_called_with("http://localhost:5000/sx/login",
-                                   json={'password': 'foobar', 'email': 'test@example.com'})
-
+    client.post.assert_called_with(
+        "http://localhost:5000/sx/token/refresh", json=None,
+        headers={'Authorization': 'Bearer jwt:refresh'})
     client.get.assert_called_with(
         "http://localhost:5000/sx/servicex/transformation/123-123-123-444/status",
-        headers={'Authorization': 'Bearer jwt:foo'})
+        headers={'Authorization': 'Bearer jwt:access'})
 
 
 @pytest.mark.asyncio
 async def test_status_unknown_request(servicex_status_unknown):
 
-    sa = ServiceXAdaptor('http://localhost:500/sx')
+    sa = ServiceXAdaptor('http://localhost:5000/sx')
     with pytest.raises(ServiceXUnknownRequestID) as e:
         async with aiohttp.ClientSession() as client:
             await sa.get_transform_status(client, '123-123-123-444')
@@ -280,7 +274,7 @@ async def test_watch_fail_start(short_status_poll_time, mocker):
 
 
 @pytest.mark.asyncio
-async def test_submit_good_no_login(good_submit):
+async def test_submit_good_no_auth(good_submit):
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx')
 
     rid = await sa.submit_query(good_submit, {'hi': 'there'})
@@ -305,17 +299,14 @@ async def test_submit_good_no_login(good_submit):
 
 
 @pytest.mark.asyncio
-async def test_submit_good_with_login(mocker):
+async def test_submit_good_with_auth(mocker):
     client = mocker.MagicMock()
     client.post = mocker.Mock(return_value=ClientSessionMocker([
-        dumps({'message': "Login Successful",
-               'access_token': "jwt:foo",
-               'refresh_token': "jwt:bar"}),
+        dumps({'access_token': "jwt:access"}),
         dumps({'request_id': "111-222-333-444"})], [200, 200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         email="test@example.com",
-                         password="foobar")
+                         refresh_token='jwt:refresh')
 
     await sa.submit_query(client, {'hi': 'there'})
     r = client.post.mock_calls
@@ -324,29 +315,25 @@ async def test_submit_good_with_login(mocker):
 
     # Verify the login POST
     _, args, kwargs = r[0]
-    assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['email'] == 'test@example.com'
-    assert kwargs['json']['password'] == 'foobar'
+    assert args[0] == 'http://localhost:5000/sx/token/refresh'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:refresh'
 
     # Verify the Submit POST
     _, args, kwargs = r[1]
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
-    assert kwargs['headers']['Authorization'] == 'Bearer jwt:foo'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:access'
 
 
 @pytest.mark.asyncio
-async def test_submit_good_with_login_existing_token(mocker):
+async def test_submit_good_with_auth_existing_token(mocker):
     client = mocker.MagicMock()
     client.post = mocker.Mock(return_value=ClientSessionMocker([
-        dumps({'message': "Login Successful",
-               'access_token': "jwt:foo",
-               'refresh_token': "jwt:bar"}),
+        dumps({'access_token': "jwt:access"}),
         dumps({'request_id': "111-222-333-444"}),
         dumps({'request_id': "222-333-444-555"})], [200, 200, 200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         email="test@example.com",
-                         password="foobar")
+                         refresh_token='jwt:refresh')
 
     mocker.patch('google.auth.jwt.decode', return_value={'exp': float('inf')})  # Never expires
     rid1 = await sa.submit_query(client, {'hi': 'there'})
@@ -359,39 +346,33 @@ async def test_submit_good_with_login_existing_token(mocker):
 
     assert len(r) == 3
 
-    # Verify the login POST
+    # Verify the access token POST
     _, args, kwargs = r[0]
-    assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['email'] == 'test@example.com'
-    assert kwargs['json']['password'] == 'foobar'
+    assert args[0] == 'http://localhost:5000/sx/token/refresh'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:refresh'
 
     # Verify the Submit POST
     _, args, kwargs = r[1]
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
-    assert kwargs['headers']['Authorization'] == 'Bearer jwt:foo'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:access'
 
     # Verify the second Submit POST
     _, args, kwargs = r[2]
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
-    assert kwargs['headers']['Authorization'] == 'Bearer jwt:foo'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:access'
 
 
 @pytest.mark.asyncio
-async def test_submit_good_with_login_expired_token(mocker):
+async def test_submit_good_with_auth_expired_token(mocker):
     client = mocker.MagicMock()
     client.post = mocker.Mock(return_value=ClientSessionMocker([
-        dumps({'message': "Login Successful",
-               'access_token': "jwt:foo",
-               'refresh_token': "jwt:bar"}),
+        dumps({'access_token': "jwt:access"}),
         dumps({'request_id': "111-222-333-444"}),
-        dumps({'message': "Login Successful",
-               'access_token': "jwt:foo2",
-               'refresh_token': "jwt:bar2"}),
+        dumps({'access_token': "jwt:access2"}),
         dumps({'request_id': "222-333-444-555"})], [200, 200, 200, 200]))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         email="test@example.com",
-                         password="foobar")
+                         refresh_token='jwt:refresh')
 
     mocker.patch('google.auth.jwt.decode', return_value={'exp': 0})  # Always expired
 
@@ -407,25 +388,23 @@ async def test_submit_good_with_login_expired_token(mocker):
 
     # Verify the login POST
     _, args, kwargs = r[0]
-    assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['email'] == 'test@example.com'
-    assert kwargs['json']['password'] == 'foobar'
+    assert args[0] == 'http://localhost:5000/sx/token/refresh'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:refresh'
 
     # Verify the Submit POST
     _, args, kwargs = r[1]
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
-    assert kwargs['headers']['Authorization'] == 'Bearer jwt:foo'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:access'
 
     # Verify the second login POST
     _, args, kwargs = r[2]
-    assert args[0] == 'http://localhost:5000/sx/login'
-    assert kwargs['json']['email'] == 'test@example.com'
-    assert kwargs['json']['password'] == 'foobar'
+    assert args[0] == 'http://localhost:5000/sx/token/refresh'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:refresh'
 
     # Verify the second Submit POST
     _, args, kwargs = r[3]
     assert args[0] == 'http://localhost:5000/sx/servicex/transformation'
-    assert kwargs['headers']['Authorization'] == 'Bearer jwt:foo2'
+    assert kwargs['headers']['Authorization'] == 'Bearer jwt:access2'
 
 
 @pytest.mark.asyncio
@@ -449,19 +428,18 @@ async def test_submit_bad_html(bad_submit_html):
 
 
 @pytest.mark.asyncio
-async def test_submit_good_with_bad_login(mocker):
+async def test_submit_good_with_bad_token(mocker):
     client = mocker.MagicMock()
     client.post = mocker.Mock(return_value=ClientSessionMocker(
         dumps({'message': 'Wrong credentials'}), 401))
 
     sa = ServiceXAdaptor(endpoint='http://localhost:5000/sx',
-                         email="test@example.com",
-                         password="XXXXX")
+                         refresh_token="XXXXX")
 
     with pytest.raises(ServiceXException) as e:
         await sa.submit_query(client, {'hi': 'there'})
 
-    assert "ServiceX login request rejected" in str(e.value)
+    assert "ServiceX access token request rejected" in str(e.value)
 
 
 @pytest.mark.asyncio
