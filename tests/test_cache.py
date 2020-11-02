@@ -1,3 +1,5 @@
+import string
+import random
 from servicex.utils import ServiceXException
 import pytest
 
@@ -146,6 +148,18 @@ def test_data_file_location(tmp_path):
     p.touch()
     assert p.exists()
     assert str(p).startswith(str(tmp_path))
+
+
+def test_data_file_location_long_path(tmp_path):
+    c = Cache(tmp_path)
+    letters = string.ascii_lowercase
+    file_significant_name = 'junk.root'
+    long_file_name = ''.join(random.choice(letters) for i in range(230))
+
+    p = c.data_file_location('123-456', long_file_name+file_significant_name)
+
+    assert(len(p.name) == 235 - len(p.parent.name))
+    assert p.name.endswith(file_significant_name)
 
 
 def test_data_file_location_twice(tmp_path):
