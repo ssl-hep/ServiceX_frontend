@@ -1,6 +1,4 @@
 import json
-from os import path
-
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 from contextlib import contextmanager
@@ -184,10 +182,7 @@ class Cache:
         OSError: [Errno 63] File name too long error Assume that the most unique part of
         the name is the right hand side
         '''
-        parent = Path(path.join(self._path, 'data', request_id))
+        parent = self._path / 'data' / request_id
         parent.mkdir(parents=True, exist_ok=True)
         sanitized = sanitize_filename(data_name)
-        return Path(path.join(
-            parent,
-            sanitized[-1 * (MAX_PATH_LEN - len(parent.name)):]
-        ))
+        return parent / sanitized[-1 * (MAX_PATH_LEN - len(parent.name)):]
