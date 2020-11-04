@@ -11,6 +11,7 @@ from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
 import aiohttp
 import backoff
 from backoff import on_exception
+from numpy.lib.function_base import select
 
 from servicex.servicex_config import ServiceXConfigAdaptor
 
@@ -166,13 +167,27 @@ class ServiceXDataset(ServiceXABC):
         return self._converter.combine_awkward(await self._data_return(
             selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
-    # async def get_data_minio_async(self, selection_query: str):
-    #     '''Async iterator return of minio buckets/files for a query. The results are made
-    #     available as soon as they are returned from ServiceX.
+    async def get_data_rootfiles_minio_async(self, selection_query: str) \
+            -> AsyncIterator[Dict[str, str]]:
+        '''Returns, as an async iterator, each of the files from the minio bucket,
+        as the files are added there.
 
-    #     Args:
-    #         selection_query (str): The query string
-    #     '''
+        Args:
+            selection_query (str): The ServiceX Selection
+        '''
+        async for f_info in self._get_minio_buckets(select, 'root-files'):
+            yield f_info
+
+    async def get_data_parquet_minio_async(self, selection_query: str) \
+            -> AsyncIterator[Dict[str, str]]:
+        '''Returns, as an async iterator, each of the files from the minio bucket,
+        as the files are added there.
+
+        Args:
+            selection_query (str): The ServiceX Selection
+        '''
+        async for f_info in self._get_minio_buckets(select, 'parquet'):
+            yield f_info
 
     async def _file_return(self, selection_query: str, data_format: str):
         '''
@@ -197,6 +212,66 @@ class ServiceXDataset(ServiceXABC):
             return f
 
         return await self._data_return(selection_query, convert_to_file, data_format)
+
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    async def _get_minio_buckets(self, selection_query: str, data_format: str) \
+            -> AsyncIterator[Dict[str, str]]:
+        '''Get a list of files back for a request
+
+        Args:
+            selection_query (str): The selection query we are to do
+            data_format (str): The requested file format
+
+        Yields:
+            AsyncIterator[Dict[str, str]]: A tuple of the minio bucket and file in that bucket.
+                                           The dict will have entries for:
+                                             bucket: The minio bucket name
+                                             file: the completed file in the bucket
+        '''
+        query = self._build_json_query(selection_query, data_format)
+
+        async with aiohttp.ClientSession() as client:
+
+            # Get a request id - which might be cached, but if not, submit it.
+            request_id = await self._get_request_id(client, query)
+
+            # Get the minio adaptor we are going to use for downloading.
+            minio_adaptor = self._minio_adaptor \
+                .from_best(self._cache.lookup_query_status(request_id))
+
+            # Look up the cache, and then fetch an iterator going thorugh the results
+            # from either servicex or the cache, depending.
+            try:
+                notifier = self._create_notifier()
+                minio_files = self._get_minio_bucket_files_from_servicex(request_id, client,
+                                                                         minio_adaptor, notifier)
+
+                # Reflect the files back up a level.
+                async for r in minio_files:
+                    yield {
+                        'bucket': request_id,
+                        'file': r,
+                    }
+
+                # Cache the final status
+                await self._update_query_status(client, request_id)
+
+            except ServiceXUnknownRequestID as e:
+                self._cache.remove_query(query)
+                raise ServiceXException('Expected the ServiceX backend to know about query '
+                                        f'{request_id}. It did not. Cleared local cache. '
+                                        'Please resubmit to trigger a new query.') from e
+
+            except ServiceXFatalTransformException as e:
+                transform_status = await self._servicex_adaptor.get_query_status(client,
+                                                                                 request_id)
+                raise ServiceXFatalTransformException(
+                    f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
+
+            except ServiceXFailedFileTransform as e:
+                self._cache.remove_query(query)
+                await self._servicex_adaptor.dump_query_errors(client, request_id)
+                raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _data_return(self, selection_query: str,
@@ -415,7 +490,8 @@ class ServiceXDataset(ServiceXABC):
     async def _get_minio_bucket_files_from_servicex(self, request_id: str,
                                                     client: aiohttp.ClientSession,
                                                     minio_adaptor: MinioAdaptor,
-                                                    notifier: _status_update_wrapper):
+                                                    notifier: _status_update_wrapper) \
+            -> AsyncIterator[str]:
         '''Create an async stream of `minio` bucket/filenames from a request id.
 
         Args:

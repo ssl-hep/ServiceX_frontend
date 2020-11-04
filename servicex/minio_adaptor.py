@@ -143,7 +143,7 @@ class MinioAdaptorFactory:
             if all(k in transaction_info for k in keys):
                 logging.getLogger(__name__).debug('Using the request-specific minio_adaptor')
                 return MinioAdaptor(transaction_info['minio-endpoint'],
-                                    transaction_info['minio-secured'],
+                                    bool(transaction_info['minio-secured']),
                                     transaction_info['minio-access-key'],
                                     transaction_info['minio-secret-key'])
         if self._config_adaptor is not None:
