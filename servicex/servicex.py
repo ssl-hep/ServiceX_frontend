@@ -166,6 +166,14 @@ class ServiceXDataset(ServiceXABC):
         return self._converter.combine_awkward(await self._data_return(
             selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
+    # async def get_data_minio_async(self, selection_query: str):
+    #     '''Async iterator return of minio buckets/files for a query. The results are made
+    #     available as soon as they are returned from ServiceX.
+
+    #     Args:
+    #         selection_query (str): The query string
+    #     '''
+
     async def _file_return(self, selection_query: str, data_format: str):
         '''
         Given a query, return the list of files, in a unique order, that hold
@@ -378,15 +386,12 @@ class ServiceXDataset(ServiceXABC):
         good = True
         try:
 
-            # Setup the status sequence from servicex
-            stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
-            stream_notified = stream_status_updates(stream_status, notifier)
-            stream_watched = trap_servicex_failures(stream_notified)
-            stream_unique = stream_unique_updates_only(stream_watched)
+            # Get the stream of minio bucket new files.
+            stream_new_object = self._get_minio_bucket_files_from_servicex(
+                request_id, client, minio_adaptor, notifier
+            )
 
             # Next, download the files as they are found (and return them):
-            stream_new_object = find_new_bucket_files(minio_adaptor, request_id,
-                                                      stream_unique)
             stream_downloaded = self._download_a_file(stream_new_object, request_id,
                                                       minio_adaptor, notifier)
 
@@ -406,6 +411,46 @@ class ServiceXDataset(ServiceXABC):
                                              f'{request_id} took {run_time}')
             self._log.write_query_log(request_id, notifier.total, notifier.failed,
                                       run_time, good, self._cache.path)
+
+    async def _get_minio_bucket_files_from_servicex(self, request_id: str,
+                                                    client: aiohttp.ClientSession,
+                                                    minio_adaptor: MinioAdaptor,
+                                                    notifier: _status_update_wrapper):
+        '''Create an async stream of `minio` bucket/filenames from a request id.
+
+        Args:
+            request_id (str): The request id that we should be polling for updates.
+            client (aiohttp.ClientSession): The client connection to make API queries on
+            minio_adaptor (MinioAdaptor): The minio adaptor we can use to connect to the minio
+                                          bucket for new items.
+            notifier (_status_update_wrapper): Allows us to send updates of progress
+                                               back to the user
+
+        Yields:
+            [type]: Returns xxx and yyy.
+        '''
+        start_time = time.monotonic()
+        try:
+
+            # Setup the status sequence from servicex
+            stream_status = transform_status_stream(self._servicex_adaptor, client, request_id)
+            stream_notified = stream_status_updates(stream_status, notifier)
+            stream_watched = trap_servicex_failures(stream_notified)
+            stream_unique = stream_unique_updates_only(stream_watched)
+
+            # Next, download the files as they are found (and return them):
+            stream_new_object = find_new_bucket_files(minio_adaptor, request_id,
+                                                      stream_unique)
+
+            # Return the minio information.
+            async for info in stream_new_object:
+                yield info
+
+        finally:
+            end_time = time.monotonic()
+            run_time = timedelta(seconds=end_time - start_time)
+            logging.getLogger(__name__).info(f'Running servicex query for '
+                                             f'{request_id} took {run_time} (no files downloaded)')
 
     def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
         '''
