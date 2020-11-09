@@ -412,8 +412,10 @@ async def test_good_run_root_files_from_minio(mocker):
     assert len(lst) == 1
     assert lst[0]['bucket'] == '123-456'
     assert lst[0]['file'] == 'one_minio_entry'
+    assert lst[0]['url'] == 'http://the.url.com'
 
     assert mock_servicex_adaptor.query_json['result-format'] == 'root-file'
+    assert mock_minio_adaptor.access_called_with == ('123-456', 'one_minio_entry')
 
 
 @pytest.mark.asyncio

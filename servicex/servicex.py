@@ -251,6 +251,7 @@ class ServiceXDataset(ServiceXABC):
                     yield {
                         'bucket': request_id,
                         'file': r,
+                        'url': minio_adaptor.get_access_url(request_id, r),
                     }
 
                 # Cache the final status
