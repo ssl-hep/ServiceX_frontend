@@ -175,7 +175,7 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._get_minio_buckets(select, 'root-files'):
+        async for f_info in self._get_minio_buckets(selection_query, 'root-files'):
             yield f_info
 
     async def get_data_parquet_minio_async(self, selection_query: str) \
@@ -186,7 +186,7 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._get_minio_buckets(select, 'parquet'):
+        async for f_info in self._get_minio_buckets(selection_query, 'parquet'):
             yield f_info
 
     async def _file_return(self, selection_query: str, data_format: str):
