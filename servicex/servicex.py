@@ -11,7 +11,6 @@ from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
 import aiohttp
 import backoff
 from backoff import on_exception
-from numpy.lib.function_base import select
 
 from servicex.servicex_config import ServiceXConfigAdaptor
 

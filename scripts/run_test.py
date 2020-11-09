@@ -11,16 +11,16 @@ from servicex import ServiceXDataset
 from servicex.servicex_adaptor import ServiceXAdaptor
 
 
-async def run_query(endpoint: Optional[ServiceXAdaptor], dest:str) -> None:
+async def run_query(endpoint: Optional[ServiceXAdaptor], dest: str) -> None:
     ds = ServiceXDataset(
         "mc16_13TeV:mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.deriv.DAOD_STDM3.e3601_e5984_s3126_r10201_r10210_p3975_tid20425969_00",  # NOQA
         backend_type='xaod',
         max_workers=100,
         servicex_adaptor=endpoint)
 
-    request = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
+    request = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"  # NOQA
     if dest == 'rootfiles':
-        r = ds.get_data_rootfiles(request)  # NOQA
+        r = ds.get_data_rootfiles(request)
         print(r)
     elif dest == 'rootfiles-minio':
         r = ds.get_data_rootfiles_minio_async(request)
