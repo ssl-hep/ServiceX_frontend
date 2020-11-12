@@ -34,7 +34,7 @@ setup(name="servicex",
       maintainer_email="gwatts@uw.edu",
       url="https://github.com/ssl-hep/ServiceX_frontend",
       license="TBD",
-      python_requires='>=3.6',
+      python_requires='>=3.6, <3.10',
       test_suite="tests",
       install_requires=[
           "pandas~=1.0",
