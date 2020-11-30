@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import contextmanager
 from pathlib import Path
+from servicex.servicex import StreamInfoUrl
 from servicex.cache import Cache
 
 from confuse.core import Configuration
@@ -405,14 +406,14 @@ async def test_good_run_root_files_from_minio(mocker):
                             cache_adaptor=mock_cache,
                             local_log=mock_logger,
                             data_convert_adaptor=data_adaptor)
-    lst = []
-    async for f_info in ds.get_data_rootfiles_minio_async('(valid qastle string)'):
-        lst.append(f_info)
+    lst = [f async for f in ds.get_data_rootfiles_url_stream('(valid qastle string)')]
 
     assert len(lst) == 1
-    assert lst[0]['bucket'] == '123-456'
-    assert lst[0]['file'] == 'one_minio_entry'
-    assert lst[0]['url'] == 'http://the.url.com'
+    r = lst[0]
+    assert isinstance(r, StreamInfoUrl)
+    assert r.bucket == '123-456'
+    assert r.file == 'one_minio_entry'
+    assert r.url == 'http://the.url.com'
 
     assert mock_servicex_adaptor.query_json['result-format'] == 'root-file'
     assert mock_minio_adaptor.access_called_with == ('123-456', 'one_minio_entry')
@@ -438,7 +439,7 @@ async def test_bad_request_id_run_root_files_from_minio(mocker):
 
     with pytest.raises(ServiceXException) as e:
         lst = []
-        async for f_info in ds.get_data_rootfiles_minio_async('(valid qastle string)'):
+        async for f_info in ds.get_data_rootfiles_url_stream('(valid qastle string)'):
             lst.append(f_info)
 
     assert 'to know about' in str(e.value)
@@ -481,7 +482,7 @@ async def test_bad_transform_run_root_files_from_minio(mocker):
 
     with pytest.raises(ServiceXFatalTransformException) as e:
         lst = []
-        async for f_info in ds.get_data_rootfiles_minio_async('(valid qastle string)'):
+        async for f_info in ds.get_data_rootfiles_url_stream('(valid qastle string)'):
             lst.append(f_info)
 
     assert 'Fatal Error' in str(e.value)
@@ -506,7 +507,7 @@ async def test_bad_file_transform_run_root_files_from_minio(mocker):
 
     with pytest.raises(ServiceXException) as e:
         lst = []
-        async for f_info in ds.get_data_rootfiles_minio_async('(valid qastle string)'):
+        async for f_info in ds.get_data_rootfiles_url_stream('(valid qastle string)'):
             lst.append(f_info)
 
     assert 'Failed to transform all files' in str(e.value)
@@ -528,12 +529,12 @@ async def test_good_run_parquet_files_from_minio(mocker):
                             local_log=mock_logger,
                             data_convert_adaptor=data_adaptor)
     lst = []
-    async for f_info in ds.get_data_parquet_minio_async('(valid qastle string)'):
+    async for f_info in ds.get_data_parquet_minio_stream('(valid qastle string)'):
         lst.append(f_info)
 
     assert len(lst) == 1
-    assert lst[0]['bucket'] == '123-456'
-    assert lst[0]['file'] == 'one_minio_entry'
+    assert lst[0].bucket == '123-456'
+    assert lst[0].file == 'one_minio_entry'
 
     assert mock_servicex_adaptor.query_json['result-format'] == 'parquet'
 

@@ -3,6 +3,7 @@ import asyncio
 import functools
 import logging
 import time
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
@@ -28,6 +29,15 @@ from .utils import (ServiceXException, ServiceXFailedFileTransform,
                     _status_update_wrapper, default_client_session,
                     get_configured_cache_path, log_adaptor,
                     stream_status_updates, stream_unique_updates_only)
+
+
+@dataclass
+class StreamInfoUrl:
+    '''Contains information on accessing ServiceX data via a url
+    '''
+    url: str
+    file: str
+    bucket: str
 
 
 class ServiceXDataset(ServiceXABC):
@@ -166,10 +176,11 @@ class ServiceXDataset(ServiceXABC):
         return self._converter.combine_awkward(await self._data_return(
             selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
-    async def get_data_rootfiles_minio_async(self, selection_query: str) \
-            -> AsyncIterator[Dict[str, str]]:
-        '''Returns, as an async iterator, each of the files from the minio bucket,
-        as the files are added there.
+    async def get_data_rootfiles_url_stream(self, selection_query: str) \
+            -> AsyncIterator[StreamInfoUrl]:
+        '''Returns, as an async iterator, each completed batch of work from ServiceX.
+        The data that comes back includes a `url` that can be accessed to download the
+        data.
 
         Args:
             selection_query (str): The ServiceX Selection
@@ -177,8 +188,8 @@ class ServiceXDataset(ServiceXABC):
         async for f_info in self._get_minio_buckets(selection_query, 'root-files'):
             yield f_info
 
-    async def get_data_parquet_minio_async(self, selection_query: str) \
-            -> AsyncIterator[Dict[str, str]]:
+    async def get_data_parquet_minio_stream(self, selection_query: str) \
+            -> AsyncIterator[StreamInfoUrl]:
         '''Returns, as an async iterator, each of the files from the minio bucket,
         as the files are added there.
 
@@ -214,7 +225,7 @@ class ServiceXDataset(ServiceXABC):
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _get_minio_buckets(self, selection_query: str, data_format: str) \
-            -> AsyncIterator[Dict[str, str]]:
+            -> AsyncIterator[StreamInfoUrl]:
         '''Get a list of files back for a request
 
         Args:
@@ -247,11 +258,7 @@ class ServiceXDataset(ServiceXABC):
 
                 # Reflect the files back up a level.
                 async for r in minio_files:
-                    yield {
-                        'bucket': request_id,
-                        'file': r,
-                        'url': minio_adaptor.get_access_url(request_id, r),
-                    }
+                    yield StreamInfoUrl(minio_adaptor.get_access_url(request_id, r), r, request_id)
 
                 # Cache the final status
                 await self._update_query_status(client, request_id)

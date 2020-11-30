@@ -1,7 +1,5 @@
 {
     "python.pythonPath": ".venv\\Scripts\\python.exe",
-    "pyright.openFilesOnly": false,
-    "pyright.useLibraryCodeForTypes": true,
     "python.analysis.logLevel": "Information",
     "python.analysis.memory.keepLibraryAst": true,
     "python.linting.flake8Enabled": true,
@@ -82,6 +80,7 @@
     ],
     "python.analysis.typeCheckingMode": "basic",
     "python.testing.pytestArgs": [
+        "tests",
         "--no-cov"
-    ]
+    ],
 }
