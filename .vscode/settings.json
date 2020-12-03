@@ -36,6 +36,7 @@
         "getenv",
         "gitlab",
         "inmem",
+        "isabstractmethod",
         "jupyter",
         "jupyterlab",
         "leftfoot",

@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import contextmanager
 from pathlib import Path
-from servicex.servicex import StreamInfoUrl
+from servicex.servicex import StreamInfoPath, StreamInfoUrl
 from servicex.cache import Cache
 
 from confuse.core import Configuration
@@ -141,7 +141,7 @@ async def test_minio_back(mocker):
         "/foo/bar.root")
 
     assert len(r) == 1
-    assert r[0] == '/foo/bar.root'
+    assert r[0] == Path('/foo/bar.root')
 
 
 @pytest.mark.asyncio
@@ -185,7 +185,7 @@ def test_good_run_root_files_no_async(mocker):
 
     r = ds.get_data_rootfiles('(valid qastle string)')
     assert len(r) == 2
-    assert r[0] == '/foo/bar.root'
+    assert r[0] == Path('/foo/bar.root')
 
 
 @pytest.mark.asyncio
@@ -392,7 +392,7 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
 
 
 @pytest.mark.asyncio
-async def test_good_run_root_files_from_minio(mocker):
+async def test_stream_root_files_from_minio(mocker):
     'Get a root file pulling back minio info as it arrives'
     mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
@@ -420,7 +420,34 @@ async def test_good_run_root_files_from_minio(mocker):
 
 
 @pytest.mark.asyncio
-async def test_bad_request_id_run_root_files_from_minio(mocker):
+async def test_stream_root_files(mocker):
+    'Get a root file pulling back minio info as it arrives'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger,
+                            data_convert_adaptor=data_adaptor)
+    lst = [f async for f in ds.get_data_rootfiles_stream('(valid qastle string)')]
+
+    assert len(lst) == 1
+    r = lst[0]
+    assert isinstance(r, StreamInfoPath)
+    assert r.file == 'one_minio_entry'
+    assert 'foo' in r.path.parts
+    assert 'bar.root' in r.path.parts
+
+    assert mock_servicex_adaptor.query_json['result-format'] == 'root-file'
+
+
+@pytest.mark.asyncio
+async def test_stream_bad_request_id_run_root_files_from_minio(mocker):
     'Using the minio interface - the request_id is not known'
     mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     transform_status = mocker.MagicMock(side_effect=ServiceXUnknownRequestID('boom'))
@@ -446,7 +473,7 @@ async def test_bad_request_id_run_root_files_from_minio(mocker):
 
 
 @pytest.mark.asyncio
-async def test_bad_transform_run_root_files_from_minio(mocker):
+async def test_stream_bad_transform_run_root_files_from_minio(mocker):
     'Using the async minio interface - fail to transform (like bad DID)'
     mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     fatal_transform_status = {
@@ -489,7 +516,7 @@ async def test_bad_transform_run_root_files_from_minio(mocker):
 
 
 @pytest.mark.asyncio
-async def test_bad_file_transform_run_root_files_from_minio(mocker):
+async def test_stream_bad_file_transform_run_root_files_from_minio(mocker):
     'Using the async minio interface, some files will fail to translate.'
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
@@ -514,7 +541,7 @@ async def test_bad_file_transform_run_root_files_from_minio(mocker):
 
 
 @pytest.mark.asyncio
-async def test_good_run_parquet_files_from_minio(mocker):
+async def test_stream_parquet_files_from_minio(mocker):
     'Get a parquet file pulling back minio info as it arrives'
     mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
@@ -528,13 +555,36 @@ async def test_good_run_parquet_files_from_minio(mocker):
                             cache_adaptor=mock_cache,
                             local_log=mock_logger,
                             data_convert_adaptor=data_adaptor)
-    lst = []
-    async for f_info in ds.get_data_parquet_minio_stream('(valid qastle string)'):
-        lst.append(f_info)
+    lst = [f_info async for f_info in ds.get_data_parquet_url_stream('(valid qastle string)')]
 
     assert len(lst) == 1
     assert lst[0].bucket == '123-456'
     assert lst[0].file == 'one_minio_entry'
+
+    assert mock_servicex_adaptor.query_json['result-format'] == 'parquet'
+
+
+@pytest.mark.asyncio
+async def test_stream_parquet_files(mocker):
+    'Get a parquet file pulling back minio info as it arrives'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger,
+                            data_convert_adaptor=data_adaptor)
+    lst = [f_info async for f_info in ds.get_data_parquet_stream('(valid qastle string)')]
+
+    assert len(lst) == 1
+    assert lst[0].file == 'one_minio_entry'
+    assert 'foo' in lst[0].path.parts
+    assert 'bar.root' in lst[0].path.parts
 
     assert mock_servicex_adaptor.query_json['result-format'] == 'parquet'
 
@@ -715,7 +765,7 @@ async def test_callback_none(mocker):
         "/foo/bar.root")
 
     assert len(r) == 1
-    assert r[0] == '/foo/bar.root'
+    assert r[0] == Path('/foo/bar.root')
 
 
 @pytest.mark.asyncio

@@ -40,6 +40,14 @@ class StreamInfoUrl:
     bucket: str
 
 
+@dataclass
+class StreamInfoPath:
+    '''Contains information on accessing ServiceX data via a local Path
+    '''
+    path: Path
+    file: str
+
+
 class ServiceXDataset(ServiceXABC):
     '''
     Used to access an instance of ServiceX at an end point on the internet. Support convieration
@@ -159,10 +167,46 @@ class ServiceXDataset(ServiceXABC):
     async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
         return await self._file_return(selection_query, 'root-file')
 
+    async def get_data_rootfiles_stream(self, selection_query: str) \
+            -> AsyncIterator[StreamInfoPath]:
+        '''Returns, as an async iterator, each completed batch of work from Servicex.
+        The `StreamInfoPath` contains a path where downstream consumers can directly
+        access the data.
+
+        Args:
+            selection_query (str): The `qastle` query for the data to retreive.
+
+        Yields:
+            AsyncIterator[StreamInfoPath]: As ServiceX completes the data, and it is downloaded
+                                           to the local machine, the async iterator returns
+                                           a `StreamInfoPath` which can be used to access the
+                                           file locally.
+        '''
+        async for f_info in self._stream_local_files(selection_query, 'root-files'):
+            yield f_info
+
     @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
     @_wrap_in_memory_sx_cache
     async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
         return await self._file_return(selection_query, 'parquet')
+
+    async def get_data_parquet_stream(self, selection_query: str) \
+            -> AsyncIterator[StreamInfoPath]:
+        '''Returns, as an async iterator, each completed batch of work from Servicex.
+        The `StreamInfoPath` contains a path where downstream consumers can directly
+        access the data.
+
+        Args:
+            selection_query (str): The `qastle` query for the data to retreive.
+
+        Yields:
+            AsyncIterator[StreamInfoPath]: As ServiceX completes the data, and it is downloaded
+                                           to the local machine, the async iterator returns
+                                           a `StreamInfoPath` which can be used to access the
+                                           file locally.
+        '''
+        async for f_info in self._stream_local_files(selection_query, 'parquet'):
+            yield f_info
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
     @_wrap_in_memory_sx_cache
@@ -185,10 +229,10 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._get_minio_buckets(selection_query, 'root-files'):
+        async for f_info in self._stream_url_buckets(selection_query, 'root-files'):
             yield f_info
 
-    async def get_data_parquet_minio_stream(self, selection_query: str) \
+    async def get_data_parquet_url_stream(self, selection_query: str) \
             -> AsyncIterator[StreamInfoUrl]:
         '''Returns, as an async iterator, each of the files from the minio bucket,
         as the files are added there.
@@ -196,7 +240,7 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._get_minio_buckets(selection_query, 'parquet'):
+        async for f_info in self._stream_url_buckets(selection_query, 'parquet'):
             yield f_info
 
     async def _file_return(self, selection_query: str, data_format: str):
@@ -224,7 +268,7 @@ class ServiceXDataset(ServiceXABC):
         return await self._data_return(selection_query, convert_to_file, data_format)
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
-    async def _get_minio_buckets(self, selection_query: str, data_format: str) \
+    async def _stream_url_buckets(self, selection_query: str, data_format: str) \
             -> AsyncIterator[StreamInfoUrl]:
         '''Get a list of files back for a request
 
@@ -280,12 +324,10 @@ class ServiceXDataset(ServiceXABC):
                 await self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]],
-                           data_format: str = 'root-file'):
-        '''
-        Given a query, return the data, in a unique order, that hold
+                           data_format: str = 'root-file') -> List[Any]:
+        '''Given a query, return the data, in a unique order, that hold
         the data for the query.
 
         For certian types of exceptions, the queries will be repeated. For example,
@@ -303,6 +345,40 @@ class ServiceXDataset(ServiceXABC):
             data                Data converted to the "proper" format, depending
                                 on the converter call.
         '''
+        as_data = ((f.file, asyncio.ensure_future(converter(f.path)))
+                   async for f in self._stream_local_files(selection_query, data_format))
+
+        all_data = {d[0]: await d[1] async for d in as_data}
+
+        # Convert them to the proper format
+
+        # Finally, we need them in the proper order so we append them
+        # all together
+        ordered_data = [all_data[k] for k in sorted(all_data.keys())]
+
+        return ordered_data
+
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    async def _stream_local_files(self, selection_query: str,
+                                  data_format: str = 'root-file'):
+        '''
+        Given a query, return the data as a list of paths pointing to local files
+        that contain the results of the query. This is an async generator, and files
+        are returned as they arrive.
+
+        For certian types of exceptions, the queries will be repeated. For example,
+        if `ServiceX` indicates that it was restarted in the middle of the query, then
+        the query will be re-submitted.
+
+        Arguments:
+
+            selection_query     `qastle` data that makes up the selection request.
+
+        Returns:
+
+            data                Data converted to the "proper" format, depending
+                                on the converter call.
+        '''
         # Get a notifier to update anyone who wants to listen.
         notifier = self._create_notifier()
 
@@ -311,16 +387,8 @@ class ServiceXDataset(ServiceXABC):
             (f async for f in
              self._get_files(selection_query, data_format, notifier))
 
-        # Convert them to the proper format
-        as_data = ((f[0], asyncio.ensure_future(converter(await f[1])))
-                   async for f in as_files)
-
-        # Finally, we need them in the proper order so we append them
-        # all together
-        all_data = {f[0]: await f[1] async for f in as_data}
-        ordered_data = [all_data[k] for k in sorted(all_data.keys())]
-
-        return ordered_data
+        async for name, a_path in as_files:
+            yield StreamInfoPath(Path(await a_path), name)
 
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper) \
