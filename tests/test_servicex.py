@@ -590,6 +590,52 @@ async def test_stream_parquet_files(mocker):
 
 
 @pytest.mark.asyncio
+async def test_stream_awkward_data(mocker):
+    'Get a parquet file pulling back minio info as it arrives'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+    data_adaptor.convert_to_awkward.return_value = {'JetPt': 10}
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger,
+                            data_convert_adaptor=data_adaptor)
+    lst = [f_info async for f_info in ds.get_data_awkward_stream('(valid qastle string)')]
+
+    assert len(lst) == 1
+    assert lst[0].file == 'one_minio_entry'
+    assert isinstance(lst[0].data, dict)
+
+
+@pytest.mark.asyncio
+async def test_stream_pandas_data(mocker):
+    'Get a parquet file pulling back minio info as it arrives'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+    data_adaptor.convert_to_pandas.return_value = {'JetPt': 10}
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger,
+                            data_convert_adaptor=data_adaptor)
+    lst = [f_info async for f_info in ds.get_data_pandas_stream('(valid qastle string)')]
+
+    assert len(lst) == 1
+    assert lst[0].file == 'one_minio_entry'
+    assert isinstance(lst[0].data, dict)
+
+
+@pytest.mark.asyncio
 async def test_status_exception(mocker):
     'Make sure status error - like transform not found - is reported all the way to the top'
     mock_cache = build_cache_mock(mocker)

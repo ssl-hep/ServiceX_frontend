@@ -48,6 +48,14 @@ class StreamInfoPath:
     file: str
 
 
+@dataclass
+class StreamInfoData:
+    '''Contains information on accessing ServiceX data via converted data
+    '''
+    data: Any
+    file: str
+
+
 class ServiceXDataset(ServiceXABC):
     '''
     Used to access an instance of ServiceX at an end point on the internet. Support convieration
@@ -220,6 +228,16 @@ class ServiceXDataset(ServiceXABC):
         return self._converter.combine_awkward(await self._data_return(
             selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
+    async def get_data_awkward_stream(self, selection_query: str):
+        async for a in self._stream_return(selection_query,
+                                           lambda f: self._converter.convert_to_awkward(f)):
+            yield a
+
+    async def get_data_pandas_stream(self, selection_query: str):
+        async for a in self._stream_return(selection_query,
+                                           lambda f: self._converter.convert_to_pandas(f)):
+            yield a
+
     async def get_data_rootfiles_url_stream(self, selection_query: str) \
             -> AsyncIterator[StreamInfoUrl]:
         '''Returns, as an async iterator, each completed batch of work from ServiceX.
@@ -345,10 +363,10 @@ class ServiceXDataset(ServiceXABC):
             data                Data converted to the "proper" format, depending
                                 on the converter call.
         '''
-        as_data = ((f.file, asyncio.ensure_future(converter(f.path)))
-                   async for f in self._stream_local_files(selection_query, data_format))
-
-        all_data = {d[0]: await d[1] async for d in as_data}
+        all_data = {
+            f.file: f.data
+            async for f in self._stream_return(selection_query, converter, data_format)
+        }
 
         # Convert them to the proper format
 
@@ -357,6 +375,33 @@ class ServiceXDataset(ServiceXABC):
         ordered_data = [all_data[k] for k in sorted(all_data.keys())]
 
         return ordered_data
+
+    async def _stream_return(self, selection_query: str,
+                             converter: Callable[[Path], Awaitable[Any]],
+                             data_format: str = 'root-file') -> AsyncIterator[StreamInfoData]:
+        '''Given a query, return the data, in the order it arrives back
+        converted as appropriate.
+
+        For certian types of exceptions, the queries will be repeated. For example,
+        if `ServiceX` indicates that it was restarted in the middle of the query, then
+        the query will be re-submitted.
+
+        Arguments:
+
+            selection_query     `qastle` data that makes up the selection request.
+            converter           A `Callable` that will convert the data returned from
+                                `ServiceX` as a set of files.
+
+        Returns:
+
+            data                Data converted to the "proper" format, depending
+                                on the converter call.
+        '''
+        as_data = (StreamInfoData(await asyncio.ensure_future(converter(f.path)), f.file)
+                   async for f in self._stream_local_files(selection_query, data_format))
+
+        async for r in as_data:
+            yield r
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _stream_local_files(self, selection_query: str,
