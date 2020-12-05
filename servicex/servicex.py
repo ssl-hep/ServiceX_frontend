@@ -3,7 +3,6 @@ import asyncio
 import functools
 import logging
 import time
-from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable, Dict, List,
@@ -31,29 +30,48 @@ from .utils import (ServiceXException, ServiceXFailedFileTransform,
                     stream_status_updates, stream_unique_updates_only)
 
 
-@dataclass
-class StreamInfoUrl:
-    '''Contains information on accessing ServiceX data via a url
-    '''
-    url: str
-    file: str
-    bucket: str
+class StreamInfoBase:
+    def __init__(self, file: str):
+        self._file = file
+
+    @property
+    def file(self) -> str:
+        return self._file
 
 
-@dataclass
-class StreamInfoPath:
-    '''Contains information on accessing ServiceX data via a local Path
-    '''
-    path: Path
-    file: str
+class StreamInfoUrl(StreamInfoBase):
+    def __init__(self, file: str, url: str, bucket: str):
+        super().__init__(file)
+        self._url = url
+        self._bucket = bucket
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    @property
+    def bucket(self) -> str:
+        return self._bucket
 
 
-@dataclass
-class StreamInfoData:
-    '''Contains information on accessing ServiceX data via converted data
-    '''
-    data: Any
-    file: str
+class StreamInfoPath(StreamInfoBase):
+    def __init__(self, file: str, path: Path):
+        super().__init__(file)
+        self._path = path
+
+    @property
+    def path(self) -> Path:
+        return self._path
+
+
+class StreamInfoData(StreamInfoBase):
+    def __init__(self, file: str, data: Any):
+        super().__init__(file)
+        self._data = data
+
+    @property
+    def data(self) -> Any:
+        return self._data
 
 
 class ServiceXDataset(ServiceXABC):
@@ -320,7 +338,7 @@ class ServiceXDataset(ServiceXABC):
 
                 # Reflect the files back up a level.
                 async for r in minio_files:
-                    yield StreamInfoUrl(minio_adaptor.get_access_url(request_id, r), r, request_id)
+                    yield StreamInfoUrl(r, minio_adaptor.get_access_url(request_id, r), request_id)
 
                 # Cache the final status
                 await self._update_query_status(client, request_id)
@@ -397,7 +415,7 @@ class ServiceXDataset(ServiceXABC):
             data                Data converted to the "proper" format, depending
                                 on the converter call.
         '''
-        as_data = (StreamInfoData(await asyncio.ensure_future(converter(f.path)), f.file)
+        as_data = (StreamInfoData(f.file, await asyncio.ensure_future(converter(f.path)))
                    async for f in self._stream_local_files(selection_query, data_format))
 
         async for r in as_data:
@@ -434,7 +452,7 @@ class ServiceXDataset(ServiceXABC):
              self._get_files(selection_query, data_format, notifier))
 
         async for name, a_path in as_files:
-            yield StreamInfoPath(Path(await a_path), name)
+            yield StreamInfoPath(name, Path(await a_path))
 
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper) \
