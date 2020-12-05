@@ -87,11 +87,16 @@ def sanitize_filename(fname: str):
 
 
 StatusUpdateCallback = Callable[[Optional[int], int, int, int], None]
-# The sig of the call-back
+# The sig of the call-back. Arguments are:
+# 1. Processed
+# 1. Downloaded
+# 1. Remaining
+# 1. Failed
 
-StatusUpdateFactory = Callable[[str], StatusUpdateCallback]
+StatusUpdateFactory = Callable[[str, bool], StatusUpdateCallback]
 # Factory method that returns a factory that can run the status callback
-# First argument is a string.
+# First argument is a string, second argument is True if a download progress
+# bar can be displayed as well.
 
 
 class _status_update_wrapper:
@@ -192,14 +197,20 @@ async def stream_unique_updates_only(stream: AsyncIterator[TransformTuple]):
             yield p
 
 
-def _run_default_wrapper(ds_name: str) -> StatusUpdateCallback:
+def _run_default_wrapper(ds_name: str, downloading: bool) -> StatusUpdateCallback:
+    '''Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
+
+    Args:
+        ds_name (str): The dataset name
+        downloading (bool): True if we will be downloading the files, not just processing them.
+
+    Returns:
+        StatusUpdateCallback: The updater callback
     '''
-    Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
-    '''
-    return _default_wrapper_mgr(ds_name).update
+    return _default_wrapper_mgr(ds_name, downloading).update
 
 
-def _null_progress_feedback(ds_name: str) -> None:
+def _null_progress_feedback(ds_name: str, downloading: bool) -> None:
     '''
     Internal routine to create a feedback object that does not
     give anyone feedback!
@@ -209,9 +220,10 @@ def _null_progress_feedback(ds_name: str) -> None:
 
 class _default_wrapper_mgr:
     'Default progress bar'
-    def __init__(self, sample_name: Optional[str] = None):
+    def __init__(self, sample_name: Optional[str] = None, show_download_bar: bool = True):
         self._tqdm_p: Optional[tqdm] = None
         self._tqdm_d: Optional[tqdm] = None
+        self._show_download_progress = show_download_bar
         self._sample_name = sample_name
 
     def _init_tqdm(self):
@@ -221,9 +233,10 @@ class _default_wrapper_mgr:
         self._tqdm_p = tqdm(total=9e9, desc=self._sample_name, unit='file',
                             leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
-        self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
-                            leave=False, dynamic_ncols=True,
-                            bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
+        if self._show_download_progress:
+            self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
+                                leave=False, dynamic_ncols=True,
+                                bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
     def _update_bar(self, bar: Optional[tqdm], total: Optional[int], num: int, failed: int):
         assert bar is not None, 'Internal error - bar was not initalized'
@@ -244,7 +257,8 @@ class _default_wrapper_mgr:
     def update(self, total: Optional[int], processed: int, downloaded: int, failed: int):
         self._init_tqdm()
         self._update_bar(self._tqdm_p, total, processed, failed)
-        self._update_bar(self._tqdm_d, total, downloaded, failed)
+        if self._show_download_progress:
+            self._update_bar(self._tqdm_d, total, downloaded, failed)
 
 
 # Changes in the json that won't affect the result

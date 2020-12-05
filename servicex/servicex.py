@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import (Any, AsyncIterator, Awaitable, Callable, Dict, List,
+from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable, Dict, List,
                     Optional, Tuple, Union)
 
 import aiohttp
@@ -287,7 +287,7 @@ class ServiceXDataset(ServiceXABC):
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _stream_url_buckets(self, selection_query: str, data_format: str) \
-            -> AsyncIterator[StreamInfoUrl]:
+            -> AsyncGenerator[StreamInfoUrl, None]:
         '''Get a list of files back for a request
 
         Args:
@@ -314,7 +314,7 @@ class ServiceXDataset(ServiceXABC):
             # Look up the cache, and then fetch an iterator going thorugh the results
             # from either servicex or the cache, depending.
             try:
-                notifier = self._create_notifier()
+                notifier = self._create_notifier(False)
                 minio_files = self._get_minio_bucket_files_from_servicex(request_id, client,
                                                                          minio_adaptor, notifier)
 
@@ -405,7 +405,8 @@ class ServiceXDataset(ServiceXABC):
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _stream_local_files(self, selection_query: str,
-                                  data_format: str = 'root-file'):
+                                  data_format: str = 'root-file') \
+            -> AsyncGenerator[StreamInfoPath, None]:
         '''
         Given a query, return the data as a list of paths pointing to local files
         that contain the results of the query. This is an async generator, and files
@@ -425,7 +426,7 @@ class ServiceXDataset(ServiceXABC):
                                 on the converter call.
         '''
         # Get a notifier to update anyone who wants to listen.
-        notifier = self._create_notifier()
+        notifier = self._create_notifier(True)
 
         # Get all the files
         as_files = \

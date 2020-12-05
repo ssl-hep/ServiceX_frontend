@@ -778,13 +778,80 @@ def test_callback_good(mocker):
                             cache_adaptor=mock_cache,
                             data_convert_adaptor=data_adaptor,
                             local_log=mock_logger,
-                            status_callback_factory=lambda ds: check_in)
+                            status_callback_factory=lambda ds, downloading: check_in)
     ds.get_data_rootfiles('(valid qastle string)')
 
     assert f_total == 1
     assert f_processed == 1
     assert f_downloaded == 1
     assert f_failed == 0
+
+
+def test_callback_is_downloading(mocker):
+    'Make sure this file download sets the file-download marker in the callback'
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        pass
+
+    ds_name = None
+    ds_downloading = None
+
+    def build_it(ds: str, downloading: bool):
+        nonlocal ds_name, ds_downloading
+        ds_name = ds
+        ds_downloading = downloading
+        return check_in
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger,
+                            status_callback_factory=build_it)
+    ds.get_data_rootfiles('(valid qastle string)')
+
+    assert ds_name == 'http://one-ds'
+    assert ds_downloading
+
+
+@pytest.mark.asyncio
+async def test_callback_is_not_downloading(mocker):
+    'Stream download of Minio URLs should not set the download marker'
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    def check_in(total: Optional[int], processed: int, downloaded: int, failed: int):
+        pass
+
+    ds_name = None
+    ds_downloading = None
+
+    def build_it(ds: str, downloading: bool):
+        nonlocal ds_name, ds_downloading
+        ds_name = ds
+        ds_downloading = downloading
+        return check_in
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger,
+                            status_callback_factory=build_it)
+    _ = [f async for f in ds.get_data_rootfiles_url_stream('(valid qastle string)')]
+
+    assert ds_name == 'http://one-ds'
+    assert not ds_downloading
 
 
 @pytest.mark.asyncio
