@@ -31,15 +31,33 @@ from .utils import (ServiceXException, ServiceXFailedFileTransform,
 
 
 class StreamInfoBase:
+    '''Contains base information about results that are streamed back from
+    ServiceX.
+    '''
     def __init__(self, file: str):
         self._file = file
 
     @property
     def file(self) -> str:
+        '''Returns the ServiceX filename
+
+        This filename is unique in the dataset, and will be the same accross different queries
+        against the dataset. It can be used as a key to sort results.
+
+        Notes:
+
+        - May contains non-file system characters
+
+        Returns:
+            str: servicex filename
+        '''
         return self._file
 
 
 class StreamInfoUrl(StreamInfoBase):
+    '''Contains information about results that are streamed back from ServiceX.
+    Used when a URL to access the data directly from ServiceX is requested.
+    '''
     def __init__(self, file: str, url: str, bucket: str):
         super().__init__(file)
         self._url = url
@@ -47,6 +65,11 @@ class StreamInfoUrl(StreamInfoBase):
 
     @property
     def url(self) -> str:
+        '''URL that can can be used to stream data back from ServiceX.
+
+        Returns:
+            str: The URL of the transformed data for this file.
+        '''
         return self._url
 
     @property
@@ -55,22 +78,40 @@ class StreamInfoUrl(StreamInfoBase):
 
 
 class StreamInfoPath(StreamInfoBase):
+    '''Contains information about results that are streamed back from ServiceX.
+    Used when the user has requested streaming, but copying the file locally first.
+    '''
     def __init__(self, file: str, path: Path):
         super().__init__(file)
         self._path = path
 
     @property
     def path(self) -> Path:
+        '''Path the the local file of ServiceX data that represents this query.
+
+        Returns:
+            Path: The path object that points to the data requested.
+        '''
         return self._path
 
 
 class StreamInfoData(StreamInfoBase):
+    '''Contains information about results that are streamed back from ServiceX.
+    Used when data (`pandas` or `awkward`) is requested. The data is downloaded from
+    ServiceX, converted into the requested format, and then streamed to the user in these
+    chunks. There is a single chunk per file.
+    '''
     def __init__(self, file: str, data: Any):
         super().__init__(file)
         self._data = data
 
     @property
     def data(self) -> Any:
+        '''The `pandas.DataFrame` or `awkward` array return
+
+        Returns:
+            Any: The ServiceX transformed data for this file.
+        '''
         return self._data
 
 
@@ -246,12 +287,38 @@ class ServiceXDataset(ServiceXABC):
         return self._converter.combine_awkward(await self._data_return(
             selection_query, lambda f: self._converter.convert_to_awkward(f)))
 
-    async def get_data_awkward_stream(self, selection_query: str):
+    async def get_data_awkward_stream(self, selection_query: str) \
+            -> AsyncGenerator[StreamInfoData, None]:
+        '''Returns, as an async iterator, each completed batch of work from Servicex
+        as a separate `awkward` array. The data is returned in a `StreamInfoData` object.
+
+        Args:
+            selection_query (str): The `qastle` query for the data to retreive.
+
+        Yields:
+            AsyncIterator[StreamInfoData]: As ServiceX completes the data, and it is downloaded
+                                           to the local machine, the async iterator returns
+                                           a `StreamInfoData` which can be used to access the
+                                           data that has been loaded from the file.
+        '''
         async for a in self._stream_return(selection_query,
                                            lambda f: self._converter.convert_to_awkward(f)):
             yield a
 
-    async def get_data_pandas_stream(self, selection_query: str):
+    async def get_data_pandas_stream(self, selection_query: str) \
+            -> AsyncGenerator[StreamInfoData, None]:
+        '''Returns, as an async iterator, each completed batch of work from Servicex
+        as a separate `pandas.DataFrame` array. The data is returned in a `StreamInfoData` object.
+
+        Args:
+            selection_query (str): The `qastle` query for the data to retreive.
+
+        Yields:
+            AsyncIterator[StreamInfoData]: As ServiceX completes the data, and it is downloaded
+                                           to the local machine, the async iterator returns
+                                           a `StreamInfoData` which can be used to access the
+                                           data that has been loaded from the file.
+        '''
         async for a in self._stream_return(selection_query,
                                            lambda f: self._converter.convert_to_pandas(f)):
             yield a
