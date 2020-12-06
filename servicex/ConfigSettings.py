@@ -21,8 +21,9 @@ class ConfigSettings(Configuration):
         '''
         Look for a '.xxx" file in the local directory
         '''
-        p = Path(f'.{self.appname}')
-        self._add_from_path(p)
+        self._add_from_path(Path(f'{self.appname}.yaml'))
+        self._add_from_path(Path(f'{self.appname}.yml'))
+        self._add_from_path(Path(f'.{self.appname}'))
 
     def _add_from_path(self, p: Path):
         if p.exists():
@@ -33,4 +34,6 @@ class ConfigSettings(Configuration):
         '''
         Look for a '.xxx" file in the local directory
         '''
+        self._add_from_path(Path.home() / f'{self.appname}.yml')
+        self._add_from_path(Path.home() / f'{self.appname}.yaml')
         self._add_from_path(Path.home() / f'.{self.appname}')
