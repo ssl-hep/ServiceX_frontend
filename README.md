@@ -28,7 +28,7 @@ Before you can use this library you'll need:
 
 The API access information is normally placed in a `.servicex` file (to keep this confidential information form accidentally getting checked into a public repository). The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to, in the following order:
 
-1. A `.servicex` file in the current working directory
+1. A `.servicex` file in the current working directory (it can also be named `servicex.yaml` or `servicex.yml`)
 1. A `.servicex` file in the user's home directory (`$HOME` on Linux and Mac, and your profile
    directory on Windows).
 1. The `config_defaults.yaml` file distributed with the `servicex` package.
@@ -137,6 +137,12 @@ As mentioned above, the `.servicex` file is read to pull a configuration. The se
 
 1. Your current working directory
 2. Your home directory
+
+The file can be named any of the following:
+
+- `.servicex`
+- `servicex.yaml`
+- `servicex.yml`
 
 The file can contain an `api_endpoint` as mentioned above. In addition the other following things can be put in:
 
