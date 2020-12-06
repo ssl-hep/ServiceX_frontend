@@ -1,6 +1,8 @@
 import asyncio
 from contextlib import contextmanager
 from pathlib import Path
+
+import asyncmock
 from servicex.servicex import StreamInfoPath, StreamInfoUrl
 from servicex.cache import Cache
 
@@ -596,7 +598,7 @@ async def test_stream_awkward_data(mocker):
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+    data_adaptor = asyncmock.MagicMock(spec=DataConverterAdaptor)
     data_adaptor.convert_to_awkward.return_value = {'JetPt': 10}
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
@@ -619,7 +621,7 @@ async def test_stream_pandas_data(mocker):
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+    data_adaptor = asyncmock.MagicMock(spec=DataConverterAdaptor)
     data_adaptor.convert_to_pandas.return_value = {'JetPt': 10}
 
     ds = fe.ServiceXDataset('localds://mc16_tev:13',
