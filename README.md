@@ -138,11 +138,11 @@ As mentioned above, the `.servicex` file is read to pull a configuration. The se
 1. Your current working directory
 2. Your home directory
 
-The file can be named any of the following:
+The file can be named any of the following (ordered by precedence):
 
-- `.servicex`
 - `servicex.yaml`
 - `servicex.yml`
+- `.servicex`
 
 The file can contain an `api_endpoint` as mentioned above. In addition the other following things can be put in:
 
