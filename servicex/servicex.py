@@ -283,7 +283,8 @@ class ServiceXDataset(ServiceXABC):
                     yield r
 
                 # Cache the final status
-                await self._update_query_status(client, request_id)
+                if cached_files is None:
+                    await self._update_query_status(client, request_id)
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
