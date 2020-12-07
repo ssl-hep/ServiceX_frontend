@@ -778,8 +778,11 @@ async def test_download_cached_nonet(mocker):
     mock_cache = build_cache_mock(mocker, query_cache_return='123-455',
                                   files=[('f1', 'file1.root')])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    mock_transform_status = mocker.Mock(side_effect=[(0, 2, 0)])
-    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456", mock_transform_status)
+    mock_bomb = mocker.Mock(side_effect=RuntimeError('should not be called'))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "XXX-XXX",
+                                                mock_transform_status=mock_bomb,
+                                                mock_query=mock_bomb,
+                                                mock_transform_query_status=mock_bomb)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
     data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
 
@@ -790,10 +793,6 @@ async def test_download_cached_nonet(mocker):
                             data_convert_adaptor=data_adaptor,
                             local_log=mock_logger)
     await ds.get_data_rootfiles_async('(valid qastle string')
-
-    # Check the the number of times we called for a transform is good.
-    mock_transform_status.submit_query.assert_not_called()
-    mock_transform_status.transform_status.assert_not_called()
 
 
 @pytest.mark.asyncio
