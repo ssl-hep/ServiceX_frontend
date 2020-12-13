@@ -136,7 +136,8 @@ do_query(ds)  # Cache is not ignored
 As mentioned above, the `.servicex` file is read to pull a configuration. The search path for this file:
 
 1. Your current working directory
-2. Your home directory
+2. Any working directory above your current working directory.
+3. Your home directory
 
 The file can be named any of the following (ordered by precedence):
 
