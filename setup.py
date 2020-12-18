@@ -32,7 +32,7 @@ setup(name="servicex",
       author_email="gwatts@uw.edu",
       maintainer="Gordon Watts (IRIS-HEP/UW Seattle)",
       maintainer_email="gwatts@uw.edu",
-      url="https://github.com/iris-hep/func_adl_xAOD",
+      url="https://github.com/ssl-hep/ServiceX_frontend",
       license="TBD",
       python_requires='>=3.6',
       test_suite="tests",
@@ -47,7 +47,7 @@ setup(name="servicex",
           'make_it_sync==1.0.0',
           'google-auth==1.17',
           'confuse==1.3.0',
-          'pyarrow>=1.0, <2.0'
+          'pyarrow>=1.0, <3.0'
       ],
       extras_require={
           'test': [

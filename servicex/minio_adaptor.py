@@ -28,12 +28,11 @@
 import asyncio
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, AsyncIterator, Optional, cast, Dict
+from typing import Any, AsyncIterator, List, Optional, Dict, cast
 import logging
 
 import backoff
 from backoff import on_exception
-from confuse import ConfigView
 from minio import Minio, ResponseError
 
 from .utils import ServiceXException
@@ -59,8 +58,8 @@ class MinioAdaptor:
                              secure=self._secured)
 
     @on_exception(backoff.constant, ResponseError, interval=0.1)
-    def get_files(self, request_id):
-        return [f.object_name for f in self._client.list_objects(request_id)]
+    def get_files(self, request_id) -> List[str]:
+        return [str(f.object_name) for f in self._client.list_objects(request_id)]
 
     def get_access_url(self, request_id: str, object_name: str) -> str:
         '''Given a request ID and the file name in that request id, return a URL
@@ -122,8 +121,7 @@ class MinioAdaptorFactory:
     '''A factor that will return, when asked, the proper minio adaptor to use for a request
     to get files from ServiceX.
     '''
-    def __init__(self, c: Optional[ConfigView] = None,
-                 always_return: Optional[MinioAdaptor] = None):
+    def __init__(self, always_return: Optional[MinioAdaptor] = None):
         '''Create the factor with a possible adaptor to always use
 
         Args:
@@ -133,8 +131,6 @@ class MinioAdaptorFactory:
         # Get the defaults setup.
         self._always = always_return
         self._config_adaptor = None
-        if self._always is None and c is not None:
-            self._config_adaptor = self._from_config(c)
 
     def from_best(self, transaction_info: Optional[Dict[str, str]] = None) -> MinioAdaptor:
         '''Using the information we have, create the proper Minio Adaptor with the correct
@@ -162,38 +158,8 @@ class MinioAdaptorFactory:
                                     bool(transaction_info['minio-secured']),
                                     transaction_info['minio-access-key'],
                                     transaction_info['minio-secret-key'])
-        if self._config_adaptor is not None:
-            logging.getLogger(__name__).debug('Using the config-file minio_adaptor')
-            return self._config_adaptor
-        raise ServiceXException("Do not know how to create a Minio Login info")
-
-    def _from_config(self, c: ConfigView) -> MinioAdaptor:
-        '''Extract the Minio config information from the config file(s). This will be used
-        if minio login information isn't returned from the request.
-
-        Args:
-            c (ConfigView): The loaded config
-
-        Returns:
-            MinioAdaptor: The adaptor that uses the config's login information.
-        '''
-        c_api = c['api_endpoint']
-        end_point = cast(str, c_api['minio_endpoint'].as_str_expanded())
-
-        # Grab the username and password if they are explicitly listed.
-        if 'minio_username' in c_api:
-            username = c_api['minio_username'].as_str_expanded()
-            password = c_api['minio_password'].as_str_expanded()
-        elif 'username' in c_api:
-            username = c_api['username'].as_str_expanded()
-            password = c_api['password'].as_str_expanded()
-        else:
-            username = c_api['default_minio_username'].as_str_expanded()
-            password = c_api['default_minio_password'].as_str_expanded()
-
-        return MinioAdaptor(end_point,
-                            access_key=cast(str, username),
-                            secretkey=cast(str, password))
+        raise ServiceXException("Do not know or have enough information to create a Minio "
+                                f"Login info ({transaction_info})")
 
 
 async def find_new_bucket_files(adaptor: MinioAdaptor,
@@ -206,7 +172,7 @@ async def find_new_bucket_files(adaptor: MinioAdaptor,
     seen = []
     async for _ in update:
         # Sadly, this is blocking, and so may hold things up
-        files = adaptor.get_files(request_id)
+        files = cast(List[str], adaptor.get_files(request_id))
 
         # If there are new files, pass them on
         for f in files:

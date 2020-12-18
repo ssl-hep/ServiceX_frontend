@@ -142,7 +142,7 @@ def test_list_objects(good_minio_client):
     ma = MinioAdaptor('localhost:9000')
 
     f = ma.get_files('111-222-333-444')
-    assert len(f) == 1
+    assert len(f) == 1  # type: ignore
 
 
 def test_list_objects_with_null(bad_then_good_minio_listing):
@@ -150,7 +150,7 @@ def test_list_objects_with_null(bad_then_good_minio_listing):
     list_objects minio method'''
     ma = MinioAdaptor('localhost:9000')
     f = ma.get_files('111-222-333-444')
-    assert len(f) == 1
+    assert len(f) == 1  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -186,55 +186,6 @@ def test_factor_always():
     assert f.from_best() is a
 
 
-def test_factory_set_endpoint():
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
-    c['api_endpoint']['minio_username'] = 'amazing'
-    c['api_endpoint']['minio_password'] = 'forkingshirtballs'
-
-    c['api_endpoint']['default_minio_username'] = 'badnews'
-    c['api_endpoint']['default_minio_password'] = 'bears'
-
-    m = MinioAdaptorFactory(c).from_best()
-    assert m._endpoint == 'the-good-host.org:9000'
-    assert m._access_key == "amazing"
-    assert m._secretkey == "forkingshirtballs"
-
-
-def test_factory_use_api_usernamepassword():
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-
-    c['api_endpoint']['endpoint'] = 'http://my-left-foot.com:5000'
-    c['api_endpoint']['username'] = 'thegoodplace'
-    c['api_endpoint']['password'] = 'forkingshirtballs!'
-
-    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
-
-    m = MinioAdaptorFactory(c).from_best()
-    assert m._endpoint == 'the-good-host.org:9000'
-    assert m._access_key == "thegoodplace"
-    assert m._secretkey == "forkingshirtballs!"
-
-
-def test_factory_use_default_username_password():
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-
-    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
-    c['api_endpoint']['default_minio_username'] = 'thegoodplace'
-    c['api_endpoint']['default_minio_password'] = 'forkingshirtballs!'
-
-    m = MinioAdaptorFactory(c).from_best()
-    assert m._endpoint == 'the-good-host.org:9000'
-    assert m._access_key == "thegoodplace"
-    assert m._secretkey == "forkingshirtballs!"
-
-
 def test_factory_from_request():
     info = {
         'minio-access-key': 'miniouser',
@@ -247,19 +198,3 @@ def test_factory_from_request():
     assert not m._secured
     assert m._access_key == "miniouser"
     assert m._secretkey == "leftfoot1"
-
-
-def test_factory_request_missing():
-    info = {}
-    from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
-    c.clear()
-
-    c['api_endpoint']['minio_endpoint'] = 'the-good-host.org:9000'
-    c['api_endpoint']['default_minio_username'] = 'thegoodplace'
-    c['api_endpoint']['default_minio_password'] = 'forkingshirtballs!'
-
-    m = MinioAdaptorFactory(c).from_best(info)
-    assert m._endpoint == 'the-good-host.org:9000'
-    assert m._access_key == "thegoodplace"
-    assert m._secretkey == "forkingshirtballs!"
