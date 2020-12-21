@@ -2,12 +2,12 @@ from servicex import ServiceXException
 from servicex.data_conversions import DataConverterAdaptor
 import pytest
 import pandas as pd
+import awkward1 as ak
 
 
-def check_awkward_accessible(col):
+def check_awkward_accessible(col: ak.Array):
     'Check to make sure we can look at every item in column'
-    # TODO: fix this so it works for awkward arrays and numpy like arrays.
-    # ak.to_numpy(col)  # type: ignore
+    ak.repartition(col, 3)
 
 
 def check_pandas_accessible(col):
@@ -73,7 +73,7 @@ async def test_to_panads_fail(good_root_file_path):
 def test_combine_pandas_from_root(good_root_file_path):
     'Load a dataframe from root files and make sure that they work when we ask them to combine'
     def load_df():
-        import uproot
+        import uproot4 as uproot
         with uproot.open(good_root_file_path) as f_in:
             r = f_in[f_in.keys()[0]]
             return r.arrays(library='pd')  # type: ignore
@@ -105,7 +105,7 @@ def test_combine_pandas_from_parquet(good_uproot_file_path):
 def test_combine_awkward_from_root(good_root_file_path):
     'Load a dataframe from root files and make sure that they work when we ask them to combine'
     def load_df():
-        import uproot
+        import uproot4 as uproot
         with uproot.open(good_root_file_path) as f_in:
             tree_name = f_in.keys()[0]
         return uproot.lazy(f'{good_root_file_path}:{tree_name}')
@@ -122,7 +122,6 @@ def test_combine_awkward_from_root(good_root_file_path):
 def test_combine_awkward_from_parquet(good_uproot_file_path):
     'Load a dataframe from a parquet file and make sure they work when we ask them to combine'
     def load_df():
-        import awkward as ak
         return ak.from_parquet(good_uproot_file_path)  # type: ignore
 
     df1 = load_df()

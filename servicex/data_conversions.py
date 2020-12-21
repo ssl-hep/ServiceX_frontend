@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 import pandas as pd
-import awkward as ak
+import awkward1 as ak
 
 from servicex.utils import ServiceXException
 
@@ -92,7 +92,7 @@ class DataConverterAdaptor:
         from pandas import DataFrame
 
         def do_the_work(file: Path) -> DataFrame:
-            import uproot
+            import uproot4 as uproot
 
             with uproot.open(file) as f_in:
                 r = f_in[f_in.keys()[0]]
@@ -146,7 +146,7 @@ class DataConverterAdaptor:
 
         '''
         def do_the_work(file: Path) -> ak.Array:
-            import uproot
+            import uproot4 as uproot
 
             with uproot.open(file) as f_in:
                 tree_name = f_in.keys()[0]
@@ -173,8 +173,6 @@ class DataConverterAdaptor:
             - Pandas is only imported if this is called.
 
         '''
-        import awkward as ak
-
         def do_the_work(file: Path) -> ak.Array:
             # TODO: When we move to awkward1, make sure this becomes lazy
             return ak.from_parquet(str(file))  # type: ignore

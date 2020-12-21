@@ -183,11 +183,11 @@ def good_pandas_file_data(mocker):
 
 @pytest.fixture
 def good_awkward_file_data(mocker):
-    import awkward as awk
+    import awkward1 as ak
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
     converter.convert_to_awkward.return_value = \
-        {'JetPt': awk.from_iter([0, 1, 2, 3, 4, 5])}  # type: ignore
+        {'JetPt': ak.from_iter([0, 1, 2, 3, 4, 5])}  # type: ignore
     converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
     return converter
