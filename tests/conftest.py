@@ -186,7 +186,8 @@ def good_awkward_file_data(mocker):
     import awkward as awk
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_awkward.return_value = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+    converter.convert_to_awkward.return_value = \
+        {'JetPt': awk.from_iter([0, 1, 2, 3, 4, 5])}  # type: ignore
     converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
     return converter
