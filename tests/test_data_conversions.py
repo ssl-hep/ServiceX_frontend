@@ -7,7 +7,7 @@ import awkward1 as ak
 
 def check_awkward_accessible(col: ak.Array):
     'Check to make sure we can look at every item in column'
-    ak.repartition(col, 3)
+    ak.repartition(col, 3)  # type: ignore
 
 
 def check_pandas_accessible(col):
