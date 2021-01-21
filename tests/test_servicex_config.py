@@ -161,7 +161,7 @@ def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
 
     assert caplog.record_tuples[0][2] == "No 'xaod' backend type found, " \
                                          "using http://my-left-foot.com:5000 - please add to " \
-                                         "the .servicex file"
+                                         "the servicex.yaml file"
 
 
 def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):
