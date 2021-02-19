@@ -34,6 +34,7 @@ import logging
 import backoff
 from backoff import on_exception
 from minio import Minio, ResponseError
+from urllib3.exceptions import MaxRetryError
 
 from .utils import ServiceXException
 
@@ -59,7 +60,12 @@ class MinioAdaptor:
 
     @on_exception(backoff.constant, ResponseError, interval=0.1)
     def get_files(self, request_id) -> List[str]:
-        return [str(f.object_name) for f in self._client.list_objects(request_id)]
+        try:
+            return [str(f.object_name) for f in self._client.list_objects(request_id)]
+        except MaxRetryError as e:
+            msg = f"Unable to reach Minio at {e.pool.host}:{e.pool.port}{e.url}. " \
+                  f"Max retries exceeded."
+            raise ServiceXException(msg)
 
     async def download_file(self,
                             request_id: str,
