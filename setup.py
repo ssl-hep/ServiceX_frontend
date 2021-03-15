@@ -37,6 +37,7 @@ setup(name="servicex",
       python_requires='>=3.6',
       test_suite="tests",
       install_requires=[
+          "idna==2.10",  # Required to thread version needle with requests lib
           "pandas~=1.0",
           "uproot~=3.7",
           "backoff~=1.10",
