@@ -120,7 +120,7 @@ class ServiceXDataset(ServiceXABC):
         self._servicex_adaptor = servicex_adaptor
 
         if not minio_adaptor:
-            self._minio_adaptor = MinioAdaptorFactory(config.settings)
+            self._minio_adaptor = MinioAdaptorFactory()
         else:
             if isinstance(minio_adaptor, MinioAdaptor):
                 self._minio_adaptor = MinioAdaptorFactory(always_return=minio_adaptor)
