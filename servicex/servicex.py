@@ -74,6 +74,12 @@ class StreamInfoUrl(StreamInfoBase):
 
     @property
     def bucket(self) -> str:
+        '''Returns the buck name - unique and constant accross transformations.
+        Can be used to order the results
+
+        Returns:
+            str: The bucket name as produced by ServiceX
+        '''
         return self._bucket
 
 
