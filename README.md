@@ -26,16 +26,17 @@ Before you can use this library you'll need:
 
 ### How to access your endpoint
 
-The API access information is normally placed in a `.servicex` file (to keep this confidential information form accidentally getting checked into a public repository). The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to, in the following order:
+The API access information is normally placed in a configuration file file. The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to, in the following order:
 
-1. A `.servicex` file in the current working directory (it can also be named `servicex.yaml` or `servicex.yml`)
-1. A `.servicex` file in the user's home directory (`$HOME` on Linux and Mac, and your profile
+1. The config file can be called `servicex.yaml`, `servicex.yml`, or `.servicex`. The files are searched in that order, and all present are used.
+1. A config file in the current working directory.
+1. A config file in the user's home directory (`$HOME` on Linux and Mac, and your profile
    directory on Windows).
 1. The `config_defaults.yaml` file distributed with the `servicex` package.
 
 If no endpoint is specified, then the library defaults to the developer endpoint, which is `http://localhost:5000` for the web-service API. No passwords are used in this case.
 
-Create a `.servicex` file, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the uproot backend):
+Create a config file, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
 
 ```yaml
 api_endpoints:
@@ -49,6 +50,8 @@ All strings are expanded using python's [os.path.expand](https://docs.python.org
 You can list multiple end points by repeating the block of 4 dictionary items, but using a different type. For example, `uproot`.
 
 Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
+
+These config files are used to keep confidential credential information - so that it isn't accidentally placed in a public repository.
 
 ## Usage
 
@@ -92,7 +95,7 @@ For documentation of `get_data` and `get_data_async` see the `servicex.py` sourc
 
 ### The Local Cache
 
-To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the `.servicex` file (see below).
+To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below).
 
 There are times when you want the system to ignore the cache when it is running. You can do this by using `ignore_cache()`:
 
@@ -186,7 +189,7 @@ This code has been tested in several environments:
 
 ### Non-standard backends
 
-When doing backend development, often ports 9000 and 5000 are forwarded to the local machine exposing the `minio` and `ServiceX_App` instances. In that case, you'll need to create a `.servicex` file that has `http://localhost:5000` as the end point. No API token is necessary if the development `ServiceX` instance doesn't have authorization turned on.
+When doing backend development, often ports 9000 and 5000 are forwarded to the local machine exposing the `minio` and `ServiceX_App` instances. In that case, you'll need to create a configuration file that has `http://localhost:5000` as the end point. No API token is necessary if the development `ServiceX` instance doesn't have authorization turned on.
 
 ## API
 
@@ -220,10 +223,9 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
                                       ServiceX.
           servicex_adaptor            Object to control communication with the servicex instance
                                       at a particular ip address with certain login credentials.
-                                      Will be configured via the `.servicex` file by default.
+                                      Default comes from the `config_adaptor`.
           minio_adaptor               Object to control communication with the minio servicex
-                                      instance. By default configured with values from the
-                                      `.servicex` file.
+                                      instance.
           cache_adaptor               Runs the caching for data and queries that are sent up and
                                       down.
           status_callback_factory     Factory to create a status notification callback for each
@@ -233,7 +235,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
                                       is used for callbacks. Otherwise a single one for all
                                       `servicex` queries is used.
           config_adaptor              Control how configuration options are read from the
-                                      `.servicex` file.
+                                      configuration file (servicex.yaml, servicex.yml, .servicex).
 
       Notes:
 
