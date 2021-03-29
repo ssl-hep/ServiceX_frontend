@@ -1,4 +1,3 @@
-# Main front end interface
 import asyncio
 import functools
 import logging
@@ -255,7 +254,8 @@ class ServiceXDataset(ServiceXABC):
                                            a `StreamInfoPath` which can be used to access the
                                            file locally.
         '''
-        async for f_info in self._stream_local_files(selection_query, 'root-files'):
+        async for f_info in \
+                self._stream_local_files(selection_query, 'root-files'):  # type: ignore
             yield f_info
 
     @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
@@ -278,7 +278,7 @@ class ServiceXDataset(ServiceXABC):
                                            a `StreamInfoPath` which can be used to access the
                                            file locally.
         '''
-        async for f_info in self._stream_local_files(selection_query, 'parquet'):
+        async for f_info in self._stream_local_files(selection_query, 'parquet'):  # type: ignore
             yield f_info
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
@@ -338,7 +338,8 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._stream_url_buckets(selection_query, 'root-files'):
+        async for f_info in \
+                self._stream_url_buckets(selection_query, 'root-files'):  # type: ignore
             yield f_info
 
     async def get_data_parquet_url_stream(self, selection_query: str) \
@@ -349,7 +350,7 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._stream_url_buckets(selection_query, 'parquet'):
+        async for f_info in self._stream_url_buckets(selection_query, 'parquet'):  # type: ignore
             yield f_info
 
     async def _file_return(self, selection_query: str, data_format: str):
@@ -489,7 +490,8 @@ class ServiceXDataset(ServiceXABC):
                                 on the converter call.
         '''
         as_data = (StreamInfoData(f.file, await asyncio.ensure_future(converter(f.path)))
-                   async for f in self._stream_local_files(selection_query, data_format))
+                   async for f in
+                   self._stream_local_files(selection_query, data_format))  # type: ignore
 
         async for r in as_data:
             yield r

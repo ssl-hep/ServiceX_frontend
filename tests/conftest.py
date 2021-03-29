@@ -27,14 +27,14 @@ class ClientSessionMocker:
             self._status_iter = iter([status])
 
     async def text(self):
-        return next(self._text_iter)
+        return next(self._text_iter)  # type: ignore
 
     async def json(self):
-        return loads(next(self._text_iter))
+        return loads(next(self._text_iter))  # type: ignore
 
     @property
     def status(self):
-        return next(self._status_iter)
+        return next(self._status_iter)  # type: ignore
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
@@ -192,10 +192,11 @@ def good_pandas_file_data(mocker):
 
 @pytest.fixture
 def good_awkward_file_data(mocker):
-    import awkward as awk
+    import awkward as ak
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_awkward.return_value = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+    converter.convert_to_awkward.return_value = \
+        {'JetPt': ak.from_iter([0, 1, 2, 3, 4, 5])}  # type: ignore
     converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
     return converter

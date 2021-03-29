@@ -75,9 +75,6 @@ class MinioAdaptor:
             request_id (str): The request id guid (that is the bucket in minio)
             object_name (str): The file (the object in the minio bucket)
 
-        Raises:
-            NotImplementedError: [description]
-
         Returns:
             str: A url good for some amount of time to access the bucket.
         '''

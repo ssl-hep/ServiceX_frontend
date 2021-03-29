@@ -328,10 +328,10 @@ def clean_linq(q: str) -> str:
         def record(self, children):
             if (len(children) == 0
                     or isinstance(children[0], Token)
-                    and children[0].type == 'WHITESPACE'):
+                    and children[0].type == 'WHITESPACE'):  # type: ignore
                 return ""
             else:
-                return children[0].text
+                return children[0].text  # type: ignore
 
         def expression(self, children):
             for child in children:

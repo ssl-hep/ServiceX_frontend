@@ -1,9 +1,7 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Union
-from awkward.array.chunked import ChunkedArray
-from awkward.array.table import Table
+from typing import Iterable, Optional
 
 import pandas as pd
 import awkward as ak
@@ -65,13 +63,13 @@ class DataConverterAdaptor:
         '''
         return pd.concat(dfs)
 
-    def combine_awkward(self, awks: Iterable[Union[Table, ChunkedArray]]) -> Table:
+    def combine_awkward(self, awks: Iterable[ak.Array]) -> ak.Array:
         '''Combine many awkward arrays into a single one, in order.
 
         Args:
             awks (Iterable[ChunkedArray]): The input list of awkward arrays
         '''
-        return ak.concatenate(awks)
+        return ak.concatenate(awks)  # type: ignore
 
     async def _convert_root_to_pandas(self, file: Path):
         '''
@@ -94,14 +92,11 @@ class DataConverterAdaptor:
         from pandas import DataFrame
 
         def do_the_work(file: Path) -> DataFrame:
-            import uproot
+            import uproot as uproot
 
-            f_in = uproot.open(file)
-            try:
+            with uproot.open(file) as f_in:
                 r = f_in[f_in.keys()[0]]
-                return r.pandas.df()  # type: ignore
-            finally:
-                f_in._context.source.close()
+                return r.arrays(library='pd')  # type: ignore
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 
@@ -150,15 +145,13 @@ class DataConverterAdaptor:
               this will leak filehandles - as that has to be left open.
 
         '''
-        from numpy import ndarray
-        from awkward import JaggedArray
+        def do_the_work(file: Path) -> ak.Array:
+            import uproot as uproot
 
-        def do_the_work(file: Path) -> Dict[Union[str, bytes], Union[ndarray, JaggedArray]]:
-            import uproot
+            with uproot.open(file) as f_in:
+                tree_name = f_in.keys()[0]
 
-            f_in = uproot.open(file)
-            r = f_in[f_in.keys()[0]]
-            return r.lazyarrays()  # type: ignore
+            return uproot.lazy(f'{file}:{tree_name}')
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 
@@ -180,11 +173,8 @@ class DataConverterAdaptor:
             - Pandas is only imported if this is called.
 
         '''
-        import awkward as ak
-
-        def do_the_work(file: Path) -> \
-                Union[Dict[Union[str, bytes], ak.ChunkedArray], ChunkedArray]:
+        def do_the_work(file: Path) -> ak.Array:
             # TODO: When we move to awkward1, make sure this becomes lazy
-            return ak.fromparquet(str(file))
+            return ak.from_parquet(str(file))  # type: ignore
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))

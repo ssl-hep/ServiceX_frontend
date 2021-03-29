@@ -39,7 +39,8 @@ setup(name="servicex",
       install_requires=[
           "idna==2.10",  # Required to thread version needle with requests library
           "pandas~=1.0",
-          "uproot~=3.7",
+          "uproot>=4.0.1, <5",
+          "awkward>=1.0.1, <2",
           "backoff~=1.10",
           "aiohttp~=3.6",
           "minio~=5.0",
