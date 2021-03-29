@@ -3,6 +3,7 @@ from pathlib import Path
 import minio
 from minio.error import ResponseError
 import pytest
+from urllib3.exceptions import MaxRetryError
 
 from servicex import (
     MinioAdaptor,
@@ -55,7 +56,28 @@ def bad_minio_client(mocker):
 
 
 @pytest.fixture
+def bad_minio_endpoint(mocker):
+    'Simulate the Minio end point not being there at all'
+    response1 = mocker.MagicMock()
+    response1.data = '<xml></xml>'
+
+    minio_client = mocker.MagicMock(spec=minio.Minio)
+    pool = mocker.MagicMock()
+    pool.host = 'http://dude'
+    pool.port = 'fork-me'
+    minio_client.list_objects.side_effect = MaxRetryError(pool, 'http://dude')
+
+    mocker.patch('servicex.minio_adaptor.Minio', return_value=minio_client)
+
+    p_rename = mocker.patch('servicex.minio_adaptor.Path.rename', mocker.MagicMock())
+    mocker.patch('servicex.minio_adaptor.Path.mkdir', mocker.MagicMock())
+
+    return p_rename, minio_client
+
+
+@pytest.fixture
 def bad_then_good_minio_listing(mocker):
+    'Simulate the Minio going offline and then coming back'
     response1 = mocker.MagicMock()
     response1.data = '<xml></xml>'
     response2 = [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas'
@@ -151,6 +173,14 @@ def test_list_objects_with_null(bad_then_good_minio_listing):
     ma = MinioAdaptor('localhost:9000')
     f = ma.get_files('111-222-333-444')
     assert len(f) == 1  # type: ignore
+
+
+def test_bad_minio(bad_minio_endpoint):
+    '''Sometimes for reasons we do not understand we get back a response error from
+    list_objects minio method'''
+    ma = MinioAdaptor('localhost:9000')
+    with pytest.raises(ServiceXException):
+        ma.get_files('111-222-333-444')
 
 
 @pytest.mark.asyncio
