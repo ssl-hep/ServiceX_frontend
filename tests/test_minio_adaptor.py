@@ -26,6 +26,7 @@ def good_minio_client(mocker):
         [make_minio_file('root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas'
                          ':dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052'
                          '._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')]
+    minio_client.presigned_get_object.return_value = 'http://data.done'
 
     mocker.patch('servicex.minio_adaptor.Minio', return_value=minio_client)
 
@@ -128,6 +129,13 @@ async def test_download_already_there(mocker, good_minio_client):
 
     # Make sure the exists worked.
     p_exists.assert_called_once()
+
+
+def test_access_url(good_minio_client):
+    'Make sure the presigned_get_object is properly called'
+    mn = MinioAdaptor('localhost:9000')
+    assert mn.get_access_url('123-456', 'file1') == 'http://data.done'
+    good_minio_client[1].presigned_get_object.assert_called_with('123-456', 'file1')
 
 
 def test_list_objects(good_minio_client):
