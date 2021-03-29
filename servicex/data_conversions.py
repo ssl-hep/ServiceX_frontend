@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 import pandas as pd
-import awkward1 as ak
+import awkward as ak
 
 from servicex.utils import ServiceXException
 

@@ -2,7 +2,7 @@ from servicex import ServiceXException
 from servicex.data_conversions import DataConverterAdaptor
 import pytest
 import pandas as pd
-import awkward1 as ak
+import awkward as ak
 
 
 def check_awkward_accessible(col: ak.Array):

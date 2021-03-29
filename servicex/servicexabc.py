@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from make_it_sync import make_sync
-import awkward1 as ak
+import awkward as ak
 import pandas as pd
 
 from .utils import (
