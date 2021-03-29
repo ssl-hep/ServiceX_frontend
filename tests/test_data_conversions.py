@@ -73,7 +73,7 @@ async def test_to_panads_fail(good_root_file_path):
 def test_combine_pandas_from_root(good_root_file_path):
     'Load a dataframe from root files and make sure that they work when we ask them to combine'
     def load_df():
-        import uproot4 as uproot
+        import uproot as uproot
         with uproot.open(good_root_file_path) as f_in:
             r = f_in[f_in.keys()[0]]
             return r.arrays(library='pd')  # type: ignore
@@ -105,7 +105,7 @@ def test_combine_pandas_from_parquet(good_uproot_file_path):
 def test_combine_awkward_from_root(good_root_file_path):
     'Load a dataframe from root files and make sure that they work when we ask them to combine'
     def load_df():
-        import uproot4 as uproot
+        import uproot as uproot
         with uproot.open(good_root_file_path) as f_in:
             tree_name = f_in.keys()[0]
         return uproot.lazy(f'{good_root_file_path}:{tree_name}')

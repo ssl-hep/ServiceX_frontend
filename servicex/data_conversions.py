@@ -92,7 +92,7 @@ class DataConverterAdaptor:
         from pandas import DataFrame
 
         def do_the_work(file: Path) -> DataFrame:
-            import uproot4 as uproot
+            import uproot as uproot
 
             with uproot.open(file) as f_in:
                 r = f_in[f_in.keys()[0]]
@@ -146,7 +146,7 @@ class DataConverterAdaptor:
 
         '''
         def do_the_work(file: Path) -> ak.Array:
-            import uproot4 as uproot
+            import uproot as uproot
 
             with uproot.open(file) as f_in:
                 tree_name = f_in.keys()[0]
