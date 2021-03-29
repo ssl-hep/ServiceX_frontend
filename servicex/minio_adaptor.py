@@ -75,25 +75,6 @@ class MinioAdaptor:
             request_id (str): The request id guid (that is the bucket in minio)
             object_name (str): The file (the object in the minio bucket)
 
-        Raises:
-            NotImplementedError: [description]
-
-        Returns:
-            str: A url good for some amount of time to access the bucket.
-        '''
-        return self._client.presigned_get_object(request_id, object_name)
-
-    def get_access_url(self, request_id: str, object_name: str) -> str:
-        '''Given a request ID and the file name in that request id, return a URL
-        that can be directly accessed to download the file.
-
-        Args:
-            request_id (str): The request id guid (that is the bucket in minio)
-            object_name (str): The file (the object in the minio bucket)
-
-        Raises:
-            NotImplementedError: [description]
-
         Returns:
             str: A url good for some amount of time to access the bucket.
         '''

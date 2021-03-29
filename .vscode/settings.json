@@ -37,6 +37,7 @@
         "fname",
         "getenv",
         "gitlab",
+        "idna",
         "inmem",
         "isabstractmethod",
         "jupyter",
