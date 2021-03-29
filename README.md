@@ -1,4 +1,4 @@
-# ServiceX_frontend
+# ServiceX Client Library
 
  Client access library for ServiceX
 
