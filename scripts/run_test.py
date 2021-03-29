@@ -23,8 +23,8 @@ async def run_query(endpoint: Optional[ServiceXAdaptor], dest: str) -> None:
         r = ds.get_data_rootfiles(request)
         print(r)
     elif dest == 'rootfiles-minio':
-        r = ds.get_data_rootfiles_minio_async(request)
-        async for f in r:
+        r = ds.get_data_rootfiles_async(request)
+        async for f in r:  # type: ignore
             print(f)
 
 

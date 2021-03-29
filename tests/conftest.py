@@ -27,14 +27,14 @@ class ClientSessionMocker:
             self._status_iter = iter([status])
 
     async def text(self):
-        return next(self._text_iter)
+        return next(self._text_iter)  # type: ignore
 
     async def json(self):
-        return loads(next(self._text_iter))
+        return loads(next(self._text_iter))  # type: ignore
 
     @property
     def status(self):
-        return next(self._status_iter)
+        return next(self._status_iter)  # type: ignore
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
