@@ -268,6 +268,34 @@ Each data type comes in a pair - an `async` version and a synchronous version.
 - `get_data_pandas_df`, `get_data_pandas_df_async` - Returns the data as a `pandas` `DataFrame`. This will fail if the data you've requested has any structure (e.g. is hierarchical, like a single entry for each event, and each event may have some number of jets).
 - `get_data_parquet`, `get_data_parquet_async` - Returns a list of files locally downloaded that can be read by any parquet tools.
 
+### Streaming Results
+
+The `ServiceX` backend generates results file-by-file. The above API will return the list of files when the transform has completed. For large transforms this can take some time: no need to wait until it is completely done before processing the files!
+
+- `get_data_rootfiles_stream`, `get_data_parquet_stream`, `get_data_pandas_stream`, and `get_data_awkward_stream` return a stream of local file path's as each result from the backend is downloaded. All take just the `qastle` query text as a parameter and return a python `AsyncIterator` of `StreamInfoData`. Note that files downloaded locally are cached - so when you re-run the same query it will immediately render all the `StreamInfoData` objects from the async stream with no waiting.
+- `get_data_rootfiles_url_stream` and `get_data_parquet_url_stream` return a stream of URL's that allow direct access in the backend to the data generated as it is finished. All take just the `qastle` query text as a parameter, and return a python `AsyncIterator` of `StreamInfoUrl`. These methods are probably most useful if you are working in the same data center that the `ServiceX` service is running in.
+
+The `StreamInfoURL` contains a `bucket`, `file`, and a `url` property. The `url` property can be used to access the requested data without authentication for about 24 hours (depends on the `ServiceX` backend's configuration). Use the `file` to understand what part of the starting dataset that data came from. And as this de-facto points to a `minio` database currently, the `bucket` can be used to find the host bucket name.
+
+The `StreamInfoData` contains a `file` and a `path` property. The `file` is as above, and the `path` is a `pathlib.Path` object that points to the file that has been downloaded into the cache locally.
+
+An example using the async interface that performs the same operation as the initial example above:
+
+```python
+    from servicex import ServiceXDataset
+    query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
+    dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
+    ds = ServiceXDataset(dataset)
+
+    async for f in ds.get_data_rootfiles_stream(query):
+      print(f.path)
+```
+
+Notes:
+
+- `ServiceX` might fail part way through the transformation - so be ready for an exception to bubble out of your `AsyncIterator`!
+- If you are combining different queries whose filtering is identical, make sure to use the `file` property to match results - otherwise you won't have an event-to-event matching!
+
 ## Development
 
 For any changes please feel free to submit pull requests! We are using the `gitlab` workflow: the `master` branch represents the latests updates that pass all tests working towards the next version of the software. Any PR's should be based off the most recent version of `master` if they are for new features. Each release is frozen on a dedicated release branch, e.g. v2.0.0. If a bug fix needs to be applied to an existing release, submit a PR to master mentioning the affected version(s). After the PR is merged to master, it will be applied to the relevant release branch(es) using git cherry-pick.

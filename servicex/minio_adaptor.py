@@ -34,6 +34,7 @@ import logging
 import backoff
 from backoff import on_exception
 from minio import Minio, ResponseError
+from urllib3.exceptions import MaxRetryError
 
 from .utils import ServiceXException
 
@@ -59,7 +60,28 @@ class MinioAdaptor:
 
     @on_exception(backoff.constant, ResponseError, interval=0.1)
     def get_files(self, request_id) -> List[str]:
-        return [str(f.object_name) for f in self._client.list_objects(request_id)]
+        try:
+            return [str(f.object_name) for f in self._client.list_objects(request_id)]
+        except MaxRetryError as e:
+            msg = f"Unable to reach Minio at {e.pool.host}:{e.pool.port}{e.url}. " \
+                  f"Max retries exceeded."
+            raise ServiceXException(msg)
+
+    def get_access_url(self, request_id: str, object_name: str) -> str:
+        '''Given a request ID and the file name in that request id, return a URL
+        that can be directly accessed to download the file.
+
+        Args:
+            request_id (str): The request id guid (that is the bucket in minio)
+            object_name (str): The file (the object in the minio bucket)
+
+        Raises:
+            NotImplementedError: [description]
+
+        Returns:
+            str: A url good for some amount of time to access the bucket.
+        '''
+        return self._client.presigned_get_object(request_id, object_name)
 
     def get_access_url(self, request_id: str, object_name: str) -> str:
         '''Given a request ID and the file name in that request id, return a URL
