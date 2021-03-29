@@ -95,6 +95,7 @@ class MockMinioAdaptor(MinioAdaptor):
     def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
         self.mock_download_file = mocker.Mock()
+        self._access_called_with = None
         pass
 
     async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
@@ -103,6 +104,14 @@ class MockMinioAdaptor(MinioAdaptor):
     def get_files(self, request_id) -> List[str]:
         'Return files in the bucket'
         return self._files
+
+    def get_access_url(self, request_id: str, object_name: str) -> str:
+        self._access_called_with = (request_id, object_name)
+        return "http://the.url.com"
+
+    @property
+    def access_called_with(self) -> Optional[Tuple[str, str]]:
+        return self._access_called_with
 
 
 __g_inmem_value = None
