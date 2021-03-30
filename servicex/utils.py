@@ -1,5 +1,6 @@
 from datetime import timedelta
 from hashlib import blake2b
+import os
 from pathlib import Path, PurePath
 import re
 import tempfile
@@ -386,6 +387,13 @@ def get_configured_cache_path(config: ConfigView) -> Path:
     assert config["cache_path"].exists(), 'Cannot find default config - install is broken'
     s_path = config["cache_path"].as_str_expanded()
     assert isinstance(s_path, str)
+
+    # If they have tried to use the USER or UserName as an expansion, and it has failed, then
+    # translate it to maintain harmony across platforms.
+    if '${USER}' in s_path and 'UserName' in os.environ:
+        s_path = s_path.replace('${USER}', os.environ['UserName'])
+    if '${UserName}' in s_path and 'USER' in os.environ:
+        s_path = s_path.replace('${UserName}', os.environ['USER'])
 
     p_p = PurePath(s_path)
     if len(p_p.parts) > 1 and p_p.parts[1] == 'tmp':
