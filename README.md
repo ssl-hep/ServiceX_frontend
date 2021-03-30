@@ -26,17 +26,7 @@ Before you can use this library you'll need:
 
 ### How to access your endpoint
 
-The API access information is normally placed in a configuration file file. The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to, in the following order:
-
-1. The config file can be called `servicex.yaml`, `servicex.yml`, or `.servicex`. The files are searched in that order, and all present are used.
-1. A config file in the current working directory.
-1. A config file in the user's home directory (`$HOME` on Linux and Mac, and your profile
-   directory on Windows).
-1. The `config_defaults.yaml` file distributed with the `servicex` package.
-
-If no endpoint is specified, then the library defaults to the developer endpoint, which is `http://localhost:5000` for the web-service API. No passwords are used in this case.
-
-Create a config file, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
+The API access information is normally placed in a configuration file file (see the section below). Create a config file, `servicex.yaml`, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
 
 ```yaml
 api_endpoints:
@@ -52,6 +42,8 @@ You can list multiple end points by repeating the block of 4 dictionary items, b
 Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
 
 These config files are used to keep confidential credential information - so that it isn't accidentally placed in a public repository.
+
+If no endpoint is specified or config file containing a useful endpoint is found, then the library defaults to the developer endpoint, which is `http://localhost:5000` for the web-service API. No passwords are used in this case.
 
 ## Usage
 
@@ -136,19 +128,16 @@ do_query(ds)  # Cache is not ignored
 
 ## Configuration
 
-As mentioned above, the `.servicex` file is read to pull a configuration. The search path for this file:
+The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to:
 
-1. Your current working directory
-2. Any working directory above your current working directory.
-3. Your home directory
+1. The config file can be called `servicex.yaml`, `servicex.yml`, or `.servicex`. The files are searched in that order, and all present are used.
+1. A config file in the current working directory.
+1. A config file in any working directory above your current working directory.
+1. A config file in the user's home directory (`$HOME` on Linux and Mac, and your profile
+   directory on Windows).
+1. The `config_defaults.yaml` file distributed with the `servicex` package.
 
-The file can be named any of the following (ordered by precedence):
-
-- `servicex.yaml`
-- `servicex.yml`
-- `.servicex`
-
-The file can contain an `api_endpoint` as mentioned above. In addition the other following things can be put in:
+The file can contain an `api_endpoint` as mentioned earlier. In addition the other following things can be put in:
 
 - `cache_path`: Location where queries, data, and a record of queries are written. This should be an absolute path the person running the library has r/w access to. On windows, make sure to escape `\` - and best to follow standard `yaml` conventions and put the path in quotes - especially if it contains a space. Top level yaml item (don't indent it accidentally!). Defaults to `/tmp/servicex` (with the temp directory as appropriate for your platform) Examples:
   - Windows: `cache_path: "C:\\Users\\gordo\\Desktop\\cacheme"`
