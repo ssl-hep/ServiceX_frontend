@@ -92,7 +92,7 @@ For documentation of `get_data` and `get_data_async` see the `servicex.py` sourc
 
 ### The Local Cache
 
-To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the `.servicex` file (see below).
+To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below).
 
 There are times when you want the system to ignore the cache when it is running. You can do this by using `ignore_cache()`:
 
@@ -138,6 +138,7 @@ As mentioned above, the `.servicex` file is read to pull a configuration. The se
 1. Your current working directory
 2. Any working directory above your current working directory.
 3. Your home directory
+4. Any other directory searched by the python [`confuse`](https://confuse.readthedocs.io/en/latest/usage.html#search-paths) library. This includes a machine's `/etc` directory on Linux.
 
 The file can be named any of the following (ordered by precedence):
 
@@ -147,7 +148,7 @@ The file can be named any of the following (ordered by precedence):
 
 The file can contain an `api_endpoint` as mentioned above. In addition the other following things can be put in:
 
-- `cache_path`: Location where queries, data, and a record of queries are written. This should be an absolute path the person running the library has r/w access to. On windows, make sure to escape `\` - and best to follow standard `yaml` conventions and put the path in quotes - especially if it contains a space. Top level yaml item (don't indent it accidentally!). Defaults to `/tmp/servicex` (with the temp directory as appropriate for your platform) Examples:
+- `cache_path`: Location where queries, data, and a record of queries are written. This should be an absolute path the person running the library has r/w access to. On windows, make sure to escape `\` - and best to follow standard `yaml` conventions and put the path in quotes - especially if it contains a space. Top level yaml item (don't indent it accidentally!). Defaults to `/tmp/servicex_<username>` (with the temp directory as appropriate for your platform) Examples:
   - Windows: `cache_path: "C:\\Users\\gordo\\Desktop\\cacheme"`
   - Linux: `cache_path: "/home/servicex-cache"`
 
