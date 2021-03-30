@@ -17,7 +17,7 @@ import pytest
 import servicex as fe
 from servicex.minio_adaptor import MinioAdaptorFactory
 from servicex.utils import (
-    ServiceXException, ServiceXFatalTransformException,
+    ServiceXException, ServiceXFatalTransformException, ServiceXUnknownDataRequestID,
     ServiceXUnknownRequestID, log_adaptor)
 
 from .conftest import (MockMinioAdaptor, MockServiceXAdaptor,  # NOQA
@@ -466,7 +466,7 @@ async def test_stream_bad_request_id_run_root_files_from_minio(mocker):
                             local_log=mock_logger,
                             data_convert_adaptor=data_adaptor)
 
-    with pytest.raises(ServiceXException) as e:
+    with pytest.raises(ServiceXUnknownDataRequestID) as e:
         lst = []
         async for f_info in ds.get_data_rootfiles_url_stream('(valid qastle string)'):
             lst.append(f_info)
@@ -939,7 +939,7 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
-    with pytest.raises(ServiceXException) as e:
+    with pytest.raises(ServiceXUnknownDataRequestID) as e:
         # Will fail with one file downloaded.
         await ds.get_data_rootfiles_async('(valid qastle string)')
 

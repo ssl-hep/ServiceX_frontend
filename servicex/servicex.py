@@ -4,8 +4,8 @@ import logging
 import time
 from datetime import timedelta
 from pathlib import Path
-from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable, Dict, List,
-                    Optional, Tuple, Union)
+from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable,
+                    Dict, List, Optional, Tuple, Union)
 
 import aiohttp
 import backoff
@@ -22,7 +22,8 @@ from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (ServiceXException, ServiceXFailedFileTransform,
-                    ServiceXFatalTransformException, ServiceXUnknownRequestID,
+                    ServiceXFatalTransformException,
+                    ServiceXUnknownDataRequestID, ServiceXUnknownRequestID,
                     StatusUpdateFactory, _run_default_wrapper,
                     _status_update_wrapper, default_client_session,
                     get_configured_cache_path, log_adaptor,
@@ -378,6 +379,7 @@ class ServiceXDataset(ServiceXABC):
         return await self._data_return(selection_query, convert_to_file, data_format)
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
     async def _stream_url_buckets(self, selection_query: str, data_format: str) \
             -> AsyncGenerator[StreamInfoUrl, None]:
         '''Get a list of files back for a request
@@ -419,9 +421,10 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
-                raise ServiceXException('Expected the ServiceX backend to know about query '
-                                        f'{request_id}. It did not. Cleared local cache. '
-                                        'Please resubmit to trigger a new query.') from e
+                raise ServiceXUnknownDataRequestID('Expected the ServiceX backend to know about '
+                                                   f'query {request_id}. It did not. Cleared local'
+                                                   'cache. Please resubmit to trigger a new '
+                                                   'query.') from e
 
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
@@ -524,11 +527,12 @@ class ServiceXDataset(ServiceXABC):
         # Get all the files
         as_files = \
             (f async for f in
-             self._get_files(selection_query, data_format, notifier))
+             self._get_files(selection_query, data_format, notifier))  # type: ignore
 
         async for name, a_path in as_files:
             yield StreamInfoPath(name, Path(await a_path))
 
+    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper) \
             -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
@@ -585,9 +589,10 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
-                raise ServiceXException('Expected the ServiceX backend to know about query '
-                                        f'{request_id}. It did not. Cleared local cache. '
-                                        'Please resubmit to trigger a new query.') from e
+                raise ServiceXUnknownDataRequestID('Expected the ServiceX backend to know about '
+                                                   f'query {request_id}. It did not. Cleared local'
+                                                   ' cache. Please resubmit to trigger a new '
+                                                   'query.') from e
 
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
