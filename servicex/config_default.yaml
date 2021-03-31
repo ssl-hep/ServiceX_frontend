@@ -5,8 +5,9 @@ api_endpoints:
   - endpoint: http://localhost:5000
     # token: xxx
 
-# This is the path of the cache. The "/tmp" will be translated, platform appropriate.
-cache_path: /tmp/servicex
+# This is the path of the cache. The "/tmp" will be translated, platform appropriate, and
+# the env variable USER will be replaced.
+cache_path: /tmp/servicex_${USER}
 
 # This is a dummy value, here only to make sure that unit testing
 # works properly before package release.
