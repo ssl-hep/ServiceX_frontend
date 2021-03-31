@@ -4,8 +4,8 @@ import logging
 import time
 from datetime import timedelta
 from pathlib import Path
-from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable, Dict, List,
-                    Optional, Tuple, Union)
+from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable,
+                    Dict, List, Optional, Tuple, Union)
 
 import aiohttp
 import backoff
@@ -22,7 +22,8 @@ from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
 from .utils import (ServiceXException, ServiceXFailedFileTransform,
-                    ServiceXFatalTransformException, ServiceXUnknownRequestID,
+                    ServiceXFatalTransformException,
+                    ServiceXUnknownDataRequestID, ServiceXUnknownRequestID,
                     StatusUpdateFactory, _run_default_wrapper,
                     _status_update_wrapper, default_client_session,
                     get_configured_cache_path, log_adaptor,
@@ -123,7 +124,8 @@ class StreamInfoData(StreamInfoBase):
 class ServiceXDataset(ServiceXABC):
     '''
     Used to access an instance of ServiceX at an end point on the internet. Support convieration
-    by `.servicex` file or by creating the adaptors defined in the `__init__` function.
+    by configuration object `config_adaptor` or by creating the adaptors defined in the `__init__`
+    function.
     '''
     def __init__(self,
                  dataset: str,
@@ -157,10 +159,9 @@ class ServiceXDataset(ServiceXABC):
                                         ServiceX.
             servicex_adaptor            Object to control communication with the servicex instance
                                         at a particular ip address with certian login credentials.
-                                        Will be configured via the `.servicex` file by default.
+                                        Will be configured via the `config_adaptor` by default.
             minio_adaptor               Object to control communication with the minio servicex
-                                        instance. By default configured with values from the
-                                        `.servicex` file.
+                                        instance.
             cache_adaptor               Runs the caching for data and queries that are sent up and
                                         down.
             status_callback_factory     Factory to create a status notification callback for each
@@ -170,7 +171,7 @@ class ServiceXDataset(ServiceXABC):
                                         is used for callbacks. Otherwise a single one for all
                                         `servicex` queries is used.
             config_adaptor              Control how configuration options are read from the
-                                        `.servicex` file.
+                                        a configuration file (e.g. servicex.yaml).
             data_convert_adaptor        Manages conversions between root and parquet and `pandas`
                                         and `awkward`, including default settings for expected
                                         datatypes from the backend.
@@ -378,6 +379,7 @@ class ServiceXDataset(ServiceXABC):
         return await self._data_return(selection_query, convert_to_file, data_format)
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
     async def _stream_url_buckets(self, selection_query: str, data_format: str) \
             -> AsyncGenerator[StreamInfoUrl, None]:
         '''Get a list of files back for a request
@@ -419,9 +421,10 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
-                raise ServiceXException('Expected the ServiceX backend to know about query '
-                                        f'{request_id}. It did not. Cleared local cache. '
-                                        'Please resubmit to trigger a new query.') from e
+                raise ServiceXUnknownDataRequestID('Expected the ServiceX backend to know about '
+                                                   f'query {request_id}. It did not. Cleared local'
+                                                   'cache. Please resubmit to trigger a new '
+                                                   'query.') from e
 
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
@@ -524,11 +527,12 @@ class ServiceXDataset(ServiceXABC):
         # Get all the files
         as_files = \
             (f async for f in
-             self._get_files(selection_query, data_format, notifier))
+             self._get_files(selection_query, data_format, notifier))  # type: ignore
 
         async for name, a_path in as_files:
             yield StreamInfoPath(name, Path(await a_path))
 
+    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper) \
             -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
@@ -585,9 +589,10 @@ class ServiceXDataset(ServiceXABC):
 
             except ServiceXUnknownRequestID as e:
                 self._cache.remove_query(query)
-                raise ServiceXException('Expected the ServiceX backend to know about query '
-                                        f'{request_id}. It did not. Cleared local cache. '
-                                        'Please resubmit to trigger a new query.') from e
+                raise ServiceXUnknownDataRequestID('Expected the ServiceX backend to know about '
+                                                   f'query {request_id}. It did not. Cleared local'
+                                                   ' cache. Please resubmit to trigger a new '
+                                                   'query.') from e
 
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,

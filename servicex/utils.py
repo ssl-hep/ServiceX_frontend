@@ -74,6 +74,17 @@ class ServiceXUnknownRequestID(Exception):
         super().__init__(self, msg)
 
 
+class ServiceXUnknownDataRequestID(Exception):
+    '''Raised when we expect ServiceX to know about the data for a request id, but it does not.
+    Possible causes:
+
+      - ServiceX has been reset and all previously run requests have been removed
+      - ServiceX's cache rolled over this entry, and it wasn't cached locally.
+    '''
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 class ServiceXFailedFileTransform(Exception):
     'Raised when a file(s) fail to transform'
     def __init__(self, msg):
