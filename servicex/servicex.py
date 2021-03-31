@@ -123,7 +123,8 @@ class StreamInfoData(StreamInfoBase):
 class ServiceXDataset(ServiceXABC):
     '''
     Used to access an instance of ServiceX at an end point on the internet. Support convieration
-    by `.servicex` file or by creating the adaptors defined in the `__init__` function.
+    by configuration object `config_adaptor` or by creating the adaptors defined in the `__init__`
+    function.
     '''
     def __init__(self,
                  dataset: str,
@@ -157,10 +158,9 @@ class ServiceXDataset(ServiceXABC):
                                         ServiceX.
             servicex_adaptor            Object to control communication with the servicex instance
                                         at a particular ip address with certian login credentials.
-                                        Will be configured via the `.servicex` file by default.
+                                        Will be configured via the `config_adaptor` by default.
             minio_adaptor               Object to control communication with the minio servicex
-                                        instance. By default configured with values from the
-                                        `.servicex` file.
+                                        instance.
             cache_adaptor               Runs the caching for data and queries that are sent up and
                                         down.
             status_callback_factory     Factory to create a status notification callback for each
@@ -170,7 +170,7 @@ class ServiceXDataset(ServiceXABC):
                                         is used for callbacks. Otherwise a single one for all
                                         `servicex` queries is used.
             config_adaptor              Control how configuration options are read from the
-                                        `.servicex` file.
+                                        a configuration file (e.g. servicex.yaml).
             data_convert_adaptor        Manages conversions between root and parquet and `pandas`
                                         and `awkward`, including default settings for expected
                                         datatypes from the backend.
