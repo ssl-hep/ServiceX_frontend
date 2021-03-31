@@ -26,7 +26,7 @@ Before you can use this library you'll need:
 
 ### How to access your endpoint
 
-The API access information is normally placed in a configuration file file (see the section below). Create a config file, `servicex.yaml`, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
+The API access information is normally placed in a configuration file (see the section below). Create a config file, `servicex.yaml`, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
 
 ```yaml
 api_endpoints:
@@ -85,9 +85,9 @@ If you'd like to be able to submit multiple queries and have them run on the `Se
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
 
-### The Local Cache
+### The Local Data Cache
 
-To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below).
+To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below). By default it is written in the temp direcotry of your system, under a `servicex_{USER}` directory. The cache is unbound: it will continuously fill up. You can delete it at any time that you aren't processing data: data will be re-downloaded or re-transformed in `ServiceX`.
 
 There are times when you want the system to ignore the cache when it is running. You can do this by using `ignore_cache()`:
 
