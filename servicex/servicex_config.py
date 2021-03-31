@@ -87,7 +87,7 @@ class ServiceXConfigAdaptor:
 
         Args:
             backend_type (str): The backend name (like `xaod`) which we hopefully can find in the
-            `.servicex` file.
+            configuration file.
 
         Returns:
             Tuple[str, str]: The tuple of info to create a `ServiceXAdaptor`: end point,
@@ -121,7 +121,7 @@ class ServiceXConfigAdaptor:
                 else:
                     log.warning(f"No '{backend_type}' backend type found, "
                                 f'using {ep["endpoint"].as_str_expanded()} - please add to '
-                                'the .servicex file')
+                                'the configuration file (e.g. servicex.yaml)')
                 return extract_info(ep)
 
         if backend_type is not None:
