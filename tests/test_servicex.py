@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import contextmanager
+import os
 from pathlib import Path
 
 import asyncmock
@@ -569,7 +570,8 @@ async def test_stream_parquet_files_from_minio(mocker):
 @pytest.mark.asyncio
 async def test_stream_parquet_files(mocker):
     'Get a parquet file pulling back minio info as it arrives'
-    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    file_path = '/foo/bar.root' if os.name != 'nt' else r'c:\foo\bar.root'
+    mock_cache = build_cache_mock(mocker, data_file_return=file_path)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
@@ -587,6 +589,7 @@ async def test_stream_parquet_files(mocker):
     assert lst[0].file == 'one_minio_entry'
     assert 'foo' in lst[0].path.parts
     assert 'bar.root' in lst[0].path.parts
+    assert "file://" in lst[0].url
 
     assert mock_servicex_adaptor.query_json['result-format'] == 'parquet'
 
