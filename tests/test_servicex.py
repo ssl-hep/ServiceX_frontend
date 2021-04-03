@@ -587,6 +587,7 @@ async def test_stream_parquet_files(mocker):
     assert lst[0].file == 'one_minio_entry'
     assert 'foo' in lst[0].path.parts
     assert 'bar.root' in lst[0].path.parts
+    assert "file://" in lst[0].url
 
     assert mock_servicex_adaptor.query_json['result-format'] == 'parquet'
 

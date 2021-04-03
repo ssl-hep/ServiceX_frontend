@@ -100,6 +100,15 @@ class StreamInfoPath(StreamInfoBase):
         '''
         return self._path
 
+    @property
+    def url(self) -> str:
+        '''URI to the locally downloaded file.
+
+        Returns:
+            str: The URI of the transformed data for this file.
+        '''
+        return self._path.as_uri()
+
 
 class StreamInfoData(StreamInfoBase):
     '''Contains information about results that are streamed back from ServiceX.
