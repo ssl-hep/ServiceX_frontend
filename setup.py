@@ -37,17 +37,19 @@ setup(name="servicex",
       python_requires='>=3.6, <3.10',
       test_suite="tests",
       install_requires=[
+          "idna==2.10",  # Required to thread version needle with requests library
           "pandas~=1.0",
-          "uproot~=3.7",
+          "uproot>=4.0.1, <5",
+          "awkward>=1.0.1, <2",
           "backoff~=1.10",
           "aiohttp~=3.6",
           "minio~=5.0",
           "tqdm~=4.0",
-          "qastle==0.8",
+          "qastle>=0.10, <1.0",
           'make_it_sync==1.0.0',
           'google-auth==1.17',
           'confuse==1.3.0',
-          'pyarrow>=1.0, <2.0'
+          'pyarrow>=1.0, <4.0'
       ],
       extras_require={
           'test': [

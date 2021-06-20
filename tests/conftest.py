@@ -27,14 +27,14 @@ class ClientSessionMocker:
             self._status_iter = iter([status])
 
     async def text(self):
-        return next(self._text_iter)
+        return next(self._text_iter)  # type: ignore
 
     async def json(self):
-        return loads(next(self._text_iter))
+        return loads(next(self._text_iter))  # type: ignore
 
     @property
     def status(self):
-        return next(self._status_iter)
+        return next(self._status_iter)  # type: ignore
 
     async def __aexit__(self, exc_type, exc, tb):
         pass
@@ -95,6 +95,7 @@ class MockMinioAdaptor(MinioAdaptor):
     def __init__(self, mocker: MockFixture, files: List[str] = []):
         self._files = files
         self.mock_download_file = mocker.Mock()
+        self._access_called_with = None
         pass
 
     async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
@@ -103,6 +104,14 @@ class MockMinioAdaptor(MinioAdaptor):
     def get_files(self, request_id) -> List[str]:
         'Return files in the bucket'
         return self._files
+
+    def get_access_url(self, request_id: str, object_name: str) -> str:
+        self._access_called_with = (request_id, object_name)
+        return "http://the.url.com"
+
+    @property
+    def access_called_with(self) -> Optional[Tuple[str, str]]:
+        return self._access_called_with
 
 
 __g_inmem_value = None
@@ -183,10 +192,11 @@ def good_pandas_file_data(mocker):
 
 @pytest.fixture
 def good_awkward_file_data(mocker):
-    import awkward as awk
+    import awkward as ak
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_awkward.return_value = {'JetPt': awk.fromiter([0, 1, 2, 3, 4, 5])}
+    converter.convert_to_awkward.return_value = \
+        {'JetPt': ak.from_iter([0, 1, 2, 3, 4, 5])}  # type: ignore
     converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
     return converter

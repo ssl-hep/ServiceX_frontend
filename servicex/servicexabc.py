@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
-import awkward
 from make_it_sync import make_sync
-import numpy as np
+import awkward as ak
 import pandas as pd
 
 from .utils import (
@@ -68,9 +67,9 @@ class ServiceXABC(ABC):
             status_callback_factory if status_callback_factory is not None \
             else _null_progress_feedback
 
-    def _create_notifier(self) -> _status_update_wrapper:
+    def _create_notifier(self, downloading: bool) -> _status_update_wrapper:
         'Internal method to create a updater from the status call-back'
-        return _status_update_wrapper(self._status_callback_factory(self._dataset))
+        return _status_update_wrapper(self._status_callback_factory(self._dataset, downloading))
 
     @abstractmethod
     async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
@@ -106,7 +105,7 @@ class ServiceXABC(ABC):
 
     @abstractmethod
     async def get_data_awkward_async(self, selection_query: str) \
-            -> Dict[bytes, Union[awkward.JaggedArray, np.ndarray]]:
+            -> Dict[bytes, ak.Array]:
         '''
         Fetch query data from ServiceX matching `selection_query` and return it as
         dictionary of awkward arrays, an entry for each column. The data is uniquely

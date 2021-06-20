@@ -3,6 +3,7 @@ import tempfile
 from typing import Optional
 import aiohttp
 from pathlib import Path
+import os
 
 import pytest
 
@@ -498,3 +499,39 @@ def test_configured_cache_location():
     # Should default to temp directory - should work on all platforms!
     assert p.exists()
     assert str(p) == str(here)
+
+
+def test_cache_expansion_user():
+    '''On windows this will expand one way, and on linux another. So need to be a little careful here!
+    '''
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['cache_path'] = '/tmp/servicex_${USER}'
+
+    # Get the right answer, depending on the definition of USER
+    u_name = os.environ['USER'] if 'USER' in os.environ else os.environ['UserName']
+    path_name = f'servicex_{u_name}'
+
+    p = get_configured_cache_path(c)
+
+    # Should default to temp directory - should work on all platforms!
+    assert p.name == path_name
+
+
+def test_cache_expansion_username():
+    '''On windows this will expand one way, and on linux another. So need to be a little careful here!
+    '''
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['cache_path'] = '/tmp/servicex_${UserName}'
+
+    # Get the right answer, depending on the definition of USER
+    u_name = os.environ['USER'] if 'USER' in os.environ else os.environ['UserName']
+    path_name = f'servicex_{u_name}'
+
+    p = get_configured_cache_path(c)
+
+    # Should default to temp directory - should work on all platforms!
+    assert p.name == path_name
