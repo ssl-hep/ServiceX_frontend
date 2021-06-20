@@ -25,3 +25,5 @@ backend_types:
     return_data: root
   - type: uproot
     return_data: parquet
+  - type: cms_run1_aod
+    return_data: root
