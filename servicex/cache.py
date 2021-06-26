@@ -1,7 +1,8 @@
+import hashlib
 import json
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
 from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 from .utils import ServiceXException, _query_cache_hash, sanitize_filename
 
@@ -179,10 +180,16 @@ class Cache:
         Return the path to the file that should be written out for this
         data_name. This is where the output file should get stored.
         Truncate the leftmost characters from filenames to avoid throwing a
-        OSError: [Errno 63] File name too long error Assume that the most unique part of
-        the name is the right hand side
+        OSError: [Errno 63] File name too long error. Use a hash string to
+        make sure that the file names remain unique.
         '''
         parent = self._path / 'data' / request_id
         parent.mkdir(parents=True, exist_ok=True)
         sanitized = sanitize_filename(data_name)
-        return parent / sanitized[-1 * (MAX_PATH_LEN - len(parent.name)):]
+        if (len(sanitized) + len(parent.name)) > MAX_PATH_LEN:
+            hash = hashlib.md5(sanitized.encode())
+            hash_string = hash.hexdigest()
+            max_len = MAX_PATH_LEN - len(parent.name) - len(hash_string) - 1
+            sanitized = f'{hash_string}-{sanitized[len(sanitized)-max_len:]}'
+
+        return parent / sanitized
