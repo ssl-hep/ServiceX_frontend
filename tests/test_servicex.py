@@ -725,6 +725,48 @@ async def test_max_workers_spec(mocker, good_awkward_file_data):
 
 
 @pytest.mark.asyncio
+async def test_title_spec(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger,
+                            max_workers=50)
+    await ds.get_data_rootfiles_async('(valid qastle string)', title='fork_spoon')
+
+    called = mock_servicex_adaptor.query_json
+    assert called['title'] == 'fork_spoon'
+
+
+@pytest.mark.asyncio
+async def test_notitle_spec(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger,
+                            max_workers=50)
+    await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    called = mock_servicex_adaptor.query_json
+    assert 'title' not in called
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("n_ds, n_query", [(1, 4), (4, 1), (1, 100), (100, 1), (4, 4), (20, 20)])
 async def test_nqueries_on_n_ds(n_ds: int, n_query: int, mocker):
     'Run some number of queries on some number of datasets'

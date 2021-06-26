@@ -246,10 +246,12 @@ class ServiceXDataset(ServiceXABC):
 
     @functools.wraps(ServiceXABC.get_data_rootfiles_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
-        return await self._file_return(selection_query, 'root-file')
+    async def get_data_rootfiles_async(self, selection_query: str,
+                                       title: Optional[str] = None) -> List[Path]:
+        return await self._file_return(selection_query, 'root-file', title)
 
-    async def get_data_rootfiles_stream(self, selection_query: str) \
+    async def get_data_rootfiles_stream(self, selection_query: str,
+                                        title: Optional[str] = None) \
             -> AsyncIterator[StreamInfoPath]:
         '''Returns, as an async iterator, each completed batch of work from Servicex.
         The `StreamInfoPath` contains a path where downstream consumers can directly
@@ -265,15 +267,17 @@ class ServiceXDataset(ServiceXABC):
                                            file locally.
         '''
         async for f_info in \
-                self._stream_local_files(selection_query, 'root-files'):  # type: ignore
+                self._stream_local_files(selection_query, title, 'root-files'):  # type: ignore
             yield f_info
 
     @functools.wraps(ServiceXABC.get_data_parquet_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
-        return await self._file_return(selection_query, 'parquet')
+    async def get_data_parquet_async(self, selection_query: str,
+                                     title: Optional[str] = None) -> List[Path]:
+        return await self._file_return(selection_query, 'parquet', title)
 
-    async def get_data_parquet_stream(self, selection_query: str) \
+    async def get_data_parquet_stream(self, selection_query: str,
+                                      title: Optional[str] = None) \
             -> AsyncIterator[StreamInfoPath]:
         '''Returns, as an async iterator, each completed batch of work from Servicex.
         The `StreamInfoPath` contains a path where downstream consumers can directly
@@ -288,22 +292,28 @@ class ServiceXDataset(ServiceXABC):
                                            a `StreamInfoPath` which can be used to access the
                                            file locally.
         '''
-        async for f_info in self._stream_local_files(selection_query, 'parquet'):  # type: ignore
+        async for f_info in self._stream_local_files(selection_query, title,
+                                                     'parquet'):  # type: ignore
             yield f_info
 
     @functools.wraps(ServiceXABC.get_data_pandas_df_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_pandas_df_async(self, selection_query: str):
+    async def get_data_pandas_df_async(self, selection_query: str,
+                                       title: Optional[str] = None):
         return self._converter.combine_pandas(await self._data_return(
-            selection_query, lambda f: self._converter.convert_to_pandas(f)))
+            selection_query, lambda f: self._converter.convert_to_pandas(f),
+            title))
 
     @functools.wraps(ServiceXABC.get_data_awkward_async, updated=())
     @_wrap_in_memory_sx_cache
-    async def get_data_awkward_async(self, selection_query: str):
+    async def get_data_awkward_async(self, selection_query: str,
+                                     title: Optional[str] = None):
         return self._converter.combine_awkward(await self._data_return(
-            selection_query, lambda f: self._converter.convert_to_awkward(f)))
+            selection_query, lambda f: self._converter.convert_to_awkward(f),
+            title))
 
-    async def get_data_awkward_stream(self, selection_query: str) \
+    async def get_data_awkward_stream(self, selection_query: str,
+                                      title: Optional[str] = None) \
             -> AsyncGenerator[StreamInfoData, None]:
         '''Returns, as an async iterator, each completed batch of work from Servicex
         as a separate `awkward` array. The data is returned in a `StreamInfoData` object.
@@ -317,11 +327,12 @@ class ServiceXDataset(ServiceXABC):
                                            a `StreamInfoData` which can be used to access the
                                            data that has been loaded from the file.
         '''
-        async for a in self._stream_return(selection_query,
+        async for a in self._stream_return(selection_query, title,
                                            lambda f: self._converter.convert_to_awkward(f)):
             yield a
 
-    async def get_data_pandas_stream(self, selection_query: str) \
+    async def get_data_pandas_stream(self, selection_query: str,
+                                     title: Optional[str] = None) \
             -> AsyncGenerator[StreamInfoData, None]:
         '''Returns, as an async iterator, each completed batch of work from Servicex
         as a separate `pandas.DataFrame` array. The data is returned in a `StreamInfoData` object.
@@ -335,11 +346,12 @@ class ServiceXDataset(ServiceXABC):
                                            a `StreamInfoData` which can be used to access the
                                            data that has been loaded from the file.
         '''
-        async for a in self._stream_return(selection_query,
+        async for a in self._stream_return(selection_query, title,
                                            lambda f: self._converter.convert_to_pandas(f)):
             yield a
 
-    async def get_data_rootfiles_url_stream(self, selection_query: str) \
+    async def get_data_rootfiles_url_stream(self, selection_query: str,
+                                            title: Optional[str] = None) \
             -> AsyncIterator[StreamInfoUrl]:
         '''Returns, as an async iterator, each completed batch of work from ServiceX.
         The data that comes back includes a `url` that can be accessed to download the
@@ -349,10 +361,11 @@ class ServiceXDataset(ServiceXABC):
             selection_query (str): The ServiceX Selection
         '''
         async for f_info in \
-                self._stream_url_buckets(selection_query, 'root-files'):  # type: ignore
+                self._stream_url_buckets(selection_query, 'root-files', title):  # type: ignore
             yield f_info
 
-    async def get_data_parquet_url_stream(self, selection_query: str) \
+    async def get_data_parquet_url_stream(self, selection_query: str,
+                                          title: Optional[str] = None) \
             -> AsyncIterator[StreamInfoUrl]:
         '''Returns, as an async iterator, each of the files from the minio bucket,
         as the files are added there.
@@ -360,10 +373,11 @@ class ServiceXDataset(ServiceXABC):
         Args:
             selection_query (str): The ServiceX Selection
         '''
-        async for f_info in self._stream_url_buckets(selection_query, 'parquet'):  # type: ignore
+        async for f_info in self._stream_url_buckets(selection_query, 'parquet',
+                                                     title):  # type: ignore
             yield f_info
 
-    async def _file_return(self, selection_query: str, data_format: str):
+    async def _file_return(self, selection_query: str, data_format: str, title: Optional[str]):
         '''
         Given a query, return the list of files, in a unique order, that hold
         the data for the query.
@@ -376,6 +390,7 @@ class ServiceXDataset(ServiceXABC):
 
             selection_query     `qastle` data that makes up the selection request.
             data_format         The file-based data format (root or parquet)
+            title               The title assigned to this transform request.
 
         Returns:
 
@@ -385,17 +400,19 @@ class ServiceXDataset(ServiceXABC):
         async def convert_to_file(f: Path) -> Path:
             return f
 
-        return await self._data_return(selection_query, convert_to_file, data_format)
+        return await self._data_return(selection_query, convert_to_file, title, data_format)
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
-    async def _stream_url_buckets(self, selection_query: str, data_format: str) \
+    async def _stream_url_buckets(self, selection_query: str, data_format: str,
+                                  title: Optional[str]) \
             -> AsyncGenerator[StreamInfoUrl, None]:
         '''Get a list of files back for a request
 
         Args:
             selection_query (str): The selection query we are to do
             data_format (str): The requested file format
+            title (Optional[str]): The title of transform to pass to ServiceX
 
         Yields:
             AsyncIterator[Dict[str, str]]: A tuple of the minio bucket and file in that bucket.
@@ -403,7 +420,7 @@ class ServiceXDataset(ServiceXABC):
                                              bucket: The minio bucket name
                                              file: the completed file in the bucket
         '''
-        query = self._build_json_query(selection_query, data_format)
+        query = self._build_json_query(selection_query, data_format, title)
 
         async with aiohttp.ClientSession() as client:
 
@@ -448,6 +465,7 @@ class ServiceXDataset(ServiceXABC):
 
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]],
+                           title: Optional[str],
                            data_format: str = 'root-file') -> List[Any]:
         '''Given a query, return the data, in a unique order, that hold
         the data for the query.
@@ -461,6 +479,8 @@ class ServiceXDataset(ServiceXABC):
             selection_query     `qastle` data that makes up the selection request.
             converter           A `Callable` that will convert the data returned from
                                 `ServiceX` as a set of files.
+            title               Title to send to the backend service
+            data_format         The data format that we want to render in
 
         Returns:
 
@@ -469,7 +489,7 @@ class ServiceXDataset(ServiceXABC):
         '''
         all_data = {
             f.file: f.data
-            async for f in self._stream_return(selection_query, converter, data_format)
+            async for f in self._stream_return(selection_query, title, converter, data_format)
         }
 
         # Convert them to the proper format
@@ -481,6 +501,7 @@ class ServiceXDataset(ServiceXABC):
         return ordered_data
 
     async def _stream_return(self, selection_query: str,
+                             title: Optional[str],
                              converter: Callable[[Path], Awaitable[Any]],
                              data_format: str = 'root-file') -> AsyncIterator[StreamInfoData]:
         '''Given a query, return the data, in the order it arrives back
@@ -503,13 +524,14 @@ class ServiceXDataset(ServiceXABC):
         '''
         as_data = (StreamInfoData(f.file, await asyncio.ensure_future(converter(f.path)))
                    async for f in
-                   self._stream_local_files(selection_query, data_format))  # type: ignore
+                   self._stream_local_files(selection_query, title, data_format))  # type: ignore
 
         async for r in as_data:
             yield r
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _stream_local_files(self, selection_query: str,
+                                  title: Optional[str],
                                   data_format: str = 'root-file') \
             -> AsyncGenerator[StreamInfoPath, None]:
         '''
@@ -536,14 +558,15 @@ class ServiceXDataset(ServiceXABC):
         # Get all the files
         as_files = \
             (f async for f in
-             self._get_files(selection_query, data_format, notifier))  # type: ignore
+             self._get_files(selection_query, data_format, notifier, title))  # type: ignore
 
         async for name, a_path in as_files:
             yield StreamInfoPath(name, Path(await a_path))
 
     @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
     async def _get_files(self, selection_query: str, data_type: str,
-                         notifier: _status_update_wrapper) \
+                         notifier: _status_update_wrapper,
+                         title: Optional[str]) \
             -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
         '''
         Return a list of files from servicex as they have been downloaded to this machine. The
@@ -562,6 +585,7 @@ class ServiceXDataset(ServiceXABC):
             selection_query             The query string to send to ServiceX
             data_type                   The type of data that we want to come back.
             notifier                    Status callback to let our progress be advertised
+            title                       Title to pass to servicex backend.
 
         Returns
             Awaitable[Path]             An awaitable that is a path. When it completes, the
@@ -569,7 +593,7 @@ class ServiceXDataset(ServiceXABC):
                                         This is returned this way so a number of downloads can run
                                         simultaneously.
         '''
-        query = self._build_json_query(selection_query, data_type)
+        query = self._build_json_query(selection_query, data_type, title)
 
         async with aiohttp.ClientSession() as client:
 
@@ -757,7 +781,8 @@ class ServiceXDataset(ServiceXABC):
             logging.getLogger(__name__).info(f'Running servicex query for '
                                              f'{request_id} took {run_time} (no files downloaded)')
 
-    def _build_json_query(self, selection_query: str, data_type: str) -> Dict[str, str]:
+    def _build_json_query(self, selection_query: str, data_type: str, title: Optional[str]) \
+            -> Dict[str, str]:
         '''
         Returns a list of locally written files for a given selection query.
 
@@ -781,6 +806,9 @@ class ServiceXDataset(ServiceXABC):
         # Optional items
         if self._image is not None:
             json_query['image'] = self._image
+
+        if title is not None:
+            json_query['title'] = title
 
         logging.getLogger(__name__).debug(f'JSON to be sent to servicex: {str(json_query)}')
 
