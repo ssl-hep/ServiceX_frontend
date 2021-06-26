@@ -241,15 +241,15 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
 To get the data use one of the `get_data` method. They all have the same API, differing only by what they return.
 
 ```python
- |  get_data_awkward_async(self, selection_query: str) -> Dict[bytes, Union[awkward.array.jagged.JaggedArray, numpy.ndarray]]
+ |  get_data_awkward_async(self, selection_query: str, title: Optional[str] = None) -> Dict[bytes, Union[awkward.array.jagged.JaggedArray, numpy.ndarray]]
  |      Fetch query data from ServiceX matching `selection_query` and return it as
  |      dictionary of awkward arrays, an entry for each column. The data is uniquely
- |      ordered (the same query will always return the same order).
+ |      ordered (the same query will always return the same order). If specified, the optional title is passed to the backend and can be viewed on the status page.
  |
- |  get_data_awkward(self, selection_query: str) -> Dict[bytes, Union[awkward.array.jagged.JaggedArray, numpy.ndarray]]
+ |  get_data_awkward(self, selection_query: str, title: Optional[str] = None) -> Dict[bytes, Union[awkward.array.jagged.JaggedArray, numpy.ndarray]]
  |      Fetch query data from ServiceX matching `selection_query` and return it as
  |      dictionary of awkward arrays, an entry for each column. The data is uniquely
- |      ordered (the same query will always return the same order).
+ |      ordered (the same query will always return the same order).  If specified, the optional title is passed to the backend and can be viewed on the status page.
 ```
 
 Each data type comes in a pair - an `async` version and a synchronous version.
