@@ -86,4 +86,5 @@
         "tests",
         "--no-cov"
     ],
+    "python.pythonPath": ".venv\\Scripts\\python.exe",
 }

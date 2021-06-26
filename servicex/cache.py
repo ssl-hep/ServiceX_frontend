@@ -145,7 +145,7 @@ class Cache:
         with f.open('r') as o:
             return json.load(o)
 
-    def remove_query(self, json: Dict[str, str]):
+    def remove_query(self, json: Dict[str, Any]):
         f = self._query_cache_file(json)
         if f.exists():
             f.unlink()
