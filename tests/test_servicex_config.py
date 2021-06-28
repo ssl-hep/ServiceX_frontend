@@ -2,7 +2,7 @@ import pytest
 
 from servicex.ConfigSettings import ConfigSettings
 from servicex.servicex_config import ServiceXConfigAdaptor
-from servicex.utils import ServiceXException
+from servicex import ServiceXException
 
 
 def test_default_ctor():

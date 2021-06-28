@@ -1,6 +1,6 @@
 import string
 import random
-from servicex.utils import ServiceXException
+from servicex import ServiceXException
 import pytest
 
 from servicex.cache import Cache, ignore_cache

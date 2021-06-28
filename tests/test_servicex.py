@@ -1,25 +1,23 @@
 import asyncio
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
 from pathlib import Path
-
-import asyncmock
-from servicex.servicex import StreamInfoPath, StreamInfoUrl
-from servicex.cache import Cache
-
-from confuse.core import Configuration
-from servicex.servicex_config import ServiceXConfigAdaptor
-from servicex.data_conversions import DataConverterAdaptor
 from typing import Optional
 
+import asyncmock
 import pandas as pd
 import pytest
-
 import servicex as fe
+from confuse.core import Configuration
+from servicex import (DatasetType, ServiceXException,
+                      ServiceXFatalTransformException,
+                      ServiceXUnknownDataRequestID, ServiceXUnknownRequestID)
+from servicex.cache import Cache
+from servicex.data_conversions import DataConverterAdaptor
 from servicex.minio_adaptor import MinioAdaptorFactory
-from servicex.utils import (
-    DatasetType, ServiceXException, ServiceXFatalTransformException, ServiceXUnknownDataRequestID,
-    ServiceXUnknownRequestID, log_adaptor)
+from servicex.servicex import StreamInfoPath, StreamInfoUrl
+from servicex.servicex_config import ServiceXConfigAdaptor
+from servicex.utils import log_adaptor
 
 from .conftest import (MockMinioAdaptor, MockServiceXAdaptor,  # NOQA
                        build_cache_mock)

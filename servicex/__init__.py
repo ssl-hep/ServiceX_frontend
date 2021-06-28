@@ -6,6 +6,7 @@ from .utils import (  # NOQA
     ServiceXFatalTransformException,
     StatusUpdateCallback,
     StatusUpdateFactory,
+    ServiceXUnknownDataRequestID,
     clean_linq,
     DatasetType,
 )
