@@ -7,6 +7,7 @@ from .utils import (  # NOQA
     StatusUpdateCallback,
     StatusUpdateFactory,
     clean_linq,
+    DatasetType,
 )
 from .servicex_adaptor import ServiceXAdaptor  # NOQA
 from .minio_adaptor import MinioAdaptor  # NOQA
