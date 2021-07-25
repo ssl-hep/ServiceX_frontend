@@ -825,9 +825,13 @@ class ServiceXDataset(ServiceXABC):
             "workers": str(self._max_workers)
         }
 
-        # Add the appropriate did
+        # Add the appropriate did.
+        # Capture full did as well as single item files (see  #178)
         if isinstance(self._dataset, str):
-            json_query['did'] = self._dataset
+            if self._dataset[0:7].lower() in ['root://', 'http://']:
+                json_query['file-list'] = [self._dataset]
+            else:
+                json_query['did'] = self._dataset
         else:
             json_query['file-list'] = self._dataset
 

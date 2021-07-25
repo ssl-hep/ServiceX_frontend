@@ -102,7 +102,7 @@ def sanitize_filename(fname: str):
 # to ServiceX. This datatype encapuslates them
 # all.
 DatasetType = Union[
-    str,  # A single URI with a scheme (e.g. rucio://did_name)
+    str,  # A single URI with a scheme (e.g. rucio://did_name, http://, root://)
     Iterable[str]  # A list of http:// or root:// files to be directly accessed
 ]
 

@@ -85,6 +85,20 @@ If you'd like to be able to submit multiple queries and have them run on the `Se
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
 
+### How to specify the input data
+
+How you specify the input data, and what data can be ingested, is ultimately defined by the configuration of the `ServiceX` backend you are running against. This `servicex`
+library supports the following:
+
+- A Dataset Identifer (DID): For example, `rucio://mc16a_13TeV:my_dataset`, or `cernopendata://1507`, both of which are resolved to a list of
+files (in one case, a set of ATLAS data files, and in the other some CMS Run 1 AOD files).
+- A single file located at a `http` or `root` endpoint: For example, `root://myfile.root` or `http://myfile.root`. ServiceX must be able to
+access these files without special permissions.
+- A list of files located at `http` or `root` endpoints: For example, `[root://myfile1.root, http://myfile2.root]`. ServiceX must be able to
+access these files without special permissions.
+- [depreciated] A bare (DID): this is an unadorned identifier, and is routed to the backend's default DID resolver. The default
+is defined at runtime. It is depreciated because a backend configuraiton change can break your code.
+
 ### The Local Data Cache
 
 To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below). By default it is written in the temp direcotry of your system, under a `servicex_{USER}` directory. The cache is unbound: it will continuously fill up. You can delete it at any time that you aren't processing data: data will be re-downloaded or re-transformed in `ServiceX`.
