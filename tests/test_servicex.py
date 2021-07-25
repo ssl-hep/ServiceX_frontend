@@ -119,6 +119,48 @@ def test_ignore_cache_on_ds(mocker):
     assert got_called
 
 
+def test_get_datatypes_good(mocker):
+    'Test that we return a good datatype'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
+                                                       'no_spoon_there_is')
+    config.get_default_returned_datatype.return_value = 'root'
+
+    r = fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
+
+    assert r.first_supported_datatype(['root', 'parquet']) == 'root'
+
+
+def test_get_datatypes_single(mocker):
+    'Test that we return a good datatype'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
+                                                       'no_spoon_there_is')
+    config.get_default_returned_datatype.return_value = 'root'
+
+    r = fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
+
+    assert r.first_supported_datatype('root') == 'root'
+
+
+def test_get_datatypes_bad(mocker):
+    'Test that we return a good datatype'
+
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
+                                                       'no_spoon_there_is')
+    config.get_default_returned_datatype.return_value = 'root'
+
+    r = fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
+
+    assert r.first_supported_datatype('forking') is None
+
+
 @pytest.mark.asyncio
 async def test_minio_back(mocker):
     'Get a root file with a single file'

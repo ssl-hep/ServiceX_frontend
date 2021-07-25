@@ -232,8 +232,31 @@ class ServiceXDataset(ServiceXABC):
         self._session_generator = session_generator if session_generator is not None \
             else default_client_session
 
+        self._return_types = [config.get_default_returned_datatype(backend_type)]
         self._converter = data_convert_adaptor if data_convert_adaptor is not None \
-            else DataConverterAdaptor(config.get_default_returned_datatype(backend_type))
+            else DataConverterAdaptor(self._return_types[0])
+
+    def first_supported_datatype(self, datatypes: Union[List[str], str]) -> Optional[str]:
+        """Return the first datatype format that this dataset/servicex instance can return.
+
+        Different instances of `ServiceX` are capable of returning different datatypes. Pass in
+        the datatypes that your app supports, and this will return the first one that the servicex
+        backend can return.
+
+        Args:
+            datatypes (Union[List[str], str]): A single or list of datatypes that are supported by
+                                               your app.
+
+        Returns:
+            str: The first datatype that is supported. If none of them are, then `None` is
+            returned.
+        """
+        datatypes = [datatypes] if isinstance(datatypes, str) else datatypes
+        for dt in datatypes:
+            if dt in self._return_types:
+                return dt
+
+        return None
 
     def ignore_cache(self):
         '''Return a context manager that, as long as it is held, will cause any queries against just
