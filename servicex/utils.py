@@ -5,7 +5,7 @@ from pathlib import Path, PurePath
 import re
 import tempfile
 import threading
-from typing import AsyncIterator, Callable, Dict, List, Optional, Tuple
+from typing import AsyncIterator, Callable, Dict, Iterable, Optional, Tuple, Union
 
 import aiohttp
 from confuse.core import ConfigView
@@ -98,6 +98,14 @@ def sanitize_filename(fname: str):
                 .replace(':', '_')
 
 
+# Datasets can be specified in mulitple ways
+# to ServiceX. This datatype encapuslates them
+# all.
+DatasetType = Union[
+    str,  # A single URI with a scheme (e.g. rucio://did_name)
+    Iterable[str]  # A list of http:// or root:// files to be directly accessed
+]
+
 StatusUpdateCallback = Callable[[Optional[int], int, int, int], None]
 # The sig of the call-back. Arguments are:
 # 1. Processed
@@ -105,7 +113,7 @@ StatusUpdateCallback = Callable[[Optional[int], int, int, int], None]
 # 1. Remaining
 # 1. Failed
 
-StatusUpdateFactory = Callable[[str, bool], StatusUpdateCallback]
+StatusUpdateFactory = Callable[[DatasetType, bool], StatusUpdateCallback]
 # Factory method that returns a factory that can run the status callback
 # First argument is a string, second argument is True if a download progress
 # bar can be displayed as well.
@@ -135,10 +143,6 @@ class _status_update_wrapper:
     @property
     def failed(self) -> int:
         return self._failed
-
-    @property
-    def downloaded(self) -> Optional[int]:
-        return self._downloaded
 
     def broadcast(self):
         'Send an update back to the system'
@@ -209,7 +213,7 @@ async def stream_unique_updates_only(stream: AsyncIterator[TransformTuple]):
             yield p
 
 
-def _run_default_wrapper(ds_name: str, downloading: bool) -> StatusUpdateCallback:
+def _run_default_wrapper(ds_name: DatasetType, downloading: bool) -> StatusUpdateCallback:
     '''Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
 
     Args:
@@ -222,7 +226,7 @@ def _run_default_wrapper(ds_name: str, downloading: bool) -> StatusUpdateCallbac
     return _default_wrapper_mgr(ds_name, downloading).update
 
 
-def _null_progress_feedback(ds_name: str, downloading: bool) -> None:
+def _null_progress_feedback(ds_name: DatasetType, downloading: bool) -> None:
     '''
     Internal routine to create a feedback object that does not
     give anyone feedback!
@@ -232,7 +236,7 @@ def _null_progress_feedback(ds_name: str, downloading: bool) -> None:
 
 class _default_wrapper_mgr:
     'Default progress bar'
-    def __init__(self, sample_name: Optional[str] = None, show_download_bar: bool = True):
+    def __init__(self, sample_name: Optional[DatasetType] = None, show_download_bar: bool = True):
         self._tqdm_p: Optional[tqdm] = None
         self._tqdm_d: Optional[tqdm] = None
         self._show_download_progress = show_download_bar
@@ -242,7 +246,13 @@ class _default_wrapper_mgr:
         if self._tqdm_p is not None:
             return
 
-        self._tqdm_p = tqdm(total=9e9, desc=self._sample_name, unit='file',
+        if self._sample_name is not None:
+            name = self._sample_name if isinstance(self._sample_name, str) \
+                else ' '.join(self._sample_name)
+        else:
+            name = '<none>'
+
+        self._tqdm_p = tqdm(total=9e9, desc=name, unit='file',
                             leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         if self._show_download_progress:
@@ -292,13 +302,17 @@ def _query_cache_hash(json_query: Dict[str, str]) -> str:
     return hash
 
 
-def _string_hash(s_list: List[str]) -> str:
+def _string_hash(s_list: Iterable[Union[str, Iterable[str]]]) -> str:
     '''
     Return a hash for an input list of strings.
     '''
     hasher = blake2b(digest_size=20)
     for v in s_list:
-        hasher.update(v.encode())
+        if isinstance(v, str):
+            hasher.update(v.encode())
+        else:
+            for v1 in v:
+                hasher.update(v1.encode())
     hash = hasher.hexdigest()
     return hash
 

@@ -1,5 +1,5 @@
 from json import dumps
-from servicex.utils import ServiceXFatalTransformException
+from servicex import ServiceXFatalTransformException
 from typing import Optional, Union
 
 import aiohttp

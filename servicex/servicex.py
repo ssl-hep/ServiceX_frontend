@@ -5,7 +5,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable,
-                    Dict, List, Optional, Tuple, Union)
+                    Dict, Iterable, List, Optional, Tuple, Union)
 
 import aiohttp
 import backoff
@@ -21,7 +21,7 @@ from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
                                trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
-from .utils import (ServiceXException, ServiceXFailedFileTransform,
+from .utils import (DatasetType, ServiceXException, ServiceXFailedFileTransform,
                     ServiceXFatalTransformException,
                     ServiceXUnknownDataRequestID, ServiceXUnknownRequestID,
                     StatusUpdateFactory, _run_default_wrapper,
@@ -137,7 +137,7 @@ class ServiceXDataset(ServiceXABC):
     function.
     '''
     def __init__(self,
-                 dataset: str,
+                 dataset: DatasetType,
                  backend_type: Optional[str] = None,
                  image: str = None,
                  max_workers: int = 20,
@@ -805,7 +805,7 @@ class ServiceXDataset(ServiceXABC):
                                              f'{request_id} took {run_time} (no files downloaded)')
 
     def _build_json_query(self, selection_query: str, data_type: str, title: Optional[str]) \
-            -> Dict[str, str]:
+            -> Dict[str, Union[str, Iterable[str]]]:
         '''
         Returns a list of locally written files for a given selection query.
 
@@ -817,14 +817,19 @@ class ServiceXDataset(ServiceXABC):
             - Internal routine.
         '''
         # Items that must always be present
-        json_query: Dict[str, str] = {
-            "did": self._dataset,
+        json_query: Dict[str, Union[str, Iterable[str]]] = {
             "selection": selection_query,
             "result-destination": "object-store",
             "result-format": 'parquet' if data_type == 'parquet' else "root-file",
             "chunk-size": '1000',
             "workers": str(self._max_workers)
         }
+
+        # Add the appropriate did
+        if isinstance(self._dataset, str):
+            json_query['did'] = self._dataset
+        else:
+            json_query['file-list'] = self._dataset
 
         # Optional items
         if self._image is not None:

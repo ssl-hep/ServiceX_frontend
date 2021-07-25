@@ -7,6 +7,7 @@ import awkward as ak
 import pandas as pd
 
 from .utils import (
+    DatasetType,
     StatusUpdateFactory,
     _null_progress_feedback,
     _run_default_wrapper,
@@ -25,7 +26,7 @@ class ServiceXABC(ABC):
     '''
 
     def __init__(self,
-                 dataset: str,
+                 dataset: DatasetType,
                  image: Optional[str] = None,
                  max_workers: int = 20,
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,

@@ -6,7 +6,7 @@ from typing import Iterable, Optional
 import pandas as pd
 import awkward as ak
 
-from servicex.utils import ServiceXException
+from .utils import ServiceXException
 
 _conversion_pool = ThreadPoolExecutor(4)
 

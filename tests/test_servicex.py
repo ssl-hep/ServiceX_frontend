@@ -1,25 +1,23 @@
 import asyncio
-from contextlib import contextmanager
 import os
+from contextlib import contextmanager
 from pathlib import Path
-
-import asyncmock
-from servicex.servicex import StreamInfoPath, StreamInfoUrl
-from servicex.cache import Cache
-
-from confuse.core import Configuration
-from servicex.servicex_config import ServiceXConfigAdaptor
-from servicex.data_conversions import DataConverterAdaptor
 from typing import Optional
 
+import asyncmock
 import pandas as pd
 import pytest
-
 import servicex as fe
+from confuse.core import Configuration
+from servicex import (DatasetType, ServiceXException,
+                      ServiceXFatalTransformException,
+                      ServiceXUnknownDataRequestID, ServiceXUnknownRequestID)
+from servicex.cache import Cache
+from servicex.data_conversions import DataConverterAdaptor
 from servicex.minio_adaptor import MinioAdaptorFactory
-from servicex.utils import (
-    ServiceXException, ServiceXFatalTransformException, ServiceXUnknownDataRequestID,
-    ServiceXUnknownRequestID, log_adaptor)
+from servicex.servicex import StreamInfoPath, StreamInfoUrl
+from servicex.servicex_config import ServiceXConfigAdaptor
+from servicex.utils import log_adaptor
 
 from .conftest import (MockMinioAdaptor, MockServiceXAdaptor,  # NOQA
                        build_cache_mock)
@@ -767,6 +765,50 @@ async def test_max_workers_spec(mocker, good_awkward_file_data):
 
 
 @pytest.mark.asyncio
+async def test_did_set(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger,
+                            max_workers=50)
+    await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    called = mock_servicex_adaptor.query_json
+    assert called['did'] == 'localds://mc16_tev:13'
+    assert 'file-list' not in called
+
+
+@pytest.mark.asyncio
+async def test_file_list_set(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(['http://file1.root', 'http://flie2.root'],
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger,
+                            max_workers=50)
+    await ds.get_data_rootfiles_async('(valid qastle string)')
+
+    called = mock_servicex_adaptor.query_json
+    assert called['file-list'] == ['http://file1.root', 'http://flie2.root']
+    assert 'did' not in called
+
+
+@pytest.mark.asyncio
 async def test_title_spec(mocker, good_awkward_file_data):
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
@@ -890,7 +932,7 @@ def test_callback_is_downloading(mocker):
     ds_name = None
     ds_downloading = None
 
-    def build_it(ds: str, downloading: bool):
+    def build_it(ds: DatasetType, downloading: bool):
         nonlocal ds_name, ds_downloading
         ds_name = ds
         ds_downloading = downloading
@@ -924,7 +966,7 @@ async def test_callback_is_not_downloading(mocker):
     ds_name = None
     ds_downloading = None
 
-    def build_it(ds: str, downloading: bool):
+    def build_it(ds: DatasetType, downloading: bool):
         nonlocal ds_name, ds_downloading
         ds_name = ds
         ds_downloading = downloading

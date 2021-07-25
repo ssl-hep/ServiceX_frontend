@@ -14,6 +14,7 @@ from servicex.utils import (
     stream_status_updates,
     stream_unique_updates_only,
     write_query_log,
+    log_adaptor,
     default_client_session
 )
 
@@ -81,6 +82,14 @@ def test_log_file_write_minutes(log_location_file):
     assert log_location_file.exists()
     t = log_location_file.read_text().split('\n')[1]
     assert t == '123,10,0,120.0,1'
+
+
+def test_log_adaptor(log_location_file):
+    log_adaptor.write_query_log('123', 10, 0, timedelta(seconds=20), True,
+                                path_to_log_dir=log_location_file.parent)
+    assert log_location_file.exists()
+    t = log_location_file.read_text().split('\n')[1]
+    assert t == '123,10,0,20.0,1'
 
 
 def test_log_file_write_2lines(log_location_file):

@@ -4,7 +4,7 @@ from typing import Optional, Tuple, cast
 from confuse.core import ConfigView
 
 from servicex.ConfigSettings import ConfigSettings
-from servicex.utils import ServiceXException
+from .utils import ServiceXException
 
 
 class ServiceXConfigAdaptor:
