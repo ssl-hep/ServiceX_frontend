@@ -144,10 +144,6 @@ class _status_update_wrapper:
     def failed(self) -> int:
         return self._failed
 
-    @property
-    def downloaded(self) -> Optional[int]:
-        return self._downloaded
-
     def broadcast(self):
         'Send an update back to the system'
         if self._callback is not None:
