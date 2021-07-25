@@ -1,5 +1,4 @@
 {
-    "python.pythonPath": ".venv\\Scripts\\python.exe",
     "python.analysis.logLevel": "Information",
     "python.analysis.memory.keepLibraryAst": true,
     "python.linting.flake8Enabled": true,

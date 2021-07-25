@@ -72,7 +72,8 @@ class ServiceXABC(ABC):
         return _status_update_wrapper(self._status_callback_factory(self._dataset, downloading))
 
     @abstractmethod
-    async def get_data_rootfiles_async(self, selection_query: str) -> List[Path]:
+    async def get_data_rootfiles_async(self, selection_query: str,
+                                       title: Optional[str] = None) -> List[Path]:
         '''
         Fetch query data from ServiceX matching `selection_query` and return it as
         a list of root files. The files are uniquely ordered (the same query will always
@@ -80,13 +81,15 @@ class ServiceXABC(ABC):
 
         Arguments:
             selection_query     The `qastle` string specifying the data to be queried
+            title               Title reported to the ServiceX backend for status reporting
 
         Returns:
             root_files          The list of root files
         '''
 
     @abstractmethod
-    async def get_data_pandas_df_async(self, selection_query: str) -> pd.DataFrame:
+    async def get_data_pandas_df_async(self, selection_query: str,
+                                       title: Optional[str] = None) -> pd.DataFrame:
         '''
         Fetch query data from ServiceX matching `selection_query` and return it as
         a pandas dataframe. The data is uniquely ordered (the same query will always
@@ -94,6 +97,7 @@ class ServiceXABC(ABC):
 
         Arguments:
             selection_query     The `qastle` string specifying the data to be queried
+            title               Title reported to the ServiceX backend for status reporting
 
         Returns:
             df                  The pandas dataframe
@@ -104,7 +108,8 @@ class ServiceXABC(ABC):
         '''
 
     @abstractmethod
-    async def get_data_awkward_async(self, selection_query: str) \
+    async def get_data_awkward_async(self, selection_query: str,
+                                     title: Optional[str] = None) \
             -> Dict[bytes, ak.Array]:
         '''
         Fetch query data from ServiceX matching `selection_query` and return it as
@@ -113,6 +118,7 @@ class ServiceXABC(ABC):
 
         Arguments:
             selection_query     The `qastle` string specifying the data to be queried
+            title               Title reported to the ServiceX backend for status reporting
 
         Returns:
             a                   Dictionary of jagged arrays (as needed), one for each
@@ -121,7 +127,8 @@ class ServiceXABC(ABC):
         '''
 
     @abstractmethod
-    async def get_data_parquet_async(self, selection_query: str) -> List[Path]:
+    async def get_data_parquet_async(self, selection_query: str,
+                                     title: Optional[str] = None) -> List[Path]:
         '''
         Fetch query data from ServiceX matching `selection_query` and return it as
         a list of parquet files. The files are uniquely ordered (the same query will always
@@ -129,6 +136,7 @@ class ServiceXABC(ABC):
 
         Arguments:
             selection_query     The `qastle` string specifying the data to be queried
+            title               Title reported to the ServiceX backend for status reporting
 
         Returns:
             root_files          The list of parquet files
