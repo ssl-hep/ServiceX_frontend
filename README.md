@@ -142,6 +142,8 @@ do_query(ds)  # Cache is not ignored
 
 #### Deleting Files from the local Data Cache
 
+It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected effects.
+
 Besides telling the `servicex` library to ignore the cache in the above ways, you can also delete files from the local cache.
 The local cache directory is split up into sub-directories. Deleting files from each of the directories:
 
