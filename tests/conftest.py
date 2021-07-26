@@ -163,6 +163,8 @@ def build_cache_mock(mocker, query_cache_return: str = None,
 
     if query_status_lookup_return is not None:
         c.lookup_query_status.return_value = query_status_lookup_return
+    
+    c.query_status_exists.return_value = True
 
     return c
 

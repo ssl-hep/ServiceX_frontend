@@ -145,6 +145,17 @@ class Cache:
         with f.open('r') as o:
             return json.load(o)
 
+    def query_status_exists(self, request_id: str) -> bool:
+        """Returns true if the query status file exists on the local machine.
+
+        Args:
+            request_id (str): The request-id to look up
+
+        Returns:
+            bool: True if present, false otherwise.
+        """
+        return self._query_status_cache_file(request_id).exists()
+
     def remove_query(self, json: Dict[str, Any]):
         f = self._query_cache_file(json)
         if f.exists():

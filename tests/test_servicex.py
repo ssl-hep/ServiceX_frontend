@@ -1375,3 +1375,62 @@ async def test_good_minio_factory_from_best(mocker):
     mock_minio_adaptor.mock_download_file.assert_called_once()
     mock_minio_factory.from_best.assert_called_once()
     assert mock_minio_factory.from_best.call_args[0][0] == {'request_id': 'bogus'}
+
+
+@pytest.mark.asyncio
+async def test_user_deleted_query_status_files(mocker):
+    '''
+    1. User has made this query before, and everything was cached correctly
+    2. User deletes the query status file only
+    3. System should re-query the status and replace the file.
+    '''
+    mock_cache = build_cache_mock(mocker, query_cache_return='123-455',
+                                  files=[('f1', 'file1.root')])
+    mock_cache.query_status_exists.return_value = False
+
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_bomb = mocker.Mock(side_effect=RuntimeError('should not be called'))
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "XXX-XXX",
+                                                mock_transform_status=mock_bomb,
+                                                mock_query=mock_bomb)
+
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            data_convert_adaptor=data_adaptor,
+                            local_log=mock_logger)
+    await ds.get_data_rootfiles_async('(valid qastle string')
+
+    mock_cache.set_query_status.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_user_deleted_query_status_stream(mocker):
+    '''
+    1. User has made this query before, and everything was cached correctly
+    2. User deletes the query status file only
+    3. System should re-query the status and replace the file.
+    4. Then stream url's as expected.
+    '''
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root",
+                                  query_cache_return='123-456')
+    mock_cache.query_status_exists.return_value = False
+
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger,
+                            data_convert_adaptor=data_adaptor)
+    [f async for f in ds.get_data_rootfiles_url_stream('(valid qastle string)')]
+
+    assert mock_cache.set_query_status.call_count == 2
