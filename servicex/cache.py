@@ -141,7 +141,7 @@ class Cache:
         '''
         f = self._query_status_cache_file(request_id)
         if not f.exists():
-            raise ServiceXException(f'Not cache information for query {request_id}')
+            raise ServiceXException(f'No cache information for query {request_id}')
         with f.open('r') as o:
             return json.load(o)
 
