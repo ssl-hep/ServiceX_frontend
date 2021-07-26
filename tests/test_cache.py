@@ -187,6 +187,7 @@ def test_query_cache_status(tmp_path):
 
     info = {'request_id': '111-222-333', 'key': 'bogus'}
     c.set_query_status(info)
+    assert c.query_status_exists('111-222-333')
     info1 = c.lookup_query_status('111-222-333')
     assert info1['key'] == 'bogus'
 
@@ -194,6 +195,7 @@ def test_query_cache_status(tmp_path):
 def test_query_cache_status_bad(tmp_path):
     c = Cache(tmp_path)
 
+    assert not c.query_status_exists('111-222-333')
     with pytest.raises(ServiceXException):
         c.lookup_query_status('111-222-333')
 

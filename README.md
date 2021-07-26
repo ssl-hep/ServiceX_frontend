@@ -140,6 +140,18 @@ with ds.ignore_cache():
 do_query(ds)  # Cache is not ignored
 ```
 
+#### Deleting Files from the local Data Cache
+
+It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected effects.
+
+Besides telling the `servicex` library to ignore the cache in the above ways, you can also delete files from the local cache.
+The local cache directory is split up into sub-directories. Deleting files from each of the directories:
+
+- `query_cache` - this directory contains the mapping between the query text (or its hash) and the ServiceX backend's `request-id`. If you delete a file from here, it is as if the query was never made, and is the same as using the ignore methods above.
+- `query_cache_status` - contains the last retreived status from the backend. Deleting this will cause the library to refresh the missing status. This file is updated continuosly until the query is completed.
+- `file_list_cache` - Each file contains a json list of all the files in the `minio` bucket for a partiuclar request id. Deleting a file from this directory is not supported.
+-`data` - This directory contains the files that have been downloaded locally. Once all files have been downloaded for a query, deleting a file from this directory is not supported.
+
 ## Configuration
 
 The `servicex` library searches for configuration information in several locations to determine what end-point it should connect to:

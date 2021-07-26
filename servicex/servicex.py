@@ -450,6 +450,10 @@ class ServiceXDataset(ServiceXABC):
             # Get a request id - which might be cached, but if not, submit it.
             request_id = await self._get_request_id(client, query)
 
+            # Make sure cache status exists (user could have deleted, see #176)
+            if not self._cache.query_status_exists(request_id):
+                await self._update_query_status(client, request_id)
+
             # Get the minio adaptor we are going to use for downloading.
             minio_adaptor = self._minio_adaptor \
                 .from_best(self._cache.lookup_query_status(request_id))
@@ -622,6 +626,10 @@ class ServiceXDataset(ServiceXABC):
 
             # Get a request id - which might be cached, but if not, submit it.
             request_id = await self._get_request_id(client, query)
+
+            # Make sure cache status exists (user could have deleted, see #176)
+            if not self._cache.query_status_exists(request_id):
+                await self._update_query_status(client, request_id)
 
             # Get the minio adaptor we are going to use for downloading.
             minio_adaptor = self._minio_adaptor \
