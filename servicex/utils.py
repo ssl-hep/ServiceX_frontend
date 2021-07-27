@@ -277,7 +277,7 @@ class _default_wrapper_mgr:
                             leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         if self._show_download_progress:
-            self._tqdm_d = tqdm(total=9e9, desc="        Downloaded", unit='file',
+            self._tqdm_d = tqdm(total=9e9, desc=f"        {self._name} Downloaded", unit='file',
                                 leave=False, dynamic_ncols=True,
                                 bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
 
