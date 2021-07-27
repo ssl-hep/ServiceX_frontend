@@ -68,9 +68,10 @@ class ServiceXABC(ABC):
             status_callback_factory if status_callback_factory is not None \
             else _null_progress_feedback
 
-    def _create_notifier(self, downloading: bool) -> _status_update_wrapper:
+    def _create_notifier(self, title: Optional[str], downloading: bool) -> _status_update_wrapper:
         'Internal method to create a updater from the status call-back'
-        return _status_update_wrapper(self._status_callback_factory(self._dataset, downloading))
+        return _status_update_wrapper(self._status_callback_factory(self._dataset, title,
+                                                                    downloading))
 
     @abstractmethod
     async def get_data_rootfiles_async(self, selection_query: str,

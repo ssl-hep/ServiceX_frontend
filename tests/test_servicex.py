@@ -953,7 +953,7 @@ def test_callback_good(mocker):
                             cache_adaptor=mock_cache,
                             data_convert_adaptor=data_adaptor,
                             local_log=mock_logger,
-                            status_callback_factory=lambda ds, downloading: check_in)
+                            status_callback_factory=lambda ds, title, downloading: check_in)
     ds.get_data_rootfiles('(valid qastle string)')
 
     assert f_total == 1
@@ -976,7 +976,7 @@ def test_callback_is_downloading(mocker):
     ds_name = None
     ds_downloading = None
 
-    def build_it(ds: DatasetType, downloading: bool):
+    def build_it(ds: DatasetType, title: Optional[str], downloading: bool):
         nonlocal ds_name, ds_downloading
         ds_name = ds
         ds_downloading = downloading
@@ -1010,7 +1010,7 @@ async def test_callback_is_not_downloading(mocker):
     ds_name = None
     ds_downloading = None
 
-    def build_it(ds: DatasetType, downloading: bool):
+    def build_it(ds: DatasetType, title: Optional[str], downloading: bool):
         nonlocal ds_name, ds_downloading
         ds_name = ds
         ds_downloading = downloading

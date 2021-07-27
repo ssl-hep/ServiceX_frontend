@@ -113,7 +113,7 @@ StatusUpdateCallback = Callable[[Optional[int], int, int, int], None]
 # 1. Remaining
 # 1. Failed
 
-StatusUpdateFactory = Callable[[DatasetType, bool], StatusUpdateCallback]
+StatusUpdateFactory = Callable[[DatasetType, Optional[str], bool], StatusUpdateCallback]
 # Factory method that returns a factory that can run the status callback
 # First argument is a string, second argument is True if a download progress
 # bar can be displayed as well.
@@ -213,7 +213,8 @@ async def stream_unique_updates_only(stream: AsyncIterator[TransformTuple]):
             yield p
 
 
-def _run_default_wrapper(ds_name: DatasetType, downloading: bool) -> StatusUpdateCallback:
+def _run_default_wrapper(ds_name: DatasetType, title: Optional[str],
+                         downloading: bool) -> StatusUpdateCallback:
     '''Create a feedback object for everyone to use to pass feedback to. Uses tqdm (default).
 
     Args:
@@ -223,10 +224,10 @@ def _run_default_wrapper(ds_name: DatasetType, downloading: bool) -> StatusUpdat
     Returns:
         StatusUpdateCallback: The updater callback
     '''
-    return _default_wrapper_mgr(ds_name, downloading).update
+    return _default_wrapper_mgr(ds_name, title, downloading).update
 
 
-def _null_progress_feedback(ds_name: DatasetType, downloading: bool) -> None:
+def _null_progress_feedback(ds_name: DatasetType, title: Optional[str], downloading: bool) -> None:
     '''
     Internal routine to create a feedback object that does not
     give anyone feedback!
@@ -234,25 +235,45 @@ def _null_progress_feedback(ds_name: DatasetType, downloading: bool) -> None:
     return None
 
 
+def _bar_name(sample_name: Optional[DatasetType], title: Optional[str]) -> str:
+    """Returns a name that is suitable for a progress bar
+
+    Args:
+        sample_name (str): The sample info
+        title (Optional[str]): The title specified with the request
+
+    Returns:
+        str: Name to use for a progress bar
+    """
+    if title is not None:
+        name = title
+    else:
+        if sample_name is not None:
+            name = sample_name if isinstance(sample_name, str) \
+                else f"[{', '.join(sample_name)}]"
+        else:
+            name = '<none>'
+
+    if len(name) > 20:
+        name = name[0:20] + '...'
+
+    return name
+
+
 class _default_wrapper_mgr:
     'Default progress bar'
-    def __init__(self, sample_name: Optional[DatasetType] = None, show_download_bar: bool = True):
+    def __init__(self, sample_name: Optional[DatasetType] = None, title: str = None,
+                 show_download_bar: bool = True):
         self._tqdm_p: Optional[tqdm] = None
         self._tqdm_d: Optional[tqdm] = None
         self._show_download_progress = show_download_bar
-        self._sample_name = sample_name
+        self._name = _bar_name(sample_name, title)
 
     def _init_tqdm(self):
         if self._tqdm_p is not None:
             return
 
-        if self._sample_name is not None:
-            name = self._sample_name if isinstance(self._sample_name, str) \
-                else ' '.join(self._sample_name)
-        else:
-            name = '<none>'
-
-        self._tqdm_p = tqdm(total=9e9, desc=name, unit='file',
+        self._tqdm_p = tqdm(total=9e9, desc=self._name, unit='file',
                             leave=False, dynamic_ncols=True,
                             bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}]')
         if self._show_download_progress:

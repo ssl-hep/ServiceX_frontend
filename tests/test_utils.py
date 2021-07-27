@@ -15,7 +15,8 @@ from servicex.utils import (
     stream_unique_updates_only,
     write_query_log,
     log_adaptor,
-    default_client_session
+    default_client_session,
+    _bar_name
 )
 
 from .conftest import as_async_seq
@@ -544,3 +545,18 @@ def test_cache_expansion_username():
 
     # Should default to temp directory - should work on all platforms!
     assert p.name == path_name
+
+
+def test_bar_name_title():
+    'Test various uses of the progress bar title generator'
+    assert _bar_name(None, None) == "<none>"
+
+    assert _bar_name('sample1', None) == 'sample1'
+    assert _bar_name('sample1sample1sample1sample1', None) == 'sample1sample1sample...'
+
+    assert _bar_name(['s1', 's2', 's3'], None) == '[s1, s2, s3]'
+    assert _bar_name(['sample1sample1sample1sample1', 'sample1sample1sample1sample1'], None) \
+        == '[sample1sample1sampl...'
+
+    assert _bar_name(sample_name='sample1', title='hi') == 'hi'
+    assert _bar_name('hi', 'sample1sample1sample1sample1') == 'sample1sample1sample...'
