@@ -9,6 +9,7 @@ from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable,
 
 import aiohttp
 import backoff
+import minio
 from backoff import on_exception
 
 from servicex.servicex_config import ServiceXConfigAdaptor
@@ -21,7 +22,8 @@ from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
                                trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
-from .utils import (DatasetType, ServiceXException, ServiceXFailedFileTransform,
+from .utils import (DatasetType, ServiceXException,
+                    ServiceXFailedFileTransform,
                     ServiceXFatalTransformException,
                     ServiceXUnknownDataRequestID, ServiceXUnknownRequestID,
                     StatusUpdateFactory, _run_default_wrapper,
@@ -427,6 +429,7 @@ class ServiceXDataset(ServiceXABC):
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
+    @on_exception(backoff.constant, minio.error.NoSuchBucket, interval=0.1, max_tries=2)
     async def _stream_url_buckets(self, selection_query: str, data_format: str,
                                   title: Optional[str]) \
             -> AsyncGenerator[StreamInfoUrl, None]:
@@ -557,6 +560,8 @@ class ServiceXDataset(ServiceXABC):
             yield r
 
     @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
+    @on_exception(backoff.constant, minio.error.NoSuchBucket, interval=0.1, max_tries=2)
     async def _stream_local_files(self, selection_query: str,
                                   title: Optional[str],
                                   data_format: str = 'root-file') \
@@ -590,7 +595,9 @@ class ServiceXDataset(ServiceXABC):
         async for name, a_path in as_files:
             yield StreamInfoPath(name, Path(await a_path))
 
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
+    @on_exception(backoff.constant, minio.error.NoSuchBucket, interval=0.1, max_tries=2)
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper,
                          title: Optional[str]) \

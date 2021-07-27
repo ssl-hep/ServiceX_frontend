@@ -2,9 +2,10 @@ import asyncio
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import asyncmock
+import minio
 import pandas as pd
 import pytest
 import servicex as fe
@@ -209,6 +210,37 @@ async def test_skipped_file(mocker):
         ds.get_data_rootfiles('(valid qastle string)')
 
     assert "Failed to transform" in str(e.value)
+
+
+def test_minio_cant_find_bucket(mocker):
+    'Make sure the non-async version works'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    first = True
+
+    def our_get_files(request_id: str) -> List[str]:
+        nonlocal first
+        if first:
+            first = False
+            raise minio.error.NoSuchBucket('bucket was not found')
+        else:
+            return ['one_minio_entry', 'two_minio_entry']
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    mock_minio_adaptor.get_files = our_get_files
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    r = ds.get_data_rootfiles('(valid qastle string)')
+    assert len(r) == 2
+    assert r[0] == Path('/foo/bar.root')
 
 
 def test_good_run_root_files_no_async(mocker):
