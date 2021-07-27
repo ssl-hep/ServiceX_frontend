@@ -260,7 +260,7 @@ def _bar_name(sample_name: Optional[DatasetType], title: Optional[str]) -> str:
 
 
 # Hack to work around tqdm not understanding vscode notebooks (see #186).
-if 'VSCODE_PID' in os.environ.keys():
+if 'VSCODE_PID' in os.environ.keys():  # pragma: no cover
     from tqdm.notebook import tqdm
 else:
     from tqdm.auto import tqdm
