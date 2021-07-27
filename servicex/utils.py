@@ -11,7 +11,6 @@ import aiohttp
 from confuse.core import ConfigView
 from lark import Token, Transformer
 from qastle import parse
-from tqdm.auto import tqdm
 
 
 # Access to thread local storage.
@@ -258,6 +257,13 @@ def _bar_name(sample_name: Optional[DatasetType], title: Optional[str]) -> str:
         name = name[0:20] + '...'
 
     return name
+
+
+# Hack to work around tqdm not understanding vscode notebooks (see #186).
+if 'VSCODE_PID' in os.environ.keys():
+    from tqdm.notebook import tqdm
+else:
+    from tqdm.auto import tqdm
 
 
 class _default_wrapper_mgr:
