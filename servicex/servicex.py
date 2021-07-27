@@ -461,7 +461,7 @@ class ServiceXDataset(ServiceXABC):
             # Look up the cache, and then fetch an iterator going thorugh the results
             # from either servicex or the cache, depending.
             try:
-                notifier = self._create_notifier(False)
+                notifier = self._create_notifier(title, False)
                 minio_files = self._get_minio_bucket_files_from_servicex(request_id, client,
                                                                          minio_adaptor, notifier)
 
@@ -580,7 +580,7 @@ class ServiceXDataset(ServiceXABC):
                                 on the converter call.
         '''
         # Get a notifier to update anyone who wants to listen.
-        notifier = self._create_notifier(True)
+        notifier = self._create_notifier(title, True)
 
         # Get all the files
         as_files = \
