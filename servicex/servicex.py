@@ -427,9 +427,6 @@ class ServiceXDataset(ServiceXABC):
 
         return await self._data_return(selection_query, convert_to_file, title, data_format)
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
-    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
-    @on_exception(backoff.constant, minio.error.NoSuchBucket, interval=0.1, max_tries=2)
     async def _stream_url_buckets(self, selection_query: str, data_format: str,
                                   title: Optional[str]) \
             -> AsyncGenerator[StreamInfoUrl, None]:
@@ -493,6 +490,10 @@ class ServiceXDataset(ServiceXABC):
                 await self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception(backoff.constant,
+                  (ServiceXUnknownDataRequestID, minio.error.NoSuchBucket),
+                  interval=0.1, max_tries=2)
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]],
                            title: Optional[str],
@@ -559,9 +560,6 @@ class ServiceXDataset(ServiceXABC):
         async for r in as_data:
             yield r
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
-    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
-    @on_exception(backoff.constant, minio.error.NoSuchBucket, interval=0.1, max_tries=2)
     async def _stream_local_files(self, selection_query: str,
                                   title: Optional[str],
                                   data_format: str = 'root-file') \
@@ -595,9 +593,6 @@ class ServiceXDataset(ServiceXABC):
         async for name, a_path in as_files:
             yield StreamInfoPath(name, Path(await a_path))
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
-    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
-    @on_exception(backoff.constant, minio.error.NoSuchBucket, interval=0.1, max_tries=2)
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper,
                          title: Optional[str]) \
