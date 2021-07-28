@@ -1126,8 +1126,9 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     2. The files are not yet all in the cache.
     3. We call to get the status, and there is a "not known" error.
     4. The query in the cache should have been removed.
+    5. The query is called again.
+    6. A "too many exceptions" occurs and we return with the crash.
 
-    This will force the system to re-start the query next time it is called.
     '''
     mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
     mock_logger = mocker.MagicMock(spec=log_adaptor)
@@ -1151,7 +1152,7 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     assert 'resubmit' in str(e.value)
 
     mock_cache.set_query.assert_not_called()
-    mock_cache.remove_query.assert_called_once()
+    assert mock_cache.remove_query.call_count == 2
 
 
 @pytest.mark.asyncio
