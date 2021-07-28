@@ -172,12 +172,15 @@ def test_data_file_location_twice(tmp_path):
 
 
 def test_data_file_bad_file(tmp_path):
+    'Check a very long bad filename to make sure it is santized'
     c = Cache(tmp_path)
     p = c.data_file_location(
         '123-456', 'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas'
         ':dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052'
         '._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
     assert not p.exists()
+    # If the follow fails, on windows, it could be because very-long-pathnames are not
+    # enabled.
     p.touch()
     assert p.exists()
 
