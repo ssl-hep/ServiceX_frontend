@@ -23,6 +23,12 @@
             "command": "powershell",
             "args": ["-Command", "& .vscode/push-to-pypi.ps1"],
             "problemMatcher": []
+        },
+        {
+            "label": "Run Code Coverage",
+            "type": "shell",
+            "command": ". .venv/scripts/activate.ps1 ; coverage-3.9.exe run -m pytest",
+            "problemMatcher": []
         }
     ]
 }
