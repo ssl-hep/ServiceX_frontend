@@ -608,3 +608,39 @@ async def test_async_itr_exception_not_first():
 
     assert count == 1
     assert 'hi' in str(e)
+
+
+@pytest.mark.asyncio()
+async def test_async_itr_exception_all():
+    count = 0
+
+    @on_exception_itr(backoff.constant, ValueError, interval=0.01, max_tries=2)
+    async def return_two():
+        nonlocal count
+        count = count + 1
+        raise ValueError('hi')
+        yield 1
+
+    with pytest.raises(ValueError) as e:
+        [item async for item in return_two()]
+
+    assert count == 2
+    assert 'hi' in str(e)
+
+
+@pytest.mark.asyncio()
+async def test_async_itr_exception_all_wait_iter():
+    count = 0
+
+    @on_exception_itr(backoff.constant, ValueError, interval=0.01, max_tries=2)
+    async def return_two():
+        nonlocal count
+        count = count + 1
+        raise ValueError('hi')
+        yield 1
+
+    with pytest.raises(ValueError) as e:
+        [item async for item in return_two()]
+
+    assert count == 2
+    assert 'hi' in str(e)

@@ -457,8 +457,9 @@ def get_configured_cache_path(config: ConfigView) -> Path:
 
 # Below is copied and very lightly modified from the backoff library
 # See https://github.com/litl/backoff/issues/131
-from backoff import full_jitter, _sync  # noqa: E402
-import sys  # noqa: E402
+
+
+from backoff import full_jitter  # noqa: E402
 from backoff._common import (  # noqa: E402
     _prepare_logger,
     _config_handlers,
@@ -466,13 +467,13 @@ from backoff._common import (  # noqa: E402
     _log_backoff,
     _maybe_call,
     _init_wait_gen,
-    _next_wait
+    _next_wait,
 )
 import logging  # noqa: E402
 from backoff._async import (  # noqa: E402
     _ensure_coroutines,
     _ensure_coroutine,
-    _call_handlers
+    _call_handlers,
 )
 import asyncio  # noqa: E402
 import functools  # noqa: E402
@@ -529,7 +530,7 @@ def retry_exception_itr(target, wait_gen, exception,
 
                 try:
                     seconds = _next_wait(wait, jitter, elapsed, max_time_)
-                except StopIteration:
+                except StopIteration:  # pragma: no cover
                     await _call_handlers(on_giveup, *details)
                     raise e
 
@@ -575,17 +576,6 @@ def on_exception_itr(wait_gen,
         on_giveup_ = _config_handlers(
             on_giveup, _log_giveup, logger_, giveup_log_level
         )
-
-        retry = None
-        if sys.version_info[:2] >= (3, 5):   # pragma: python=3.5
-            import asyncio
-
-            if asyncio.iscoroutinefunction(target):
-                import backoff._async
-                retry = backoff._async.retry_exception
-
-        if retry is None:
-            retry = _sync.retry_exception
 
         return retry_exception_itr(target, wait_gen, exception,
                                    max_tries, max_time, jitter, giveup,
