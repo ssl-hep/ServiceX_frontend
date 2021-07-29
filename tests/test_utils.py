@@ -4,6 +4,7 @@ from typing import Optional
 import aiohttp
 from pathlib import Path
 import os
+import backoff
 
 import pytest
 
@@ -11,6 +12,7 @@ from servicex.utils import (
     _query_cache_hash,
     _status_update_wrapper,
     clean_linq, get_configured_cache_path,
+    on_exception_itr,
     stream_status_updates,
     stream_unique_updates_only,
     write_query_log,
@@ -560,3 +562,49 @@ def test_bar_name_title():
 
     assert _bar_name(sample_name='sample1', title='hi') == 'hi'
     assert _bar_name('hi', 'sample1sample1sample1sample1') == 'sample1sample1sample...'
+
+
+@pytest.mark.asyncio()
+async def test_async_itr_good():
+    @on_exception_itr(backoff.constant, ValueError, interval=0.01, max_tries=2)
+    async def return_two():
+        yield 1
+        yield 2
+
+    lst = [item async for item in return_two()]
+    assert lst == [1, 2]
+
+
+@pytest.mark.asyncio()
+async def test_async_itr_exception_first():
+    first = True
+
+    @on_exception_itr(backoff.constant, ValueError, interval=0.01, max_tries=2)
+    async def return_two():
+        nonlocal first
+        if first:
+            first = False
+            raise ValueError('hi')
+        yield 1
+        yield 2
+
+    lst = [item async for item in return_two()]
+    assert lst == [1, 2]
+
+
+@pytest.mark.asyncio()
+async def test_async_itr_exception_not_first():
+    count = 0
+
+    @on_exception_itr(backoff.constant, ValueError, interval=0.01, max_tries=2)
+    async def return_two():
+        nonlocal count
+        count = count + 1
+        yield 1
+        raise ValueError('hi')
+
+    with pytest.raises(ValueError) as e:
+        [item async for item in return_two()]
+
+    assert count == 1
+    assert 'hi' in str(e)

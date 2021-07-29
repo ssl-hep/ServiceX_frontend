@@ -1127,12 +1127,10 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     3. We call to get the status, and there is a "not known" error.
     4. The query in the cache should have been removed.
     5. The query is called again.
-    6. A "too many exceptions" occurs and we return with the crash.
-
     '''
     mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    transform_status = mocker.MagicMock(side_effect=ServiceXUnknownRequestID('boom'))
+    transform_status = mocker.MagicMock(side_effect=[ServiceXUnknownRequestID('boom'), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
@@ -1145,14 +1143,34 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
-    with pytest.raises(ServiceXUnknownDataRequestID) as e:
-        # Will fail with one file downloaded.
-        await ds.get_data_rootfiles_async('(valid qastle string)')
+    await ds.get_data_rootfiles_async('(valid qastle string)')
 
-    assert 'resubmit' in str(e.value)
+    assert mock_cache.remove_query.call_count == 1
 
-    mock_cache.set_query.assert_not_called()
-    assert mock_cache.remove_query.call_count == 2
+
+@pytest.mark.asyncio
+async def test_servicex_gone_when_redownload_request_urls(mocker, short_status_poll_time):
+    '''
+    1. Our transform query is in the cache.
+    2. We call to get the URL's to feed the user
+    3. Minio is empty
+    4. Transform must be resubmitted.
+    '''
+    mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'],
+                                          exception_on_access=minio.error.NoSuchBucket('nope'))
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    [f async for f in ds.get_data_rootfiles_url_stream('(valid qastle string)')]
 
 
 @pytest.mark.asyncio

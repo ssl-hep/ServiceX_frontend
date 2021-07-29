@@ -28,7 +28,7 @@ from .utils import (DatasetType, ServiceXException,
                     ServiceXUnknownDataRequestID, ServiceXUnknownRequestID,
                     StatusUpdateFactory, _run_default_wrapper,
                     _status_update_wrapper, default_client_session,
-                    get_configured_cache_path, log_adaptor,
+                    get_configured_cache_path, log_adaptor, on_exception_itr,
                     stream_status_updates, stream_unique_updates_only)
 
 
@@ -427,6 +427,10 @@ class ServiceXDataset(ServiceXABC):
 
         return await self._data_return(selection_query, convert_to_file, title, data_format)
 
+    @on_exception_itr(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception_itr(backoff.constant,
+                      (ServiceXUnknownDataRequestID, minio.error.NoSuchBucket),
+                      interval=0.1, max_tries=2)
     async def _stream_url_buckets(self, selection_query: str, data_format: str,
                                   title: Optional[str]) \
             -> AsyncGenerator[StreamInfoUrl, None]:
