@@ -455,7 +455,8 @@ def get_configured_cache_path(config: ConfigView) -> Path:
     p.mkdir(exist_ok=True, parents=True)
     return p
 
-
+# Below is copied and very lightly modified from the backoff library
+# See https://github.com/litl/backoff/issues/131
 from backoff import full_jitter, _sync  # noqa: E402
 import sys  # noqa: E402
 from backoff._common import (  # noqa: E402
