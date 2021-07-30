@@ -701,7 +701,7 @@ class ServiceXDataset(ServiceXABC):
         info = await self._servicex_adaptor.get_query_status(client, request_id)
         self._cache.set_query_status(info)
 
-    async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
+    async def _get_cached_files(self, cached_files: List[Tuple[str, Path]],
                                 notifier: _status_update_wrapper):
         '''
         Return the list of files as an iterator that we have pulled from the cache
@@ -710,7 +710,7 @@ class ServiceXDataset(ServiceXABC):
         loop = asyncio.get_event_loop()
         for f, p in cached_files:
             path_future = loop.create_future()
-            path_future.set_result(Path(p))
+            path_future.set_result(p)
             notifier.inc(downloaded=1)
             yield f, path_future
 
@@ -732,10 +732,10 @@ class ServiceXDataset(ServiceXABC):
             notifier.broadcast()
             return final_path
 
-        file_object_list = []
+        file_object_list: List[Tuple[str, Path]] = []
         async for f in stream:
             copy_to_path = self._cache.data_file_location(request_id, f)
-            file_object_list.append((f, str(copy_to_path)))
+            file_object_list.append((f, copy_to_path))
 
             yield f, do_copy(copy_to_path)
 

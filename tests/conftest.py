@@ -126,7 +126,7 @@ __g_inmem_value = None
 
 
 def build_cache_mock(mocker, query_cache_return: str = None,
-                     files: Optional[List[Tuple[str, str]]] = None,
+                     files: Optional[List[Tuple[str, Path]]] = None,
                      in_memory: Any = None,
                      make_in_memory_work: bool = False,
                      data_file_return: str = None,

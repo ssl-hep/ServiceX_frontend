@@ -1310,15 +1310,17 @@ async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time)
 
 
 @pytest.mark.asyncio
-async def test_download_cached_nonet(mocker):
+async def test_download_cached_nonet(mocker, tmp_path: Path):
     '''
     Check that we do not use the network if we have already cached a file.
         - Cache is populated
         - the status calls are not made more than for the first time
         - the calls to minio are only made the first time (the list_objects, for example)
     '''
+    f1 = tmp_path / 'file1.root'
+    f1.touch()
     mock_cache = build_cache_mock(mocker, query_cache_return='123-455',
-                                  files=[('f1', 'file1.root')])
+                                  files=[('f1', f1)])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_bomb = mocker.Mock(side_effect=RuntimeError('should not be called'))
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "XXX-XXX",
@@ -1433,14 +1435,16 @@ async def test_good_minio_factory_from_best(mocker):
 
 
 @pytest.mark.asyncio
-async def test_user_deleted_query_status_files(mocker):
+async def test_user_deleted_query_status_files(mocker, tmp_path: Path):
     '''
     1. User has made this query before, and everything was cached correctly
     2. User deletes the query status file only
     3. System should re-query the status and replace the file.
     '''
+    f1 = tmp_path / 'file1.root'
+    f1.touch()
     mock_cache = build_cache_mock(mocker, query_cache_return='123-455',
-                                  files=[('f1', 'file1.root')])
+                                  files=[('f1', f1)])
     mock_cache.query_status_exists.return_value = False
 
     mock_logger = mocker.MagicMock(spec=log_adaptor)

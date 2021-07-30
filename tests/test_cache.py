@@ -1,3 +1,4 @@
+from pathlib import Path
 import string
 import random
 from servicex import ServiceXException
@@ -77,25 +78,48 @@ def test_files_miss(tmp_path):
     assert c.lookup_files('1234') is None
 
 
-def test_files_hit(tmp_path):
+def test_files_hit(tmp_path: Path):
     c = Cache(tmp_path)
-    c.set_files('1234', [('hi', '1'), ('there', '1')])
-    assert c.lookup_files('1234') == [['hi', '1'], ['there', '1']]
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c.set_files('1234', [('hi', f1), ('there', f2)])
+    assert c.lookup_files('1234') == [('hi', f1), ('there', f2)]
 
 
-def test_ic_files_hit(tmp_path):
+def test_files_deleted_data_file(tmp_path: Path):
+    c = Cache(tmp_path)
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c.set_files('1234', [('hi', f1), ('there', f2)])
+    f2.unlink()
+    assert c.lookup_files('1234') is None
+
+
+def test_ic_files_hit(tmp_path: Path):
     'The file list should not be affected by cache ignores'
     c = Cache(tmp_path)
-    c.set_files('1234', [('hi', '1'), ('there', '1')])
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c.set_files('1234', [('hi', f1), ('there', f2)])
     with ignore_cache():
-        assert c.lookup_files('1234') == [['hi', '1'], ['there', '1']]
+        assert c.lookup_files('1234') == [('hi', f1), ('there', f2)]
 
 
 def test_files_hit_reloaded(tmp_path):
     c1 = Cache(tmp_path)
-    c1.set_files('1234', [('hi', '1'), ('there', '1')])
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c1.set_files('1234', [('hi', f1), ('there', f2)])
     c2 = Cache(tmp_path)
-    assert c2.lookup_files('1234') == [['hi', '1'], ['there', '1']]
+    assert c2.lookup_files('1234') == [('hi', f1), ('there', f2)]
 
 
 def test_memory_miss(tmp_path):
