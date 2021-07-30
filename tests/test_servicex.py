@@ -588,6 +588,8 @@ async def test_stream_bad_transform_run_root_files_from_minio(mocker):
             lst.append(f_info)
 
     assert 'Fatal Error' in str(e.value)
+    # Make sure there is no cache entry for this fatal error. (see #189)
+    assert mock_cache.remove_query.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -1273,6 +1275,8 @@ async def test_good_run_root_bad_DID(mocker):
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
     assert 'DID Not found mc15' in str(e.value)
+    # Make sure the query is not cached (see #189)
+    assert mock_cache.remove_query.call_count == 1
 
 
 @pytest.mark.asyncio

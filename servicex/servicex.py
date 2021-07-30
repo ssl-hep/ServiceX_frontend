@@ -486,6 +486,7 @@ class ServiceXDataset(ServiceXABC):
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
                                                                                  request_id)
+                self._cache.remove_query(query)
                 raise ServiceXFatalTransformException(
                     f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
 
@@ -667,6 +668,7 @@ class ServiceXDataset(ServiceXABC):
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
                                                                                  request_id)
+                self._cache.remove_query(query)
                 raise ServiceXFatalTransformException(
                     f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
 
