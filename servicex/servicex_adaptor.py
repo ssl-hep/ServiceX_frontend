@@ -121,10 +121,12 @@ class ServiceXAdaptor:
                                             f'{status} - {t}')
 
             # Dump the messages out to the logger if there are any!
+            # Keep the output under control - only dump the first 20 errors (see #188)
             errors = (await response.json())["errors"]
             log = logging.getLogger(__name__)
-            for e in errors:
-                log.warning(f'Error transforming file: {e["file"]}')
+            log.warning(f'Transform {request_id} had {len(errors)} errors:')
+            for e in errors[:20]:
+                log.warning(f'  Error transforming file: {e["file"]}')
                 for ln in e["info"].split('\n'):
                     log.warning(f'  -> {ln}')
 

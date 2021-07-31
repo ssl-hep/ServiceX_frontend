@@ -161,18 +161,42 @@ class Cache:
         if f.exists():
             f.unlink()
 
-    def set_files(self, id: str, files: List[Tuple[str, str]]):
+    def set_files(self, id: str, files: List[Tuple[str, Path]]):
+        """Cache the files for this request
+
+        Note: We do check to make sure all the files exist
+
+        Args:
+            id (str): The request-id
+            files (List[Tuple[str, Path]]): the minio buck name and local file paths
+        """
+        # Make sure they exist
+        assert all(f.exists() for _, f in files)
         f = self._files_cache_file(id)
         f.parent.mkdir(parents=True, exist_ok=True)
         with f.open('w') as o:
-            json.dump(files, o)
+            json.dump([(n, str(f)) for n, f in files], o)
 
-    def lookup_files(self, id: str) -> Optional[List[Tuple[str, str]]]:
+    def lookup_files(self, id: str) -> Optional[List[Tuple[str, Path]]]:
+        """Return a list of files in the cache for a request id.
+
+        - Returns None if there is nothing in the cache
+        - Returns None if any of the files are missing
+
+        Args:
+            id (str): Request-id we are looking up
+
+        Returns:
+            Optional[List[Tuple[str, Path]]]: List of minio-bucket to local file mappings
+        """
         f = self._files_cache_file(id)
         if not f.exists():
             return None
         with f.open('r') as i:
-            return json.load(i)
+            list_of_cached_files = [(n, Path(p)) for n, p in json.load(i)]
+        if all(f.exists() for _, f in list_of_cached_files):
+            return list_of_cached_files
+        return None
 
     def set_inmem(self, id: str, v: Any):
         self._in_memory_cache[id] = v

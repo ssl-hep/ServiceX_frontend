@@ -1,3 +1,4 @@
+from pathlib import Path
 import string
 import random
 from servicex import ServiceXException
@@ -77,25 +78,48 @@ def test_files_miss(tmp_path):
     assert c.lookup_files('1234') is None
 
 
-def test_files_hit(tmp_path):
+def test_files_hit(tmp_path: Path):
     c = Cache(tmp_path)
-    c.set_files('1234', [('hi', '1'), ('there', '1')])
-    assert c.lookup_files('1234') == [['hi', '1'], ['there', '1']]
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c.set_files('1234', [('hi', f1), ('there', f2)])
+    assert c.lookup_files('1234') == [('hi', f1), ('there', f2)]
 
 
-def test_ic_files_hit(tmp_path):
+def test_files_deleted_data_file(tmp_path: Path):
+    c = Cache(tmp_path)
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c.set_files('1234', [('hi', f1), ('there', f2)])
+    f2.unlink()
+    assert c.lookup_files('1234') is None
+
+
+def test_ic_files_hit(tmp_path: Path):
     'The file list should not be affected by cache ignores'
     c = Cache(tmp_path)
-    c.set_files('1234', [('hi', '1'), ('there', '1')])
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c.set_files('1234', [('hi', f1), ('there', f2)])
     with ignore_cache():
-        assert c.lookup_files('1234') == [['hi', '1'], ['there', '1']]
+        assert c.lookup_files('1234') == [('hi', f1), ('there', f2)]
 
 
 def test_files_hit_reloaded(tmp_path):
     c1 = Cache(tmp_path)
-    c1.set_files('1234', [('hi', '1'), ('there', '1')])
+    f1 = tmp_path / 'f1.root'
+    f2 = tmp_path / 'f2.root'
+    f1.touch()
+    f2.touch()
+    c1.set_files('1234', [('hi', f1), ('there', f2)])
     c2 = Cache(tmp_path)
-    assert c2.lookup_files('1234') == [['hi', '1'], ['there', '1']]
+    assert c2.lookup_files('1234') == [('hi', f1), ('there', f2)]
 
 
 def test_memory_miss(tmp_path):
@@ -172,12 +196,15 @@ def test_data_file_location_twice(tmp_path):
 
 
 def test_data_file_bad_file(tmp_path):
+    'Check a very long bad filename to make sure it is santized'
     c = Cache(tmp_path)
     p = c.data_file_location(
         '123-456', 'root:::dcache-atlas-xrootd-wan.desy.de:1094::pnfs:desy.de:atlas'
         ':dq2:atlaslocalgroupdisk:rucio:mc15_13TeV:8a:f1:DAOD_STDM3.05630052'
         '._000001.pool.root.198fbd841d0a28cb0d9dfa6340c890273-1.part.minio')
     assert not p.exists()
+    # If the follow fails, on windows, it could be because very-long-pathnames are not
+    # enabled.
     p.touch()
     assert p.exists()
 

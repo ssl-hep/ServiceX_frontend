@@ -63,7 +63,8 @@ setup(name="servicex",
               'autopep8',
               'twine',
               'asyncmock',
-              'jupyterlab'
+              'jupyterlab',
+              'ipywidgets'
           ] + extra_test_packages,
       },
       classifiers=[

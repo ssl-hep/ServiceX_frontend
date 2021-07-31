@@ -2,9 +2,10 @@ import asyncio
 import os
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import asyncmock
+import minio
 import pandas as pd
 import pytest
 import servicex as fe
@@ -209,6 +210,37 @@ async def test_skipped_file(mocker):
         ds.get_data_rootfiles('(valid qastle string)')
 
     assert "Failed to transform" in str(e.value)
+
+
+def test_minio_cant_find_bucket(mocker):
+    'Make sure the non-async version works'
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    first = True
+
+    def our_get_files(request_id: str) -> List[str]:
+        nonlocal first
+        if first:
+            first = False
+            raise minio.error.NoSuchBucket('bucket was not found')
+        else:
+            return ['one_minio_entry', 'two_minio_entry']
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry', 'two_minio_entry'])
+    mock_minio_adaptor.get_files = our_get_files
+
+    ds = fe.ServiceXDataset('localds://mc16_tev:13',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    r = ds.get_data_rootfiles('(valid qastle string)')
+    assert len(r) == 2
+    assert r[0] == Path('/foo/bar.root')
 
 
 def test_good_run_root_files_no_async(mocker):
@@ -556,6 +588,8 @@ async def test_stream_bad_transform_run_root_files_from_minio(mocker):
             lst.append(f_info)
 
     assert 'Fatal Error' in str(e.value)
+    # Make sure there is no cache entry for this fatal error. (see #189)
+    assert mock_cache.remove_query.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -1094,12 +1128,11 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     2. The files are not yet all in the cache.
     3. We call to get the status, and there is a "not known" error.
     4. The query in the cache should have been removed.
-
-    This will force the system to re-start the query next time it is called.
+    5. The query is called again.
     '''
     mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
     mock_logger = mocker.MagicMock(spec=log_adaptor)
-    transform_status = mocker.MagicMock(side_effect=ServiceXUnknownRequestID('boom'))
+    transform_status = mocker.MagicMock(side_effect=[ServiceXUnknownRequestID('boom'), (0, 1, 0)])
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456",
                                                 mock_transform_status=transform_status)
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'])
@@ -1112,14 +1145,34 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
                             cache_adaptor=mock_cache,
                             local_log=mock_logger)
 
-    with pytest.raises(ServiceXUnknownDataRequestID) as e:
-        # Will fail with one file downloaded.
-        await ds.get_data_rootfiles_async('(valid qastle string)')
+    await ds.get_data_rootfiles_async('(valid qastle string)')
 
-    assert 'resubmit' in str(e.value)
+    assert mock_cache.remove_query.call_count == 1
 
-    mock_cache.set_query.assert_not_called()
-    mock_cache.remove_query.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_servicex_gone_when_redownload_request_urls(mocker, short_status_poll_time):
+    '''
+    1. Our transform query is in the cache.
+    2. We call to get the URL's to feed the user
+    3. Minio is empty
+    4. Transform must be resubmitted.
+    '''
+    mock_cache = build_cache_mock(mocker, query_cache_return='123-456')
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=['one_minio_entry'],
+                                          exception_on_access=minio.error.NoSuchBucket('nope'))
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset('http://one-ds',
+                            servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+                            minio_adaptor=mock_minio_adaptor,  # type: ignore
+                            data_convert_adaptor=data_adaptor,
+                            cache_adaptor=mock_cache,
+                            local_log=mock_logger)
+
+    [f async for f in ds.get_data_rootfiles_url_stream('(valid qastle string)')]
 
 
 @pytest.mark.asyncio
@@ -1222,6 +1275,8 @@ async def test_good_run_root_bad_DID(mocker):
         await ds.get_data_rootfiles_async('(valid qastle string)')
 
     assert 'DID Not found mc15' in str(e.value)
+    # Make sure the query is not cached (see #189)
+    assert mock_cache.remove_query.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -1255,15 +1310,17 @@ async def test_servicex_in_progress_lock_cleared(mocker, short_status_poll_time)
 
 
 @pytest.mark.asyncio
-async def test_download_cached_nonet(mocker):
+async def test_download_cached_nonet(mocker, tmp_path: Path):
     '''
     Check that we do not use the network if we have already cached a file.
         - Cache is populated
         - the status calls are not made more than for the first time
         - the calls to minio are only made the first time (the list_objects, for example)
     '''
+    f1 = tmp_path / 'file1.root'
+    f1.touch()
     mock_cache = build_cache_mock(mocker, query_cache_return='123-455',
-                                  files=[('f1', 'file1.root')])
+                                  files=[('f1', f1)])
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_bomb = mocker.Mock(side_effect=RuntimeError('should not be called'))
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "XXX-XXX",
@@ -1378,14 +1435,16 @@ async def test_good_minio_factory_from_best(mocker):
 
 
 @pytest.mark.asyncio
-async def test_user_deleted_query_status_files(mocker):
+async def test_user_deleted_query_status_files(mocker, tmp_path: Path):
     '''
     1. User has made this query before, and everything was cached correctly
     2. User deletes the query status file only
     3. System should re-query the status and replace the file.
     '''
+    f1 = tmp_path / 'file1.root'
+    f1.touch()
     mock_cache = build_cache_mock(mocker, query_cache_return='123-455',
-                                  files=[('f1', 'file1.root')])
+                                  files=[('f1', f1)])
     mock_cache.query_status_exists.return_value = False
 
     mock_logger = mocker.MagicMock(spec=log_adaptor)

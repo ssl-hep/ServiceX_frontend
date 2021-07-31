@@ -9,6 +9,7 @@ from typing import (Any, AsyncGenerator, AsyncIterator, Awaitable, Callable,
 
 import aiohttp
 import backoff
+import minio
 from backoff import on_exception
 
 from servicex.servicex_config import ServiceXConfigAdaptor
@@ -21,12 +22,13 @@ from .servicex_adaptor import (ServiceXAdaptor, transform_status_stream,
                                trap_servicex_failures)
 from .servicex_utils import _wrap_in_memory_sx_cache
 from .servicexabc import ServiceXABC
-from .utils import (DatasetType, ServiceXException, ServiceXFailedFileTransform,
+from .utils import (DatasetType, ServiceXException,
+                    ServiceXFailedFileTransform,
                     ServiceXFatalTransformException,
                     ServiceXUnknownDataRequestID, ServiceXUnknownRequestID,
                     StatusUpdateFactory, _run_default_wrapper,
                     _status_update_wrapper, default_client_session,
-                    get_configured_cache_path, log_adaptor,
+                    get_configured_cache_path, log_adaptor, on_exception_itr,
                     stream_status_updates, stream_unique_updates_only)
 
 
@@ -425,8 +427,10 @@ class ServiceXDataset(ServiceXABC):
 
         return await self._data_return(selection_query, convert_to_file, title, data_format)
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
-    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
+    @on_exception_itr(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception_itr(backoff.constant,
+                      (ServiceXUnknownDataRequestID, minio.error.NoSuchBucket),
+                      interval=0.1, max_tries=2)
     async def _stream_url_buckets(self, selection_query: str, data_format: str,
                                   title: Optional[str]) \
             -> AsyncGenerator[StreamInfoUrl, None]:
@@ -482,6 +486,7 @@ class ServiceXDataset(ServiceXABC):
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
                                                                                  request_id)
+                self._cache.remove_query(query)
                 raise ServiceXFatalTransformException(
                     f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
 
@@ -490,6 +495,10 @@ class ServiceXDataset(ServiceXABC):
                 await self._servicex_adaptor.dump_query_errors(client, request_id)
                 raise ServiceXException(f'Failed to transform all files in {request_id}') from e
 
+    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
+    @on_exception(backoff.constant,
+                  (ServiceXUnknownDataRequestID, minio.error.NoSuchBucket),
+                  interval=0.1, max_tries=2)
     async def _data_return(self, selection_query: str,
                            converter: Callable[[Path], Awaitable[Any]],
                            title: Optional[str],
@@ -556,7 +565,6 @@ class ServiceXDataset(ServiceXABC):
         async for r in as_data:
             yield r
 
-    @on_exception(backoff.constant, ServiceXUnknownRequestID, interval=0.1, max_tries=3)
     async def _stream_local_files(self, selection_query: str,
                                   title: Optional[str],
                                   data_format: str = 'root-file') \
@@ -590,7 +598,6 @@ class ServiceXDataset(ServiceXABC):
         async for name, a_path in as_files:
             yield StreamInfoPath(name, Path(await a_path))
 
-    @on_exception(backoff.constant, ServiceXUnknownDataRequestID, interval=0.1, max_tries=2)
     async def _get_files(self, selection_query: str, data_type: str,
                          notifier: _status_update_wrapper,
                          title: Optional[str]) \
@@ -661,6 +668,7 @@ class ServiceXDataset(ServiceXABC):
             except ServiceXFatalTransformException as e:
                 transform_status = await self._servicex_adaptor.get_query_status(client,
                                                                                  request_id)
+                self._cache.remove_query(query)
                 raise ServiceXFatalTransformException(
                     f'ServiceX Fatal Error: {transform_status["failure-info"]}') from e
 
@@ -693,7 +701,7 @@ class ServiceXDataset(ServiceXABC):
         info = await self._servicex_adaptor.get_query_status(client, request_id)
         self._cache.set_query_status(info)
 
-    async def _get_cached_files(self, cached_files: List[Tuple[str, str]],
+    async def _get_cached_files(self, cached_files: List[Tuple[str, Path]],
                                 notifier: _status_update_wrapper):
         '''
         Return the list of files as an iterator that we have pulled from the cache
@@ -702,7 +710,7 @@ class ServiceXDataset(ServiceXABC):
         loop = asyncio.get_event_loop()
         for f, p in cached_files:
             path_future = loop.create_future()
-            path_future.set_result(Path(p))
+            path_future.set_result(p)
             notifier.inc(downloaded=1)
             yield f, path_future
 
@@ -724,10 +732,10 @@ class ServiceXDataset(ServiceXABC):
             notifier.broadcast()
             return final_path
 
-        file_object_list = []
+        file_object_list: List[Tuple[str, Path]] = []
         async for f in stream:
             copy_to_path = self._cache.data_file_location(request_id, f)
-            file_object_list.append((f, str(copy_to_path)))
+            file_object_list.append((f, copy_to_path))
 
             yield f, do_copy(copy_to_path)
 

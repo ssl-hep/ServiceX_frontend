@@ -149,8 +149,8 @@ The local cache directory is split up into sub-directories. Deleting files from 
 
 - `query_cache` - this directory contains the mapping between the query text (or its hash) and the ServiceX backend's `request-id`. If you delete a file from here, it is as if the query was never made, and is the same as using the ignore methods above.
 - `query_cache_status` - contains the last retreived status from the backend. Deleting this will cause the library to refresh the missing status. This file is updated continuosly until the query is completed.
-- `file_list_cache` - Each file contains a json list of all the files in the `minio` bucket for a partiuclar request id. Deleting a file from this directory is not supported.
--`data` - This directory contains the files that have been downloaded locally. Once all files have been downloaded for a query, deleting a file from this directory is not supported.
+- `file_list_cache` - Each file contains a json list of all the files in the `minio` bucket for a partiuclar request id. Deleting a file from this directory will cause the frontend to re-download the complete list of files (the file in this directory isn't created until all files have been downloaded).
+-`data` - This directory contains the files that have been downloaded locally. If you delete a data file from this directory, it will trigger a re-download. Note that if the servicex endpoint doesn't know about the origianl query, or the minio bucket is missing, it will force the transform being re-run from scratch.
 
 ## Configuration
 

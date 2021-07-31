@@ -92,10 +92,14 @@ class MockServiceXAdaptor:
 
 
 class MockMinioAdaptor(MinioAdaptor):
-    def __init__(self, mocker: MockFixture, files: List[str] = []):
+    def __init__(self,
+                 mocker: MockFixture,
+                 files: List[str] = [],
+                 exception_on_access: Optional[Exception] = None):
         self._files = files
         self.mock_download_file = mocker.Mock()
         self._access_called_with = None
+        self._exception_on_access = exception_on_access
         pass
 
     async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
@@ -107,6 +111,10 @@ class MockMinioAdaptor(MinioAdaptor):
 
     def get_access_url(self, request_id: str, object_name: str) -> str:
         self._access_called_with = (request_id, object_name)
+        if self._exception_on_access is not None:
+            e = self._exception_on_access
+            self._exception_on_access = None
+            raise e
         return "http://the.url.com"
 
     @property
@@ -118,7 +126,7 @@ __g_inmem_value = None
 
 
 def build_cache_mock(mocker, query_cache_return: str = None,
-                     files: Optional[List[Tuple[str, str]]] = None,
+                     files: Optional[List[Tuple[str, Path]]] = None,
                      in_memory: Any = None,
                      make_in_memory_work: bool = False,
                      data_file_return: str = None,
@@ -163,7 +171,7 @@ def build_cache_mock(mocker, query_cache_return: str = None,
 
     if query_status_lookup_return is not None:
         c.lookup_query_status.return_value = query_status_lookup_return
-    
+
     c.query_status_exists.return_value = True
 
     return c
