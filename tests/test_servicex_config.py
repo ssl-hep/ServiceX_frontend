@@ -159,7 +159,7 @@ def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
     assert endpoint == 'http://my-left-foot.com:5000'
     assert token == 'forkingshirtballs.thegoodplace.bortles'
 
-    assert caplog.record_tuples[0][2] == "No 'xaod' backend type found, " \
+    assert caplog.record_tuples[0][2] == "No 'xaod' backend name found, " \
                                          "using http://my-left-foot.com:5000 - please add to " \
                                          "the configuration file (e.g. servicex.yaml)"
 

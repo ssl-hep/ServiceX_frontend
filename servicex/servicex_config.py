@@ -34,18 +34,18 @@ class ServiceXConfigAdaptor:
         '''
         return self._settings
 
-    def get_default_returned_datatype(self, backend_type: Optional[str]) -> str:
+    def get_default_returned_datatype(self, backend_name: Optional[str]) -> str:
         '''Return the default return data type, given the backend is a certian type.
 
         Args:
-            backend_type (Optional[str]): The backend type string (`xaod`, `uproot`, etc)
+            backend_name (Optional[str]): The backend type string (`xaod`, `uproot`, etc)
 
         Returns:
             str: The backend datatype, like `root` or `parquet`.
         '''
         # Check to see if we know about the backend info
-        if backend_type is not None:
-            info = self.get_backend_info(backend_type, 'return_data')
+        if backend_name is not None:
+            info = self.get_backend_info(backend_name, 'return_data')
             if info is not None:
                 return info
 
@@ -55,12 +55,12 @@ class ServiceXConfigAdaptor:
         raise ServiceXException('A default default_return_data is missing from config files - is '
                                 'servicex installed correctly?')
 
-    def get_backend_info(self, backend_type: str, key: str) -> Optional[str]:
+    def get_backend_info(self, backend_name: str, key: str) -> Optional[str]:
         '''Find an item in the backend info, searching first the backend settings and then
            searching the defaults.
 
         Args:
-            backend_type (str): Backend name
+            backend_name (str): Backend name
             key (str): The key for the info we are after
 
         Returns:
@@ -72,7 +72,7 @@ class ServiceXConfigAdaptor:
             if c.exists():
                 for ep in c:
                     if ep['type'].exists():
-                        if ep['type'].as_str() == backend_type:
+                        if ep['type'].as_str() == backend_name:
                             if key in ep:
                                 return ep[key].as_str_expanded()
             return None
@@ -81,12 +81,12 @@ class ServiceXConfigAdaptor:
         a = find_in_list(self._settings['backend_types'], key) if a is None else a
         return a
 
-    def get_servicex_adaptor_config(self, backend_type: Optional[str] = None) -> \
+    def get_servicex_adaptor_config(self, backend_name: Optional[str] = None) -> \
             Tuple[str, Optional[str]]:
         '''Return the servicex (endpoint, username, email) from a given backend configuration.
 
         Args:
-            backend_type (str): The backend name (like `xaod`) which we hopefully can find in the
+            backend_name (str): The backend name (like `xaod`) which we hopefully can find in the
             configuration file.
 
         Returns:
@@ -105,31 +105,31 @@ class ServiceXConfigAdaptor:
             return (endpoint, token)  # type: ignore
 
         # If we have a good name, look for exact match
-        if backend_type is not None:
+        if backend_name is not None:
             for ep in endpoints:
-                if ep['type'].exists() and ep['type'].as_str_expanded() == backend_type:
+                if ep['type'].exists() and ep['type'].as_str_expanded() == backend_name:
                     return extract_info(ep)
 
         # See if one is unlabeled.
         log = logging.getLogger(__name__)
         for ep in endpoints:
             if not ep['type'].exists():
-                if backend_type is None:
+                if backend_name is None:
                     log.warning('No backend type requested, '
                                 f'using {ep["endpoint"].as_str_expanded()} - please be explicit '
                                 'in the ServiceXDataset constructor')
                 else:
-                    log.warning(f"No '{backend_type}' backend type found, "
+                    log.warning(f"No '{backend_name}' backend name found, "
                                 f'using {ep["endpoint"].as_str_expanded()} - please add to '
                                 'the configuration file (e.g. servicex.yaml)')
                 return extract_info(ep)
 
-        if backend_type is not None:
+        if backend_name is not None:
             # They have a labeled backend, and all the end-points are labeled. So that means
             # there really is not match. So throw!
             seen_types = [str(ep['type'].as_str_expanded()) for ep in endpoints
                           if ep['type'].exists()]
-            raise ServiceXException(f'Unable to find type {backend_type} '
+            raise ServiceXException(f'Unable to find type {backend_name} '
                                     'in .servicex configuration file. Saw only types'
                                     f': {", ".join(seen_types)}')
 

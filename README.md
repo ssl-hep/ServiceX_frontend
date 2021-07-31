@@ -30,14 +30,16 @@ The API access information is normally placed in a configuration file (see the s
 
 ```yaml
 api_endpoints:
-  - endpoint: <your-endpoint>
+  - name: <your-endpoint-name>
+    endpoint: <your-endpoint>
     token: <api-token>
     type: xaod
+    
 ```
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
-You can list multiple end points by repeating the block of 4 dictionary items, but using a different type. For example, `uproot`.
+You can list multiple end points by repeating the block of dictionary items, but using a different name.
 
 Finally, you can create the objects `ServiceXAdaptor` and `MinioAdaptor` by hand in your code, passing them as arguments to `ServiceXDataset` and inject custom endpoints and credentials, avoiding the configuration system. This is probably only useful for advanced users.
 
@@ -212,7 +214,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
 
 ```python
   ServiceXDataset(dataset: str,
-                 backend_type: Optional[str] = None,
+                 backend_name: Optional[str] = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
@@ -228,7 +230,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
       Arguments
 
           dataset                     Name of a dataset from which queries will be selected.
-          backend_type                The type of backend. Used only if we need to find an
+          backend_name                The type of backend. Used only if we need to find an
                                       end-point. If we do not have a `servicex_adaptor` then this
                                       will default to xaod, unless you have any endpoint listed
                                       in your servicex file. It will default to best match there,
