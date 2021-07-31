@@ -95,6 +95,73 @@ def test_sx_adaptor_settings(caplog):
     assert len(caplog.record_tuples) == 0
 
 
+def test_sx_adaptor_settings_name(caplog):
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'name': 'my-fork',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, token = x.get_servicex_adaptor_config('my-fork')
+
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_sx_adaptor_settings_name_not_type(caplog):
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type1',
+            'name': 'my-fork1',
+            'endpoint': 'http://my-left-foot1.com:5000',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
+        },
+        {
+            'type': 'my-type2',
+            'name': 'my-type1',
+            'endpoint': 'http://my-left-foot2.com:5000',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
+        },
+    ]
+    x = ServiceXConfigAdaptor(c)
+    endpoint, token = x.get_servicex_adaptor_config('my-type1')
+
+    assert endpoint == 'http://my-left-foot2.com:5000'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_sx_adaptor_settings_name_worng(caplog):
+    from confuse import Configuration
+    c = Configuration('bogus', 'bogus')
+    c.clear()
+    c['api_endpoints'] = [
+        {
+            'type': 'my-type',
+            'name': 'my-fork',
+            'endpoint': 'http://my-left-foot.com:5000',
+            'token': 'forkingshirtballs.thegoodplace.bortles'
+        }
+    ]
+    x = ServiceXConfigAdaptor(c)
+    with pytest.raises(ServiceXException) as e:
+        x.get_servicex_adaptor_config('my-type')
+
+    assert 'Unable to find type my-type' in str(e)
+
+
 def test_sx_adaptor_settings_no_backend_name_requested(caplog):
     'Request None for a backend name'
     from confuse import Configuration
@@ -159,7 +226,7 @@ def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
     assert endpoint == 'http://my-left-foot.com:5000'
     assert token == 'forkingshirtballs.thegoodplace.bortles'
 
-    assert caplog.record_tuples[0][2] == "No 'xaod' backend type found, " \
+    assert caplog.record_tuples[0][2] == "No 'xaod' backend name found, " \
                                          "using http://my-left-foot.com:5000 - please add to " \
                                          "the configuration file (e.g. servicex.yaml)"
 

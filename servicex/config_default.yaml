@@ -3,6 +3,8 @@
 
 api_endpoints:
   - endpoint: http://localhost:5000
+    name: default
+    type: xaod
     # token: xxx
 
 # This is the path of the cache. The "/tmp" will be translated, platform appropriate, and

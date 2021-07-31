@@ -140,7 +140,7 @@ class ServiceXDataset(ServiceXABC):
     '''
     def __init__(self,
                  dataset: DatasetType,
-                 backend_type: Optional[str] = None,
+                 backend_name: Optional[str] = None,
                  image: str = None,
                  max_workers: int = 20,
                  servicex_adaptor: ServiceXAdaptor = None,
@@ -158,7 +158,7 @@ class ServiceXDataset(ServiceXABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
-            backend_type                The type of backend. Used only if we need to find an
+            backend_name                The type of backend. Used only if we need to find an
                                         end-point. If we do not have a `servicex_adaptor` then this
                                         will default to xaod, unless you have any endpoint listed
                                         in your servicex file. It will default to best match there,
@@ -217,7 +217,7 @@ class ServiceXDataset(ServiceXABC):
 
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
-            end_point, token = config.get_servicex_adaptor_config(backend_type)
+            end_point, token = config.get_servicex_adaptor_config(backend_name)
             servicex_adaptor = ServiceXAdaptor(end_point, token)
         self._servicex_adaptor = servicex_adaptor
 
@@ -234,7 +234,7 @@ class ServiceXDataset(ServiceXABC):
         self._session_generator = session_generator if session_generator is not None \
             else default_client_session
 
-        self._return_types = [config.get_default_returned_datatype(backend_type)]
+        self._return_types = [config.get_default_returned_datatype(backend_name)]
         self._converter = data_convert_adaptor if data_convert_adaptor is not None \
             else DataConverterAdaptor(self._return_types[0])
 
