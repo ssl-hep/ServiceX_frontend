@@ -105,7 +105,12 @@ class MinioAdaptor:
         def do_copy() -> None:
             temp_file = output_file.parent / f'{output_file.name}.temp'
             try:
+                log = logging.getLogger(__name__)
+                log.debug(f'Starting download of minio file for request {request_id}, '
+                          f'file {bucket_fname}.')
                 self._client.fget_object(request_id, bucket_fname, str(temp_file))
+                log.debug(f'Finished download of minio file for request {request_id}, '
+                          f'file {bucket_fname}.')
                 temp_file.rename(output_file)
             except Exception as e:
                 raise ServiceXException(
