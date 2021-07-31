@@ -107,7 +107,12 @@ class ServiceXConfigAdaptor:
         # If we have a good name, look for exact match
         if backend_name is not None:
             for ep in endpoints:
-                if ep['type'].exists() and ep['type'].as_str_expanded() == backend_name:
+                if ep['name'].exists() and ep['name'].as_str_expanded() == backend_name:
+                    return extract_info(ep)
+            for ep in endpoints:
+                if ep['type'].exists() \
+                        and not ep['name'].exists() \
+                        and ep['type'].as_str_expanded() == backend_name:
                     return extract_info(ep)
 
         # See if one is unlabeled.
