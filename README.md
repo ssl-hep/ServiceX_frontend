@@ -142,6 +142,21 @@ with ds.ignore_cache():
 do_query(ds)  # Cache is not ignored
 ```
 
+#### Analysis And Machine Query Cache
+
+The `servicex` library can write out a local file which will map queries to backend `request-id`'s. This file can then be used on other machines to reference the same data in the backend. The advantage is that the backend does not need to re-run the query - the `servicex` library need only download it again. When a user uses multiple machines or shares analysis code with an analysis team, this is a much more efficient use of resources.
+
+- By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory
+- To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries.
+
+In many cases a user will have multiple machines or analysis facilities. Being able to share this cache accross machines will have the same benifits. In the config file one can specify a directory. If this is then shared by dropbox, or OneDrive, or gDrive, or CERNBox, then the query cache files inside it can be picked up and used on other machines (or team members). See the config section below to specify a common directory.
+
+- The local query cache is used first
+- If nothing is found there, then a search occurs for an analysis query cache
+- If nothing is found there, then the list of machine query cache directories is searched. And in there, they are searched in reverse date order (newst first).
+
+_Note_: Eventually the backends will contain automatic cache lookup and this feature will be much less useful as it will occur automatically, on the backend.
+
 #### Deleting Files from the local Data Cache
 
 It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected effects.
@@ -171,7 +186,9 @@ The file can contain an `api_endpoint` as mentioned earlier. In addition the oth
   - Windows: `cache_path: "C:\\Users\\gordo\\Desktop\\cacheme"`
   - Linux: `cache_path: "/home/servicex-cache"`
 
-- `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
+- `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. There is also a `cms_run1_aod` which returns `root`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
+
+- `machine_analysis_cache` - a list of directories on the local machine to search for query `request-id`'s (see the cache section above). The directories are search in order.
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
