@@ -154,6 +154,7 @@ In many cases a user will have multiple machines or analysis facilities. Being a
 - The local query cache is used first
 - If nothing is found there, then a search occurs for an analysis query cache
 - If nothing is found there, then the list of machine query cache directories is searched. And in there, they are searched in reverse date order (newst first).
+- If there is a list of machine query cache directories, this library will write out a machine file of any new queries it submits.
 
 _Note_: Eventually the backends will contain automatic cache lookup and this feature will be much less useful as it will occur automatically, on the backend.
 
