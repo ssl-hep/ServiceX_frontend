@@ -46,6 +46,67 @@ def ignore_cache():
     _ignore_cache = old_value
 
 
+# Track where we should write out an analysis cache (and search up-stream).
+# This contains the directory of the file.
+_g_analysis_cache_location: Optional[Path] = None
+_g_analysis_cache_filename: str = 'servicex_query_cache.json'
+
+
+def reset_local_query_cache():
+    '''Used to reset the analysis cache location. Normally called only
+    during testing.
+    '''
+    global _g_analysis_cache_location
+    _g_analysis_cache_location = None
+    global _g_analysis_cache_filename
+    _g_analysis_cache_filename = 'servicex_query_cache.json'
+
+
+reset_local_query_cache()
+
+
+def update_local_query_cache(analysis_cache: Optional[Path] = None):
+    '''Record analysis query hashes in an analysis cache.
+
+    If this routine is not called, the current directoy is searched for an
+    analysis cache file. If found, it participates in the query lookup.
+
+    After this rouinte is called, then when a query is made or looked up, an
+    analysis cache file in the local directory is updated with new query request
+    id's.
+
+    This will allow one user to send a file to another user, along with the
+    servicex backend in `servicex.yaml` allow them to fetch the same data.
+    (or share on a similar machine).
+
+    Args:
+        analysis_cache (Optional[Path], optional): The directory or filename of
+        the analysis cache file. If `None` defaults to the file `servicex_query_cache.json` in
+        the local directory. If only a directory is passed, then the `servicex_query_cache.json`
+        in that directory is used. Defaults to None.
+    '''
+    file_path = Path('.') if analysis_cache is None \
+        else analysis_cache if analysis_cache.is_dir() \
+        else analysis_cache.parent
+
+    name = 'servicex_query_cache.json' if (analysis_cache is None or analysis_cache.is_dir()) \
+        else analysis_cache.name
+
+    global _g_analysis_cache_filename
+    global _g_analysis_cache_location
+    if _g_analysis_cache_location is not None \
+            and _g_analysis_cache_filename != name:
+        raise ServiceXException('Updating local query cache called twice, with '
+                                f'{_g_analysis_cache_filename} and {name}.')
+    _g_analysis_cache_filename = name
+
+    if _g_analysis_cache_location is not None \
+            and _g_analysis_cache_location != file_path:
+        raise ServiceXException('Updating local query cache called twice, with '
+                                f'{_g_analysis_cache_location} and {file_path}.')
+    _g_analysis_cache_location = file_path
+
+
 class Cache:
     '''
     Caching for all data returns from the system. It provides both in-memory
@@ -114,10 +175,29 @@ class Cache:
             return i.readline().strip()
 
     def set_query(self, json: Dict[str, str], v: str):
+        '''Associate a query with a request-id.
+
+        A hash is taken of the query.
+
+        Args:
+            json (Dict[str, str]): The query JSON
+            v (str): The `request-id`
+        '''
         f = self._query_cache_file(json)
         f.parent.mkdir(parents=True, exist_ok=True)
         with f.open('w') as o:
             o.write(f'{v}\n')
+
+        self._write_analysis_query_cache(json, v)
+
+    def _write_analysis_query_cache(self, json: Dict[str, str], v: str):
+        '''Write out a local analysis query hash-request-id assocaition.
+
+        Args:
+            json (Dict[str, str]): The JSON of the request
+            v (str): The `request-id`
+        '''
+        pass
 
     def set_query_status(self, query_info: Dict[str, str]):
         '''Cache a query status (json dict)

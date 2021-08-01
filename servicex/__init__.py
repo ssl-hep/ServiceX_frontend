@@ -12,4 +12,4 @@ from .utils import (  # NOQA
 )
 from .servicex_adaptor import ServiceXAdaptor  # NOQA
 from .minio_adaptor import MinioAdaptor  # NOQA
-from .cache import Cache, ignore_cache  # NOQA
+from .cache import Cache, ignore_cache, update_local_query_cache  # NOQA
