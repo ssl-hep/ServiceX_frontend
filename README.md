@@ -147,7 +147,7 @@ do_query(ds)  # Cache is not ignored
 The `servicex` library can write out a local file which will map queries to backend `request-id`'s. This file can then be used on other machines to reference the same data in the backend. The advantage is that the backend does not need to re-run the query - the `servicex` library need only download it again. When a user uses multiple machines or shares analysis code with an analysis team, this is a much more efficient use of resources.
 
 - By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory
-- To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries.
+- To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename/path. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries.
 
 In many cases a user will have multiple machines or analysis facilities. Being able to share this cache accross machines will have the same benifits. In the config file one can specify a directory. If this is then shared by dropbox, or OneDrive, or gDrive, or CERNBox, then the query cache files inside it can be picked up and used on other machines (or team members). See the config section below to specify a common directory.
 

@@ -169,10 +169,14 @@ class Cache:
 
         f = self._query_cache_file(json)
         if not f.exists():
-            return None
+            return self._lookup_analysis_query_cache(_query_cache_hash(json))
 
         with f.open('r') as i:
-            return i.readline().strip()
+            request_id = i.readline().strip()
+
+        self._write_analysis_query_cache(json, request_id)
+
+        return request_id
 
     def set_query(self, json: Dict[str, str], v: str):
         '''Associate a query with a request-id.
@@ -190,14 +194,67 @@ class Cache:
 
         self._write_analysis_query_cache(json, v)
 
-    def _write_analysis_query_cache(self, json: Dict[str, str], v: str):
+    def _write_analysis_query_cache(self, query_info: Dict[str, str], request_id: str):
         '''Write out a local analysis query hash-request-id assocaition.
 
         Args:
-            json (Dict[str, str]): The JSON of the request
-            v (str): The `request-id`
+            query_info (Dict[str, str]): The JSON of the request
+            request_id (str): The `request-id`
         '''
-        pass
+        if _g_analysis_cache_location is None:
+            return
+
+        q_file = _g_analysis_cache_location / _g_analysis_cache_filename
+        analysis_cache = {}
+        if q_file.exists():
+            with q_file.open('r') as input:
+                analysis_cache = json.load(input)
+
+        analysis_cache[_query_cache_hash(query_info)] = request_id
+
+        with q_file.open('w') as output:
+            json.dump(analysis_cache, output)
+
+    def _lookup_analysis_query_cache(self, query_hash: str,
+                                     filename: Optional[str] = None,
+                                     location: Optional[Path] = None) \
+            -> Optional[str]:
+        '''Look at all possible query caches for this query.
+
+        If `location` is `None`, then start from the global location searching for a query file.
+        If `location` is specified, check that directory.
+        In both cases, if the query hash isn't found, then move up one directory and try again.
+
+        `filename` is the name of the file we should be looking for. If `None` default to the global.
+
+        Args:
+            query_hash (str): The hash of the query we need to lookup.
+            filename (Optional[str]): The name fo the file that contains the cache. If not
+            specified then defaults to the global. 
+            location (Optional[Path]): Directory to start searching in. If not specified then
+            defaults to the global. If that isn't specified, defaults to the current directory.
+
+        Returns:
+            (Optional[str]): The return hash of what we need to look up
+        '''
+        # Get arguments setup
+        c_filename = filename if filename is not None else _g_analysis_cache_filename
+        c_location = location if location is not None \
+            else _g_analysis_cache_location if _g_analysis_cache_location is not None \
+            else Path('.')
+
+        # If the cache is here, then see if it has a hit
+        cache_file = c_location / c_filename
+        if cache_file.exists():
+            with cache_file.open('r') as input:
+                analysis_cache = json.load(input)
+                if query_hash in analysis_cache:
+                    return analysis_cache[query_hash]
+
+        # Recurse one up.
+        if len(c_location.parts) <= 1:
+            return None
+        return self._lookup_analysis_query_cache(query_hash, c_filename, c_location.parent)
 
     def set_query_status(self, query_info: Dict[str, str]):
         '''Cache a query status (json dict)

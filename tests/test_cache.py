@@ -11,21 +11,21 @@ from servicex import (Cache, ServiceXException, ignore_cache,
 @pytest.fixture()
 def reset_in_memory_cache():
     Cache.reset_cache()
-    cf = Path('./servicex_query_cache.json')
-    if cf.exists():
-        cf.unlink()
     yield
     Cache.reset_cache()
-    if cf.exists():
-        cf.unlink()
 
 
 @pytest.fixture(autouse=True)
 def analysis_query_cache_reset():
     'Want to make sure the local query cache is reset for everything!'
     reset_local_query_cache()
+    cf = Path('./servicex_query_cache.json')
+    if cf.exists():
+        cf.unlink()
     yield
     reset_local_query_cache()
+    if cf.exists():
+        cf.unlink()
 
 
 def test_create_cache(tmp_path):
@@ -96,7 +96,7 @@ def test_query_hit_analysis_cache_not_triggered(tmp_path: Path):
     c1.set_query({'hi': 'there'}, 'dude')
 
     c2 = Cache(cache_loc_2)
-    assert c2.lookup_query({'hi': 'there'}) == None
+    assert c2.lookup_query({'hi': 'there'}) is None
 
 
 def test_query_hit_analysis_lookup_writes(tmp_path: Path):
