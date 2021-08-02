@@ -225,12 +225,13 @@ class Cache:
         If `location` is specified, check that directory.
         In both cases, if the query hash isn't found, then move up one directory and try again.
 
-        `filename` is the name of the file we should be looking for. If `None` default to the global.
+        `filename` is the name of the file we should be looking for. If `None` default to the
+        global.
 
         Args:
             query_hash (str): The hash of the query we need to lookup.
             filename (Optional[str]): The name fo the file that contains the cache. If not
-            specified then defaults to the global. 
+            specified then defaults to the global.
             location (Optional[Path]): Directory to start searching in. If not specified then
             defaults to the global. If that isn't specified, defaults to the current directory.
 
