@@ -122,7 +122,7 @@ class Cache:
     _in_memory_cache = {}
 
     @classmethod
-    def reset_cache(cls):
+    def reset_cache(cls):  # # pragma: no cover
         'Reset the internal cache, usually used for testing'
         cls._in_memory_cache = {}
 
@@ -231,6 +231,8 @@ class Cache:
 
         analysis_cache[_query_cache_hash(query_info)] = request_id
 
+        if not q_file.parent.exists():
+            q_file.parent.mkdir()
         with q_file.open('w') as output:
             json.dump(analysis_cache, output)
 
