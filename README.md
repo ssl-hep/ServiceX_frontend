@@ -55,7 +55,7 @@ The following lines will return a `pandas.DataFrame` containing all the jet pT's
     from servicex import ServiceXDataset
     query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
     dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
-    ds = ServiceXDataset(dataset)
+    ds = ServiceXDataset(dataset, backend_name=`xaod`)
     r = ds.get_data_pandas_df(query)
     print(r)
 ```
@@ -86,6 +86,8 @@ If your query is badly formed or there is an other problem with the backend, an 
 If you'd like to be able to submit multiple queries and have them run on the `ServiceX` back end in parallel, it is best to use the `asyncio` interface, which has the identical signature, but is called `get_data_pandas_df_async`.
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
+
+The `backend_name` tells the library where to look in the `servicex.yaml` configuraiton file to find an end point (url and authentication information). See above for more information.
 
 ### How to specify the input data
 

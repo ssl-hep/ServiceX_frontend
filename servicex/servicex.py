@@ -162,7 +162,7 @@ class ServiceXDataset(ServiceXABC):
                                         end-point. If we do not have a `servicex_adaptor` then this
                                         will default to xaod, unless you have any endpoint listed
                                         in your servicex file. It will default to best match there,
-                                        in that case.
+                                        or fail if a name has been given.
             image                       Name of transformer image to use to transform the data. If
                                         left as default, `None`, then the default image for the
                                         ServiceX backend will be used.
