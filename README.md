@@ -191,8 +191,6 @@ The file can contain an `api_endpoint` as mentioned earlier. In addition the oth
 
 - `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. There is also a `cms_run1_aod` which returns `root`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
 
-- `machine_analysis_cache` - a list of directories on the local machine to search for query `request-id`'s (see the cache section above). The directories are search in order.
-
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
 ## Features
