@@ -2,7 +2,7 @@ import hashlib
 import json
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from .utils import ServiceXException, _query_cache_hash, sanitize_filename
 
@@ -52,7 +52,7 @@ _g_analysis_cache_location: Optional[Path] = None
 _g_analysis_cache_filename: str = 'servicex_query_cache.json'
 
 # List of queries we know to be bad from this run
-_g_bad_query_cache_ids: set[str] = set()
+_g_bad_query_cache_ids: Set[str] = set()
 
 
 def reset_local_query_cache():
