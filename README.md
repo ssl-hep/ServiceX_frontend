@@ -142,25 +142,25 @@ with ds.ignore_cache():
 do_query(ds)  # Cache is not ignored
 ```
 
-#### Analysis And Machine Query Cache
+#### Analysis And Query Cache
 
-The `servicex` library can write out a local file which will map queries to backend `request-id`'s. This file can then be used on other machines to reference the same data in the backend. The advantage is that the backend does not need to re-run the query - the `servicex` library need only download it again. When a user uses multiple machines or shares analysis code with an analysis team, this is a much more efficient use of resources.
+The `servicex` library can write out a local file which will map queries to backend `request-id`'s. This file can then be used on other people, checked into repositories, etc., to reference the same data in the backend. The advantage is that the backend does not need to re-run the query - the `servicex` library need only download it again. When a user uses multiple machines or shares analysis code with an analysis team, this is a much more efficient use of resources.
 
-- By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory
-- To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename/path. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries.
+- By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory of the current working directory.
+- To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename/path. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries. Except under very special cases, it is suggested that one users the filename `servicex_query_cache.json`.
+- If that file is present when a query is run, it will attempt to download the data from the endpoint, only resubmitting the query if the endpoint doesn't know about the query. As long as the file `servicex_query_cache.json` is in the current working directory (or above), it will be picked up automatically: no need to call `update_local_query_cache()`.
 
-In many cases a user will have multiple machines or analysis facilities. Being able to share this cache accross machines will have the same benifits. In the config file one can specify a directory. If this is then shared by dropbox, or OneDrive, or gDrive, or CERNBox, then the query cache files inside it can be picked up and used on other machines (or team members). See the config section below to specify a common directory.
+The cache search order is as follows:
 
-- The local query cache is used first
-- If nothing is found there, then a search occurs for an analysis query cache
-- If nothing is found there, then the list of machine query cache directories is searched. And in there, they are searched in reverse date order (newst first).
-- If there is a list of machine query cache directories, this library will write out a machine file of any new queries it submits.
+- The analysis query cache is searched first.
+- If nothing is found there, then the local query cache is used next.
+- If nothing is found there, then the query is resubmitted.
 
 _Note_: Eventually the backends will contain automatic cache lookup and this feature will be much less useful as it will occur automatically, on the backend.
 
 #### Deleting Files from the local Data Cache
 
-It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected effects.
+It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected behavior.
 
 Besides telling the `servicex` library to ignore the cache in the above ways, you can also delete files from the local cache.
 The local cache directory is split up into sub-directories. Deleting files from each of the directories:
