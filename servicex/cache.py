@@ -51,6 +51,9 @@ def ignore_cache():
 _g_analysis_cache_location: Optional[Path] = None
 _g_analysis_cache_filename: str = 'servicex_query_cache.json'
 
+# List of queries we know to be bad from this run
+_g_bad_query_cache_ids: set[str] = set()
+
 
 def reset_local_query_cache():
     '''Used to reset the analysis cache location. Normally called only
@@ -60,6 +63,8 @@ def reset_local_query_cache():
     _g_analysis_cache_location = None
     global _g_analysis_cache_filename
     _g_analysis_cache_filename = 'servicex_query_cache.json'
+    global _g_bad_query_cache_ids
+    _g_bad_query_cache_ids = set()
 
 
 reset_local_query_cache()
@@ -169,7 +174,10 @@ class Cache:
 
         f = self._query_cache_file(json)
         if not f.exists():
-            return self._lookup_analysis_query_cache(_query_cache_hash(json))
+            hash = _query_cache_hash(json)
+            if hash in _g_bad_query_cache_ids:
+                return None
+            return self._lookup_analysis_query_cache(hash)
 
         with f.open('r') as i:
             request_id = i.readline().strip()
@@ -194,6 +202,17 @@ class Cache:
 
         self._write_analysis_query_cache(json, v)
 
+    def remove_query(self, json: Dict[str, Any]):
+        '''Remove the query from our local and analysis caches
+
+        Args:
+            json (Dict[str, Any]): The query to remove
+        '''
+        f = self._query_cache_file(json)
+        if f.exists():
+            f.unlink()
+        self._remove_from_analysis_cache(_query_cache_hash(json))
+
     def _write_analysis_query_cache(self, query_info: Dict[str, str], request_id: str):
         '''Write out a local analysis query hash-request-id assocaition.
 
@@ -214,6 +233,23 @@ class Cache:
 
         with q_file.open('w') as output:
             json.dump(analysis_cache, output)
+
+    def _remove_from_analysis_cache(self, query_hash: str):
+        '''Remove an item from the analysis cache if we are writing to it!
+
+        Args:
+            query_hash (str): The hash we will remove
+        '''
+        if _g_analysis_cache_location is None:
+            _g_bad_query_cache_ids.add(query_hash)
+            return
+
+        cache_contents, cache_file = self._find_analysis_cached_query(query_hash)
+        if cache_contents is not None:
+            del cache_contents[query_hash]
+            assert cache_file is not None
+            with cache_file.open('w') as output:
+                json.dump(cache_contents, output)
 
     def _lookup_analysis_query_cache(self, query_hash: str,
                                      filename: Optional[str] = None,
@@ -238,6 +274,25 @@ class Cache:
         Returns:
             (Optional[str]): The return hash of what we need to look up
         '''
+        cache_contents, _ = self._find_analysis_cached_query(query_hash)
+        if cache_contents is not None:
+            return cache_contents[query_hash]
+        return None
+
+    def _find_analysis_cached_query(self, query_hash: str,
+                                    filename: Optional[str] = None,
+                                    location: Optional[Path] = None) \
+            -> Tuple[Optional[Dict[str, str]], Optional[Path]]:
+        '''Returns the contents of an analysis cache file and the file that contains
+        a query hash
+
+        Args:
+            has (str): The hash of the query we are to find
+
+        Returns:
+            Tuple[Dict[str, str], Path]: The contents of the file and the path to the
+            analysis cache that contains the hash. `None` if the query was not found
+        '''
         # Get arguments setup
         c_filename = filename if filename is not None else _g_analysis_cache_filename
         c_location = location if location is not None \
@@ -250,12 +305,12 @@ class Cache:
             with cache_file.open('r') as input:
                 analysis_cache = json.load(input)
                 if query_hash in analysis_cache:
-                    return analysis_cache[query_hash]
+                    return (analysis_cache, cache_file)
 
         # Recurse one up.
         if len(c_location.parts) <= 1:
-            return None
-        return self._lookup_analysis_query_cache(query_hash, c_filename, c_location.parent)
+            return None, None
+        return self._find_analysis_cached_query(query_hash, c_filename, c_location.parent)
 
     def set_query_status(self, query_info: Dict[str, str]):
         '''Cache a query status (json dict)
@@ -293,11 +348,6 @@ class Cache:
             bool: True if present, false otherwise.
         """
         return self._query_status_cache_file(request_id).exists()
-
-    def remove_query(self, json: Dict[str, Any]):
-        f = self._query_cache_file(json)
-        if f.exists():
-            f.unlink()
 
     def set_files(self, id: str, files: List[Tuple[str, Path]]):
         """Cache the files for this request
