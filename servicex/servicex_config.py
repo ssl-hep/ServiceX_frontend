@@ -114,29 +114,20 @@ class ServiceXConfigAdaptor:
                         and not ep['name'].exists() \
                         and ep['type'].as_str_expanded() == backend_name:
                     return extract_info(ep)
+            seen_types = [str(ep['type'].as_str_expanded()) for ep in endpoints
+                          if ep['type'].exists()]
+            raise ServiceXException(f'Unable to find type {backend_name} '
+                                    'in servicex.yaml configuration file. Saw only types'
+                                    f': {", ".join(seen_types)}')
 
         # See if one is unlabeled.
         log = logging.getLogger(__name__)
         for ep in endpoints:
             if not ep['type'].exists():
-                if backend_name is None:
-                    log.warning('No backend type requested, '
-                                f'using {ep["endpoint"].as_str_expanded()} - please be explicit '
-                                'in the ServiceXDataset constructor')
-                else:
-                    log.warning(f"No '{backend_name}' backend name found, "
-                                f'using {ep["endpoint"].as_str_expanded()} - please add to '
-                                'the configuration file (e.g. servicex.yaml)')
+                log.warning('No backend type requested, '
+                            f'using {ep["endpoint"].as_str_expanded()} - please be explicit '
+                            'in the ServiceXDataset constructor')
                 return extract_info(ep)
-
-        if backend_name is not None:
-            # They have a labeled backend, and all the end-points are labeled. So that means
-            # there really is not match. So throw!
-            seen_types = [str(ep['type'].as_str_expanded()) for ep in endpoints
-                          if ep['type'].exists()]
-            raise ServiceXException(f'Unable to find type {backend_name} '
-                                    'in .servicex configuration file. Saw only types'
-                                    f': {", ".join(seen_types)}')
 
         # Nope - now we are going to have to just use the first one there.
         for ep in endpoints:

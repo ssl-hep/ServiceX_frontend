@@ -55,7 +55,7 @@ The following lines will return a `pandas.DataFrame` containing all the jet pT's
     from servicex import ServiceXDataset
     query = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"
     dataset = "mc15_13TeV:mc15_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.merge.DAOD_STDM3.e3601_s2576_s2132_r6630_r6264_p2363_tid05630052_00"
-    ds = ServiceXDataset(dataset)
+    ds = ServiceXDataset(dataset, backend_name=`xaod`)
     r = ds.get_data_pandas_df(query)
     print(r)
 ```
@@ -86,6 +86,8 @@ If your query is badly formed or there is an other problem with the backend, an 
 If you'd like to be able to submit multiple queries and have them run on the `ServiceX` back end in parallel, it is best to use the `asyncio` interface, which has the identical signature, but is called `get_data_pandas_df_async`.
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
+
+The `backend_name` tells the library where to look in the `servicex.yaml` configuraiton file to find an end point (url and authentication information). See above for more information.
 
 ### How to specify the input data
 
@@ -142,9 +144,25 @@ with ds.ignore_cache():
 do_query(ds)  # Cache is not ignored
 ```
 
+#### Analysis And Query Cache
+
+The `servicex` library can write out a local file which will map queries to backend `request-id`'s. This file can then be used on other people, checked into repositories, etc., to reference the same data in the backend. The advantage is that the backend does not need to re-run the query - the `servicex` library need only download it again. When a user uses multiple machines or shares analysis code with an analysis team, this is a much more efficient use of resources.
+
+- By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory of the current working directory.
+- To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename/path. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries. Except under very special cases, it is suggested that one users the filename `servicex_query_cache.json`.
+- If that file is present when a query is run, it will attempt to download the data from the endpoint, only resubmitting the query if the endpoint doesn't know about the query. As long as the file `servicex_query_cache.json` is in the current working directory (or above), it will be picked up automatically: no need to call `update_local_query_cache()`.
+
+The cache search order is as follows:
+
+- The analysis query cache is searched first.
+- If nothing is found there, then the local query cache is used next.
+- If nothing is found there, then the query is resubmitted.
+
+_Note_: Eventually the backends will contain automatic cache lookup and this feature will be much less useful as it will occur automatically, on the backend.
+
 #### Deleting Files from the local Data Cache
 
-It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected effects.
+It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected behavior.
 
 Besides telling the `servicex` library to ignore the cache in the above ways, you can also delete files from the local cache.
 The local cache directory is split up into sub-directories. Deleting files from each of the directories:
@@ -171,7 +189,7 @@ The file can contain an `api_endpoint` as mentioned earlier. In addition the oth
   - Windows: `cache_path: "C:\\Users\\gordo\\Desktop\\cacheme"`
   - Linux: `cache_path: "/home/servicex-cache"`
 
-- `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
+- `backend_types` - a list of yaml dictionaries that contains some defaults for the backends. By default only the `return_data` is there, which for `xaod` is `root` and `uproot` is `parquet`. There is also a `cms_run1_aod` which returns `root`. Allows `servicex` to convert to `pandas.DataFrame` or `awkward` if requested by the user.
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 

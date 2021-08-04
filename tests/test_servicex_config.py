@@ -221,14 +221,10 @@ def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('xaod')
+    with pytest.raises(ServiceXException) as e:
+        _ = x.get_servicex_adaptor_config('xaod')
 
-    assert endpoint == 'http://my-left-foot.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
-
-    assert caplog.record_tuples[0][2] == "No 'xaod' backend name found, " \
-                                         "using http://my-left-foot.com:5000 - please add to " \
-                                         "the configuration file (e.g. servicex.yaml)"
+    assert 'Unable to find' in str(e)
 
 
 def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):

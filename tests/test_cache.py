@@ -1,10 +1,11 @@
-from pathlib import Path
-import string
 import random
-from servicex import ServiceXException
-import pytest
+from servicex.cache import reset_local_query_cache
+import string
+from pathlib import Path
 
-from servicex.cache import Cache, ignore_cache
+import pytest
+from servicex import (Cache, ServiceXException, ignore_cache,
+                      update_local_query_cache)
 
 
 @pytest.fixture()
@@ -14,8 +15,22 @@ def reset_in_memory_cache():
     Cache.reset_cache()
 
 
+@pytest.fixture(autouse=True)
+def analysis_query_cache_reset():
+    'Want to make sure the local query cache is reset for everything!'
+    reset_local_query_cache()
+    cf = Path('./servicex_query_cache.json')
+    if cf.exists():
+        cf.unlink()
+    yield
+    reset_local_query_cache()
+    if cf.exists():
+        cf.unlink()
+
+
 def test_create_cache(tmp_path):
-    _ = Cache(tmp_path)
+    c = Cache(tmp_path)
+    assert c.path == tmp_path
 
 
 def test_query_miss(tmp_path):
@@ -28,6 +43,155 @@ def test_query_hit_1(tmp_path):
     c = Cache(tmp_path)
     c.set_query({'hi': 'there'}, 'dude')
     assert c.lookup_query({'hi': 'there'}) == 'dude'
+
+
+def test_analysis_cache_set_twice_different(tmp_path: Path):
+    'Make sure we cannot set with two different paths'
+    update_local_query_cache(tmp_path / 'analysis_cache1.json')
+    with pytest.raises(ServiceXException):
+        update_local_query_cache(tmp_path / 'analysis_cache2.json')
+
+
+def test_analysis_cache_set_twice_different_paths(tmp_path: Path):
+    'Make sure we cannot set with two different paths'
+    update_local_query_cache(tmp_path / 'bogus1' / 'analysis_cache.json')
+    with pytest.raises(ServiceXException):
+        update_local_query_cache(tmp_path / 'bogus2' / 'analysis_cache.json')
+
+
+def test_analysis_cache_set_twice_same(tmp_path: Path):
+    'Make sure we cannot set with two different paths'
+    update_local_query_cache(tmp_path / 'analysis_cache1.json')
+    update_local_query_cache(tmp_path / 'analysis_cache1.json')
+
+
+def test_query_hit_analysis_cache(tmp_path: Path):
+    'Make sure the analysis cache is updated'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    update_local_query_cache(tmp_path / 'analysis_cache.json')
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) == 'dude'
+
+
+def test_query_hit_analysis_cache_nested_files(tmp_path: Path):
+    'Make sure the analysis cache is updated'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    update_local_query_cache(tmp_path / 'dir1' / 'analysis_cache.json')
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+
+    reset_local_query_cache()
+    update_local_query_cache(tmp_path / 'dir1' / 'dir2' / 'analysis_cache.json')
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) == 'dude'
+
+
+def test_query_hit_analysis_cache_update(tmp_path: Path):
+    'Make sure the analysis cache is updated'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    update_local_query_cache(tmp_path / 'analysis_cache.json')
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+    c1.set_query({'hi1': 'there1'}, 'dude1')
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) == 'dude'
+    assert c2.lookup_query({'hi1': 'there1'}) == 'dude1'
+
+
+def test_query_hit_analysis_cache_silent_read(tmp_path: Path):
+    'Make sure we read the analysis cache if it happens to be present'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    update_local_query_cache()
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+
+    reset_local_query_cache()
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) == 'dude'
+
+
+def test_query_hit_analysis_cache_not_triggered(tmp_path: Path):
+    'Make sure analysis cache is not written by default'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) is None
+
+
+def test_query_hit_analysis_lookup_writes(tmp_path: Path):
+    'make sure analysis query cache is written to'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+    update_local_query_cache(tmp_path / 'analysis_cache.json')
+    assert c1.lookup_query({'hi': 'there'}) == 'dude'
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) == 'dude'
+
+
+def test_query_hit_analysis_cache_removed_query_noupdate(tmp_path: Path):
+    'Make sure to forget a query when we are not updating the analysis cache'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+    cache_loc_3 = tmp_path / 'cache3'
+
+    update_local_query_cache()
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+
+    reset_local_query_cache()
+
+    c2 = Cache(cache_loc_2)
+    c2.remove_query({'hi': 'there'})
+    assert c2.lookup_query({'hi': 'there'}) is None
+
+    reset_local_query_cache()
+
+    # Make sure that the json file wasn't modified in this case!
+    c3 = Cache(cache_loc_3)
+    assert c3.lookup_query({'hi': 'there'}) == 'dude'
+
+
+def test_query_hit_analysis_cache_removed_query_update(tmp_path: Path):
+    'If we are updating the query cache, make sure to remove an item'
+    cache_loc_1 = tmp_path / 'cache1'
+    cache_loc_2 = tmp_path / 'cache2'
+
+    update_local_query_cache()
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({'hi': 'there'}, 'dude')
+    c1.remove_query({'hi': 'there'})
+
+    reset_local_query_cache()
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({'hi': 'there'}) is None
 
 
 def test_ic_query(tmp_path):
