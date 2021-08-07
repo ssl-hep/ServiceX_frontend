@@ -28,13 +28,27 @@ def test_returned_datatype_default():
     c = ConfigSettings('servicex', 'servicex')
     c.clear()
     c['default_return_data'] = 'root'
+    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
     x = ServiceXConfigAdaptor(c)
     assert x.get_default_returned_datatype(None) == 'root'
+
+
+def test_returned_datatype_default_missing():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
+    x = ServiceXConfigAdaptor(c)
+
+    with pytest.raises(ServiceXException) as e:
+        x.get_default_returned_datatype(None)
+
+    assert 'default_return_data' in str(e)
 
 
 def test_returned_datatype_from_default_dict():
     c = ConfigSettings('servicex', 'servicex')
     c.clear()
+    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
     c['backend_types'] = [{'type': 'forkit', 'return_data': 'spoon'}]
     x = ServiceXConfigAdaptor(c)
     assert x.get_default_returned_datatype('forkit') == 'spoon'
@@ -47,15 +61,6 @@ def test_returned_datatype_from_endpoint():
     c['api_endpoints'] = [{'type': 'forkit', 'return_data': 'spoons'}]
     x = ServiceXConfigAdaptor(c)
     assert x.get_default_returned_datatype('forkit') == 'spoons'
-
-
-def test_returned_datatype_no_type_endpoint():
-    c = ConfigSettings('servicex', 'servicex')
-    c.clear()
-    c['backend_types'] = [{'type': 'forkit', 'return_data': 'spoon'}]
-    c['api_endpoints'] = [{'endpoint': 'http://localhost:5000'}]
-    x = ServiceXConfigAdaptor(c)
-    assert x.get_default_returned_datatype('forkit') == 'spoon'
 
 
 def test_defalt_config_has_default_return_datatype():
@@ -92,7 +97,7 @@ def test_sx_adaptor_settings(caplog):
     assert endpoint == 'http://my-left-foot.com:5000'
     assert token == 'forkingshirtballs.thegoodplace.bortles'
 
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1  # Depreciation warning
 
 
 def test_sx_adaptor_settings_name(caplog):
@@ -156,10 +161,9 @@ def test_sx_adaptor_settings_name_worng(caplog):
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    with pytest.raises(ServiceXException) as e:
-        x.get_servicex_adaptor_config('my-type')
+    endpoint, token = x.get_servicex_adaptor_config('my-type')
 
-    assert 'Unable to find type my-type' in str(e)
+    assert len(caplog.record_tuples) == 1  # Depreciation warning for using match by type
 
 
 def test_sx_adaptor_settings_no_backend_name_requested(caplog):
@@ -180,7 +184,7 @@ def test_sx_adaptor_settings_no_backend_name_requested(caplog):
     assert endpoint == 'http://my-left-foot.com:5000'
     assert token == 'forkingshirtballs.thegoodplace.bortles'
 
-    assert caplog.record_tuples[0][2] == "No backend type requested, " \
+    assert caplog.record_tuples[0][2] == "No backend name/type requested, " \
                                          "using http://my-left-foot.com:5000 - please be " \
                                          "explicit " \
                                          "in the ServiceXDataset constructor"
@@ -203,7 +207,7 @@ def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
     assert endpoint == 'http://my-left-foot.com:5000'
     assert token == 'forkingshirtballs.thegoodplace.bortles'
 
-    assert caplog.record_tuples[0][2] == "No backend type requested, " \
+    assert caplog.record_tuples[0][2] == "No backend name/type requested, " \
                                          "using http://my-left-foot.com:5000 - please be " \
                                          "explicit " \
                                          "in the ServiceXDataset constructor"
@@ -249,10 +253,10 @@ def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):
     assert endpoint == 'http://my-left-foot.com:5001'
     assert token == 'forkingshirtballs.thegoodplace.bortles1'
 
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1  # Depreciation warning for using type
 
 
-def test_sx_adaptor_settings_backend_name_unlabeled_type():
+def test_sx_adaptor_settings_backend_name_use_first():
     'Request None for a backend name'
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
@@ -271,8 +275,8 @@ def test_sx_adaptor_settings_backend_name_unlabeled_type():
     x = ServiceXConfigAdaptor(c)
     endpoint, token = x.get_servicex_adaptor_config()
 
-    assert endpoint == 'http://my-left-foot.com:5001'
-    assert token == 'forkingshirtballs.thegoodplace.bortles1'
+    assert endpoint == 'http://my-left-foot.com:5000'
+    assert token == 'forkingshirtballs.thegoodplace.bortles'
 
 
 def test_sx_adaptor_settings_wrong_type():
@@ -291,7 +295,7 @@ def test_sx_adaptor_settings_wrong_type():
     with pytest.raises(ServiceXException) as e:
         x.get_servicex_adaptor_config('your-type')
 
-    assert 'Unable to find type' in str(e.value)
+    assert 'Unable to find name/type' in str(e.value)
     assert 'my-type' in str(e.value)
 
 
