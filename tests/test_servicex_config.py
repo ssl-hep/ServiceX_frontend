@@ -51,8 +51,6 @@ def test_returned_datatype_from_endpoint():
     assert x.get_default_returned_datatype('forkit') == 'spoons'
 
 
-
-
 def test_defalt_config_has_default_return_datatype():
     'Test default settings - default_returned_datatype'
     c = ConfigSettings('servicex', 'servicex')
