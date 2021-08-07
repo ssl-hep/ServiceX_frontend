@@ -33,6 +33,18 @@ def test_returned_datatype_default():
     assert x.get_default_returned_datatype(None) == 'root'
 
 
+def test_returned_datatype_default_missing():
+    c = ConfigSettings('servicex', 'servicex')
+    c.clear()
+    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
+    x = ServiceXConfigAdaptor(c)
+
+    with pytest.raises(ServiceXException) as e:
+        x.get_default_returned_datatype(None)
+
+    assert 'default_return_data' in str(e)
+
+
 def test_returned_datatype_from_default_dict():
     c = ConfigSettings('servicex', 'servicex')
     c.clear()
