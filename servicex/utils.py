@@ -234,12 +234,16 @@ def _null_progress_feedback(ds_name: DatasetType, title: Optional[str], download
     return None
 
 
-def _bar_name(sample_name: Optional[DatasetType], title: Optional[str]) -> str:
+def dataset_as_name(sample_name: Optional[DatasetType],
+                    title: Optional[str] = None,
+                    max_len: Optional[int] = 20) -> str:
     """Returns a name that is suitable for a progress bar
 
     Args:
         sample_name (str): The sample info
         title (Optional[str]): The title specified with the request
+        max_len (Optional[int]): The maximum length of the title. None
+        means no length limit.
 
     Returns:
         str: Name to use for a progress bar
@@ -253,8 +257,8 @@ def _bar_name(sample_name: Optional[DatasetType], title: Optional[str]) -> str:
         else:
             name = '<none>'
 
-    if len(name) > 20:
-        name = name[0:20] + '...'
+    if (max_len is not None) and (len(name) > max_len):
+        name = name[0:max_len] + '...'
 
     return name
 
@@ -273,7 +277,7 @@ class _default_wrapper_mgr:
         self._tqdm_p: Optional[tqdm] = None
         self._tqdm_d: Optional[tqdm] = None
         self._show_download_progress = show_download_bar
-        self._name = _bar_name(sample_name, title)
+        self._name = dataset_as_name(sample_name, title)
 
     def _init_tqdm(self):
         if self._tqdm_p is not None:

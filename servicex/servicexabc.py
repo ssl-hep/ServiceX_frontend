@@ -12,6 +12,7 @@ from .utils import (
     _null_progress_feedback,
     _run_default_wrapper,
     _status_update_wrapper,
+    dataset_as_name,
 )
 
 
@@ -67,6 +68,17 @@ class ServiceXABC(ABC):
         self._status_callback_factory = \
             status_callback_factory if status_callback_factory is not None \
             else _null_progress_feedback
+
+    @property
+    def dataset_as_name(self) -> str:
+        '''Return the dataset name as a string for "human" consumption.
+
+        Note that this can be very very long!
+
+        Returns:
+            str: The dataset name formatted as a string
+        '''
+        return dataset_as_name(self._dataset, max_len=None)
 
     def _create_notifier(self, title: Optional[str], downloading: bool) -> _status_update_wrapper:
         'Internal method to create a updater from the status call-back'

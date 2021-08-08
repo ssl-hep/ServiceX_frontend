@@ -46,6 +46,18 @@ def test_default_ctor(mocker):
     config.get_default_returned_datatype.assert_called_with('uproot-ftw')
 
 
+def test_sx_name(mocker):
+    '''Makes ure the name comes back right.
+    '''
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.settings = Configuration('servicex', 'servicex')
+    config.get_servicex_adaptor_config.return_value = ('http://no-way.dude',
+                                                       'no_spoon_there_is')
+
+    ds = fe.ServiceXDataset('localds://dude', "uproot-ftw", config_adaptor=config)
+    assert ds.dataset_as_name == 'localds://dude'
+
+
 def test_default_ctor_no_type(mocker):
     '''Test the default ctor. This requires that a .servicex file be present to work,
     so we are going to dummy it out.

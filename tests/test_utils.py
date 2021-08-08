@@ -1,25 +1,18 @@
-from datetime import timedelta
-import tempfile
-from typing import Optional
-import aiohttp
-from pathlib import Path
 import os
+import tempfile
+from datetime import timedelta
+from pathlib import Path
+from typing import Optional
+
+import aiohttp
 import backoff
-
 import pytest
-
-from servicex.utils import (
-    _query_cache_hash,
-    _status_update_wrapper,
-    clean_linq, get_configured_cache_path,
-    on_exception_itr,
-    stream_status_updates,
-    stream_unique_updates_only,
-    write_query_log,
-    log_adaptor,
-    default_client_session,
-    _bar_name
-)
+from servicex.utils import (_query_cache_hash, _status_update_wrapper,
+                            clean_linq, dataset_as_name,
+                            default_client_session, get_configured_cache_path,
+                            log_adaptor, on_exception_itr,
+                            stream_status_updates, stream_unique_updates_only,
+                            write_query_log)
 
 from .conftest import as_async_seq
 
@@ -551,17 +544,23 @@ def test_cache_expansion_username():
 
 def test_bar_name_title():
     'Test various uses of the progress bar title generator'
-    assert _bar_name(None, None) == "<none>"
+    assert dataset_as_name(None, None) == "<none>"
 
-    assert _bar_name('sample1', None) == 'sample1'
-    assert _bar_name('sample1sample1sample1sample1', None) == 'sample1sample1sample...'
+    assert dataset_as_name('sample1', None) == 'sample1'
+    assert dataset_as_name('sample1sample1sample1sample1', None) == 'sample1sample1sample...'
 
-    assert _bar_name(['s1', 's2', 's3'], None) == '[s1, s2, s3]'
-    assert _bar_name(['sample1sample1sample1sample1', 'sample1sample1sample1sample1'], None) \
-        == '[sample1sample1sampl...'
+    assert dataset_as_name(['s1', 's2', 's3'], None) == '[s1, s2, s3]'
+    assert dataset_as_name(['sample1sample1sample1sample1', 'sample1sample1sample1sample1'],
+                           None) == '[sample1sample1sampl...'
 
-    assert _bar_name(sample_name='sample1', title='hi') == 'hi'
-    assert _bar_name('hi', 'sample1sample1sample1sample1') == 'sample1sample1sample...'
+    assert dataset_as_name(sample_name='sample1', title='hi') == 'hi'
+    assert dataset_as_name('hi', 'sample1sample1sample1sample1') == 'sample1sample1sample...'
+
+
+def test_bar_name_long():
+    'Try a longer version'
+    assert dataset_as_name('sample1sample1sample1sample1', max_len=None) \
+        == 'sample1sample1sample1sample1'
 
 
 @pytest.mark.asyncio()
