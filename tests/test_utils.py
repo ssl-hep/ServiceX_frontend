@@ -509,6 +509,10 @@ def test_configured_cache_location():
 def test_cache_expansion_user():
     '''On windows this will expand one way, and on linux another. So need to be a little careful here!
     '''
+    # If we are running in a place where USER/Username does not exist!
+    if 'USER' not in os.environ and 'UserName' not in os.environ:
+        os.environ['USER'] = 'bogus'
+
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
     c.clear()
@@ -527,6 +531,10 @@ def test_cache_expansion_user():
 def test_cache_expansion_username():
     '''On windows this will expand one way, and on linux another. So need to be a little careful here!
     '''
+    # If we are running in a place where USER/Username does not exist!
+    if 'USER' not in os.environ and 'UserName' not in os.environ:
+        os.environ['USER'] = 'bogus'
+
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
     c.clear()
@@ -618,7 +626,7 @@ async def test_async_itr_exception_all():
         nonlocal count
         count = count + 1
         raise ValueError('hi')
-        yield 1
+        yield 1  # NOQA
 
     with pytest.raises(ValueError) as e:
         [item async for item in return_two()]
