@@ -315,7 +315,7 @@ class _default_wrapper_mgr:
 
 
 # Changes in the json that won't affect the result
-_json_keys_to_ignore_for_hash = ['workers']
+_json_keys_to_ignore_for_hash = ['workers', 'title']
 
 
 def _query_cache_hash(json_query: Dict[str, str]) -> str:
