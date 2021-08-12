@@ -509,6 +509,10 @@ def test_configured_cache_location():
 def test_cache_expansion_user():
     '''On windows this will expand one way, and on linux another. So need to be a little careful here!
     '''
+    # If we are running in a place where USER/Username does not exist!
+    if 'USER' not in os.environ and 'UserName' not in os.environ:
+        os.environ['USER'] = 'bogus'
+
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
     c.clear()
@@ -527,6 +531,10 @@ def test_cache_expansion_user():
 def test_cache_expansion_username():
     '''On windows this will expand one way, and on linux another. So need to be a little careful here!
     '''
+    # If we are running in a place where USER/Username does not exist!
+    if 'USER' not in os.environ and 'UserName' not in os.environ:
+        os.environ['USER'] = 'bogus'
+
     from confuse import Configuration
     c = Configuration('bogus', 'bogus')
     c.clear()
