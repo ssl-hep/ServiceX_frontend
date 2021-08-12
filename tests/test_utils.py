@@ -626,7 +626,7 @@ async def test_async_itr_exception_all():
         nonlocal count
         count = count + 1
         raise ValueError('hi')
-        yield 1
+        yield 1  # NOQA
 
     with pytest.raises(ValueError) as e:
         [item async for item in return_two()]
