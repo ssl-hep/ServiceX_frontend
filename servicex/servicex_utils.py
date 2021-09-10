@@ -21,7 +21,7 @@ def _wrap_in_memory_sx_cache(fn):
     '''
     @functools.wraps(fn)
     async def cached_version_of_fn(*args, **kwargs):
-        assert len(args) == 2
+        assert len(args) == 2 or 3
         sx = args[0]
         from .servicex import ServiceXDataset
         assert isinstance(sx, ServiceXDataset)
