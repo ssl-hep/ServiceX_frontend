@@ -11,12 +11,11 @@ from servicex import ServiceXDataset
 from servicex.servicex_adaptor import ServiceXAdaptor
 
 
-async def run_query(endpoint: Optional[ServiceXAdaptor], dest: str) -> None:
+async def run_query(endpoint: str, dest: str) -> None:
     ds = ServiceXDataset(
         "mc16_13TeV:mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.deriv.DAOD_STDM3.e3601_e5984_s3126_r10201_r10210_p3975_tid20425969_00",  # NOQA
-        backend_name='xaod',
-        max_workers=100,
-        servicex_adaptor=endpoint)
+        backend_name=endpoint,
+        max_workers=100)
 
     request = "(call ResultTTree (call Select (call SelectMany (call EventDataset (list 'localds:bogus')) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (/ (call (attr j 'pt')) 1000.0))) (list 'JetPt') 'analysis' 'junk.root')"  # NOQA
     if dest == 'rootfiles':
@@ -33,7 +32,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='test servicex frontend.')
     parser.add_argument('--log', dest='logging', action='store_const',
                         const=True, default=False,
-                        help='Turn on the logging')
+                        help='Name of endpoint to use from servicex.yaml file')
+    parser.add_argument('--endpoint', dest='endpoint',
+                        default='atlas')
     parser.add_argument('--output', dest='output',
                         default=['rootfiles'], nargs=1,
                         choices=['rootfiles', 'rootfiles-minio'],
@@ -50,6 +51,6 @@ if __name__ == '__main__':
     # servicex_adaptor = ServiceXAdaptor(sys.argv[1]) if len(sys.argv) >= 2 else None
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(run_query(None, args.output[0]))
+        loop.run_until_complete(run_query(args.endpoint, args.output[0]))
     finally:
         loop.close()
