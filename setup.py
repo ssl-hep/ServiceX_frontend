@@ -49,7 +49,7 @@ setup(name="servicex",
           'make_it_sync==1.0.0',
           'google-auth==1.17',
           'confuse==1.3.0',
-          'pyarrow>=1.0, <4.0'
+          'pyarrow>=1.0'
       ],
       extras_require={
           'test': [
