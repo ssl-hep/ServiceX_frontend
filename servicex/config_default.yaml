@@ -6,6 +6,9 @@ api_endpoints:
     name: default
     type: xaod
     # token: xxx
+  - endpoint: http://localhost:5000
+    name: default
+    type: cms_run1_aod
 
 # This is the path of the cache. The "/tmp" will be translated, platform appropriate, and
 # the env variable USER will be replaced.
