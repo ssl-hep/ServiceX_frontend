@@ -345,7 +345,7 @@ def test_data_file_location_long_path(tmp_path):
     long_file_name = ''.join(random.choice(letters) for i in range(230))
 
     p = c.data_file_location('123-456', long_file_name + file_significant_name)
-    assert(len(p.name) == Cache.MAX_PATH_LEN - len(p.parent.name))
+    assert(len(p.name) == c.max_path_len - len(p.parent.name))
     assert p.name.endswith(file_significant_name)
 
 
