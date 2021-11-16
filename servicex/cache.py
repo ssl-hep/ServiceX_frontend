@@ -8,9 +8,6 @@ from .utils import ServiceXException, _query_cache_hash, sanitize_filename
 
 _ignore_cache = False
 
-# Make sure that generated download path names are below this to avoid os errors
-MAX_PATH_LEN = 200
-
 
 @contextmanager
 def ignore_cache():
@@ -120,6 +117,9 @@ class Cache:
     TODO: Rename this to be an adaptor, unifying how we name things
     '''
     _in_memory_cache = {}
+
+    # Make sure that generated download path names are below this to avoid os errors
+    MAX_PATH_LEN = 200
 
     @classmethod
     def reset_cache(cls):  # # pragma: no cover
@@ -411,10 +411,10 @@ class Cache:
         parent = self._path / 'data' / request_id
         parent.mkdir(parents=True, exist_ok=True)
         sanitized = sanitize_filename(data_name)
-        if (len(sanitized) + len(parent.name)) > MAX_PATH_LEN:
+        if (len(sanitized) + len(parent.name)) > self.MAX_PATH_LEN:
             hash = hashlib.md5(sanitized.encode())
             hash_string = hash.hexdigest()
-            max_len = MAX_PATH_LEN - len(parent.name) - len(hash_string) - 1
+            max_len = self.MAX_PATH_LEN - len(parent.name) - len(hash_string) - 1
             sanitized = f'{hash_string}-{sanitized[len(sanitized)-max_len:]}'
 
         return parent / sanitized
