@@ -1,3 +1,4 @@
+import os
 import hashlib
 import json
 from contextlib import contextmanager
@@ -118,9 +119,6 @@ class Cache:
     '''
     _in_memory_cache = {}
 
-    # Make sure that generated download path names are below this to avoid os errors
-    MAX_PATH_LEN = 200
-
     @classmethod
     def reset_cache(cls):  # # pragma: no cover
         'Reset the internal cache, usually used for testing'
@@ -139,6 +137,11 @@ class Cache:
         '''
         self._path = cache_path
         self._ignore_cache = ignore_cache
+
+        # old windows versions have a limit of file path of 260 chars.
+        self.max_path_len = 200
+        if os.name == 'nt':
+            self.max_path_len = self.max_path_len - 100
 
     @property
     def path(self) -> Path:
@@ -411,10 +414,10 @@ class Cache:
         parent = self._path / 'data' / request_id
         parent.mkdir(parents=True, exist_ok=True)
         sanitized = sanitize_filename(data_name)
-        if (len(sanitized) + len(parent.name)) > self.MAX_PATH_LEN:
+        if (len(sanitized) + len(parent.name)) > self.max_path_len:
             hash = hashlib.md5(sanitized.encode())
             hash_string = hash.hexdigest()
-            max_len = self.MAX_PATH_LEN - len(parent.name) - len(hash_string) - 1
+            max_len = self.max_path_len - len(parent.name) - len(hash_string) - 1
             sanitized = f'{hash_string}-{sanitized[len(sanitized)-max_len:]}'
 
         return parent / sanitized
