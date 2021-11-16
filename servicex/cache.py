@@ -9,7 +9,7 @@ from .utils import ServiceXException, _query_cache_hash, sanitize_filename
 _ignore_cache = False
 
 # Make sure that generated download path names are below this to avoid os errors
-MAX_PATH_LEN = 235
+MAX_PATH_LEN = 200
 
 
 @contextmanager
