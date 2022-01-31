@@ -143,6 +143,7 @@ class ServiceXDataset(ServiceXABC):
                  backend_name: Optional[str] = None,
                  image: str = None,
                  max_workers: int = 20,
+                 result_destination: str = 'object-store',
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: Union[MinioAdaptor, MinioAdaptorFactory] = None,
                  cache_adaptor: Optional[Cache] = None,
@@ -168,6 +169,9 @@ class ServiceXDataset(ServiceXABC):
                                         ServiceX backend will be used.
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
+            result_destination          Where the transformers should write the results.
+                                        Defaults to object-store, but could be used to save
+                                        results to a posix volume
             servicex_adaptor            Object to control communication with the servicex instance
                                         at a particular ip address with certian login credentials.
                                         Will be configured via the `config_adaptor` by default.
@@ -202,7 +206,7 @@ class ServiceXDataset(ServiceXABC):
             -  The full description of calling parameters is recorded in the local cache, including
                things like `image` name and tag.
         '''
-        ServiceXABC.__init__(self, dataset, image, max_workers,
+        ServiceXABC.__init__(self, dataset, image, max_workers, result_destination,
                              status_callback_factory,
                              )
 
@@ -835,7 +839,7 @@ class ServiceXDataset(ServiceXABC):
         # Items that must always be present
         json_query: Dict[str, Union[str, Iterable[str]]] = {
             "selection": selection_query,
-            "result-destination": "object-store",
+            "result-destination": self._result_destination,
             "result-format": 'parquet' if data_type == 'parquet' else "root-file",
             "chunk-size": '1000',
             "workers": str(self._max_workers)
