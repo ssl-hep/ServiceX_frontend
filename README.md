@@ -235,6 +235,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
                  backend_name: Optional[str] = None,
                  image: str = 'sslhep/servicex_func_adl_xaod_transformer:v0.4',
                  max_workers: int = 20,
+                 result_destination = 'object-store',
                  servicex_adaptor: ServiceXAdaptor = None,
                  minio_adaptor: MinioAdaptor = None,
                  cache_adaptor: Optional[Cache] = None,
@@ -256,6 +257,9 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
           image                       Name of transformer image to use to transform the data
           max_workers                 Maximum number of transformers to run simultaneously on
                                       ServiceX.
+          result_destination          Where the transformers should write the results.
+                                      Defaults to object-store, but could be used to save
+                                      results to a posix volume                                      
           servicex_adaptor            Object to control communication with the servicex instance
                                       at a particular ip address with certain login credentials.
                                       Default comes from the `config_adaptor`.

@@ -30,6 +30,7 @@ class ServiceXABC(ABC):
                  dataset: DatasetType,
                  image: Optional[str] = None,
                  max_workers: int = 20,
+                 result_destination: str = 'object-store',
                  status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
                  ):
         '''
@@ -44,6 +45,9 @@ class ServiceXABC(ABC):
                                         down.
             max_workers                 Maximum number of transformers to run simultaneously on
                                         ServiceX.
+            result_destination          Where the transformers should write the results.
+                                        Defaults to object-store, but could be used to save
+                                        results to a posix volume
             cache_path                  Path to the cache
             status_callback_factory     Factory to create a status notification callback for each
                                         query. One is created per query.
@@ -62,6 +66,7 @@ class ServiceXABC(ABC):
         self._dataset = dataset
         self._image = image
         self._max_workers = max_workers
+        self._result_destination = result_destination
 
         # We can't create the notifier until the actual query,
         # so only need to save the status update.

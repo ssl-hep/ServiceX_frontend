@@ -84,7 +84,9 @@
     "python.analysis.typeCheckingMode": "basic",
     "python.testing.pytestArgs": [
         "tests",
-        "--no-cov"
+        "-s"
     ],
     "python.pythonPath": ".venv\\Scripts\\python.exe",
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
 }
