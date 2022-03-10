@@ -48,14 +48,14 @@ async def test_parquet_to_pandas(good_uproot_file_path):
 async def test_parquet_to_awkward(good_uproot_file_path):
     df = await DataConverterAdaptor('parquet').convert_to_awkward(good_uproot_file_path)
     assert len(df['JetPT']) == 115714
-    check_awkward_accessible(df['JetPT'])
+    check_awkward_accessible(df['JetPT'])  # type: ignore
 
 
 @pytest.mark.asyncio
 async def test_root_to_awkward(good_root_file_path):
     df = await DataConverterAdaptor('root').convert_to_awkward(good_root_file_path)
     assert len(df['JetPt']) == 283458
-    check_awkward_accessible(df['JetPt'])
+    check_awkward_accessible(df['JetPt'])  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -116,7 +116,7 @@ def test_combine_awkward_from_root(good_root_file_path):
     combined = DataConverterAdaptor('root').combine_awkward([df1, df2])
 
     assert len(combined) == len(df1) + len(df2)
-    check_awkward_accessible(combined['JetPt'])
+    check_awkward_accessible(combined['JetPt'])  # type: ignore
 
 
 def test_combine_awkward_from_parquet(good_uproot_file_path):
@@ -130,4 +130,4 @@ def test_combine_awkward_from_parquet(good_uproot_file_path):
     combined = DataConverterAdaptor('root').combine_awkward([df1, df2])
 
     assert len(combined) == len(df1) + len(df2)
-    check_awkward_accessible(combined['JetPT'])
+    check_awkward_accessible(combined['JetPT'])  # type: ignore
