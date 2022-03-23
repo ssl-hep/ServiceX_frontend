@@ -97,8 +97,8 @@ def sanitize_filename(fname: str):
                 .replace(':', '_')
 
 
-# Datasets can be specified in mulitple ways
-# to ServiceX. This datatype encapuslates them
+# Datasets can be specified in multiple ways
+# to ServiceX. This datatype encapsulates them
 # all.
 DatasetType = Union[
     str,  # A single URI with a scheme (e.g. rucio://did_name, http://, root://)
@@ -272,7 +272,7 @@ else:
 
 class _default_wrapper_mgr:
     'Default progress bar'
-    def __init__(self, sample_name: Optional[DatasetType] = None, title: str = None,
+    def __init__(self, sample_name: Optional[DatasetType] = None, title: Optional[str] = None,
                  show_download_bar: bool = True):
         self._tqdm_p: Optional[tqdm] = None
         self._tqdm_d: Optional[tqdm] = None

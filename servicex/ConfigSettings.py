@@ -37,7 +37,7 @@ class ConfigSettings(Configuration):
         while True:
             f = dir / name
             if f.exists():
-                yaml_data = yaml_util.load_yaml(f, loader=self.loader) or {}
+                yaml_data = yaml_util.load_yaml(f, loader=self.loader) or {}  # type: ignore
                 self.add(ConfigSource(yaml_data, str(f)))
                 break
             if not walk_up_tree:

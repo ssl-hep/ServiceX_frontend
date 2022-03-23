@@ -71,10 +71,10 @@ reset_local_query_cache()
 def update_local_query_cache(analysis_cache: Optional[Path] = None):
     '''Record analysis query hashes in an analysis cache.
 
-    If this routine is not called, the current directoy is searched for an
+    If this routine is not called, the current directory is searched for an
     analysis cache file. If found, it participates in the query lookup.
 
-    After this rouinte is called, then when a query is made or looked up, an
+    After this routine is called, then when a query is made or looked up, an
     analysis cache file in the local directory is updated with new query request
     id's.
 

@@ -70,7 +70,7 @@ class ServiceXConfigAdaptor:
     def _get_backend_info(self, backend_name: Optional[str]) -> Dict[str, str]:
         '''Returns all the info for a backend name/type.
 
-        Search algoirthm is non-trivial:
+        Search algorithm is non-trivial:
         1. If `backend_name` is not `None`:
            1. Look at the `api_endpoints` for a `name` matching `backend_name`.
            2. Look at the `api_endpoints` for a `type` matching `backend_name`,
