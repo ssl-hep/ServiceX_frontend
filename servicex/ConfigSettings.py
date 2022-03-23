@@ -7,9 +7,9 @@ class ConfigSettings(Configuration):
         Configuration.__init__(self, appname, modname, loader)
 
     def read(self, user=True, defaults=True):
-        '''
+        """
         Read in the settings from various locations.
-        '''
+        """
         if user:
             self._add_local_source()
             self._add_home_source()
@@ -18,12 +18,12 @@ class ConfigSettings(Configuration):
             self._add_default_source()
 
     def _add_local_source(self):
-        '''
+        """
         Look for a '.xxx" file in the local directory
-        '''
-        self._add_from_path(Path(f'{self.appname}.yaml'), walk_up_tree=True)
-        self._add_from_path(Path(f'{self.appname}.yml'), walk_up_tree=True)
-        self._add_from_path(Path(f'.{self.appname}'), walk_up_tree=True)
+        """
+        self._add_from_path(Path(f"{self.appname}.yaml"), walk_up_tree=True)
+        self._add_from_path(Path(f"{self.appname}.yml"), walk_up_tree=True)
+        self._add_from_path(Path(f".{self.appname}"), walk_up_tree=True)
 
     # def _add_from_path(self, p: Path):
     #     if p.exists():
@@ -37,7 +37,7 @@ class ConfigSettings(Configuration):
         while True:
             f = dir / name
             if f.exists():
-                yaml_data = yaml_util.load_yaml(f, loader=self.loader) or {}
+                yaml_data = yaml_util.load_yaml(f, loader=self.loader) or {}  # type: ignore
                 self.add(ConfigSource(yaml_data, str(f)))
                 break
             if not walk_up_tree:
@@ -47,9 +47,9 @@ class ConfigSettings(Configuration):
             dir = dir.parent
 
     def _add_home_source(self):
-        '''
+        """
         Look for a '.xxx" file in the local directory
-        '''
-        self._add_from_path(Path.home() / f'{self.appname}.yaml')
-        self._add_from_path(Path.home() / f'{self.appname}.yml')
-        self._add_from_path(Path.home() / f'.{self.appname}')
+        """
+        self._add_from_path(Path.home() / f"{self.appname}.yaml")
+        self._add_from_path(Path.home() / f"{self.appname}.yml")
+        self._add_from_path(Path.home() / f".{self.appname}")

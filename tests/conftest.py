@@ -44,8 +44,14 @@ class ClientSessionMocker:
 
 
 class MockServiceXAdaptor:
-    def __init__(self, mocker: MockFixture, request_id: str, mock_transform_status: Mock = None,
-                 mock_query: Mock = None, mock_transform_query_status: Mock = None):
+    def __init__(
+        self,
+        mocker: MockFixture,
+        request_id: str,
+        mock_transform_status: Mock = None,
+        mock_query: Mock = None,
+        mock_transform_query_status: Mock = None,
+    ):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
         self.requests_made = 0
@@ -53,37 +59,39 @@ class MockServiceXAdaptor:
         def do_unique_id():
             id = self.request_id.format(self.requests_made)
             self.requests_made += 1
-            return {'request_id': id}
+            return {"request_id": id}
 
-        self.query = mock_query \
-            if mock_query \
-            else mocker.Mock(side_effect=do_unique_id)
+        self.query = mock_query if mock_query else mocker.Mock(side_effect=do_unique_id)
 
-        self.transform_status = mock_transform_status \
-            if mock_transform_status \
+        self.transform_status = (
+            mock_transform_status
+            if mock_transform_status
             else mocker.Mock(return_value=(0, 1, 0))
+        )
 
-        self.query_status = mock_transform_query_status \
-            if mock_transform_query_status \
-            else None
+        self.query_status = (
+            mock_transform_query_status if mock_transform_query_status else None
+        )
 
         self.dump_query_errors_count = 0
 
-    async def submit_query(self, client: aiohttp.ClientSession,
-                           json_query: Dict[str, str]) -> str:
+    async def submit_query(
+        self, client: aiohttp.ClientSession, json_query: Dict[str, str]
+    ) -> str:
         self.query_json = json_query
         return self.query()
 
-    async def get_transform_status(self, client: str, request_id: str) \
-            -> Tuple[Optional[int], int, Optional[int]]:
+    async def get_transform_status(
+        self, client: str, request_id: str
+    ) -> Tuple[Optional[int], int, Optional[int]]:
         # remaining, processed, skipped
         return self.transform_status()
 
     async def get_query_status(self, client, request_id):
         if self.query_status is None:
             return {
-                'request_id': request_id,
-                'dude': 'way',
+                "request_id": request_id,
+                "dude": "way",
             }
         return self.query_status()
 
@@ -92,21 +100,25 @@ class MockServiceXAdaptor:
 
 
 class MockMinioAdaptor(MinioAdaptor):
-    def __init__(self,
-                 mocker: MockFixture,
-                 files: List[str] = [],
-                 exception_on_access: Optional[Exception] = None):
+    def __init__(
+        self,
+        mocker: MockFixture,
+        files: List[str] = [],
+        exception_on_access: Optional[Exception] = None,
+    ):
         self._files = files
         self.mock_download_file = mocker.Mock()
         self._access_called_with = None
         self._exception_on_access = exception_on_access
         pass
 
-    async def download_file(self, request_id: str, minio_object_name: str, final_path: Path):
+    async def download_file(
+        self, request_id: str, minio_object_name: str, final_path: Path
+    ):
         self.mock_download_file(request_id, minio_object_name, final_path)
 
     def get_files(self, request_id) -> List[str]:
-        'Return files in the bucket'
+        "Return files in the bucket"
         return self._files
 
     def get_access_url(self, request_id: str, object_name: str) -> str:
@@ -125,12 +137,15 @@ class MockMinioAdaptor(MinioAdaptor):
 __g_inmem_value = None
 
 
-def build_cache_mock(mocker, query_cache_return: str = None,
-                     files: Optional[List[Tuple[str, Path]]] = None,
-                     in_memory: Any = None,
-                     make_in_memory_work: bool = False,
-                     data_file_return: str = None,
-                     query_status_lookup_return: Optional[Dict[str, str]] = None) -> Cache:
+def build_cache_mock(
+    mocker,
+    query_cache_return: str = None,
+    files: Optional[List[Tuple[str, Path]]] = None,
+    in_memory: Any = None,
+    make_in_memory_work: bool = False,
+    data_file_return: str = None,
+    query_status_lookup_return: Optional[Dict[str, str]] = None,
+) -> Cache:
     c = mocker.MagicMock(spec=Cache)
 
     if in_memory is None:
@@ -139,6 +154,7 @@ def build_cache_mock(mocker, query_cache_return: str = None,
         c.lookup_inmem.return_value = in_memory
 
     if make_in_memory_work:
+
         def save_it(h, v):
             global __g_inmem_value
             __g_inmem_value = v
@@ -162,7 +178,7 @@ def build_cache_mock(mocker, query_cache_return: str = None,
         c.lookup_files.return_value = files
 
     def data_file_return_generator(request_id: str, fname: str):
-        return Path(f'/tmp/servicex-testing/{request_id}/{fname}')
+        return Path(f"/tmp/servicex-testing/{request_id}/{fname}")
 
     if data_file_return is None:
         c.data_file_location.side_effect = data_file_return_generator
@@ -189,12 +205,14 @@ def good_uproot_file_path():
 
 @pytest.fixture
 def good_pandas_file_data(mocker):
-    'Return a good pandas dataset'
+    "Return a good pandas dataset"
     import pandas as pd
     import asyncmock
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_pandas.return_value = pd.DataFrame({'JetPt': [0, 1, 2, 3, 4, 5]})
+    converter.convert_to_pandas.return_value = pd.DataFrame(
+        {"JetPt": [0, 1, 2, 3, 4, 5]}
+    )
     converter.combine_pandas.return_value = converter.convert_to_pandas.return_value
 
     return converter
@@ -205,8 +223,9 @@ def good_awkward_file_data(mocker):
     import awkward as ak
 
     converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_awkward.return_value = \
-        {'JetPt': ak.from_iter([0, 1, 2, 3, 4, 5])}  # type: ignore
+    converter.convert_to_awkward.return_value = {
+        "JetPt": ak.from_iter([0, 1, 2, 3, 4, 5])
+    }  # type: ignore
     converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
     return converter
@@ -215,6 +234,7 @@ def good_awkward_file_data(mocker):
 @pytest.fixture
 def short_status_poll_time():
     import servicex.servicex_adaptor as sxs
+
     old_value, sxs.servicex_status_poll_time = sxs.servicex_status_poll_time, 0.1
     yield
     sxs.servicex_status_poll_time = old_value

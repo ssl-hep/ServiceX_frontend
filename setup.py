@@ -64,7 +64,8 @@ setup(name="servicex",
               'twine',
               'asyncmock',
               'jupyterlab',
-              'ipywidgets'
+              'ipywidgets',
+              'black'
           ] + extra_test_packages,
       },
       classifiers=[

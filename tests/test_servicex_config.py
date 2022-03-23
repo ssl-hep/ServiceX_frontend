@@ -11,13 +11,13 @@ def test_default_ctor():
 
 
 def test_passed_in_settings():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     x = ServiceXConfigAdaptor(c)
     assert x.settings is c
 
 
 def test_returned_datatype_nothing():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
     x = ServiceXConfigAdaptor(c)
     with pytest.raises(ServiceXException):
@@ -25,317 +25,335 @@ def test_returned_datatype_nothing():
 
 
 def test_returned_datatype_default():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
-    c['default_return_data'] = 'root'
-    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
+    c["default_return_data"] = "root"
+    c["api_endpoints"] = [{"endpoint": "http://bork", "type": "forkit"}]
     x = ServiceXConfigAdaptor(c)
-    assert x.get_default_returned_datatype(None) == 'root'
+    assert x.get_default_returned_datatype(None) == "root"
 
 
 def test_returned_datatype_default_missing():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
-    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
+    c["api_endpoints"] = [{"endpoint": "http://bork", "type": "forkit"}]
     x = ServiceXConfigAdaptor(c)
 
     with pytest.raises(ServiceXException) as e:
         x.get_default_returned_datatype(None)
 
-    assert 'default_return_data' in str(e)
+    assert "default_return_data" in str(e)
 
 
 def test_returned_datatype_from_default_dict():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
-    c['api_endpoints'] = [{'endpoint': 'http://bork', 'type': 'forkit'}]
-    c['backend_types'] = [{'type': 'forkit', 'return_data': 'spoon'}]
+    c["api_endpoints"] = [{"endpoint": "http://bork", "type": "forkit"}]
+    c["backend_types"] = [{"type": "forkit", "return_data": "spoon"}]
     x = ServiceXConfigAdaptor(c)
-    assert x.get_default_returned_datatype('forkit') == 'spoon'
+    assert x.get_default_returned_datatype("forkit") == "spoon"
 
 
 def test_returned_datatype_from_endpoint():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
-    c['backend_types'] = [{'type': 'forkit', 'return_data': 'spoon'}]
-    c['api_endpoints'] = [{'type': 'forkit', 'return_data': 'spoons'}]
+    c["backend_types"] = [{"type": "forkit", "return_data": "spoon"}]
+    c["api_endpoints"] = [{"type": "forkit", "return_data": "spoons"}]
     x = ServiceXConfigAdaptor(c)
-    assert x.get_default_returned_datatype('forkit') == 'spoons'
+    assert x.get_default_returned_datatype("forkit") == "spoons"
 
 
 def test_defalt_config_has_default_return_datatype():
-    'Test default settings - default_returned_datatype'
-    c = ConfigSettings('servicex', 'servicex')
-    assert c['default_return_data'].exists()
+    "Test default settings - default_returned_datatype"
+    c = ConfigSettings("servicex", "servicex")
+    assert c["default_return_data"].exists()
 
 
 def test_defalt_config_has_backend_types():
-    c = ConfigSettings('servicex', 'servicex')
-    assert c['backend_types'].exists()
+    c = ConfigSettings("servicex", "servicex")
+    assert c["backend_types"].exists()
     count = 0
-    for info in c['backend_types']:
+    for info in c["backend_types"]:
         count += 1
-        assert info['type'].exists()
-        assert info['return_data'].exists()
+        assert info["type"].exists()
+        assert info["return_data"].exists()
     assert count > 0
 
 
 def test_sx_adaptor_settings(caplog):
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'my-type',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type",
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('my-type')
+    endpoint, token = x.get_servicex_adaptor_config("my-type")
 
-    assert endpoint == 'http://my-left-foot.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
+    assert endpoint == "http://my-left-foot.com:5000"
+    assert token == "forkingshirtballs.thegoodplace.bortles"
 
     assert len(caplog.record_tuples) == 1  # Depreciation warning
 
 
 def test_sx_adaptor_settings_name(caplog):
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'my-type',
-            'name': 'my-fork',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type",
+            "name": "my-fork",
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('my-fork')
+    endpoint, token = x.get_servicex_adaptor_config("my-fork")
 
-    assert endpoint == 'http://my-left-foot.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
+    assert endpoint == "http://my-left-foot.com:5000"
+    assert token == "forkingshirtballs.thegoodplace.bortles"
 
     assert len(caplog.record_tuples) == 0
 
 
 def test_sx_adaptor_settings_name_not_type(caplog):
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'my-type1',
-            'name': 'my-fork1',
-            'endpoint': 'http://my-left-foot1.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type1",
+            "name": "my-fork1",
+            "endpoint": "http://my-left-foot1.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         },
         {
-            'type': 'my-type2',
-            'name': 'my-type1',
-            'endpoint': 'http://my-left-foot2.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type2",
+            "name": "my-type1",
+            "endpoint": "http://my-left-foot2.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         },
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('my-type1')
+    endpoint, token = x.get_servicex_adaptor_config("my-type1")
 
-    assert endpoint == 'http://my-left-foot2.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
+    assert endpoint == "http://my-left-foot2.com:5000"
+    assert token == "forkingshirtballs.thegoodplace.bortles"
 
     assert len(caplog.record_tuples) == 0
 
 
 def test_sx_adaptor_settings_name_worng(caplog):
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'my-type',
-            'name': 'my-fork',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type",
+            "name": "my-fork",
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('my-type')
+    endpoint, token = x.get_servicex_adaptor_config("my-type")
 
-    assert len(caplog.record_tuples) == 1  # Depreciation warning for using match by type
+    assert (
+        len(caplog.record_tuples) == 1
+    )  # Depreciation warning for using match by type
 
 
 def test_sx_adaptor_settings_no_backend_name_requested(caplog):
-    'Request None for a backend name'
+    "Request None for a backend name"
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'my-type',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type",
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
     x = ServiceXConfigAdaptor(c)
     endpoint, token = x.get_servicex_adaptor_config()
 
-    assert endpoint == 'http://my-left-foot.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
+    assert endpoint == "http://my-left-foot.com:5000"
+    assert token == "forkingshirtballs.thegoodplace.bortles"
 
-    assert caplog.record_tuples[0][2] == "No backend name/type requested, " \
-                                         "using http://my-left-foot.com:5000 - please be " \
-                                         "explicit " \
-                                         "in the ServiceXDataset constructor"
+    assert (
+        caplog.record_tuples[0][2] == "No backend name/type requested, "
+        "using http://my-left-foot.com:5000 - please be "
+        "explicit "
+        "in the ServiceXDataset constructor"
+    )
 
 
 def test_sx_adaptor_settings_no_backend_name_requested_or_listed(caplog):
-    'Request None for a backend name'
+    "Request None for a backend name"
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
     x = ServiceXConfigAdaptor(c)
     endpoint, token = x.get_servicex_adaptor_config()
 
-    assert endpoint == 'http://my-left-foot.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
+    assert endpoint == "http://my-left-foot.com:5000"
+    assert token == "forkingshirtballs.thegoodplace.bortles"
 
-    assert caplog.record_tuples[0][2] == "No backend name/type requested, " \
-                                         "using http://my-left-foot.com:5000 - please be " \
-                                         "explicit " \
-                                         "in the ServiceXDataset constructor"
+    assert (
+        caplog.record_tuples[0][2] == "No backend name/type requested, "
+        "using http://my-left-foot.com:5000 - please be "
+        "explicit "
+        "in the ServiceXDataset constructor"
+    )
 
 
 def test_sx_adaptor_settings_backend_name_requested_with_unlabeled_type(caplog):
-    'Request None for a backend name'
+    "Request None for a backend name"
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
     x = ServiceXConfigAdaptor(c)
     with pytest.raises(ServiceXException) as e:
-        _ = x.get_servicex_adaptor_config('xaod')
+        _ = x.get_servicex_adaptor_config("xaod")
 
-    assert 'Unable to find' in str(e)
+    assert "Unable to find" in str(e)
 
 
 def test_sx_adaptor_settings_backend_name_requested_after_labeled_type(caplog):
-    'Request None for a backend name'
+    "Request None for a backend name"
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         },
         {
-            'type': 'xaod',
-            'endpoint': 'http://my-left-foot.com:5001',
-            'token': 'forkingshirtballs.thegoodplace.bortles1'
-        }
+            "type": "xaod",
+            "endpoint": "http://my-left-foot.com:5001",
+            "token": "forkingshirtballs.thegoodplace.bortles1",
+        },
     ]
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('xaod')
+    endpoint, token = x.get_servicex_adaptor_config("xaod")
 
-    assert endpoint == 'http://my-left-foot.com:5001'
-    assert token == 'forkingshirtballs.thegoodplace.bortles1'
+    assert endpoint == "http://my-left-foot.com:5001"
+    assert token == "forkingshirtballs.thegoodplace.bortles1"
 
     assert len(caplog.record_tuples) == 1  # Depreciation warning for using type
 
 
 def test_sx_adaptor_settings_backend_name_use_first():
-    'Request None for a backend name'
+    "Request None for a backend name"
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'xaod',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "xaod",
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         },
         {
-            'endpoint': 'http://my-left-foot.com:5001',
-            'token': 'forkingshirtballs.thegoodplace.bortles1'
-        }
+            "endpoint": "http://my-left-foot.com:5001",
+            "token": "forkingshirtballs.thegoodplace.bortles1",
+        },
     ]
     x = ServiceXConfigAdaptor(c)
     endpoint, token = x.get_servicex_adaptor_config()
 
-    assert endpoint == 'http://my-left-foot.com:5000'
-    assert token == 'forkingshirtballs.thegoodplace.bortles'
+    assert endpoint == "http://my-left-foot.com:5000"
+    assert token == "forkingshirtballs.thegoodplace.bortles"
 
 
 def test_sx_adaptor_settings_wrong_type():
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': 'my-type',
-            'endpoint': 'http://my-left-foot.com:5000',
-            'token': 'forkingshirtballs.thegoodplace.bortles'
+            "type": "my-type",
+            "endpoint": "http://my-left-foot.com:5000",
+            "token": "forkingshirtballs.thegoodplace.bortles",
         }
     ]
 
     x = ServiceXConfigAdaptor(c)
     with pytest.raises(ServiceXException) as e:
-        x.get_servicex_adaptor_config('your-type')
+        x.get_servicex_adaptor_config("your-type")
 
-    assert 'Unable to find name/type' in str(e.value)
-    assert 'my-type' in str(e.value)
+    assert "Unable to find name/type" in str(e.value)
+    assert "my-type" in str(e.value)
 
 
 def test_sx_adaptor_settings_env():
     from confuse import Configuration
-    c = Configuration('bogus', 'bogus')
+
+    c = Configuration("bogus", "bogus")
     c.clear()
-    c['api_endpoints'] = [
+    c["api_endpoints"] = [
         {
-            'type': '${SXTYPE}',
-            'endpoint': '${ENDPOINT}:5000',
-            'token': '${SXTOKEN}',
+            "type": "${SXTYPE}",
+            "endpoint": "${ENDPOINT}:5000",
+            "token": "${SXTOKEN}",
         }
     ]
 
     from os import environ
-    environ['ENDPOINT'] = 'http://tachi.com'
-    environ['SXTYPE'] = 'mcrn'
-    environ['SXTOKEN'] = 'protomolecule'
+
+    environ["ENDPOINT"] = "http://tachi.com"
+    environ["SXTYPE"] = "mcrn"
+    environ["SXTOKEN"] = "protomolecule"
 
     x = ServiceXConfigAdaptor(c)
-    endpoint, token = x.get_servicex_adaptor_config('mcrn')
+    endpoint, token = x.get_servicex_adaptor_config("mcrn")
 
-    assert endpoint == 'http://tachi.com:5000'
-    assert token == 'protomolecule'
+    assert endpoint == "http://tachi.com:5000"
+    assert token == "protomolecule"
 
 
 def test_default_config_endpoint():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
     c._add_default_source()
     x = ServiceXConfigAdaptor(c)
 
     end_point, token = x.get_servicex_adaptor_config()
-    assert end_point == 'http://localhost:5000'
+    assert end_point == "http://localhost:5000"
     assert token is None
 
 
 def test_sx_adaptor_nothing():
-    c = ConfigSettings('servicex', 'servicex')
+    c = ConfigSettings("servicex", "servicex")
     c.clear()
     x = ServiceXConfigAdaptor(c)
 
