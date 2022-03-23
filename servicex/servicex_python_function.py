@@ -45,17 +45,24 @@ from servicex import ServiceXDataset
 class ServiceXPythonFunction(ServiceXDataset):
     @staticmethod
     def _encode_function(selection_function: Callable):
-        return b64encode(
-            inspect.getsource(selection_function).encode("utf-8")
-        ).decode("utf-8")
+        return b64encode(inspect.getsource(selection_function).encode("utf-8")).decode(
+            "utf-8"
+        )
 
-    async def get_data_rootfiles_async(self, selection_function: Callable,
-                                       title: Optional[str] = None) -> List[Path]:
-        return await self._file_return(self._encode_function(selection_function),
-                                       'root-file', title)
+    async def get_data_rootfiles_async(
+        self, selection_function: Callable, title: Optional[str] = None
+    ) -> List[Path]:
+        return await self._file_return(
+            self._encode_function(selection_function), "root-file", title
+        )
 
-    async def get_data_awkward_async(self, selection_function: Callable,
-                                     title: Optional[str] = None):
-        return self._converter.combine_awkward(await self._data_return(
-            self._encode_function(selection_function),
-            lambda f: self._converter.convert_to_awkward(f), title))
+    async def get_data_awkward_async(
+        self, selection_function: Callable, title: Optional[str] = None
+    ):
+        return self._converter.combine_awkward(
+            await self._data_return(
+                self._encode_function(selection_function),
+                lambda f: self._converter.convert_to_awkward(f),
+                title,
+            )
+        )

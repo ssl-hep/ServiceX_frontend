@@ -17,23 +17,24 @@ from .utils import (
 
 
 class ServiceXABC(ABC):
-    '''
+    """
     Abstract base class for accessing the ServiceX front-end for a particular dataset. This does
     have some implementations, but not a full set (hence why it isn't an ABC).
 
     A light weight, mostly immutable, base class that holds basic configuration information for use
     with ServiceX file access, including the dataset name. Subclasses implement the various access
     methods. Note that not all methods may be accessible!
-    '''
+    """
 
-    def __init__(self,
-                 dataset: DatasetType,
-                 image: Optional[str] = None,
-                 max_workers: int = 20,
-                 result_destination: str = 'object-store',
-                 status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
-                 ):
-        '''
+    def __init__(
+        self,
+        dataset: DatasetType,
+        image: Optional[str] = None,
+        max_workers: int = 20,
+        result_destination: str = "object-store",
+        status_callback_factory: Optional[StatusUpdateFactory] = _run_default_wrapper,
+    ):
+        """
         Create and configure a ServiceX object for a dataset.
 
         Arguments
@@ -62,7 +63,7 @@ class ServiceXABC(ABC):
                takes `(total_files, transformed, downloaded, skipped)` as an argument. The
                `total_files` parameter may be `None` until the system knows how many files need to
                be processed (and some files can even be completed before that is known).
-        '''
+        """
         self._dataset = dataset
         self._image = image
         self._max_workers = max_workers
@@ -70,30 +71,36 @@ class ServiceXABC(ABC):
 
         # We can't create the notifier until the actual query,
         # so only need to save the status update.
-        self._status_callback_factory = \
-            status_callback_factory if status_callback_factory is not None \
+        self._status_callback_factory = (
+            status_callback_factory
+            if status_callback_factory is not None
             else _null_progress_feedback
+        )
 
     @property
     def dataset_as_name(self) -> str:
-        '''Return the dataset name as a string for "human" consumption.
+        """Return the dataset name as a string for "human" consumption.
 
         Note that this can be very very long!
 
         Returns:
             str: The dataset name formatted as a string
-        '''
+        """
         return dataset_as_name(self._dataset, max_len=None)
 
-    def _create_notifier(self, title: Optional[str], downloading: bool) -> _status_update_wrapper:
-        'Internal method to create a updater from the status call-back'
-        return _status_update_wrapper(self._status_callback_factory(self._dataset, title,
-                                                                    downloading))
+    def _create_notifier(
+        self, title: Optional[str], downloading: bool
+    ) -> _status_update_wrapper:
+        "Internal method to create a updater from the status call-back"
+        return _status_update_wrapper(
+            self._status_callback_factory(self._dataset, title, downloading)
+        )
 
     @abstractmethod
-    async def get_data_rootfiles_async(self, selection_query: str,
-                                       title: Optional[str] = None) -> List[Path]:
-        '''
+    async def get_data_rootfiles_async(
+        self, selection_query: str, title: Optional[str] = None
+    ) -> List[Path]:
+        """
         Fetch query data from ServiceX matching `selection_query` and return it as
         a list of root files. The files are uniquely ordered (the same query will always
         return the same order).
@@ -104,12 +111,13 @@ class ServiceXABC(ABC):
 
         Returns:
             root_files          The list of root files
-        '''
+        """
 
     @abstractmethod
-    async def get_data_pandas_df_async(self, selection_query: str,
-                                       title: Optional[str] = None) -> pd.DataFrame:
-        '''
+    async def get_data_pandas_df_async(
+        self, selection_query: str, title: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
         Fetch query data from ServiceX matching `selection_query` and return it as
         a pandas dataframe. The data is uniquely ordered (the same query will always
         return the same order).
@@ -124,13 +132,13 @@ class ServiceXABC(ABC):
         Exceptions:
             xxx                 If the data is not the correct shape (e.g. a flat,
                                 rectangular table).
-        '''
+        """
 
     @abstractmethod
-    async def get_data_awkward_async(self, selection_query: str,
-                                     title: Optional[str] = None) \
-            -> Dict[bytes, ak.Array]:
-        '''
+    async def get_data_awkward_async(
+        self, selection_query: str, title: Optional[str] = None
+    ) -> Dict[bytes, ak.Array]:
+        """
         Fetch query data from ServiceX matching `selection_query` and return it as
         dictionary of awkward arrays, an entry for each column. The data is uniquely
         ordered (the same query will always return the same order).
@@ -143,12 +151,13 @@ class ServiceXABC(ABC):
             a                   Dictionary of jagged arrays (as needed), one for each
                                 column. The dictionary keys are `bytes` to support possible
                                 unicode characters.
-        '''
+        """
 
     @abstractmethod
-    async def get_data_parquet_async(self, selection_query: str,
-                                     title: Optional[str] = None) -> List[Path]:
-        '''
+    async def get_data_parquet_async(
+        self, selection_query: str, title: Optional[str] = None
+    ) -> List[Path]:
+        """
         Fetch query data from ServiceX matching `selection_query` and return it as
         a list of parquet files. The files are uniquely ordered (the same query will always
         return the same order).
@@ -159,7 +168,7 @@ class ServiceXABC(ABC):
 
         Returns:
             root_files          The list of parquet files
-        '''
+        """
 
     # Define the synchronous versions of the async methods for easy of use
 
