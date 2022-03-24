@@ -142,7 +142,12 @@ class Cache:
         "Reset the internal cache, usually used for testing"
         cls._in_memory_cache = {}
 
-    def __init__(self, cache_path: Path, ignore_cache: bool = False):
+    def __init__(
+        self,
+        cache_path: Path,
+        ignore_cache: bool = False,
+        analysis_query_key: str = "default",
+    ):
         """
         Create the cache object
 
@@ -155,6 +160,7 @@ class Cache:
         """
         self._path = cache_path
         self._ignore_cache = ignore_cache
+        self._analysis_query_key = analysis_query_key
 
         # old windows versions have a limit of file path of 260 chars.
         self.max_path_len = 200
@@ -233,8 +239,8 @@ class Cache:
             f.unlink()
         self._remove_from_analysis_cache(_query_cache_hash(json))
 
-    def _load_analysis_query_cache(self) -> Optional[Dict[str, str]]:
-        """Safely load the analysis query cache.
+    def _load_full_analysis_query_cache(self) -> Optional[Dict[str, Dict[str, str]]]:
+        """Safely load the analysis query cache, with all elements of the cache
 
         - If there is no cache file, return None
         - If the file is empty, return an empty cache
@@ -251,14 +257,41 @@ class Cache:
         with q_file.open("r") as input:
             text = input.read()
             if len(text) > 0:
-                analysis_cache = json.loads(text)
+                analysis_cache: Dict[str, Dict[str, str]] = json.loads(text)
+
+        return analysis_cache
+
+    def _load_analysis_query_cache(self) -> Optional[Dict[str, str]]:
+        """Safely load the analysis query cache.
+
+        - If there is no cache file, return None
+        - If the file is empty, return an empty cache
+        - Return the contents of the file.
+
+        Returns:
+            Optional[Dict[str, str]]: Returns the query cache if it exists
+        """
+        full_analysis_cache = self._load_full_analysis_query_cache()
+        if full_analysis_cache is None:
+            return None
+
+        # Find "our" analysis cache
+        analysis_cache = {}
+        if self._analysis_query_key in full_analysis_cache:
+            analysis_cache = full_analysis_cache[self._analysis_query_key]
 
         return analysis_cache
 
     def _save_analysis_query_cache(self, cache: Dict[str, str]):
+        full_cache = self._load_full_analysis_query_cache()
+        if full_cache is None:
+            return
+
+        full_cache[self._analysis_query_key] = cache
+
         cache_file = self._get_analysis_cache_file()
         with cache_file.open("w") as output:
-            json.dump(cache, output)
+            json.dump(full_cache, output)
 
     def _write_analysis_query_cache(self, query_info: Dict[str, str], request_id: str):
         """Write out a local analysis query hash-request-id assocaition.

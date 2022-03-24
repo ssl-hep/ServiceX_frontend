@@ -78,6 +78,20 @@ def test_query_hit_analysis_cache(tmp_path: Path):
     assert c2.lookup_query({"hi": "there"}) == "dude"
 
 
+def test_query_miss_analysis_cache_keys(tmp_path: Path):
+    "Make sure the analysis cache is updated"
+    cache_loc_1 = tmp_path / "cache1"
+    cache_loc_2 = tmp_path / "cache2"
+
+    update_local_query_cache(tmp_path / "analysis_cache.json")
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({"hi": "there"}, "dude")
+
+    c2 = Cache(cache_loc_2, analysis_query_key="bogus")
+    assert c2.lookup_query({"hi": "there"}) == None
+
+
 def test_query_hit_analysis_cache_update(tmp_path: Path):
     "Make sure the analysis cache is updated"
     cache_loc_1 = tmp_path / "cache1"
