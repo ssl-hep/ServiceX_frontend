@@ -253,7 +253,11 @@ class ServiceXDataset(ServiceXABC):
 
         # Establish the cache that will store all our queries
         self._cache = (
-            Cache(get_configured_cache_path(config.settings), ignore_cache)
+            Cache(
+                get_configured_cache_path(config.settings),
+                ignore_cache,
+                analysis_query_key=backend_name if backend_name is not None else "default",
+            )
             if cache_adaptor is None
             else cache_adaptor
         )

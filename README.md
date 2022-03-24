@@ -87,25 +87,25 @@ If you'd like to be able to submit multiple queries and have them run on the `Se
 
 For documentation of `get_data` and `get_data_async` see the `servicex.py` source file.
 
-The `backend_name` tells the library where to look in the `servicex.yaml` configuraiton file to find an end point (url and authentication information). See above for more information.
+The `backend_name` tells the library where to look in the `servicex.yaml` configuration file to find an end point (url and authentication information). See above for more information.
 
 ### How to specify the input data
 
 How you specify the input data, and what data can be ingested, is ultimately defined by the configuration of the `ServiceX` backend you are running against. This `servicex`
 library supports the following:
 
-- A Dataset Identifer (DID): For example, `rucio://mc16a_13TeV:my_dataset`, or `cernopendata://1507`, both of which are resolved to a list of
+- A Dataset Identifier (DID): For example, `rucio://mc16a_13TeV:my_dataset`, or `cernopendata://1507`, both of which are resolved to a list of
 files (in one case, a set of ATLAS data files, and in the other some CMS Run 1 AOD files).
 - A single file located at a `http` or `root` endpoint: For example, `root://myfile.root` or `http://myfile.root`. ServiceX must be able to
 access these files without special permissions.
 - A list of files located at `http` or `root` endpoints: For example, `[root://myfile1.root, http://myfile2.root]`. ServiceX must be able to
 access these files without special permissions.
 - [depreciated] A bare (DID): this is an unadorned identifier, and is routed to the backend's default DID resolver. The default
-is defined at runtime. It is depreciated because a backend configuraiton change can break your code.
+is defined at runtime. It is depreciated because a backend configuration change can break your code.
 
 ### The Local Data Cache
 
-To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below). By default it is written in the temp direcotry of your system, under a `servicex_{USER}` directory. The cache is unbound: it will continuously fill up. You can delete it at any time that you aren't processing data: data will be re-downloaded or re-transformed in `ServiceX`.
+To speed things up - especially when you run the same query multiple times, the `servicex` package will cache queries data that comes back from Servicex. You can control where this is stored with the `cache_path` in the configuration file (see below). By default it is written in the temp directory of your system, under a `servicex_{USER}` directory. The cache is unbound: it will continuously fill up. You can delete it at any time that you aren't processing data: data will be re-downloaded or re-transformed in `ServiceX`.
 
 There are times when you want the system to ignore the cache when it is running. You can do this by using `ignore_cache()`:
 
@@ -150,6 +150,7 @@ The `servicex` library can write out a local file which will map queries to back
 
 - By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory of the current working directory.
 - To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename/path. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries. Except under very special cases, it is suggested that one users the filename `servicex_query_cache.json`.
+- You can also create the file by using the bash command `touch servicex_query_cache.json` - if you are using the default name.
 - If that file is present when a query is run, it will attempt to download the data from the endpoint, only resubmitting the query if the endpoint doesn't know about the query. As long as the file `servicex_query_cache.json` is in the current working directory (or above), it will be picked up automatically: no need to call `update_local_query_cache()`.
 
 The cache search order is as follows:
@@ -162,15 +163,15 @@ _Note_: Eventually the backends will contain automatic cache lookup and this fea
 
 #### Deleting Files from the local Data Cache
 
-It is not recommended to alter the cache. The software expects the cache to be in a certain state, and radomly altering it can lead to unexpected behavior.
+It is not recommended to alter the cache. The software expects the cache to be in a certain state, and randomly altering it can lead to unexpected behavior.
 
 Besides telling the `servicex` library to ignore the cache in the above ways, you can also delete files from the local cache.
 The local cache directory is split up into sub-directories. Deleting files from each of the directories:
 
 - `query_cache` - this directory contains the mapping between the query text (or its hash) and the ServiceX backend's `request-id`. If you delete a file from here, it is as if the query was never made, and is the same as using the ignore methods above.
-- `query_cache_status` - contains the last retreived status from the backend. Deleting this will cause the library to refresh the missing status. This file is updated continuosly until the query is completed.
-- `file_list_cache` - Each file contains a json list of all the files in the `minio` bucket for a partiuclar request id. Deleting a file from this directory will cause the frontend to re-download the complete list of files (the file in this directory isn't created until all files have been downloaded).
--`data` - This directory contains the files that have been downloaded locally. If you delete a data file from this directory, it will trigger a re-download. Note that if the servicex endpoint doesn't know about the origianl query, or the minio bucket is missing, it will force the transform being re-run from scratch.
+- `query_cache_status` - contains the last retrieved status from the backend. Deleting this will cause the library to refresh the missing status. This file is updated continuously until the query is completed.
+- `file_list_cache` - Each file contains a json list of all the files in the `minio` bucket for a particular request id. Deleting a file from this directory will cause the frontend to re-download the complete list of files (the file in this directory isn't created until all files have been downloaded).
+-`data` - This directory contains the files that have been downloaded locally. If you delete a data file from this directory, it will trigger a re-download. Note that if the servicex endpoint doesn't know about the original query, or the minio bucket is missing, it will force the transform being re-run from scratch.
 
 ## Configuration
 

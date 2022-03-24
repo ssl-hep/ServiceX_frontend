@@ -121,6 +121,11 @@ def update_local_query_cache(analysis_cache: Optional[Path] = None):
         )
     _g_analysis_cache_location = file_path
 
+    loc = _g_analysis_cache_location / _g_analysis_cache_filename
+    if not loc.exists():
+        loc.parent.mkdir(parents=True, exist_ok=True)
+        loc.touch()
+
 
 class Cache:
     """
@@ -137,7 +142,12 @@ class Cache:
         "Reset the internal cache, usually used for testing"
         cls._in_memory_cache = {}
 
-    def __init__(self, cache_path: Path, ignore_cache: bool = False):
+    def __init__(
+        self,
+        cache_path: Path,
+        ignore_cache: bool = False,
+        analysis_query_key: str = "default",
+    ):
         """
         Create the cache object
 
@@ -150,6 +160,7 @@ class Cache:
         """
         self._path = cache_path
         self._ignore_cache = ignore_cache
+        self._analysis_query_key = analysis_query_key
 
         # old windows versions have a limit of file path of 260 chars.
         self.max_path_len = 200
@@ -228,6 +239,61 @@ class Cache:
             f.unlink()
         self._remove_from_analysis_cache(_query_cache_hash(json))
 
+    def _load_full_analysis_query_cache(self) -> Optional[Dict[str, Dict[str, str]]]:
+        """Safely load the analysis query cache, with all elements of the cache
+
+        - If there is no cache file, return None
+        - If the file is empty, return an empty cache
+        - Return the contents of the file.
+
+        Returns:
+            Optional[Dict[str, str]]: Returns the query cache if it exists
+        """
+        q_file = self._get_analysis_cache_file()
+        if not q_file.exists():
+            return None
+
+        analysis_cache = {}
+        with q_file.open("r") as input:
+            text = input.read()
+            if len(text) > 0:
+                analysis_cache: Dict[str, Dict[str, str]] = json.loads(text)
+
+        return analysis_cache
+
+    def _load_analysis_query_cache(self) -> Optional[Dict[str, str]]:
+        """Safely load the analysis query cache.
+
+        - If there is no cache file, return None
+        - If the file is empty, return an empty cache
+        - Return the contents of the file.
+
+        Returns:
+            Optional[Dict[str, str]]: Returns the query cache if it exists
+        """
+        full_analysis_cache = self._load_full_analysis_query_cache()
+        if full_analysis_cache is None:
+            return None
+
+        # Find "our" analysis cache
+        analysis_cache = {}
+        if self._analysis_query_key in full_analysis_cache:
+            analysis_cache = full_analysis_cache[self._analysis_query_key]
+
+        return analysis_cache
+
+    def _save_analysis_query_cache(self, cache: Dict[str, str]):
+        full_cache = self._load_full_analysis_query_cache()
+        assert (
+            full_cache is not None
+        ), "Internal error, should have been checked already"
+
+        full_cache[self._analysis_query_key] = cache
+
+        cache_file = self._get_analysis_cache_file()
+        with cache_file.open("w") as output:
+            json.dump(full_cache, output)
+
     def _write_analysis_query_cache(self, query_info: Dict[str, str], request_id: str):
         """Write out a local analysis query hash-request-id assocaition.
 
@@ -235,21 +301,13 @@ class Cache:
             query_info (Dict[str, str]): The JSON of the request
             request_id (str): The `request-id`
         """
-        if _g_analysis_cache_location is None:
+        analysis_cache = self._load_analysis_query_cache()
+        if analysis_cache is None:
             return
-
-        q_file = _g_analysis_cache_location / _g_analysis_cache_filename
-        analysis_cache = {}
-        if q_file.exists():
-            with q_file.open("r") as input:
-                analysis_cache = json.load(input)
 
         analysis_cache[_query_cache_hash(query_info)] = request_id
 
-        if not q_file.parent.exists():
-            q_file.parent.mkdir()
-        with q_file.open("w") as output:
-            json.dump(analysis_cache, output)
+        self._save_analysis_query_cache(analysis_cache)
 
     def _remove_from_analysis_cache(self, query_hash: str):
         """Remove an item from the analysis cache if we are writing to it!
@@ -261,12 +319,10 @@ class Cache:
             _g_bad_query_cache_ids.add(query_hash)
             return
 
-        cache_contents, cache_file = self._find_analysis_cached_query(query_hash)
+        cache_contents = self._find_analysis_cached_query(query_hash)
         if cache_contents is not None:
             del cache_contents[query_hash]
-            assert cache_file is not None
-            with cache_file.open("w") as output:
-                json.dump(cache_contents, output)
+            self._save_analysis_query_cache(cache_contents)
 
     def _lookup_analysis_query_cache(
         self,
@@ -293,17 +349,45 @@ class Cache:
         Returns:
             (Optional[str]): The return hash of what we need to look up
         """
-        cache_contents, _ = self._find_analysis_cached_query(query_hash)
+        cache_contents = self._find_analysis_cached_query(query_hash)
         if cache_contents is not None:
             return cache_contents[query_hash]
         return None
+
+    def _get_analysis_cache_file(
+        self, filename: Optional[str] = None, location: Optional[Path] = None
+    ) -> Path:
+        """Get our best guess as to where the analysis cache file will be
+
+        It will use the globally set defaults if nothing is specified.
+
+        Args:
+            filename (Optional[str], optional): Cache filename to use. Defaults to None.
+            location (Optional[str], optional): Cache location to use. Defaults to None.
+        """
+        c_filename = filename if filename is not None else _g_analysis_cache_filename
+        c_location = (
+            location
+            if location is not None
+            else _g_analysis_cache_location
+            if _g_analysis_cache_location is not None
+            else Path(".")
+        )
+
+        # Now see if we can find it
+        loc = c_location.absolute() / c_filename
+        while (not loc.exists()) and (len(loc.parts) >= 3):
+            new_parent = loc.parent.parent
+            loc = new_parent / c_filename
+
+        return loc
 
     def _find_analysis_cached_query(
         self,
         query_hash: str,
         filename: Optional[str] = None,
         location: Optional[Path] = None,
-    ) -> Tuple[Optional[Dict[str, str]], Optional[Path]]:
+    ) -> Optional[Dict[str, str]]:
         """Returns the contents of an analysis cache file and the file that contains
         a query hash
 
@@ -314,30 +398,13 @@ class Cache:
             Tuple[Dict[str, str], Path]: The contents of the file and the path to the
             analysis cache that contains the hash. `None` if the query was not found
         """
-        # Get arguments setup
-        c_filename = filename if filename is not None else _g_analysis_cache_filename
-        c_location = (
-            location
-            if location is not None
-            else _g_analysis_cache_location
-            if _g_analysis_cache_location is not None
-            else Path(".")
-        )
-
         # If the cache is here, then see if it has a hit
-        cache_file = c_location / c_filename
-        if cache_file.exists():
-            with cache_file.open("r") as input:
-                analysis_cache = json.load(input)
-                if query_hash in analysis_cache:
-                    return (analysis_cache, cache_file)
+        analysis_cache = self._load_analysis_query_cache()
+        if analysis_cache is not None:
+            if query_hash in analysis_cache:
+                return analysis_cache
 
-        # Recurse one up.
-        if len(c_location.parts) <= 1:
-            return None, None
-        return self._find_analysis_cached_query(
-            query_hash, c_filename, c_location.parent
-        )
+        return None
 
     def set_query_status(self, query_info: Dict[str, str]):
         """Cache a query status (json dict)

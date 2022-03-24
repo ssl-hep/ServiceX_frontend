@@ -59,7 +59,7 @@ def test_analysis_cache_set_twice_different_paths(tmp_path: Path):
 
 
 def test_analysis_cache_set_twice_same(tmp_path: Path):
-    "Make sure we cannot set with two different paths"
+    "Make sure we can set with two same paths"
     update_local_query_cache(tmp_path / "analysis_cache1.json")
     update_local_query_cache(tmp_path / "analysis_cache1.json")
 
@@ -78,20 +78,30 @@ def test_query_hit_analysis_cache(tmp_path: Path):
     assert c2.lookup_query({"hi": "there"}) == "dude"
 
 
-def test_query_hit_analysis_cache_nested_files(tmp_path: Path):
-    "Make sure the analysis cache is updated"
+def test_query_hit_analysis_no_cache(tmp_path: Path):
+    "Make sure no caching occurs if the user doesn't want it to"
     cache_loc_1 = tmp_path / "cache1"
     cache_loc_2 = tmp_path / "cache2"
-
-    update_local_query_cache(tmp_path / "dir1" / "analysis_cache.json")
 
     c1 = Cache(cache_loc_1)
     c1.set_query({"hi": "there"}, "dude")
 
-    reset_local_query_cache()
-    update_local_query_cache(tmp_path / "dir1" / "dir2" / "analysis_cache.json")
     c2 = Cache(cache_loc_2)
-    assert c2.lookup_query({"hi": "there"}) == "dude"
+    assert c2.lookup_query({"hi": "there"}) is None
+
+
+def test_query_miss_analysis_cache_keys(tmp_path: Path):
+    "Make sure the analysis cache is updated"
+    cache_loc_1 = tmp_path / "cache1"
+    cache_loc_2 = tmp_path / "cache2"
+
+    update_local_query_cache(tmp_path / "analysis_cache.json")
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({"hi": "there"}, "dude")
+
+    c2 = Cache(cache_loc_2, analysis_query_key="bogus")
+    assert c2.lookup_query({"hi": "there"}) is None
 
 
 def test_query_hit_analysis_cache_update(tmp_path: Path):
@@ -116,6 +126,23 @@ def test_query_hit_analysis_cache_silent_read(tmp_path: Path):
     cache_loc_2 = tmp_path / "cache2"
 
     update_local_query_cache()
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({"hi": "there"}, "dude")
+
+    reset_local_query_cache()
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({"hi": "there"}) == "dude"
+
+
+def test_query_hit_analysis_cache_empty_file(tmp_path: Path):
+    "Make sure we read the analysis cache if it happens to be present"
+    cache_loc_1 = tmp_path / "cache1"
+    cache_loc_2 = tmp_path / "cache2"
+
+    qc = Path("servicex_query_cache.json")
+    qc.touch()
 
     c1 = Cache(cache_loc_1)
     c1.set_query({"hi": "there"}, "dude")
@@ -152,7 +179,7 @@ def test_query_hit_analysis_lookup_writes(tmp_path: Path):
     assert c2.lookup_query({"hi": "there"}) == "dude"
 
 
-def test_query_hit_analysis_cache_removed_query_noupdate(tmp_path: Path):
+def test_query_hit_analysis_cache_removed_query_no_update(tmp_path: Path):
     "Make sure to forget a query when we are not updating the analysis cache"
     cache_loc_1 = tmp_path / "cache1"
     cache_loc_2 = tmp_path / "cache2"
@@ -186,8 +213,6 @@ def test_query_hit_analysis_cache_removed_query_update(tmp_path: Path):
     c1 = Cache(cache_loc_1)
     c1.set_query({"hi": "there"}, "dude")
     c1.remove_query({"hi": "there"})
-
-    reset_local_query_cache()
 
     c2 = Cache(cache_loc_2)
     assert c2.lookup_query({"hi": "there"}) is None
@@ -358,7 +383,7 @@ def test_data_file_location_twice(tmp_path):
 
 
 def test_data_file_bad_file(tmp_path):
-    "Check a very long bad filename to make sure it is santized"
+    "Check a very long bad filename to make sure it is sanitized"
     c = Cache(tmp_path)
     p = c.data_file_location(
         "123-456",
