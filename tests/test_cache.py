@@ -152,7 +152,7 @@ def test_query_hit_analysis_lookup_writes(tmp_path: Path):
     assert c2.lookup_query({"hi": "there"}) == "dude"
 
 
-def test_query_hit_analysis_cache_removed_query_noupdate(tmp_path: Path):
+def test_query_hit_analysis_cache_removed_query_no_update(tmp_path: Path):
     "Make sure to forget a query when we are not updating the analysis cache"
     cache_loc_1 = tmp_path / "cache1"
     cache_loc_2 = tmp_path / "cache2"
@@ -356,7 +356,7 @@ def test_data_file_location_twice(tmp_path):
 
 
 def test_data_file_bad_file(tmp_path):
-    "Check a very long bad filename to make sure it is santized"
+    "Check a very long bad filename to make sure it is sanitized"
     c = Cache(tmp_path)
     p = c.data_file_location(
         "123-456",
