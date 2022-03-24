@@ -150,6 +150,7 @@ The `servicex` library can write out a local file which will map queries to back
 
 - By default the library looks for a file `servicex_query_cache.json` in the current working directory, or a parent directory of the current working directory.
 - To trigger the creation and updating of a cache file call the function `update_local_query_cache()`. If you like you can pass in a filename/path. By default it will use `servicex_query_cache.json` in the local directory. The file will be both used for look-ups and will be updated with all subsequent queries. Except under very special cases, it is suggested that one users the filename `servicex_query_cache.json`.
+- You can also create the file by using the bash command `touch servicex_query_cache.json` - if you are using the default name.
 - If that file is present when a query is run, it will attempt to download the data from the endpoint, only resubmitting the query if the endpoint doesn't know about the query. As long as the file `servicex_query_cache.json` is in the current working directory (or above), it will be picked up automatically: no need to call `update_local_query_cache()`.
 
 The cache search order is as follows:
