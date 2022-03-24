@@ -621,8 +621,6 @@ class ServiceXDataset(ServiceXABC):
             )
         }
 
-        # Convert them to the proper format
-
         # Finally, we need them in the proper order so we append them
         # all together
         ordered_data = [all_data[k] for k in sorted(all_data.keys())]
