@@ -5,34 +5,34 @@ on:
   pull_request:
   # Run daily at 0:01 UTC
   schedule:
-  - cron:  '1 0 * * *'
+    - cron: "1 0 * * *"
 
 jobs:
   flake8:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
-    - name: Set up Python
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.8
-    - name: Install dependencies
-      env:
-        servicex_version: 1.0a1
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
-        pip install --no-cache-dir -e .[test]
-        pip list
-    - name: Lint with Flake8
-      if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
-      run: |
-        flake8 --exclude=tests/* --ignore=E501,W503
-    - name: Check for vulnerable libraries
-      if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
-      run: |
-        pip install safety
-        pip freeze | safety check
+      - uses: actions/checkout@master
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        env:
+          servicex_version: 1.0a1
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --no-cache-dir -e .[test]
+          pip list
+      - name: Lint with Flake8
+        if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
+        run: |
+          flake8 --exclude=tests/* --ignore=E501,W503
+      - name: Check for vulnerable libraries
+        if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
+        run: |
+          pip install safety
+          pip freeze | safety check
 
   test:
     needs:
@@ -45,25 +45,29 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-    - uses: actions/checkout@master
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      env:
-        servicex_version: 1.0a1
-      run: |
-        python -m pip install --upgrade pip setuptools wheel
-        pip install --no-cache-dir -e .[test]
-        pip list
-    - name: Test with pytest
-      run: |
-        python -m pytest
-    - name: Report coverage with Codecov
-      if: github.event_name == 'push' && matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.xml # optional
-        flags: unittests # optional
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        env:
+          servicex_version: 1.0a1
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install --no-cache-dir -e .[test]
+          pip list
+      - name: Test with pytest
+        run: |
+          python -m pytest
+      - name: Code coverage with pytest
+        if: github.event_name == 'push' && matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
+        run: |
+          python -m pytest --ignore=setup.py --cov=servicex --cov-report=term-missing --cov-config=.coveragerc --cov-report xml
+      - name: Report coverage with Codecov
+        if: github.event_name == 'push' && matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml # optional
+          flags: unittests # optional

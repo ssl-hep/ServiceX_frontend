@@ -31,7 +31,7 @@ def _wrap_in_memory_sx_cache(fn):
         assert isinstance(selection_query, str)
 
         # Is it in the local cache?
-        h = _string_hash([sx._dataset, clean_linq(selection_query)])
+        h = _string_hash([sx._dataset, fn.__name__, clean_linq(selection_query)])
         logger = logging.getLogger(__name__)
         if h in _in_progress_items:
             logger.debug(f"{h} - waiting for processing")

@@ -1058,7 +1058,7 @@ async def test_title_spec(mocker, good_awkward_file_data):
 
 
 @pytest.mark.asyncio
-async def test_notitle_spec(mocker, good_awkward_file_data):
+async def test_no_title_spec(mocker, good_awkward_file_data):
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
@@ -1257,6 +1257,37 @@ async def test_callback_none(mocker):
 
     assert len(r) == 1
     assert r[0] == Path("/foo/bar.root")
+
+
+@pytest.mark.asyncio
+async def test_cache_awkward_root_confusion(mocker, good_awkward_file_data, tmp_path):
+    "Seen in the wild. Ask for root files, then ask for awkward files, and get the root files"
+
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+
+    # Use the real cache here - we need to return the value we stash.
+    c = tmp_path / "cache"
+    out_file = c / "data" / "123-456" / "one_minio_entry"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    out_file.touch()
+    cache = Cache(c)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=cache,
+        data_convert_adaptor=good_awkward_file_data,
+        local_log=mock_logger,
+    )
+    q_string = "(valid qastle string)"
+    r1 = await ds.get_data_rootfiles_async(q_string)
+    r2 = await ds.get_data_awkward_async(q_string)
+
+    assert isinstance(r1, list)
+    assert isinstance(r2, dict)
 
 
 @pytest.mark.asyncio
