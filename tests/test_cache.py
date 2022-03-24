@@ -59,7 +59,7 @@ def test_analysis_cache_set_twice_different_paths(tmp_path: Path):
 
 
 def test_analysis_cache_set_twice_same(tmp_path: Path):
-    "Make sure we cannot set with two different paths"
+    "Make sure we can set with two same paths"
     update_local_query_cache(tmp_path / "analysis_cache1.json")
     update_local_query_cache(tmp_path / "analysis_cache1.json")
 
@@ -186,8 +186,6 @@ def test_query_hit_analysis_cache_removed_query_update(tmp_path: Path):
     c1 = Cache(cache_loc_1)
     c1.set_query({"hi": "there"}, "dude")
     c1.remove_query({"hi": "there"})
-
-    reset_local_query_cache()
 
     c2 = Cache(cache_loc_2)
     assert c2.lookup_query({"hi": "there"}) is None
