@@ -78,22 +78,6 @@ def test_query_hit_analysis_cache(tmp_path: Path):
     assert c2.lookup_query({"hi": "there"}) == "dude"
 
 
-def test_query_hit_analysis_cache_nested_files(tmp_path: Path):
-    "Make sure the analysis cache is updated"
-    cache_loc_1 = tmp_path / "cache1"
-    cache_loc_2 = tmp_path / "cache2"
-
-    update_local_query_cache(tmp_path / "dir1" / "analysis_cache.json")
-
-    c1 = Cache(cache_loc_1)
-    c1.set_query({"hi": "there"}, "dude")
-
-    reset_local_query_cache()
-    update_local_query_cache(tmp_path / "dir1" / "dir2" / "analysis_cache.json")
-    c2 = Cache(cache_loc_2)
-    assert c2.lookup_query({"hi": "there"}) == "dude"
-
-
 def test_query_hit_analysis_cache_update(tmp_path: Path):
     "Make sure the analysis cache is updated"
     cache_loc_1 = tmp_path / "cache1"
@@ -116,6 +100,23 @@ def test_query_hit_analysis_cache_silent_read(tmp_path: Path):
     cache_loc_2 = tmp_path / "cache2"
 
     update_local_query_cache()
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({"hi": "there"}, "dude")
+
+    reset_local_query_cache()
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({"hi": "there"}) == "dude"
+
+
+def test_query_hit_analysis_cache_empty_file(tmp_path: Path):
+    "Make sure we read the analysis cache if it happens to be present"
+    cache_loc_1 = tmp_path / "cache1"
+    cache_loc_2 = tmp_path / "cache2"
+
+    qc = Path("servicex_query_cache.json")
+    qc.touch()
 
     c1 = Cache(cache_loc_1)
     c1.set_query({"hi": "there"}, "dude")
