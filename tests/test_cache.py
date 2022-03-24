@@ -78,6 +78,18 @@ def test_query_hit_analysis_cache(tmp_path: Path):
     assert c2.lookup_query({"hi": "there"}) == "dude"
 
 
+def test_query_hit_analysis_no_cache(tmp_path: Path):
+    "Make sure no caching occurs if the user doesn't want it to"
+    cache_loc_1 = tmp_path / "cache1"
+    cache_loc_2 = tmp_path / "cache2"
+
+    c1 = Cache(cache_loc_1)
+    c1.set_query({"hi": "there"}, "dude")
+
+    c2 = Cache(cache_loc_2)
+    assert c2.lookup_query({"hi": "there"}) is None
+
+
 def test_query_miss_analysis_cache_keys(tmp_path: Path):
     "Make sure the analysis cache is updated"
     cache_loc_1 = tmp_path / "cache1"
@@ -89,7 +101,7 @@ def test_query_miss_analysis_cache_keys(tmp_path: Path):
     c1.set_query({"hi": "there"}, "dude")
 
     c2 = Cache(cache_loc_2, analysis_query_key="bogus")
-    assert c2.lookup_query({"hi": "there"}) == None
+    assert c2.lookup_query({"hi": "there"}) is None
 
 
 def test_query_hit_analysis_cache_update(tmp_path: Path):

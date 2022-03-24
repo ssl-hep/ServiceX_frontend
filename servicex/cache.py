@@ -284,8 +284,9 @@ class Cache:
 
     def _save_analysis_query_cache(self, cache: Dict[str, str]):
         full_cache = self._load_full_analysis_query_cache()
-        if full_cache is None:
-            return
+        assert (
+            full_cache is not None
+        ), "Internal error, should have been checked already"
 
         full_cache[self._analysis_query_key] = cache
 
@@ -374,7 +375,7 @@ class Cache:
         )
 
         # Now see if we can find it
-        loc = c_location / c_filename
+        loc = c_location.absolute() / c_filename
         while (not loc.exists()) and (len(loc.parts) >= 3):
             new_parent = loc.parent.parent
             loc = new_parent / c_filename
