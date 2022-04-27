@@ -579,7 +579,13 @@ def retry_exception_itr(
         while True:
             tries += 1
             elapsed = timedelta.total_seconds(datetime.datetime.now() - start)
-            details = (target, args, kwargs, tries, elapsed)
+            details = {
+                "target": target,
+                "args": args,
+                "kwargs": kwargs,
+                "tries": tries,
+                "elapsed": elapsed,
+            }
 
             got_one_item = False
             try:
@@ -598,16 +604,18 @@ def retry_exception_itr(
                 max_time_exceeded = max_time_ is not None and elapsed >= max_time_
 
                 if giveup_result or max_tries_exceeded or max_time_exceeded:
-                    await _call_handlers(on_giveup, *details)
+                    await _call_handlers(on_giveup, **details)
                     raise
 
                 try:
-                    seconds = _next_wait(wait, jitter, elapsed, max_time_)
+                    seconds = _next_wait(
+                        wait, giveup_result, jitter, elapsed, max_time_
+                    )
                 except StopIteration:  # pragma: no cover
-                    await _call_handlers(on_giveup, *details)
+                    await _call_handlers(on_giveup, **details)
                     raise e
 
-                await _call_handlers(on_backoff, *details, wait=seconds)
+                await _call_handlers(on_backoff, **details, wait=seconds)
 
                 # Note: there is no convenient way to pass explicit event
                 # loop to decorator, so here we assume that either default
@@ -620,7 +628,7 @@ def retry_exception_itr(
                 #   <https://bugs.python.org/issue28613>
                 await asyncio.sleep(seconds)
             else:
-                await _call_handlers(on_success, *details)
+                await _call_handlers(on_success, **details)
                 return
 
     return retry
@@ -647,9 +655,17 @@ def on_exception_itr(
 
         on_success_ = _config_handlers(on_success)
         on_backoff_ = _config_handlers(
-            on_backoff, _log_backoff, logger_, backoff_log_level
+            on_backoff,
+            default_handler=_log_backoff,
+            logger=logger_,
+            log_level=backoff_log_level,
         )
-        on_giveup_ = _config_handlers(on_giveup, _log_giveup, logger_, giveup_log_level)
+        on_giveup_ = _config_handlers(
+            on_giveup,
+            default_handler=_log_giveup,
+            logger=logger_,
+            log_level=giveup_log_level,
+        )
 
         return retry_exception_itr(
             target,
