@@ -82,6 +82,23 @@ def servicex_status_fatal(mocker):
 
 
 @pytest.fixture
+def servicex_status_negative(mocker):
+    "Returns a weird negative remaining files bug from sx"
+    result = {
+        "files-processed": 23,
+        "files-remaining": -2,
+        "files-skipped": 0,
+        "request-id": "24e59fa2-e1d7-4831-8c7e-82b2efc7c658",
+        "stats": None,
+        "status": "Complete",
+    }
+    mocker.patch(
+        "aiohttp.ClientSession.get",
+        return_value=ClientSessionMocker(dumps(result), 200),
+    )
+
+
+@pytest.fixture
 def good_submit(mocker):
     client = mocker.MagicMock()
     r = ClientSessionMocker(dumps({"request_id": "111-222-333-444"}), 200)
@@ -181,6 +198,17 @@ async def test_status_fatal_status(servicex_status_fatal):
             await sa.get_transform_status(client, "123-123-123-444")
 
         assert "Fatal" in str(e.value)
+
+
+@pytest.mark.asyncio
+async def test_status_negative_status(servicex_status_negative):
+
+    sa = ServiceXAdaptor("http://localhost:500/sx")
+    async with aiohttp.ClientSession() as client:
+        with pytest.raises(ServiceXFatalTransformException) as e:
+            await sa.get_transform_status(client, "123-123-123-444")
+
+        assert "negative" in str(e.value)
 
 
 @pytest.mark.asyncio
