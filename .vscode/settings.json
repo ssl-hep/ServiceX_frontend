@@ -98,4 +98,5 @@
     "python.testing.pytestEnabled": true,
     "editor.formatOnSave": true,
     "python.formatting.provider": "black",
+    "restructuredtext.preview.docutils.disabled": true,
 }
