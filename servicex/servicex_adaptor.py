@@ -214,6 +214,11 @@ class ServiceXAdaptor:
             files_failed = self._get_transform_stat(info, "files-skipped")
             files_processed = self._get_transform_stat(info, "files-processed")
 
+            if files_remaining is not None and int(files_remaining) < 0:
+                raise ServiceXFatalTransformException(
+                    f"Transform {request_id} returned negative files remaining. Bug in ServiceX?"
+                )
+
             assert files_processed is not None
 
             return files_remaining, files_processed, files_failed

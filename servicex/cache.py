@@ -1,6 +1,7 @@
-import os
 import hashlib
 import json
+import logging
+import os
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -207,6 +208,7 @@ class Cache:
 
         with f.open("r") as i:
             request_id = i.readline().strip()
+            logging.getLogger(__name__).debug(f"Found query '{request_id}' in cache")
 
         self._write_analysis_query_cache(json, request_id)
 
