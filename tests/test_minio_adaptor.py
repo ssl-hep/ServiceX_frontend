@@ -175,6 +175,11 @@ def test_access_url(good_minio_client):
     good_minio_client[1].presigned_get_object.assert_called_with("123-456", "file1")
 
 
+def test_access_s3_uri():
+    mn = MinioAdaptor("localhost:9000")
+    assert mn.get_s3_uri("123-456", "file1") == "s3://123-456/file1"
+
+
 def test_list_objects(good_minio_client):
     ma = MinioAdaptor("localhost:9000")
 
