@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
+import urllib.parse
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, AsyncIterator, List, Optional, Dict, cast
@@ -86,6 +87,20 @@ class MinioAdaptor:
             str: A url good for some amount of time to access the bucket.
         """
         return self._client.presigned_get_object(request_id, object_name)
+
+    def get_s3_uri(self, request_id: str, object_name: str) -> str:
+        """Given a request ID and a file name in that request, return an S3 URI that can
+        be used by a correctly configured S3 client.
+
+        Args:
+        :param request_id: The request id guid (that is the bucket in minio)
+        :param object_name: The file (the object in the minio bucket)
+        :return:
+            A formatted S3 URI to that object
+        """
+        return urllib.parse.urlunsplit((
+            "s3", request_id, object_name, None, None)
+        )
 
     async def download_file(
         self, request_id: str, bucket_fname: str, output_file: Path

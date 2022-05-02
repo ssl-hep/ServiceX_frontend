@@ -442,8 +442,9 @@ class ServiceXDataset(ServiceXABC):
         ):
             yield a
 
-    async def get_data_rootfiles_url_stream(
-        self, selection_query: str, title: Optional[str] = None
+    async def get_data_rootfiles_uri_stream(
+        self, selection_query: str, title: Optional[str] = None,
+            as_signed_url: Optional[bool] = False
     ) -> AsyncIterator[StreamInfoUrl]:
         """Returns, as an async iterator, each completed batch of work from ServiceX.
         The data that comes back includes a `url` that can be accessed to download the
@@ -451,23 +452,28 @@ class ServiceXDataset(ServiceXABC):
 
         Args:
             selection_query (str): The ServiceX Selection
+            title (str): Optional title for transform request
+            as_signed_url (bool): Return the uri as a presigned http url?
         """
         async for f_info in self._stream_url_buckets(
-            selection_query, "root-files", title
+            selection_query, "root-files", title, as_signed_url
         ):  # type: ignore
             yield f_info
 
-    async def get_data_parquet_url_stream(
-        self, selection_query: str, title: Optional[str] = None
+    async def get_data_parquet_uri_stream(
+        self, selection_query: str, title: Optional[str] = None,
+            as_signed_url: Optional[bool] = False
     ) -> AsyncIterator[StreamInfoUrl]:
         """Returns, as an async iterator, each of the files from the minio bucket,
         as the files are added there.
 
         Args:
             selection_query (str): The ServiceX Selection
+            title (str): Optional title for transform request
+            as_signed_url (bool): Return the uri as a presigned http url?
         """
         async for f_info in self._stream_url_buckets(
-            selection_query, "parquet", title
+            selection_query, "parquet", title, as_signed_url
         ):  # type: ignore
             yield f_info
 
@@ -511,7 +517,8 @@ class ServiceXDataset(ServiceXABC):
         max_tries=2,
     )
     async def _stream_url_buckets(
-        self, selection_query: str, data_format: str, title: Optional[str]
+        self, selection_query: str, data_format: str, title: Optional[str],
+            as_signed_url: Optional[bool]
     ) -> AsyncGenerator[StreamInfoUrl, None]:
         """Get a list of files back for a request
 
@@ -519,6 +526,7 @@ class ServiceXDataset(ServiceXABC):
             selection_query (str): The selection query we are to do
             data_format (str): The requested file format
             title (Optional[str]): The title of transform to pass to ServiceX
+            as_signed_url (Optional[bool]): Return the uri as a presigned http url?
 
         Yields:
             AsyncIterator[Dict[str, str]]: A tuple of the minio bucket and file in that bucket.
@@ -542,7 +550,7 @@ class ServiceXDataset(ServiceXABC):
                 self._cache.lookup_query_status(request_id)
             )
 
-            # Look up the cache, and then fetch an iterator going thorugh the results
+            # Look up the cache, and then fetch an iterator going through the results
             # from either servicex or the cache, depending.
             try:
                 notifier = self._create_notifier(title, False)
@@ -551,10 +559,13 @@ class ServiceXDataset(ServiceXABC):
                 )
 
                 # Reflect the files back up a level.
-                async for r in minio_files:
-                    yield StreamInfoUrl(
-                        r, minio_adaptor.get_access_url(request_id, r), request_id
-                    )
+                async for object_name in minio_files:
+                    uri = \
+                        minio_adaptor.get_access_url(request_id, object_name) \
+                        if as_signed_url \
+                        else minio_adaptor.get_s3_uri(request_id, object_name)
+
+                    yield StreamInfoUrl(object_name, uri, request_id)
 
                 # Cache the final status
                 await self._update_query_status(client, request_id)

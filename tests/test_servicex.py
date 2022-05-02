@@ -575,7 +575,7 @@ async def test_stream_root_files_from_minio(mocker):
         local_log=mock_logger,
         data_convert_adaptor=data_adaptor,
     )
-    lst = [f async for f in ds.get_data_rootfiles_url_stream("(valid qastle string)")]
+    lst = [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)", as_signed_url=True)]
 
     assert len(lst) == 1
     r = lst[0]
@@ -586,6 +586,35 @@ async def test_stream_root_files_from_minio(mocker):
 
     assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
     assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+
+
+@pytest.mark.asyncio
+async def test_stream_root_files_from_s3(mocker):
+    "Get a root file pulling back minio info as it arrives"
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+        data_convert_adaptor=data_adaptor,
+    )
+    lst = [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)", as_signed_url=False)]
+
+    assert len(lst) == 1
+    r = lst[0]
+    assert isinstance(r, StreamInfoUrl)
+    assert r.bucket == "123-456"
+    assert r.file == "one_minio_entry"
+    assert r.url == "s3://123-456/one_minio_entry"
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
 
 
 @pytest.mark.asyncio
@@ -640,7 +669,7 @@ async def test_stream_bad_request_id_run_root_files_from_minio(mocker):
 
     with pytest.raises(ServiceXUnknownDataRequestID) as e:
         lst = []
-        async for f_info in ds.get_data_rootfiles_url_stream("(valid qastle string)"):
+        async for f_info in ds.get_data_rootfiles_uri_stream("(valid qastle string)"):
             lst.append(f_info)
 
     assert "to know about" in str(e.value)
@@ -691,7 +720,7 @@ async def test_stream_bad_transform_run_root_files_from_minio(mocker):
 
     with pytest.raises(ServiceXFatalTransformException) as e:
         lst = []
-        async for f_info in ds.get_data_rootfiles_url_stream("(valid qastle string)"):
+        async for f_info in ds.get_data_rootfiles_uri_stream("(valid qastle string)"):
             lst.append(f_info)
 
     assert "Fatal Error" in str(e.value)
@@ -724,7 +753,7 @@ async def test_stream_bad_file_transform_run_root_files_from_minio(mocker):
 
     with pytest.raises(ServiceXException) as e:
         lst = []
-        async for f_info in ds.get_data_rootfiles_url_stream("(valid qastle string)"):
+        async for f_info in ds.get_data_rootfiles_uri_stream("(valid qastle string)"):
             lst.append(f_info)
 
     assert "Failed to transform all files" in str(e.value)
@@ -749,7 +778,7 @@ async def test_stream_parquet_files_from_minio(mocker):
     )
     lst = [
         f_info
-        async for f_info in ds.get_data_parquet_url_stream("(valid qastle string)")
+        async for f_info in ds.get_data_parquet_uri_stream("(valid qastle string)")
     ]
 
     assert len(lst) == 1
@@ -1225,7 +1254,7 @@ async def test_callback_is_not_downloading(mocker):
         local_log=mock_logger,
         status_callback_factory=build_it,
     )
-    _ = [f async for f in ds.get_data_rootfiles_url_stream("(valid qastle string)")]
+    _ = [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)")]
 
     assert ds_name == "http://one-ds"
     assert not ds_downloading
@@ -1391,7 +1420,7 @@ async def test_servicex_gone_when_redownload_request_urls(
         local_log=mock_logger,
     )
 
-    [f async for f in ds.get_data_rootfiles_url_stream("(valid qastle string)")]
+    [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)")]
 
 
 @pytest.mark.asyncio
@@ -1764,6 +1793,6 @@ async def test_user_deleted_query_status_stream(mocker):
         local_log=mock_logger,
         data_convert_adaptor=data_adaptor,
     )
-    [f async for f in ds.get_data_rootfiles_url_stream("(valid qastle string)")]
+    [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)")]
 
     assert mock_cache.set_query_status.call_count == 2
