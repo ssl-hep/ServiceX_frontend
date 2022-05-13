@@ -48,7 +48,7 @@ setup(
         "tqdm~=4.0",
         "qastle>=0.10, <1.0",
         "make_it_sync==1.0.0",
-        "google-auth==1.17",
+        "google-auth",
         "confuse==1.3.0",
         "pyarrow>=1.0",
     ],
