@@ -90,6 +90,16 @@ class ServiceXUnknownRequestID(Exception):
         super().__init__(self, msg)
 
 
+class ServiceXNoFilesInCache(Exception):
+    """Raised when we try to access ServiceX with a request ID that it
+    knows about, but no longer has the results cached - and they
+    need to be regenerated"
+    """
+
+    def __init__(self, msg):
+        super().__init__(self, msg)
+
+
 class ServiceXUnknownDataRequestID(Exception):
     """Raised when we expect ServiceX to know about the data for a request id, but it does not.
     Possible causes:

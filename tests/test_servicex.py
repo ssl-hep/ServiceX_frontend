@@ -22,7 +22,7 @@ from servicex.data_conversions import DataConverterAdaptor
 from servicex.minio_adaptor import MinioAdaptorFactory
 from servicex.servicex import StreamInfoPath, StreamInfoUrl
 from servicex.servicex_config import ServiceXConfigAdaptor
-from servicex.utils import log_adaptor
+from servicex.utils import ServiceXNoFilesInCache, log_adaptor
 
 from .conftest import MockMinioAdaptor, MockServiceXAdaptor, build_cache_mock  # NOQA
 
@@ -575,7 +575,12 @@ async def test_stream_root_files_from_minio(mocker):
         local_log=mock_logger,
         data_convert_adaptor=data_adaptor,
     )
-    lst = [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)", as_signed_url=True)]
+    lst = [
+        f
+        async for f in ds.get_data_rootfiles_uri_stream(
+            "(valid qastle string)", as_signed_url=True
+        )
+    ]
 
     assert len(lst) == 1
     r = lst[0]
@@ -605,7 +610,12 @@ async def test_stream_root_files_from_s3(mocker):
         local_log=mock_logger,
         data_convert_adaptor=data_adaptor,
     )
-    lst = [f async for f in ds.get_data_rootfiles_uri_stream("(valid qastle string)", as_signed_url=False)]
+    lst = [
+        f
+        async for f in ds.get_data_rootfiles_uri_stream(
+            "(valid qastle string)", as_signed_url=False
+        )
+    ]
 
     assert len(lst) == 1
     r = lst[0]
@@ -1370,6 +1380,40 @@ async def test_servicex_gone_when_redownload_request(mocker, short_status_poll_t
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     transform_status = mocker.MagicMock(
         side_effect=[ServiceXUnknownRequestID("boom"), (0, 1, 0)]
+    )
+    mock_servicex_adaptor = MockServiceXAdaptor(
+        mocker, "123-456", mock_transform_status=transform_status
+    )
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "http://one-ds",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        data_convert_adaptor=data_adaptor,
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+    )
+
+    await ds.get_data_rootfiles_async("(valid qastle string)")
+
+    assert mock_cache.remove_query.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_servicex_empty_minio_container(mocker, short_status_poll_time):
+    """
+    1. Our transform query is in the cache.
+    2. The files are not yet all in the cache.
+    3. We call to get the status, and there is a "not known" error.
+    4. The query in the cache should have been removed.
+    5. The query is called again.
+    """
+    mock_cache = build_cache_mock(mocker, query_cache_return="123-456")
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    transform_status = mocker.MagicMock(
+        side_effect=[ServiceXNoFilesInCache("boom"), (0, 1, 0)]
     )
     mock_servicex_adaptor = MockServiceXAdaptor(
         mocker, "123-456", mock_transform_status=transform_status

@@ -35,9 +35,10 @@ import logging
 import backoff
 from backoff import on_exception
 from minio import Minio, ResponseError
+from minio.error import NoSuchBucket
 from urllib3.exceptions import MaxRetryError
 
-from .utils import ServiceXException
+from .utils import ServiceXException, ServiceXNoFilesInCache
 
 
 class MinioAdaptor:
@@ -74,6 +75,10 @@ class MinioAdaptor:
                 f"Max retries exceeded."
             )
             raise ServiceXException(msg)
+        except NoSuchBucket as e:
+            raise ServiceXNoFilesInCache(
+                f'No files in cache for request "{request_id}"'
+            ) from e
 
     def get_access_url(self, request_id: str, object_name: str) -> str:
         """Given a request ID and the file name in that request id, return a URL
@@ -98,9 +103,7 @@ class MinioAdaptor:
         :return:
             A formatted S3 URI to that object
         """
-        return urllib.parse.urlunsplit((
-            "s3", request_id, object_name, None, None)
-        )
+        return urllib.parse.urlunsplit(("s3", request_id, object_name, None, None))
 
     async def download_file(
         self, request_id: str, bucket_fname: str, output_file: Path
