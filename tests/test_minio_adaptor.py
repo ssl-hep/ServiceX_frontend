@@ -4,12 +4,14 @@ import minio
 from minio.error import ResponseError
 import pytest
 from urllib3.exceptions import MaxRetryError
+from minio.error import NoSuchBucket
 
 from servicex import (
     MinioAdaptor,
     ServiceXException,
 )
 from servicex.minio_adaptor import MinioAdaptorFactory, find_new_bucket_files
+from servicex.utils import ServiceXNoFilesInCache
 
 
 def make_minio_file(fname):
@@ -73,6 +75,26 @@ def bad_minio_endpoint(mocker):
     pool.host = "http://dude"
     pool.port = "fork-me"
     minio_client.list_objects.side_effect = MaxRetryError(pool, "http://dude")
+
+    mocker.patch("servicex.minio_adaptor.Minio", return_value=minio_client)
+
+    p_rename = mocker.patch("servicex.minio_adaptor.Path.rename", mocker.MagicMock())
+    mocker.patch("servicex.minio_adaptor.Path.mkdir", mocker.MagicMock())
+
+    return p_rename, minio_client
+
+
+@pytest.fixture
+def minio_endpoint_bucket_missing(mocker):
+    "Simulate the Minio end point throwing a no files in bucket error"
+    response1 = mocker.MagicMock()
+    response1.data = "<xml></xml>"
+
+    minio_client = mocker.MagicMock(spec=minio.Minio)
+    pool = mocker.MagicMock()
+    pool.host = "http://dude"
+    pool.port = "fork-me"
+    minio_client.list_objects.side_effect = NoSuchBucket(200)
 
     mocker.patch("servicex.minio_adaptor.Minio", return_value=minio_client)
 
@@ -200,6 +222,16 @@ def test_bad_minio(bad_minio_endpoint):
     list_objects minio method"""
     ma = MinioAdaptor("localhost:9000")
     with pytest.raises(ServiceXException):
+        ma.get_files("111-222-333-444")
+
+
+def test_no_files_found(minio_endpoint_bucket_missing):
+    """When minio doesn't have any files in a bucket, we
+    throw an error - make sure it gets translated into an SX
+    error that can cause a re-try.
+    """
+    ma = MinioAdaptor("localhost:9000")
+    with pytest.raises(ServiceXNoFilesInCache):
         ma.get_files("111-222-333-444")
 
 

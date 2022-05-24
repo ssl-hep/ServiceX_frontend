@@ -40,6 +40,7 @@ from .utils import (
     ServiceXException,
     ServiceXFailedFileTransform,
     ServiceXFatalTransformException,
+    ServiceXNoFilesInCache,
     ServiceXUnknownDataRequestID,
     ServiceXUnknownRequestID,
     StatusUpdateFactory,
@@ -256,7 +257,9 @@ class ServiceXDataset(ServiceXABC):
             Cache(
                 get_configured_cache_path(config.settings),
                 ignore_cache,
-                analysis_query_key=backend_name if backend_name is not None else "default",
+                analysis_query_key=backend_name
+                if backend_name is not None
+                else "default",
             )
             if cache_adaptor is None
             else cache_adaptor
@@ -443,8 +446,10 @@ class ServiceXDataset(ServiceXABC):
             yield a
 
     async def get_data_rootfiles_uri_stream(
-        self, selection_query: str, title: Optional[str] = None,
-            as_signed_url: Optional[bool] = False
+        self,
+        selection_query: str,
+        title: Optional[str] = None,
+        as_signed_url: Optional[bool] = False,
     ) -> AsyncIterator[StreamInfoUrl]:
         """Returns, as an async iterator, each completed batch of work from ServiceX.
         The data that comes back includes a `url` that can be accessed to download the
@@ -461,8 +466,10 @@ class ServiceXDataset(ServiceXABC):
             yield f_info
 
     async def get_data_parquet_uri_stream(
-        self, selection_query: str, title: Optional[str] = None,
-            as_signed_url: Optional[bool] = False
+        self,
+        selection_query: str,
+        title: Optional[str] = None,
+        as_signed_url: Optional[bool] = False,
     ) -> AsyncIterator[StreamInfoUrl]:
         """Returns, as an async iterator, each of the files from the minio bucket,
         as the files are added there.
@@ -517,8 +524,11 @@ class ServiceXDataset(ServiceXABC):
         max_tries=2,
     )
     async def _stream_url_buckets(
-        self, selection_query: str, data_format: str, title: Optional[str],
-            as_signed_url: Optional[bool]
+        self,
+        selection_query: str,
+        data_format: str,
+        title: Optional[str],
+        as_signed_url: Optional[bool],
     ) -> AsyncGenerator[StreamInfoUrl, None]:
         """Get a list of files back for a request
 
@@ -560,10 +570,11 @@ class ServiceXDataset(ServiceXABC):
 
                 # Reflect the files back up a level.
                 async for object_name in minio_files:
-                    uri = \
-                        minio_adaptor.get_access_url(request_id, object_name) \
-                        if as_signed_url \
+                    uri = (
+                        minio_adaptor.get_access_url(request_id, object_name)
+                        if as_signed_url
                         else minio_adaptor.get_s3_uri(request_id, object_name)
+                    )
 
                     yield StreamInfoUrl(object_name, uri, request_id)
 
@@ -783,6 +794,14 @@ class ServiceXDataset(ServiceXABC):
                 raise ServiceXUnknownDataRequestID(
                     "Expected the ServiceX backend to know about "
                     f"query {request_id}. It did not. Cleared local"
+                    " cache. Please resubmit to trigger a new "
+                    "query."
+                ) from e
+            except ServiceXNoFilesInCache as e:
+                self._cache.remove_query(query)
+                raise ServiceXUnknownDataRequestID(
+                    "Expected the ServiceX backend to have cached data "
+                    f"from query {request_id}. It did not. Cleared local"
                     " cache. Please resubmit to trigger a new "
                     "query."
                 ) from e
