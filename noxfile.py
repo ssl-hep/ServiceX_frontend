@@ -17,7 +17,7 @@ def lint(session):
     Lint with flake8.
     """
     session.install("--upgrade", "flake8")
-    session.run("flake8", "--exclude=tests/*", "--ignore=E501,W503", *session.posargs)
+    session.run("flake8", *session.posargs)
 
 
 @nox.session(python=ALL_PYTHONS, reuse_venv=True)
