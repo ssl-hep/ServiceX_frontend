@@ -60,6 +60,29 @@ def coverage(session):
     session.run("coverage", "html")
 
 
+@nox.session(reuse_venv=True)
+def docs(session):
+    """
+    Build the docs.
+    Pass "serve" to serve.
+
+    Example:
+
+        $ nox --session docs -- serve
+    """
+
+    session.install("--upgrade", "--editable", ".[docs]")
+    session.chdir("docs")
+    session.run("sphinx-build", "-M", "html", ".", "_build")
+
+    if session.posargs:
+        if "serve" in session.posargs:
+            print("Launching docs at http://localhost:8001/ - use Ctrl-C to quit")
+            session.run("python", "-m", "http.server", "8001", "-d", "_build/html")
+        else:
+            print("Unsupported argument to docs")
+
+
 @nox.session
 def build(session):
     """
