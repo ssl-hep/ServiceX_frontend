@@ -355,6 +355,7 @@ To do development please setup your environment with the following steps:
 2. Fork/Pull down this package, XX
 3. `python -m pip install -e .[test]`
 4. `python -m pip install nox`
+   * Run `nox --list` to list all session options.
 5. Run the tests with `nox` to make sure everything is good: `nox --session tests`.
 
 Then add tests as you develop. When you are done, submit a pull request with any required changes to the documentation and the online tests will run.
