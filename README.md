@@ -24,6 +24,10 @@ Before you can use this library you'll need:
 - An environment based on python 3.7 or later. 3.11 is highest supported at the moment.
 - A `ServiceX` end-point. This is usually gotten by logging into and getting approved at the servicex endpoint. Once you do that, you'll have an API token, which this library needs to access the `ServiceX` endpoint, and the web address where you got that token (the `endpoint` address).
 
+<!-- Comment: Index page ends here in the docs -->
+
+<!-- Comment: Intro page starts here in the docs -->
+
 ### How to access your endpoint
 
 The API access information is normally placed in a configuration file (see the section below). Create a config file, `servicex.yaml`, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
@@ -34,7 +38,7 @@ api_endpoints:
     endpoint: <your-endpoint>
     token: <api-token>
     type: xaod
-    
+
 ```
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
@@ -194,6 +198,9 @@ The file can contain an `api_endpoint` as mentioned earlier. In addition the oth
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
+<!-- Comment: Intro page ends here in the docs -->
+
+<!-- Comment: Development page starts here in the docs -->
 ## Features
 
 Implemented:
@@ -260,7 +267,7 @@ Everything is based around the `ServiceXDataset` object. Below is the documentat
                                       ServiceX.
           result_destination          Where the transformers should write the results.
                                       Defaults to object-store, but could be used to save
-                                      results to a posix volume                                      
+                                      results to a posix volume
           servicex_adaptor            Object to control communication with the servicex instance
                                       at a particular ip address with certain login credentials.
                                       Default comes from the `config_adaptor`.
