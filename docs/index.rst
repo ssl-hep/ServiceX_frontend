@@ -15,7 +15,11 @@ Welcome to ServiceX Client Library's documentation!
 
    intro
    api
+   development
 
+.. include:: ../README.md
+   :parser: myst_parser.sphinx_
+   :end-before: <!-- Comment: Index page ends here in the docs -->
 
 Indices and tables
 ==================

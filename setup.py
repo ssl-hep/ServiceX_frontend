@@ -69,7 +69,6 @@ setup(
         "docs": [
             "sphinx>=5.1.1",
             "myst-parser>=0.18.0",
-            "sphinx_rtd_theme",
             "furo>=2022.09.29",
             "sphinx-copybutton>=0.3.2",
         ],

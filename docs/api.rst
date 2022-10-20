@@ -17,5 +17,5 @@ Top-Level
    servicex_adaptor
    servicex_config
    servicex
-   servicexthon_function
+   servicex_python_function
    utils

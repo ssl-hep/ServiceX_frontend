@@ -3,13 +3,19 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+from pkg_resources import get_distribution
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "ServiceX Client Library"
 copyright = "2022, Gordon Watts"
 author = "Gordon Watts"
-release = "2.5.4"
+
+# The full version, including alpha/beta/rc tags.
+release = get_distribution("servicex").version
+# for example take major/minor/patch
+version = ".".join(release.split(".")[:3])
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -20,6 +26,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
+    "myst_parser",
     "sphinx_copybutton",
 ]
 
