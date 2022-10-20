@@ -66,6 +66,7 @@ setup(
             "black",
         ]
         + extra_test_packages,
+        "docs": ["sphinx>=5.1.1", "sphinx_rtd_theme"],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
