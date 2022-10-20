@@ -10,6 +10,11 @@ Welcome to ServiceX Client Library's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. toctree::
+   :hidden:
+
+   intro
+   api
 
 
 Indices and tables
