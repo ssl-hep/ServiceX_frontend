@@ -33,6 +33,12 @@ extensions = [
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# GitHub repo
+issues_github_path = "ssl-hep/ServiceX_frontend"
+
+# Generate the API documentation when building
+autosummary_generate = True
+numpydoc_show_class_members = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
