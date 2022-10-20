@@ -65,6 +65,7 @@ def docs(session):
     """
     Build the docs.
     Pass "serve" to serve.
+    Pass "clean" to delete the build tree prior to build.
 
     Example:
 
@@ -72,6 +73,13 @@ def docs(session):
     """
 
     session.install("--upgrade", "--editable", ".[docs]")
+
+    if session.posargs and "clean" in session.posargs:
+        build_path = DIR / "docs" / "_build"
+        if build_path.exists():
+            session.log(f"Removing build tree: {build_path}")
+            shutil.rmtree(build_path)
+
     session.chdir("docs")
     session.run("sphinx-build", "-M", "html", ".", "_build")
 
