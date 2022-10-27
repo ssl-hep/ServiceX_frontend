@@ -557,6 +557,7 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
     await ds.get_data_awkward_async("(valid qastle string)")
     assert len(good_awkward_file_data.combine_awkward.call_args[0][0]) == 2
 
+
 @pytest.mark.asyncio
 async def test_async_root_files_from_minio(mocker):
     "Get a root file pulling back minio info as it arrives"
@@ -575,9 +576,9 @@ async def test_async_root_files_from_minio(mocker):
         data_convert_adaptor=data_adaptor,
     )
     lst = await ds.get_data_rootfiles_uri_async(
-            "(valid qastle string)", as_signed_url=True
-        )
-    
+        "(valid qastle string)", as_signed_url=True
+    )
+
     assert len(lst) == 1
     r = lst[0]
     assert isinstance(r, StreamInfoUrl)
@@ -587,6 +588,7 @@ async def test_async_root_files_from_minio(mocker):
 
     assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
     assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+
 
 def test_root_files_from_minio(mocker):
     "Get a root file pulling back minio info as it arrives"
@@ -604,10 +606,8 @@ def test_root_files_from_minio(mocker):
         local_log=mock_logger,
         data_convert_adaptor=data_adaptor,
     )
-    lst = ds.get_data_rootfiles_uri(
-            "(valid qastle string)", as_signed_url=True
-        )
-    
+    lst = ds.get_data_rootfiles_uri("(valid qastle string)", as_signed_url=True)
+
     assert len(lst) == 1
     r = lst[0]
     assert isinstance(r, StreamInfoUrl)
@@ -617,6 +617,7 @@ def test_root_files_from_minio(mocker):
 
     assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
     assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+
 
 @pytest.mark.asyncio
 async def test_stream_root_files_from_minio(mocker):
@@ -857,6 +858,7 @@ async def test_stream_parquet_files_from_minio(mocker):
 
     assert mock_servicex_adaptor.query_json["result-format"] == "parquet"
 
+
 @pytest.mark.asyncio
 async def test_async_parquet_files_from_minio(mocker):
     "Get a parquet file pulling back minio info as it arrives"
@@ -882,6 +884,7 @@ async def test_async_parquet_files_from_minio(mocker):
 
     assert mock_servicex_adaptor.query_json["result-format"] == "parquet"
 
+
 def test_parquet_files_from_minio(mocker):
     "Get a parquet file pulling back minio info as it arrives"
     mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
@@ -905,6 +908,7 @@ def test_parquet_files_from_minio(mocker):
     assert lst[0].file == "one_minio_entry"
 
     assert mock_servicex_adaptor.query_json["result-format"] == "parquet"
+
 
 @pytest.mark.asyncio
 async def test_stream_parquet_files(mocker):

@@ -471,9 +471,9 @@ class ServiceXDataset(ServiceXABC):
         selection_query: str,
         title: Optional[str] = None,
         as_signed_url: Optional[bool] = False,
-    ) -> list:
-        """Returns a list of each completed batch of work from ServiceX, taken from
-        the async iterator output of get_data_rootfiles_uri_stream.
+    ) -> List[StreamInfoUrl]:
+        """Returns a list of StreamInfoUrl entries containing a `url` for each output file
+        from the transform, taken from get_data_rootfiles_uri_stream.
         The data that comes back includes a `url` that can be accessed to download the
         data.
 
@@ -481,9 +481,9 @@ class ServiceXDataset(ServiceXABC):
             selection_query (str): The ServiceX Selection
             title (str): Optional title for transform request
             as_signed_url (bool): Return the uri as a presigned http url?
-        """        
+        """
         return [
-            f 
+            f
             async for f in self.get_data_rootfiles_uri_stream(
                 selection_query, title=title, as_signed_url=as_signed_url
             )
@@ -507,15 +507,14 @@ class ServiceXDataset(ServiceXABC):
             selection_query, "parquet", title, as_signed_url
         ):  # type: ignore
             yield f_info
-            
+
     async def get_data_parquet_uri_async(
         self,
         selection_query: str,
         title: Optional[str] = None,
         as_signed_url: Optional[bool] = False,
-    ) -> list:
-        """Returns a list of each of the files from the minio bucket,
-        as the files are added there.
+    ) -> List[StreamInfoUrl]:
+        """Returns a list of each of the files from the minio bucket.
 
         Args:
             selection_query (str): The ServiceX Selection
@@ -528,7 +527,7 @@ class ServiceXDataset(ServiceXABC):
                 selection_query, title, as_signed_url
             )
         ]
-        
+
     async def _file_return(
         self, selection_query: str, data_format: str, title: Optional[str]
     ):
@@ -1080,6 +1079,6 @@ class ServiceXDataset(ServiceXABC):
         return json_query
 
     # Define the synchronous versions of the async methods for easy of use
-    
+
     get_data_rootfiles_uri = make_sync(get_data_rootfiles_uri_async)
     get_data_parquet_uri = make_sync(get_data_parquet_uri_async)
