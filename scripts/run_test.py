@@ -4,11 +4,9 @@
 # An example endpoint (pass as arg to this script):
 #       http://localhost:5000
 import argparse
-from typing import Optional
 import asyncio
 
 from servicex import ServiceXDataset
-from servicex.servicex_adaptor import ServiceXAdaptor
 
 
 async def run_query(endpoint: str, dest: str) -> None:
