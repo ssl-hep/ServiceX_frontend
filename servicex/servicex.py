@@ -68,7 +68,7 @@ class StreamInfoBase:
     def file(self) -> str:
         """Returns the ServiceX filename
 
-        This filename is unique in the dataset, and will be the same accross different queries
+        This filename is unique in the dataset, and will be the same across different queries
         against the dataset. It can be used as a key to sort results.
 
         Notes:
