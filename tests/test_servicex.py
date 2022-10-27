@@ -559,6 +559,67 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
 
 
 @pytest.mark.asyncio
+async def test_async_root_files_from_minio(mocker):
+    "Get a root file pulling back minio info as it arrives"
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+        data_convert_adaptor=data_adaptor,
+    )
+    lst = await ds.get_data_rootfiles_uri_async(
+        "(valid qastle string)", as_signed_url=True
+    )
+
+    assert len(lst) == 1
+    r = lst[0]
+    assert isinstance(r, StreamInfoUrl)
+    assert r.bucket == "123-456"
+    assert r.file == "one_minio_entry"
+    assert r.url == "http://the.url.com"
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
+    assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+
+
+def test_root_files_from_minio(mocker):
+    "Get a root file pulling back minio info as it arrives"
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+        data_convert_adaptor=data_adaptor,
+    )
+    lst = ds.get_data_rootfiles_uri("(valid qastle string)", as_signed_url=True)
+
+    assert len(lst) == 1
+    r = lst[0]
+    assert isinstance(r, StreamInfoUrl)
+    assert r.bucket == "123-456"
+    assert r.file == "one_minio_entry"
+    assert r.url == "http://the.url.com"
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
+    assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+
+
+@pytest.mark.asyncio
 async def test_stream_root_files_from_minio(mocker):
     "Get a root file pulling back minio info as it arrives"
     mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
@@ -790,6 +851,57 @@ async def test_stream_parquet_files_from_minio(mocker):
         f_info
         async for f_info in ds.get_data_parquet_uri_stream("(valid qastle string)")
     ]
+
+    assert len(lst) == 1
+    assert lst[0].bucket == "123-456"
+    assert lst[0].file == "one_minio_entry"
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "parquet"
+
+
+@pytest.mark.asyncio
+async def test_async_parquet_files_from_minio(mocker):
+    "Get a parquet file pulling back minio info as it arrives"
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+        data_convert_adaptor=data_adaptor,
+    )
+    lst = await ds.get_data_parquet_uri_async("(valid qastle string)")
+
+    assert len(lst) == 1
+    assert lst[0].bucket == "123-456"
+    assert lst[0].file == "one_minio_entry"
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "parquet"
+
+
+def test_parquet_files_from_minio(mocker):
+    "Get a parquet file pulling back minio info as it arrives"
+    mock_cache = build_cache_mock(mocker, data_file_return="/foo/bar.root")
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        local_log=mock_logger,
+        data_convert_adaptor=data_adaptor,
+    )
+    lst = ds.get_data_parquet_uri("(valid qastle string)")
 
     assert len(lst) == 1
     assert lst[0].bucket == "123-456"

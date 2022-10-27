@@ -22,6 +22,7 @@ import aiohttp
 import backoff
 import minio
 from backoff import on_exception
+from make_it_sync import make_sync
 
 from servicex.servicex_config import ServiceXConfigAdaptor
 
@@ -67,7 +68,7 @@ class StreamInfoBase:
     def file(self) -> str:
         """Returns the ServiceX filename
 
-        This filename is unique in the dataset, and will be the same accross different queries
+        This filename is unique in the dataset, and will be the same across different queries
         against the dataset. It can be used as a key to sort results.
 
         Notes:
@@ -465,6 +466,29 @@ class ServiceXDataset(ServiceXABC):
         ):  # type: ignore
             yield f_info
 
+    async def get_data_rootfiles_uri_async(
+        self,
+        selection_query: str,
+        title: Optional[str] = None,
+        as_signed_url: Optional[bool] = False,
+    ) -> List[StreamInfoUrl]:
+        """Returns a list of StreamInfoUrl entries containing a `url` for each output file
+        from the transform, taken from get_data_rootfiles_uri_stream.
+        The data that comes back includes a `url` that can be accessed to download the
+        data.
+
+        Args:
+            selection_query (str): The ServiceX Selection
+            title (str): Optional title for transform request
+            as_signed_url (bool): Return the uri as a presigned http url?
+        """
+        return [
+            f
+            async for f in self.get_data_rootfiles_uri_stream(
+                selection_query, title=title, as_signed_url=as_signed_url
+            )
+        ]
+
     async def get_data_parquet_uri_stream(
         self,
         selection_query: str,
@@ -483,6 +507,26 @@ class ServiceXDataset(ServiceXABC):
             selection_query, "parquet", title, as_signed_url
         ):  # type: ignore
             yield f_info
+
+    async def get_data_parquet_uri_async(
+        self,
+        selection_query: str,
+        title: Optional[str] = None,
+        as_signed_url: Optional[bool] = False,
+    ) -> List[StreamInfoUrl]:
+        """Returns a list of each of the files from the minio bucket.
+
+        Args:
+            selection_query (str): The ServiceX Selection
+            title (str): Optional title for transform request
+            as_signed_url (bool): Return the uri as a presigned http url?
+        """
+        return [
+            f_info
+            async for f_info in self.get_data_parquet_uri_stream(
+                selection_query, title, as_signed_url
+            )
+        ]
 
     async def _file_return(
         self, selection_query: str, data_format: str, title: Optional[str]
@@ -1033,3 +1077,8 @@ class ServiceXDataset(ServiceXABC):
         )
 
         return json_query
+
+    # Define the synchronous versions of the async methods for easy of use
+
+    get_data_rootfiles_uri = make_sync(get_data_rootfiles_uri_async)
+    get_data_parquet_uri = make_sync(get_data_parquet_uri_async)

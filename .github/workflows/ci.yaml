@@ -25,11 +25,9 @@ jobs:
           pip install --no-cache-dir -e .[test]
           pip list
       - name: Lint with Flake8
-        if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
         run: |
           flake8 --exclude=tests/* --ignore=E501,W503
       - name: Check for vulnerable libraries
-        if: matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
         run: |
           pip install safety
           pip freeze | safety check
