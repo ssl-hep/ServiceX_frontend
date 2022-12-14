@@ -40,8 +40,8 @@ setup(
     install_requires=[
         "idna==2.10",  # Required to thread version needle with requests library
         "pandas~=1.0",
-        "uproot>=5.0.0rc7",
-        "awkward>=2.0.0rc6",
+        "uproot>=5",
+        "awkward>=2",
         "backoff>=2.0",
         "aiohttp~=3.6",
         "minio~=5.0",
