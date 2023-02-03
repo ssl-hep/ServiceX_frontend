@@ -9,21 +9,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.10"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip build
-    - name: Build the servicex wheel
-      env:
-        servicex_version: ${{ github.ref }}
-      run: |
-        python -m build --sdist --wheel
-    - name: Publish servicex to PyPI
-      uses: pypa/gh-action-pypi-publish@v1.5.1
-      with:
-        password: ${{ secrets.pypi_password }}
-        print_hash: true
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip build
+      - name: Build the servicex wheel
+        env:
+          servicex_version: ${{ github.ref }}
+        run: |
+          python -m build --sdist --wheel
+      - name: Publish servicex to PyPI
+        uses: pypa/gh-action-pypi-publish@v1.6.4
+        with:
+          password: ${{ secrets.pypi_password }}
+          print_hash: true

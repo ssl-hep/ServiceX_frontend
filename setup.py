@@ -8,9 +8,6 @@ import os
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-if sys.version_info[0] < 3:
-    raise NotImplementedError("Do not support version 2 of python")
-
 extra_test_packages = []
 if sys.version_info[1] < 8:
     extra_test_packages.append("asyncmock")
@@ -35,7 +32,7 @@ setup(
     maintainer_email="gwatts@uw.edu",
     url="https://github.com/ssl-hep/ServiceX_frontend",
     license="TBD",
-    python_requires=">=3.6, <3.11",
+    python_requires=">=3.7",
     test_suite="tests",
     install_requires=[
         "idna==2.10",  # Required to thread version needle with requests library
@@ -81,9 +78,10 @@ setup(
         "Topic :: Software Development",
         "Topic :: Utilities",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     package_data={
         "servicex": ["config_default.yaml"],
