@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8
+          python-version: 3.9
       - name: Install dependencies
         env:
           servicex_version: 1.0a1
@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         platform: [ubuntu-latest, windows-latest]
-        python-version: [3.7, 3.8, 3.9, "3.10"]
+        python-version: [3.7, 3.8, 3.9, "3.10", "3.11"]
     runs-on: ${{ matrix.platform }}
 
     steps:
@@ -59,11 +59,11 @@ jobs:
         run: |
           python -m pytest
       - name: Code coverage with pytest
-        if: github.event_name == 'push' && matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
+        if: github.event_name == 'push' && matrix.python-version == 3.9 && matrix.platform == 'ubuntu-latest'
         run: |
           python -m pytest --ignore=setup.py --cov=servicex --cov-report=term-missing --cov-config=.coveragerc --cov-report xml
       - name: Report coverage with Codecov
-        if: github.event_name == 'push' && matrix.python-version == 3.7 && matrix.platform == 'ubuntu-latest'
+        if: github.event_name == 'push' && matrix.python-version == 3.9 && matrix.platform == 'ubuntu-latest'
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
