@@ -35,7 +35,7 @@ setup(
     maintainer_email="gwatts@uw.edu",
     url="https://github.com/ssl-hep/ServiceX_frontend",
     license="TBD",
-    python_requires=">=3.6, <3.11",
+    python_requires=">=3.7, <3.12",
     test_suite="tests",
     install_requires=[
         "idna==2.10",  # Required to thread version needle with requests library
