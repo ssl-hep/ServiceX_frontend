@@ -55,6 +55,10 @@ from .utils import (
     stream_unique_updates_only,
 )
 
+# The allowed file formats.
+# You could modify this if you wanted to add new...
+g_allowed_formats = ["parquet", "root-file"]
+
 
 class StreamInfoBase:
     """Contains base information about results that are streamed back from
@@ -320,8 +324,8 @@ class ServiceXDataset(ServiceXABC):
         return None
 
     def ignore_cache(self):
-        """Return a context manager that, as long as it is held, will cause any queries against just
-        this dataset to ignore any locally cached data.
+        """Return a context manager that, as long as it is held, will cause any queries against
+        just this dataset to ignore any locally cached data.
 
         Returns:
             ContextManager: As long as this is held, the local query cache will be ignored.
@@ -352,7 +356,7 @@ class ServiceXDataset(ServiceXABC):
                                            file locally.
         """
         async for f_info in self._stream_local_files(
-            selection_query, title, "root-files"
+            selection_query, title, "root-file"
         ):  # type: ignore
             yield f_info
 
@@ -462,7 +466,7 @@ class ServiceXDataset(ServiceXABC):
             as_signed_url (bool): Return the uri as a presigned http url?
         """
         async for f_info in self._stream_url_buckets(
-            selection_query, "root-files", title, as_signed_url
+            selection_query, "root-file", title, as_signed_url
         ):  # type: ignore
             yield f_info
 
@@ -591,7 +595,6 @@ class ServiceXDataset(ServiceXABC):
         query = self._build_json_query(selection_query, data_format, title)
 
         async with aiohttp.ClientSession() as client:
-
             # Get a request id - which might be cached, but if not, submit it.
             request_id = await self._get_request_id(client, query)
 
@@ -768,7 +771,7 @@ class ServiceXDataset(ServiceXABC):
     async def _get_files(
         self,
         selection_query: str,
-        data_type: str,
+        data_format: str,
         notifier: _status_update_wrapper,
         title: Optional[str],
     ) -> AsyncIterator[Tuple[str, Awaitable[Path]]]:
@@ -787,7 +790,7 @@ class ServiceXDataset(ServiceXABC):
         Arguments:
 
             selection_query             The query string to send to ServiceX
-            data_type                   The type of data that we want to come back.
+            data_format                 The type of data that we want to come back.
             notifier                    Status callback to let our progress be advertised
             title                       Title to pass to servicex backend.
 
@@ -797,10 +800,9 @@ class ServiceXDataset(ServiceXABC):
                                         This is returned this way so a number of downloads can run
                                         simultaneously.
         """
-        query = self._build_json_query(selection_query, data_type, title)
+        query = self._build_json_query(selection_query, data_format, title)
 
         async with aiohttp.ClientSession() as client:
-
             # Get a request id - which might be cached, but if not, submit it.
             request_id = await self._get_request_id(client, query)
 
@@ -950,7 +952,6 @@ class ServiceXDataset(ServiceXABC):
         start_time = time.monotonic()
         good = True
         try:
-
             # Get the stream of minio bucket new files.
             stream_new_object = self._get_minio_bucket_files_from_servicex(
                 request_id, client, minio_adaptor, notifier
@@ -1007,7 +1008,6 @@ class ServiceXDataset(ServiceXABC):
         """
         start_time = time.monotonic()
         try:
-
             # Setup the status sequence from servicex
             stream_status = transform_status_stream(
                 self._servicex_adaptor, client, request_id
@@ -1034,23 +1034,25 @@ class ServiceXDataset(ServiceXABC):
             )
 
     def _build_json_query(
-        self, selection_query: str, data_type: str, title: Optional[str]
+        self, selection_query: str, data_format: str, title: Optional[str]
     ) -> Dict[str, Union[str, Iterable[str]]]:
         """
         Returns a list of locally written files for a given selection query.
 
         Arguments:
             selection_query         The query to be send into the ServiceX API
-            data_type               What is the output data type (parquet, root-file, etc.)
+            data_format             What is the output data type (parquet, root-file, etc.)
 
         Notes:
             - Internal routine.
         """
+        assert data_format in g_allowed_formats
+
         # Items that must always be present
         json_query: Dict[str, Union[str, Iterable[str]]] = {
             "selection": selection_query,
             "result-destination": self._result_destination,
-            "result-format": "parquet" if data_type == "parquet" else "root-file",
+            "result-format": "parquet" if data_format == "parquet" else "root-file",
             "chunk-size": "1000",
             "workers": str(self._max_workers),
         }
