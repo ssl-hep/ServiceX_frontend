@@ -101,4 +101,7 @@
     "editor.formatOnSave": true,
     "python.formatting.provider": "black",
     "restructuredtext.preview.docutils.disabled": true,
+    "python.linting.flake8Args": [
+        "--config=.flake8"
+    ],
 }
