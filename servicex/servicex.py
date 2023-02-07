@@ -175,6 +175,7 @@ class ServiceXDataset(ServiceXABC):
         self,
         dataset: DatasetType,
         backend_name: Optional[str] = None,
+        codegen: Optional[str] = None,
         image: Optional[str] = None,
         max_workers: int = 20,
         result_destination: str = "object-store",
@@ -201,6 +202,8 @@ class ServiceXDataset(ServiceXABC):
                                         will default to xaod, unless you have any endpoint listed
                                         in your servicex file. It will default to best match there,
                                         or fail if a name has been given.
+            codegen                     The type of code generator passed to the backend to
+                                        generate the code that powers the requested transform.
             image                       Name of transformer image to use to transform the data. If
                                         left as default, `None`, then the default image for the
                                         ServiceX backend will be used.
@@ -246,6 +249,7 @@ class ServiceXDataset(ServiceXABC):
         ServiceXABC.__init__(
             self,
             dataset,
+            codegen,
             image,
             max_workers,
             result_destination,
@@ -1068,6 +1072,9 @@ class ServiceXDataset(ServiceXABC):
             json_query["file-list"] = self._dataset
 
         # Optional items
+        if self._codegen is not None:
+            json_query["codegen"] = self._codegen
+
         if self._image is not None:
             json_query["image"] = self._image
 

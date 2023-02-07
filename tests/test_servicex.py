@@ -650,8 +650,8 @@ async def test_stream_root_files_from_minio(mocker):
     assert r.file == "one_minio_entry"
     assert r.url == "http://the.url.com"
 
-    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
     assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
 
 
 @pytest.mark.asyncio
@@ -1229,6 +1229,30 @@ async def test_no_title_spec(mocker, good_awkward_file_data):
 
     called = mock_servicex_adaptor.query_json
     assert "title" not in called
+
+
+@pytest.mark.asyncio
+async def test_codegen_spec(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        data_convert_adaptor=data_adaptor,
+        local_log=mock_logger,
+        max_workers=50,
+        codegen="good_codegen"
+    )
+    await ds.get_data_rootfiles_async("(valid qastle string)")
+
+    called = mock_servicex_adaptor.query_json
+    assert called["codegen"]=="good_codegen"
 
 
 @pytest.mark.asyncio
