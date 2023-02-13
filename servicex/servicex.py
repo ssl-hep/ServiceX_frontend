@@ -106,7 +106,7 @@ class StreamInfoUrl(StreamInfoBase):
 
     @property
     def bucket(self) -> str:
-        """Returns the buck name - unique and constant accross transformations.
+        """Returns the buck name - unique and constant across transformations.
         Can be used to order the results
 
         Returns:
@@ -166,7 +166,7 @@ class StreamInfoData(StreamInfoBase):
 
 class ServiceXDataset(ServiceXABC):
     """
-    Used to access an instance of ServiceX at an end point on the internet. Support convieration
+    Used to access an instance of ServiceX at an end point on the internet. Support conversion
     by configuration object `config_adaptor` or by creating the adaptors defined in the `__init__`
     function.
     """
@@ -210,7 +210,7 @@ class ServiceXDataset(ServiceXABC):
                                         Defaults to object-store, but could be used to save
                                         results to a posix volume
             servicex_adaptor            Object to control communication with the servicex instance
-                                        at a particular ip address with certian login credentials.
+                                        at a particular ip address with certain login credentials.
                                         Will be configured via the `config_adaptor` by default.
             minio_adaptor               Object to control communication with the minio servicex
                                         instance.
@@ -347,7 +347,7 @@ class ServiceXDataset(ServiceXABC):
         access the data.
 
         Args:
-            selection_query (str): The `qastle` query for the data to retreive.
+            selection_query (str): The `qastle` query for the data to retrieve.
 
         Yields:
             AsyncIterator[StreamInfoPath]: As ServiceX completes the data, and it is downloaded
@@ -375,7 +375,7 @@ class ServiceXDataset(ServiceXABC):
         access the data.
 
         Args:
-            selection_query (str): The `qastle` query for the data to retreive.
+            selection_query (str): The `qastle` query for the data to retrieve.
 
         Yields:
             AsyncIterator[StreamInfoPath]: As ServiceX completes the data, and it is downloaded
@@ -417,7 +417,7 @@ class ServiceXDataset(ServiceXABC):
         as a separate `awkward` array. The data is returned in a `StreamInfoData` object.
 
         Args:
-            selection_query (str): The `qastle` query for the data to retreive.
+            selection_query (str): The `qastle` query for the data to retrieve.
 
         Yields:
             AsyncIterator[StreamInfoData]: As ServiceX completes the data, and it is downloaded
@@ -437,7 +437,7 @@ class ServiceXDataset(ServiceXABC):
         as a separate `pandas.DataFrame` array. The data is returned in a `StreamInfoData` object.
 
         Args:
-            selection_query (str): The `qastle` query for the data to retreive.
+            selection_query (str): The `qastle` query for the data to retrieve.
 
         Yields:
             AsyncIterator[StreamInfoData]: As ServiceX completes the data, and it is downloaded
@@ -539,7 +539,7 @@ class ServiceXDataset(ServiceXABC):
         Given a query, return the list of files, in a unique order, that hold
         the data for the query.
 
-        For certian types of exceptions, the queries will be repeated. For example,
+        For certain types of exceptions, the queries will be repeated. For example,
         if `ServiceX` indicates that it was restarted in the middle of the query, then
         the query will be re-submitted.
 
@@ -670,7 +670,7 @@ class ServiceXDataset(ServiceXABC):
         """Given a query, return the data, in a unique order, that hold
         the data for the query.
 
-        For certian types of exceptions, the queries will be repeated. For example,
+        For certain types of exceptions, the queries will be repeated. For example,
         if `ServiceX` indicates that it was restarted in the middle of the query, then
         the query will be re-submitted.
 
@@ -710,7 +710,7 @@ class ServiceXDataset(ServiceXABC):
         """Given a query, return the data, in the order it arrives back
         converted as appropriate.
 
-        For certian types of exceptions, the queries will be repeated. For example,
+        For certain types of exceptions, the queries will be repeated. For example,
         if `ServiceX` indicates that it was restarted in the middle of the query, then
         the query will be re-submitted.
 
@@ -741,7 +741,7 @@ class ServiceXDataset(ServiceXABC):
         that contain the results of the query. This is an async generator, and files
         are returned as they arrive.
 
-        For certian types of exceptions, the queries will be repeated. For example,
+        For certain types of exceptions, the queries will be repeated. For example,
         if `ServiceX` indicates that it was restarted in the middle of the query, then
         the query will be re-submitted.
 
@@ -779,7 +779,7 @@ class ServiceXDataset(ServiceXABC):
         Return a list of files from servicex as they have been downloaded to this machine. The
         return type is an awaitable that will yield the path to the file.
 
-        For certian types of `ServiceX` failures we will automatically attempt a few retries:
+        For certain types of `ServiceX` failures we will automatically attempt a few retries:
 
             - When `ServiceX` forgets the query. This sometimes happens when a user submits a
               query, and then disconnects from the network, `ServiceX` is restarted, and then the
@@ -815,7 +815,7 @@ class ServiceXDataset(ServiceXABC):
                 self._cache.lookup_query_status(request_id)
             )
 
-            # Look up the cache, and then fetch an iterator going thorugh the results
+            # Look up the cache, and then fetch an iterator going through the results
             # from either servicex or the cache, depending.
             try:
                 cached_files = self._cache.lookup_files(request_id)
