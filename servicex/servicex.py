@@ -393,9 +393,13 @@ class ServiceXDataset(ServiceXABC):
     async def get_data_pandas_df_async(
         self, selection_query: str, title: Optional[str] = None
     ):
+        data_format = self._return_types[0]
         return self._converter.combine_pandas(
             await self._data_return(
-                selection_query, lambda f: self._converter.convert_to_pandas(f), title
+                selection_query,
+                lambda f: self._converter.convert_to_pandas(f),
+                title,
+                data_format=data_format,
             )
         )
 
