@@ -404,9 +404,13 @@ class ServiceXDataset(ServiceXABC):
     async def get_data_awkward_async(
         self, selection_query: str, title: Optional[str] = None
     ):
+        data_format = self._return_types[0]
         return self._converter.combine_awkward(
             await self._data_return(
-                selection_query, lambda f: self._converter.convert_to_awkward(f), title
+                selection_query,
+                lambda f: self._converter.convert_to_awkward(f),
+                title,
+                data_format=data_format,
             )
         )
 
@@ -1052,7 +1056,7 @@ class ServiceXDataset(ServiceXABC):
         json_query: Dict[str, Union[str, Iterable[str]]] = {
             "selection": selection_query,
             "result-destination": self._result_destination,
-            "result-format": "parquet" if data_format == "parquet" else "root-file",
+            "result-format": data_format,
             "chunk-size": "1000",
             "workers": str(self._max_workers),
         }
