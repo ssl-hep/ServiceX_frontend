@@ -31,7 +31,7 @@ class DataConverterAdaptor:
             file_type (str): What the file contains (root, parquet, etc)
         """
         file_type = file_type if file_type is not None else self._default_file_type
-        if file_type == "root":
+        if file_type == "root-file":
             return await self._convert_root_to_pandas(file)
         elif file_type == "parquet":
             return await self._convert_parquet_to_pandas(file)
@@ -48,7 +48,7 @@ class DataConverterAdaptor:
             file_type (str): What the file contains (root, parquet, etc)
         """
         file_type = file_type if file_type is not None else self._default_file_type
-        if file_type == "root":
+        if file_type == "root-file":
             return await self._convert_root_to_awkward(file)
         elif file_type == "parquet":
             return await self._convert_parquet_to_awkward(file)

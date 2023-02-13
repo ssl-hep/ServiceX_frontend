@@ -27,8 +27,8 @@ default_return_data: parquet
 # Easy enough to add a new one here...
 backend_types:
   - type: xaod
-    return_data: root
+    return_data: root-file
   - type: uproot
     return_data: parquet
   - type: cms_run1_aod
-    return_data: root
+    return_data: root-file
