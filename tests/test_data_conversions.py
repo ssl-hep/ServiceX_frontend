@@ -66,20 +66,20 @@ async def test_root_to_awkward(good_root_file_path):
 async def test_to_awkward_fail(good_root_file_path):
     with pytest.raises(ServiceXException):
         await DataConverterAdaptor("root-file").convert_to_awkward(
-            good_root_file_path, "notreally"
+            good_root_file_path, "not-really"
         )
 
 
 @pytest.mark.asyncio
-async def test_to_panads_fail(good_root_file_path):
+async def test_to_pandas_fail(good_root_file_path):
     with pytest.raises(ServiceXException):
         await DataConverterAdaptor("root-file").convert_to_pandas(
-            good_root_file_path, "notreally"
+            good_root_file_path, "not-really"
         )
 
 
 def test_combine_pandas_from_root(good_root_file_path):
-    "Load a dataframe from root files and make sure that they work when we ask them to combine"
+    "Load a DataFrame from root files and make sure that they work when we ask them to combine"
 
     def load_df():
         import uproot as uproot
@@ -98,7 +98,7 @@ def test_combine_pandas_from_root(good_root_file_path):
 
 
 def test_combine_pandas_from_parquet(good_uproot_file_path):
-    "Load a dataframe from a parquet file and make sure they work when we ask them to combine"
+    "Load a DataFrame from a parquet file and make sure they work when we ask them to combine"
 
     def load_df():
         import pandas as pd
@@ -115,7 +115,7 @@ def test_combine_pandas_from_parquet(good_uproot_file_path):
 
 
 def test_combine_awkward_from_root(good_root_file_path):
-    "Load a dataframe from root files and make sure that they work when we ask them to combine"
+    "Load a DataFrame from root files and make sure that they work when we ask them to combine"
 
     def load_df():
         import uproot as uproot
@@ -134,7 +134,7 @@ def test_combine_awkward_from_root(good_root_file_path):
 
 
 def test_combine_awkward_from_parquet(good_uproot_file_path):
-    "Load a dataframe from a parquet file and make sure they work when we ask them to combine"
+    "Load a DataFrame from a parquet file and make sure they work when we ask them to combine"
 
     def load_df():
         return ak.from_parquet(good_uproot_file_path)  # type: ignore

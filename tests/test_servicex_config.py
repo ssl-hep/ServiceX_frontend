@@ -63,13 +63,13 @@ def test_returned_datatype_from_endpoint():
     assert x.get_default_returned_datatype("forkit") == "spoons"
 
 
-def test_defalt_config_has_default_return_datatype():
+def test_default_config_has_default_return_datatype():
     "Test default settings - default_returned_datatype"
     c = ConfigSettings("servicex", "servicex")
     assert c["default_return_data"].exists()
 
 
-def test_defalt_config_has_backend_types():
+def test_default_config_has_backend_types():
     c = ConfigSettings("servicex", "servicex")
     assert c["backend_types"].exists()
     count = 0
@@ -151,7 +151,7 @@ def test_sx_adaptor_settings_name_not_type(caplog):
     assert len(caplog.record_tuples) == 0
 
 
-def test_sx_adaptor_settings_name_worng(caplog):
+def test_sx_adaptor_settings_name_wrong(caplog):
     from confuse import Configuration
 
     c = Configuration("bogus", "bogus")

@@ -24,7 +24,7 @@ class DataConverterAdaptor:
         self._default_file_type = default_file_type
 
     async def convert_to_pandas(self, file: Path, file_type: Optional[str] = None):
-        """Convert to a pandas dataframe from data stored in a file of a particular file_type
+        """Convert to a pandas DataFrame from data stored in a file of a particular file_type
 
         Args:
             file (Path): Path to the file
@@ -59,10 +59,10 @@ class DataConverterAdaptor:
             )
 
     def combine_pandas(self, dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
-        """Combine many pandas dataframes into a single one, in order.
+        """Combine many pandas DataFrame into a single one, in order.
 
         Args:
-            dfs (Iterable[pd.DataFrame]): The list of dataframes
+            dfs (Iterable[pd.DataFrame]): The list of DataFrames
         """
         return pd.concat(dfs)
 
@@ -84,7 +84,7 @@ class DataConverterAdaptor:
 
         Returns:
 
-            DataFrame   A pandas dataframe
+            DataFrame   A pandas DataFrame
 
         Note:
 
@@ -113,7 +113,7 @@ class DataConverterAdaptor:
 
         Returns:
 
-            DataFrame   A pandas dataframe
+            DataFrame   A pandas DataFrame
 
         Note:
 
@@ -138,14 +138,14 @@ class DataConverterAdaptor:
 
         Returns:
 
-            DataFrame   A pandas dataframe
+            DataFrame   A pandas DataFrame
 
         Note:
 
             - Work is done on a second thread.
             - Awkward is only imported if this is called.
             - A LazyArray is returned, so it isn't completely loaded into memory. That also means
-              this will leak filehandles - as that has to be left open.
+              this will leak file handles - as that has to be left open.
 
         """
 
@@ -169,7 +169,7 @@ class DataConverterAdaptor:
 
         Returns:
 
-            DataFrame   A pandas dataframe
+            DataFrame   A pandas DataFrame
 
         Note:
 
