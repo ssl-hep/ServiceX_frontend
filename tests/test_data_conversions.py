@@ -16,7 +16,7 @@ def check_pandas_accessible(col):
 
 @pytest.mark.asyncio
 async def test_root_to_pandas(good_root_file_path):
-    df = await DataConverterAdaptor("root").convert_to_pandas(good_root_file_path)
+    df = await DataConverterAdaptor("root-file").convert_to_pandas(good_root_file_path)
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 283458
     check_pandas_accessible(df["JetPt"])
@@ -24,8 +24,8 @@ async def test_root_to_pandas(good_root_file_path):
 
 @pytest.mark.asyncio
 async def test_root_to_pandas_default(good_root_file_path):
-    df = await DataConverterAdaptor("root").convert_to_pandas(
-        good_root_file_path, "root"
+    df = await DataConverterAdaptor("root-file").convert_to_pandas(
+        good_root_file_path, "root-file"
     )
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 283458
@@ -33,7 +33,7 @@ async def test_root_to_pandas_default(good_root_file_path):
 
 @pytest.mark.asyncio
 async def test_parquet_to_pandas_non_default(good_uproot_file_path):
-    df = await DataConverterAdaptor("root").convert_to_pandas(
+    df = await DataConverterAdaptor("root-file").convert_to_pandas(
         good_uproot_file_path, "parquet"
     )
     assert isinstance(df, pd.DataFrame)
@@ -57,7 +57,7 @@ async def test_parquet_to_awkward(good_uproot_file_path):
 
 @pytest.mark.asyncio
 async def test_root_to_awkward(good_root_file_path):
-    df = await DataConverterAdaptor("root").convert_to_awkward(good_root_file_path)
+    df = await DataConverterAdaptor("root-file").convert_to_awkward(good_root_file_path)
     assert len(df["JetPt"]) == 283458
     check_awkward_accessible(df["JetPt"])  # type: ignore
 
@@ -65,21 +65,21 @@ async def test_root_to_awkward(good_root_file_path):
 @pytest.mark.asyncio
 async def test_to_awkward_fail(good_root_file_path):
     with pytest.raises(ServiceXException):
-        await DataConverterAdaptor("root").convert_to_awkward(
-            good_root_file_path, "notreally"
+        await DataConverterAdaptor("root-file").convert_to_awkward(
+            good_root_file_path, "not-really"
         )
 
 
 @pytest.mark.asyncio
-async def test_to_panads_fail(good_root_file_path):
+async def test_to_pandas_fail(good_root_file_path):
     with pytest.raises(ServiceXException):
-        await DataConverterAdaptor("root").convert_to_pandas(
-            good_root_file_path, "notreally"
+        await DataConverterAdaptor("root-file").convert_to_pandas(
+            good_root_file_path, "not-really"
         )
 
 
 def test_combine_pandas_from_root(good_root_file_path):
-    "Load a dataframe from root files and make sure that they work when we ask them to combine"
+    "Load a DataFrame from root files and make sure that they work when we ask them to combine"
 
     def load_df():
         import uproot as uproot
@@ -91,14 +91,14 @@ def test_combine_pandas_from_root(good_root_file_path):
     df1 = load_df()
     df2 = load_df()
 
-    combined = DataConverterAdaptor("root").combine_pandas([df1, df2])
+    combined = DataConverterAdaptor("root-file").combine_pandas([df1, df2])
 
     assert len(combined) == len(df1) + len(df2)
     check_pandas_accessible(combined["JetPt"])
 
 
 def test_combine_pandas_from_parquet(good_uproot_file_path):
-    "Load a dataframe from a parquet file and make sure they work when we ask them to combine"
+    "Load a DataFrame from a parquet file and make sure they work when we ask them to combine"
 
     def load_df():
         import pandas as pd
@@ -108,14 +108,14 @@ def test_combine_pandas_from_parquet(good_uproot_file_path):
     df1 = load_df()
     df2 = load_df()
 
-    combined = DataConverterAdaptor("root").combine_pandas([df1, df2])
+    combined = DataConverterAdaptor("root-file").combine_pandas([df1, df2])
 
     assert len(combined) == len(df1) + len(df2)
     check_pandas_accessible(combined["JetPT"])
 
 
 def test_combine_awkward_from_root(good_root_file_path):
-    "Load a dataframe from root files and make sure that they work when we ask them to combine"
+    "Load a DataFrame from root files and make sure that they work when we ask them to combine"
 
     def load_df():
         import uproot as uproot
@@ -127,14 +127,14 @@ def test_combine_awkward_from_root(good_root_file_path):
     df1 = load_df()
     df2 = load_df()
 
-    combined = DataConverterAdaptor("root").combine_awkward([df1, df2])
+    combined = DataConverterAdaptor("root-file").combine_awkward([df1, df2])
 
     assert len(combined) == len(df1) + len(df2)
     check_awkward_accessible(combined["JetPt"])  # type: ignore
 
 
 def test_combine_awkward_from_parquet(good_uproot_file_path):
-    "Load a dataframe from a parquet file and make sure they work when we ask them to combine"
+    "Load a DataFrame from a parquet file and make sure they work when we ask them to combine"
 
     def load_df():
         return ak.from_parquet(good_uproot_file_path)  # type: ignore
@@ -142,7 +142,7 @@ def test_combine_awkward_from_parquet(good_uproot_file_path):
     df1 = load_df()
     df2 = load_df()
 
-    combined = DataConverterAdaptor("root").combine_awkward([df1, df2])
+    combined = DataConverterAdaptor("root-file").combine_awkward([df1, df2])
 
     assert len(combined) == len(df1) + len(df2)
     check_awkward_accessible(combined["JetPT"])  # type: ignore
