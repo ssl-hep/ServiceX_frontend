@@ -84,7 +84,7 @@ def test_default_ctor_no_type(mocker):
 
 
 def test_default_ctor_cache(mocker):
-    "Test that the decfault config is passed the right value"
+    "Test that the default config is passed the right value"
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration("servicex", "servicex")
@@ -103,7 +103,7 @@ def test_default_ctor_cache(mocker):
 
 
 def test_default_ctor_cache_no(mocker):
-    "Test that the decfault config is passed the right value"
+    "Test that the default config is passed the right value"
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration("servicex", "servicex")
@@ -1905,7 +1905,7 @@ async def test_download_cached_awkward(mocker, good_awkward_file_data):
 
 @pytest.mark.asyncio
 async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
-    "Run two at once - they should not both generate queires as they are identical"
+    "Run two at once - they should not both generate queries as they are identical"
 
     async def do_query():
         mock_cache = build_cache_mock(mocker, make_in_memory_work=True)
