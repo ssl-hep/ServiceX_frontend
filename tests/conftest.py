@@ -48,9 +48,9 @@ class MockServiceXAdaptor:
         self,
         mocker: MockFixture,
         request_id: str,
-        mock_transform_status: Mock = None,
-        mock_query: Mock = None,
-        mock_transform_query_status: Mock = None,
+        mock_transform_status: Optional[Mock] = None,
+        mock_query: Optional[Mock] = None,
+        mock_transform_query_status: Optional[Mock] = None,
     ):
         self.request_id = request_id
         self._endpoint = "http://localhost:5000"
@@ -139,11 +139,11 @@ __g_inmem_value = None
 
 def build_cache_mock(
     mocker,
-    query_cache_return: str = None,
+    query_cache_return: Optional[str] = None,
     files: Optional[List[Tuple[str, Path]]] = None,
     in_memory: Any = None,
     make_in_memory_work: bool = False,
-    data_file_return: str = None,
+    data_file_return: Optional[str] = None,
     query_status_lookup_return: Optional[Dict[str, str]] = None,
 ) -> Cache:
     c = mocker.MagicMock(spec=Cache)
