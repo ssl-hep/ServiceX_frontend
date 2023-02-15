@@ -46,7 +46,7 @@ setup(
         "qastle>=0.10",
         "make_it_sync>= 1.0.0",
         "google-auth",
-        "confuse==1.3.0",
+        "confuse",
         "pyarrow>=1.0",
     ],
     extras_require={
