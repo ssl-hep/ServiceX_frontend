@@ -44,7 +44,7 @@ setup(
         "minio~=5.0",
         "tqdm~=4.0",
         "qastle>=0.10",
-        "make_it_sync==1.0.0",
+        "make_it_sync>= 1.0.0",
         "google-auth",
         "confuse==1.3.0",
         "pyarrow>=1.0",
