@@ -9,6 +9,9 @@ api_endpoints:
   - endpoint: http://localhost:5000
     name: default
     type: cms_run1_aod
+  - endpoint: http://localhost:5000
+    name: default
+    type: uproot
 
 # This is the path of the cache. The "/tmp" will be translated, platform appropriate, and
 # the env variable USER will be replaced.
