@@ -43,7 +43,7 @@ setup(
         "aiohttp~=3.6",
         "minio~=5.0",
         "tqdm~=4.0",
-        "qastle>=0.10, <1.0",
+        "qastle>=0.10",
         "make_it_sync==1.0.0",
         "google-auth",
         "confuse==1.3.0",
@@ -82,6 +82,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     package_data={
         "servicex": ["config_default.yaml"],
