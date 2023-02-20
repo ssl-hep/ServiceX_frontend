@@ -123,7 +123,7 @@ class ServiceXABC(ABC):
     ) -> pd.DataFrame:
         """
         Fetch query data from ServiceX matching `selection_query` and return it as
-        a pandas dataframe. The data is uniquely ordered (the same query will always
+        a pandas DataFrame. The data is uniquely ordered (the same query will always
         return the same order).
 
         Arguments:
@@ -131,7 +131,7 @@ class ServiceXABC(ABC):
             title               Title reported to the ServiceX backend for status reporting
 
         Returns:
-            df                  The pandas dataframe
+            df                  The pandas DataFrame
 
         Exceptions:
             xxx                 If the data is not the correct shape (e.g. a flat,
