@@ -5,7 +5,7 @@ import logging
 
 import aiohttp
 from google.auth import jwt
-
+import os
 from .utils import (
     ServiceXException,
     ServiceXFailedFileTransform,
@@ -42,7 +42,20 @@ class ServiceXAdaptor:
                     f"ServiceX access token request rejected: {status}"
                 )
 
+    def _get_bearer_token_file(self):
+        bearer_token_file = os.environ.get('BEARER_TOKEN_FILE')
+        bearer_token = None
+        if bearer_token_file:
+            with open(bearer_token_file, "r") as f:
+                bearer_token = f.read().strip()
+        print("BEARER",bearer_token)
+        return bearer_token
+
     async def _get_authorization(self, client: aiohttp.ClientSession):
+        bearer_token = self._get_bearer_token_file()
+        if bearer_token:
+            self._coffea_casa_bearer_token = bearer_token
+            return {"Authorization": f"Bearer {self._coffea_casa_bearer_token}"}
         if not self._refresh_token:
             return {}
         now = datetime.utcnow().timestamp()
