@@ -350,7 +350,7 @@ class _default_wrapper_mgr:
     def _update_bar(
         self, bar: Optional[tqdm], total: Optional[int], num: int, failed: int
     ):
-        assert bar is not None, "Internal error - bar was not initalized"
+        assert bar is not None, "Internal error - bar was not initialized"
         if total is not None:
             if bar.total != total:
                 # There is a bug in the tqm library if running in a notebook
@@ -417,7 +417,7 @@ def clean_linq(q: str) -> str:
 
     Arguments
 
-        q           Strign containing the qastle code`
+        q           String containing the qastle code`
 
     Returns
 

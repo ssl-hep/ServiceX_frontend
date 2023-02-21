@@ -26,6 +26,10 @@ from servicex.utils import ServiceXNoFilesInCache, log_adaptor
 
 from .conftest import MockMinioAdaptor, MockServiceXAdaptor, build_cache_mock  # NOQA
 
+# To enable later tests when we want something no one is going
+# to specify anywhere in their code.
+fe.servicex.g_allowed_formats.append("parquet-ftw")
+
 
 def clean_fname(fname: str):
     "No matter the string given, make it an acceptable filename"
@@ -80,7 +84,7 @@ def test_default_ctor_no_type(mocker):
 
 
 def test_default_ctor_cache(mocker):
-    "Test that the decfault config is passed the right value"
+    "Test that the default config is passed the right value"
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration("servicex", "servicex")
@@ -99,7 +103,7 @@ def test_default_ctor_cache(mocker):
 
 
 def test_default_ctor_cache_no(mocker):
-    "Test that the decfault config is passed the right value"
+    "Test that the default config is passed the right value"
 
     config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
     config.settings = Configuration("servicex", "servicex")
@@ -468,6 +472,8 @@ async def test_good_run_single_ds_1file_pandas(mocker, good_pandas_file_data):
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "parquet"
 
     ds = fe.ServiceXDataset(
         "localds://mc16_tev:13",
@@ -476,6 +482,7 @@ async def test_good_run_single_ds_1file_pandas(mocker, good_pandas_file_data):
         cache_adaptor=mock_cache,
         data_convert_adaptor=good_pandas_file_data,
         local_log=mock_logger,
+        config_adaptor=config,
     )
     r = await ds.get_data_pandas_df_async("(valid qastle string)")
     assert isinstance(r, pd.DataFrame)
@@ -487,12 +494,39 @@ async def test_good_run_single_ds_1file_pandas(mocker, good_pandas_file_data):
 
 
 @pytest.mark.asyncio
+async def test_pandas_uses_default_return_type(mocker, good_awkward_file_data):
+    "Make sure the awkward request against an xaod backend asks for a root file"
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "parquet-ftw"
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        backend_name="uproot",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        data_convert_adaptor=good_awkward_file_data,
+        local_log=mock_logger,
+        config_adaptor=config,
+    )
+    await ds.get_data_pandas_df_async("(valid qastle string)")
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "parquet-ftw"
+
+
+@pytest.mark.asyncio
 async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
     "Simple run with expected results"
     mock_cache = build_cache_mock(mocker)
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "root-file"
 
     ds = fe.ServiceXDataset(
         "localds://mc16_tev:13",
@@ -501,6 +535,7 @@ async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
         cache_adaptor=mock_cache,
         data_convert_adaptor=good_awkward_file_data,
         local_log=mock_logger,
+        config_adaptor=config,
     )
     r = await ds.get_data_awkward_async("(valid qastle string)")
     assert isinstance(r, dict)
@@ -514,6 +549,31 @@ async def test_good_run_single_ds_1file_awkward(mocker, good_awkward_file_data):
 
 
 @pytest.mark.asyncio
+async def test_awkward_uses_default_return_type(mocker, good_awkward_file_data):
+    "Make sure the awkward request against an xaod backend asks for a root file"
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "parquet-ftw"
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        backend_name="uproot",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        data_convert_adaptor=good_awkward_file_data,
+        local_log=mock_logger,
+        config_adaptor=config,
+    )
+    await ds.get_data_awkward_async("(valid qastle string)")
+
+    assert mock_servicex_adaptor.query_json["result-format"] == "parquet-ftw"
+
+
+@pytest.mark.asyncio
 async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
     "Simple run with expected results"
     mock_cache = build_cache_mock(mocker)
@@ -522,6 +582,8 @@ async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
     mock_minio_adaptor = MockMinioAdaptor(
         mocker, files=["one_minio_entry", "two_minio_entry"]
     )
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "parquet"
 
     ds = fe.ServiceXDataset(
         "localds://mc16_tev:13",
@@ -530,6 +592,7 @@ async def test_good_run_single_ds_2file_pandas(mocker, good_pandas_file_data):
         cache_adaptor=mock_cache,
         data_convert_adaptor=good_pandas_file_data,
         local_log=mock_logger,
+        config_adaptor=config,
     )
     await ds.get_data_pandas_df_async("(valid qastle string)")
     good_pandas_file_data.combine_pandas.assert_called_once()
@@ -545,6 +608,8 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
     mock_minio_adaptor = MockMinioAdaptor(
         mocker, files=["one_minio_entry", "two_minio_entry"]
     )
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "root-file"
 
     ds = fe.ServiceXDataset(
         "localds://mc16_tev:13",
@@ -553,6 +618,7 @@ async def test_good_run_single_ds_2file_awkward(mocker, good_awkward_file_data):
         cache_adaptor=mock_cache,
         data_convert_adaptor=good_awkward_file_data,
         local_log=mock_logger,
+        config_adaptor=config,
     )
     await ds.get_data_awkward_async("(valid qastle string)")
     assert len(good_awkward_file_data.combine_awkward.call_args[0][0]) == 2
@@ -1009,6 +1075,8 @@ async def test_status_exception(mocker):
     )
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=[])
     data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "parquet-ftw"
 
     ds = fe.ServiceXDataset(
         "localds://mc16_tev:13",
@@ -1017,6 +1085,7 @@ async def test_status_exception(mocker):
         cache_adaptor=mock_cache,
         data_convert_adaptor=data_adaptor,
         local_log=mock_logger,
+        config_adaptor=config,
     )
     with pytest.raises(fe.ServiceXException) as e:
         await ds.get_data_awkward_async("(valid qastle string)")
@@ -1417,6 +1486,8 @@ async def test_cache_awkward_root_confusion(mocker, good_awkward_file_data, tmp_
     mock_logger = mocker.MagicMock(spec=log_adaptor)
     mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
     mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    config.get_default_returned_datatype.return_value = "parquet-ftw"
 
     # Use the real cache here - we need to return the value we stash.
     c = tmp_path / "cache"
@@ -1432,6 +1503,7 @@ async def test_cache_awkward_root_confusion(mocker, good_awkward_file_data, tmp_
         cache_adaptor=cache,
         data_convert_adaptor=good_awkward_file_data,
         local_log=mock_logger,
+        config_adaptor=config,
     )
     q_string = "(valid qastle string)"
     r1 = await ds.get_data_rootfiles_async(q_string)
@@ -1833,13 +1905,16 @@ async def test_download_cached_awkward(mocker, good_awkward_file_data):
 
 @pytest.mark.asyncio
 async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
-    "Run two at once - they should not both generate queires as they are identical"
+    "Run two at once - they should not both generate queries as they are identical"
 
     async def do_query():
         mock_cache = build_cache_mock(mocker, make_in_memory_work=True)
         mock_logger = mocker.MagicMock(spec=log_adaptor)
         mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
         mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+        config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+        config.get_default_returned_datatype.return_value = "parquet-ftw"
+
         ds = fe.ServiceXDataset(
             "localds://dude-is-funny",
             servicex_adaptor=mock_servicex_adaptor,  # type: ignore
@@ -1847,6 +1922,7 @@ async def test_simultaneous_query_not_requeued(mocker, good_awkward_file_data):
             data_convert_adaptor=good_awkward_file_data,
             cache_adaptor=mock_cache,
             local_log=mock_logger,
+            config_adaptor=config,
         )
         return await ds.get_data_awkward_async("(valid qastle string")
 
