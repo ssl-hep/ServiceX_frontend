@@ -66,6 +66,12 @@ setup(
             "black",
         ]
         + extra_test_packages,
+        "docs": [
+            "sphinx>=5.1.1",
+            "myst-parser>=0.18.0",
+            "furo>=2022.09.29",
+            "sphinx-copybutton>=0.3.2",
+        ],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
