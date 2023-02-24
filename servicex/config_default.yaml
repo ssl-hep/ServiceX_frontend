@@ -31,10 +31,10 @@ default_return_data: parquet
 backend_types:
   - type: xaod
     return_data: root-file
-    codegen: xaod_r21
+    codegen: atlasxaod
   - type: uproot
     return_data: parquet
     codegen: uproot
   - type: cms_run1_aod
     return_data: root-file
-    codegen: cms_run1_aod
+    codegen: cms
