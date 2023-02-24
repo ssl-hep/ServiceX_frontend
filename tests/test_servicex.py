@@ -49,8 +49,8 @@ def test_default_ctor(mocker):
 
     fe.ServiceXDataset("localds://dude", "uproot-ftw", config_adaptor=config)
 
-    config.get_servicex_adaptor_config.assert_called_with("uproot-ftw")
-    config.get_default_returned_datatype.assert_called_with("uproot-ftw")
+    config.get_servicex_adaptor_config.assert_called_with("uproot-ftw", backend_type=None)
+    config.get_default_returned_datatype.assert_called_with("uproot-ftw", backend_type=None)
 
 
 def test_sx_name(mocker):
@@ -79,8 +79,8 @@ def test_default_ctor_no_type(mocker):
 
     fe.ServiceXDataset("localds://dude", config_adaptor=config)
 
-    config.get_servicex_adaptor_config.assert_called_with(None)
-    config.get_default_returned_datatype.assert_called_with(None)
+    config.get_servicex_adaptor_config.assert_called_with(None, backend_type=None)
+    config.get_default_returned_datatype.assert_called_with(None, backend_type=None)
 
 
 def test_default_ctor_cache(mocker):
