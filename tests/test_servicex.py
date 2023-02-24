@@ -49,8 +49,12 @@ def test_default_ctor(mocker):
 
     fe.ServiceXDataset("localds://dude", "uproot-ftw", config_adaptor=config)
 
-    config.get_servicex_adaptor_config.assert_called_with("uproot-ftw", backend_type=None)
-    config.get_default_returned_datatype.assert_called_with("uproot-ftw", backend_type=None)
+    config.get_servicex_adaptor_config.assert_called_with(
+        "uproot-ftw", backend_type=None
+    )
+    config.get_default_returned_datatype.assert_called_with(
+        "uproot-ftw", backend_type=None
+    )
 
 
 def test_sx_name(mocker):
@@ -164,6 +168,21 @@ def test_get_datatypes_good(mocker):
     r = fe.ServiceXDataset("localds://dude", "uproot-ftw", config_adaptor=config)
 
     assert r.first_supported_datatype(["root", "parquet"]) == "root"
+
+
+def test_get_datatypes_background_type(mocker):
+    "Test that we return a good datatype"
+
+    # config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    # config.settings = Configuration("servicex", "servicex")
+    # config.get_servicex_adaptor_config.return_value = (
+    #     "http://no-way.dude",
+    #     "no_spoon_there_is",
+    # )
+
+    r = fe.ServiceXDataset("localds://dude", "uproot", backend_type="xaod")
+
+    assert r.first_supported_datatype(["root-file", "parquet"]) == "root-file"
 
 
 def test_get_datatypes_single(mocker):
