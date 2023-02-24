@@ -1368,7 +1368,7 @@ async def test_codegen_default_by_backend(mocker, good_awkward_file_data):
     await ds.get_data_rootfiles_async("(valid qastle string)")
 
     called = mock_servicex_adaptor.query_json
-    assert called["codegen"] == "xaod_r21"
+    assert called["codegen"] == "atlasxaod"
 
 
 @pytest.mark.asyncio

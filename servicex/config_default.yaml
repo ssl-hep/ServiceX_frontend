@@ -38,3 +38,6 @@ backend_types:
   - type: cms_run1_aod
     return_data: root-file
     codegen: cms
+  - type: python
+    return_data: parquet
+    codegen: python
