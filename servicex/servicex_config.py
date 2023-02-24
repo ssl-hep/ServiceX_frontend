@@ -16,7 +16,7 @@ class ServiceXConfigAdaptor:
     def __init__(self, config: Optional[ConfigView] = None):
         """The config needed for the app.
 
-        Note: The config is held onto and only queired when the information is required.
+        Note: The config is held onto and only queried when the information is required.
 
         Args:
             config (ConfigView): The config information for the app. If null, then we just use the
@@ -38,7 +38,7 @@ class ServiceXConfigAdaptor:
         return self._settings
 
     def get_default_returned_datatype(self, backend_name: Optional[str]) -> str:
-        """Return the default return data type, given the backend is a certian type.
+        """Return the default return data type, given the backend is a certain type.
 
         Args:
             backend_name (Optional[str]): The backend type string (`xaod`, `uproot`, etc)
