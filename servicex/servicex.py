@@ -303,6 +303,11 @@ class ServiceXDataset(ServiceXABC):
             else DataConverterAdaptor(self._return_types[0])
         )
 
+        # TODO - this should not be in the ABC backend since we have to have some intelligence
+        # in setting it, it turns out.
+        if self._codegen is None:
+            self._codegen = config.get_backend_info(backend_name, "codegen")
+
     def first_supported_datatype(
         self, datatypes: Union[List[str], str]
     ) -> Optional[str]:
@@ -1061,12 +1066,15 @@ class ServiceXDataset(ServiceXABC):
         assert data_format in g_allowed_formats
 
         # Items that must always be present
+        codegen = self._codegen if self._codegen is not None else "default"
+
         json_query: Dict[str, Union[str, Iterable[str]]] = {
             "selection": selection_query,
             "result-destination": self._result_destination,
             "result-format": data_format,
             "chunk-size": "1000",
             "workers": str(self._max_workers),
+            "codegen": codegen,
         }
 
         # Add the appropriate did.
@@ -1080,9 +1088,6 @@ class ServiceXDataset(ServiceXABC):
             json_query["file-list"] = self._dataset
 
         # Optional items
-        if self._codegen is not None:
-            json_query["codegen"] = self._codegen
-
         if self._image is not None:
             json_query["image"] = self._image
 
