@@ -37,7 +37,9 @@ class ServiceXConfigAdaptor:
         """
         return self._settings
 
-    def get_default_returned_datatype(self, backend_name: Optional[str]) -> str:
+    def get_default_returned_datatype(
+        self, backend_name: Optional[str], backend_type: Optional[str] = None
+    ) -> str:
         """Return the default return data type, given the backend is a certain type.
 
         Args:
@@ -47,7 +49,9 @@ class ServiceXConfigAdaptor:
             str: The backend datatype, like `root` or `parquet`.
         """
         # Check to see if we know about the backend info
-        r = self.get_backend_info(backend_name, "return_data")
+        r = self.get_backend_info(
+            backend_name, "return_data", backend_type=backend_type
+        )
 
         if r is None:
             raise ServiceXException(
@@ -57,22 +61,27 @@ class ServiceXConfigAdaptor:
 
         return r
 
-    def get_backend_info(self, backend_name: Optional[str], key: str) -> Optional[str]:
+    def get_backend_info(
+        self, backend_name: Optional[str], key: str, backend_type: Optional[str] = None
+    ) -> Optional[str]:
         """Find an item in the backend info, searching first for the backend
         name/type and then the defaults with a given type.
 
         Args:
             backend_name (str): Backend name
             key (str): The key for the info we are after
+            backend_type (str): The backend type, if we are overriding normal lookup
 
         Returns:
             Optional[str]: Return a string for the info we are after, or return None if we can't
                            find it.
         """
-        config = self._get_backend_info(backend_name)
+        config = self._get_backend_info(backend_name, backend_type)
         return config[key] if key in config else None
 
-    def _get_backend_info(self, backend_name: Optional[str]) -> Dict[str, str]:
+    def _get_backend_info(
+        self, backend_name: Optional[str], backend_type: Optional[str]
+    ) -> Dict[str, str]:
         """Returns all the info for a backend name/type.
 
         Search algorithm is non-trivial:
@@ -89,6 +98,8 @@ class ServiceXConfigAdaptor:
 
         Args:
             backend_name (str): Name or type of the api end point we are going to look up.
+            backend_type (str): Override the backend type, if we are looking for a specific
+                                type behavior.
 
         Returns:
             Dict[str, str]: Attributes for this backend's configuration
@@ -159,8 +170,14 @@ class ServiceXConfigAdaptor:
             )
 
         # Now, extract the type and see if we can figure out any defaults from the
-        # `backend_types` info.
-        type_lookup = config["type"] if "type" in config else backend_name
+        # `backend_types` info. Skip this if we have a type we are passed in.
+        type_lookup = (
+            backend_type
+            if backend_type is not None
+            else config["type"]
+            if "type" in config
+            else backend_name
+        )
         if type_lookup is None:
             return config
 
@@ -181,7 +198,9 @@ class ServiceXConfigAdaptor:
         return config
 
     def get_servicex_adaptor_config(
-        self, backend_name: Optional[str] = None
+        self,
+        backend_name: Optional[str] = None,
+        backend_type: Optional[str] = None,
     ) -> Tuple[str, Optional[str]]:
         """Return the servicex (endpoint, token) from a given backend configuration.
 
@@ -193,7 +212,7 @@ class ServiceXConfigAdaptor:
             Tuple[str, str]: The tuple of info to create a `ServiceXAdaptor`: end point,
             token (optionally).
         """
-        config = self._get_backend_info(backend_name)
+        config = self._get_backend_info(backend_name, backend_type)
 
         endpoint = config["endpoint"]
         token = config["token"] if "token" in config else None

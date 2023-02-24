@@ -175,6 +175,7 @@ class ServiceXDataset(ServiceXABC):
         self,
         dataset: DatasetType,
         backend_name: Optional[str] = None,
+        backend_type: Optional[str] = None,
         codegen: Optional[str] = None,
         image: Optional[str] = None,
         max_workers: int = 20,
@@ -202,8 +203,13 @@ class ServiceXDataset(ServiceXABC):
                                         will default to xaod, unless you have any endpoint listed
                                         in your servicex file. It will default to best match there,
                                         or fail if a name has been given.
+            backend_type                The type of backend. Overrides the `type` in the `yaml`
+                                        config file.
             codegen                     The type of code generator passed to the backend to
                                         generate the code that powers the requested transform.
+                                        Don't use unless you know what you are doing - sometimes
+                                        the return filetype is also needed. Better to use
+                                        `backend_type`!
             image                       Name of transformer image to use to transform the data. If
                                         left as default, `None`, then the default image for the
                                         ServiceX backend will be used.
@@ -276,7 +282,9 @@ class ServiceXDataset(ServiceXABC):
 
         if not servicex_adaptor:
             # Given servicex adaptor is none, this should be ok. Fixes type checkers
-            end_point, token = config.get_servicex_adaptor_config(backend_name)
+            end_point, token = config.get_servicex_adaptor_config(
+                backend_name, backend_type=backend_type
+            )
             servicex_adaptor = ServiceXAdaptor(end_point, token)
         self._servicex_adaptor = servicex_adaptor
 
@@ -296,7 +304,11 @@ class ServiceXDataset(ServiceXABC):
             else default_client_session
         )
 
-        self._return_types = [config.get_default_returned_datatype(backend_name)]
+        self._return_types = [
+            config.get_default_returned_datatype(
+                backend_name, backend_type=backend_type
+            )
+        ]
         self._converter = (
             data_convert_adaptor
             if data_convert_adaptor is not None
@@ -306,7 +318,9 @@ class ServiceXDataset(ServiceXABC):
         # TODO - this should not be in the ABC backend since we have to have some intelligence
         # in setting it, it turns out.
         if self._codegen is None:
-            self._codegen = config.get_backend_info(backend_name, "codegen")
+            self._codegen = config.get_backend_info(
+                backend_name, "codegen", backend_type=backend_type
+            )
 
     def first_supported_datatype(
         self, datatypes: Union[List[str], str]
