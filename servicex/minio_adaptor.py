@@ -74,7 +74,7 @@ class MinioAdaptor:
                 f"Unable to reach Minio at {e.pool.host}:{e.pool.port}{e.url}. "
                 f"Max retries exceeded."
             )
-            raise ServiceXException(msg)
+            raise ServiceXException(msg) from e
         except NoSuchBucket as e:
             raise ServiceXNoFilesInCache(
                 f'No files in cache for request "{request_id}"'
