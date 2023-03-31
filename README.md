@@ -194,6 +194,10 @@ The file can contain an `api_endpoint` as mentioned earlier. In addition the oth
 
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
+For non-standard use cases, the user can specify:
+- The code generator that is used by the backend. This is done by passing a `codegen` argument to ServiceXDataset. This argument is normally inherited from the backend type set in `servicex.yaml`, but can be overridden with any valid `codegen` contained in the default type listing. A `codegen` entry can also be added to a backend in the yaml file to use as default.
+- The type of backend, using the `backend_type` argument on ServiceXDataset. This overrides the backend type setting in the `servicex.yaml` file.
+
 ## Features
 
 Implemented:
