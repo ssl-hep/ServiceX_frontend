@@ -29,6 +29,7 @@ class ServiceXABC(ABC):
     def __init__(
         self,
         dataset: DatasetType,
+        codegen: Optional[str] = None,
         image: Optional[str] = None,
         max_workers: int = 20,
         result_destination: str = "object-store",
@@ -40,6 +41,8 @@ class ServiceXABC(ABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
+            codegen                     The type of code generator passed to the backend to
+                                        generate the code that powers the requested transform.
             image                       Name of transformer image to use to transform the data. If
                                         None the default implementation is used.
             cache_adaptor               Runs the caching for data and queries that are sent up and
@@ -65,6 +68,7 @@ class ServiceXABC(ABC):
                be processed (and some files can even be completed before that is known).
         """
         self._dataset = dataset
+        self._codegen = codegen
         self._image = image
         self._max_workers = max_workers
         self._result_destination = result_destination

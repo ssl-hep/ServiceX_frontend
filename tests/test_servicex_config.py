@@ -63,6 +63,36 @@ def test_returned_datatype_from_endpoint():
     assert x.get_default_returned_datatype("forkit") == "spoons"
 
 
+def test_backend_info():
+    c = ConfigSettings("servicex", "servicex")
+    c.clear()
+    c["backend_types"] = [{"type": "forkit", "silly": "spoon"}]
+    c["api_endpoints"] = [{"type": "forkit", "return_data": "spoons"}]
+
+    x = ServiceXConfigAdaptor(c)
+    assert x.get_backend_info("forkit", "silly") == "spoon"
+
+
+def test_backend_info_by_name():
+    c = ConfigSettings("servicex", "servicex")
+    c.clear()
+    c["backend_types"] = [{"type": "forkit", "silly": "spoon"}]
+    c["api_endpoints"] = [{"name": "dude", "type": "forkit", "return_data": "spoons"}]
+
+    x = ServiceXConfigAdaptor(c)
+    assert x.get_backend_info("dude", "silly") == "spoon"
+
+
+def test_backend_info_specified_type():
+    c = ConfigSettings("servicex", "servicex")
+    c.clear()
+    c["backend_types"] = [{"type": "forkit", "silly": "spoon"}]
+    c["api_endpoints"] = [{"name": "dude", "type": "leftfoot", "return_data": "spoons"}]
+
+    x = ServiceXConfigAdaptor(c)
+    assert x.get_backend_info("dude", "silly", backend_type="forkit") == "spoon"
+
+
 def test_default_config_has_default_return_datatype():
     "Test default settings - default_returned_datatype"
     c = ConfigSettings("servicex", "servicex")
@@ -77,6 +107,16 @@ def test_default_config_has_backend_types():
         count += 1
         assert info["type"].exists()
         assert info["return_data"].exists()
+    assert count > 0
+
+
+def test_default_config_has_codegen():
+    c = ConfigSettings("servicex", "servicex")
+    assert c["backend_types"].exists()
+    count = 0
+    for info in c["backend_types"]:
+        count += 1
+        assert info["codegen"].exists()
     assert count > 0
 
 

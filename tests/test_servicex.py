@@ -49,8 +49,12 @@ def test_default_ctor(mocker):
 
     fe.ServiceXDataset("localds://dude", "uproot-ftw", config_adaptor=config)
 
-    config.get_servicex_adaptor_config.assert_called_with("uproot-ftw")
-    config.get_default_returned_datatype.assert_called_with("uproot-ftw")
+    config.get_servicex_adaptor_config.assert_called_with(
+        "uproot-ftw", backend_type=None
+    )
+    config.get_default_returned_datatype.assert_called_with(
+        "uproot-ftw", backend_type=None
+    )
 
 
 def test_sx_name(mocker):
@@ -79,8 +83,8 @@ def test_default_ctor_no_type(mocker):
 
     fe.ServiceXDataset("localds://dude", config_adaptor=config)
 
-    config.get_servicex_adaptor_config.assert_called_with(None)
-    config.get_default_returned_datatype.assert_called_with(None)
+    config.get_servicex_adaptor_config.assert_called_with(None, backend_type=None)
+    config.get_default_returned_datatype.assert_called_with(None, backend_type=None)
 
 
 def test_default_ctor_cache(mocker):
@@ -164,6 +168,21 @@ def test_get_datatypes_good(mocker):
     r = fe.ServiceXDataset("localds://dude", "uproot-ftw", config_adaptor=config)
 
     assert r.first_supported_datatype(["root", "parquet"]) == "root"
+
+
+def test_get_datatypes_background_type(mocker):
+    "Test that we return a good datatype"
+
+    # config = mocker.MagicMock(spec=ServiceXConfigAdaptor)
+    # config.settings = Configuration("servicex", "servicex")
+    # config.get_servicex_adaptor_config.return_value = (
+    #     "http://no-way.dude",
+    #     "no_spoon_there_is",
+    # )
+
+    r = fe.ServiceXDataset("localds://dude", "uproot", backend_type="xaod")
+
+    assert r.first_supported_datatype(["root-file", "parquet"]) == "root-file"
 
 
 def test_get_datatypes_single(mocker):
@@ -716,8 +735,8 @@ async def test_stream_root_files_from_minio(mocker):
     assert r.file == "one_minio_entry"
     assert r.url == "http://the.url.com"
 
-    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
     assert mock_minio_adaptor.access_called_with == ("123-456", "one_minio_entry")
+    assert mock_servicex_adaptor.query_json["result-format"] == "root-file"
 
 
 @pytest.mark.asyncio
@@ -1298,6 +1317,77 @@ async def test_no_title_spec(mocker, good_awkward_file_data):
 
     called = mock_servicex_adaptor.query_json
     assert "title" not in called
+
+
+@pytest.mark.asyncio
+async def test_codegen_override(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        data_convert_adaptor=data_adaptor,
+        local_log=mock_logger,
+        max_workers=50,
+        codegen="good_codegen",
+    )
+    await ds.get_data_rootfiles_async("(valid qastle string)")
+
+    called = mock_servicex_adaptor.query_json
+    assert called["codegen"] == "good_codegen"
+
+
+@pytest.mark.asyncio
+async def test_codegen_backend_type(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        data_convert_adaptor=data_adaptor,
+        local_log=mock_logger,
+        max_workers=50,
+        backend_type="uproot",
+    )
+    await ds.get_data_rootfiles_async("(valid qastle string)")
+
+    called = mock_servicex_adaptor.query_json
+    assert called["codegen"] == "uproot"
+
+
+@pytest.mark.asyncio
+async def test_codegen_default_by_backend(mocker, good_awkward_file_data):
+    mock_cache = build_cache_mock(mocker)
+    mock_logger = mocker.MagicMock(spec=log_adaptor)
+    mock_servicex_adaptor = MockServiceXAdaptor(mocker, "123-456")
+    mock_minio_adaptor = MockMinioAdaptor(mocker, files=["one_minio_entry"])
+    data_adaptor = mocker.MagicMock(spec=DataConverterAdaptor)
+
+    ds = fe.ServiceXDataset(
+        "localds://mc16_tev:13",
+        servicex_adaptor=mock_servicex_adaptor,  # type: ignore
+        minio_adaptor=mock_minio_adaptor,  # type: ignore
+        cache_adaptor=mock_cache,
+        data_convert_adaptor=data_adaptor,
+        local_log=mock_logger,
+        max_workers=50,
+    )
+    await ds.get_data_rootfiles_async("(valid qastle string)")
+
+    called = mock_servicex_adaptor.query_json
+    assert called["codegen"] == "atlasxaod"
 
 
 @pytest.mark.asyncio
