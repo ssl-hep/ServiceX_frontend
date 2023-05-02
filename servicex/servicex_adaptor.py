@@ -48,7 +48,6 @@ class ServiceXAdaptor:
         if bearer_token_file:
             with open(bearer_token_file, "r") as f:
                 bearer_token = f.read().strip()
-        print("BEARER", bearer_token)
         return bearer_token
 
     async def _get_authorization(self, client: aiohttp.ClientSession):
