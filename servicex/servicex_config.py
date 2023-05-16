@@ -126,7 +126,7 @@ class ServiceXConfigAdaptor:
                         config = {k: str(ep[k].as_str_expanded()) for k in ep.keys()}
                         log.warning(
                             f'Found backend type matching "{backend_name}". Matching by '
-                            'type is depreciated. Please switch to using the "name" '
+                            'type is deprecated. Please switch to using the "name" '
                             "keyword in your servicex.yaml file."
                         )
                         break
