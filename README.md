@@ -100,8 +100,8 @@ files (in one case, a set of ATLAS data files, and in the other some CMS Run 1 A
 access these files without special permissions.
 - A list of files located at `http` or `root` endpoints: For example, `[root://myfile1.root, http://myfile2.root]`. ServiceX must be able to
 access these files without special permissions.
-- [depreciated] A bare (DID): this is an unadorned identifier, and is routed to the backend's default DID resolver. The default
-is defined at runtime. It is depreciated because a backend configuration change can break your code.
+- [deprecated] A bare (DID): this is an unadorned identifier, and is routed to the backend's default DID resolver. The default
+is defined at runtime. It is deprecated because a backend configuration change can break your code.
 
 ### The Local Data Cache
 
