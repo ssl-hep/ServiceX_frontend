@@ -1,0 +1,42 @@
+[tool.poetry]
+name = "servicex"
+version = "2.0.0-alpha.1"
+description = ""
+authors = ["Ben Galewsky <bengal1@illinois.edu>", "Gordon Watts <gwatts@uw.edu>"]
+readme = "README.md"
+packages = [{include = "servicex_client"}]
+
+[tool.poetry.scripts]
+servicex = "servicex_client.app.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.8, < 3.12"
+qastle = "^0.16"
+func_adl = "3.2.5-alpha.1"
+requests = "^2.31"
+pydantic = "^1.10"
+httpx = "^0.24"
+miniopy-async = "^1.15"
+tinydb = "^4.7"
+google-auth = "^2.17"
+typer = { extras = ["all"], version = "^0.9.0" }
+PyYAML = "^6.0"
+types-PyYAML = "^6.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2.0"
+pytest-mock = "^3.10.0"
+pytest-cov = "^4.0.0"
+flake8 = "^5.0.4"
+mypy = "^0.981"
+pytest-asyncio ="^0.21.0"
+asyncmock = "^0.4.2"
+
+
+
+
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
