@@ -30,7 +30,6 @@ from datetime import datetime
 from typing import Optional, Dict
 
 import httpx
-import rich
 from google.auth import jwt
 
 from servicex_client.models import TransformRequest, TransformStatus
@@ -101,7 +100,6 @@ class ServiceXAdapter:
         return r.json()
 
     async def submit_transform(self, transform_request: TransformRequest):
-        rich.print_json(transform_request.json())
         async with httpx.AsyncClient() as client:
             headers = await self._get_authorization(client)
             r = await client.post(url=f"{self.url}/servicex/transformation",
