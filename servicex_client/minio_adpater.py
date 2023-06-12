@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os.path
+from hashlib import sha1
 from pathlib import Path
 from typing import List
 
@@ -35,6 +36,8 @@ from servicex_client.models import ResultFile, TransformStatus
 
 
 class MinioAdapter:
+    MAX_PATH_LEN = 32
+
     def __init__(self, endpoint_host: str,
                  secure: bool,
                  access_key: str,
@@ -67,9 +70,13 @@ class MinioAdapter:
             extension=obj.object_name.split(".")[-1]
         ) for obj in objects]
 
-    async def download_file(self, object_name: str, local_dir: str) -> Path:
+    async def download_file(self, object_name: str,
+                            local_dir: str,
+                            shorten_filename: bool = False) -> Path:
         os.makedirs(local_dir, exist_ok=True)
-        path = Path(os.path.join(local_dir, object_name))
+        path = Path(os.path.join(local_dir,
+                                 self.hash_path(object_name) if shorten_filename else object_name))
+
         _ = await self.minio.fget_object(
             bucket_name=self.bucket,
             object_name=object_name,
@@ -83,3 +90,21 @@ class MinioAdapter:
             object_name=object_name,
             method="GET"
         )
+
+    @classmethod
+    def hash_path(cls, file_name):
+        """
+        Make the path safe for object store or POSIX, by keeping the length
+        less than MAX_PATH_LEN. Replace the leading (less interesting) characters with a
+        forty character hash.
+        :param file_name: Input filename
+        :return: Safe path string
+        """
+        if len(file_name) > cls.MAX_PATH_LEN:
+            hash = sha1(file_name.encode('utf-8')).hexdigest()
+            return ''.join([
+                '_', hash,
+                file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1):],
+            ])
+        else:
+            return file_name

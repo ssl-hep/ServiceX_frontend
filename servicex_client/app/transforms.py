@@ -105,7 +105,9 @@ def download(
 ):
     async def download_files(sx: ServiceXClient, transform_id: str, local_dir):
         async def download_with_progress(filename) -> Path:
-            p = await minio.download_file(filename, local_dir)
+            p = await minio.download_file(filename,
+                                          local_dir,
+                                          shorten_filename=sx.config.shortened_downloaded_filename)
             progress.advance(download_progress)
             return p
 

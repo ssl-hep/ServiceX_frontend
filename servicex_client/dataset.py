@@ -250,8 +250,11 @@ class Dataset(ABC):
 
         async def download_file(minio: MinioAdapter, filename: str,
                                 progress: Progress,
-                                download_progress: TaskID):
-            await minio.download_file(filename, self.download_path)
+                                download_progress: TaskID,
+                                shorten_filename: bool = False):
+            await minio.download_file(filename,
+                                      self.download_path,
+                                      shorten_filename=shorten_filename)
             downloaded_file_paths.append(os.path.join(self.download_path, filename))
             progress.advance(download_progress)
 
@@ -278,7 +281,8 @@ class Dataset(ABC):
                             download_tasks.append(
                                 loop.create_task(
                                     download_file(self.minio, file.filename,
-                                                  progress, download_progress)))
+                                                  progress, download_progress,
+                                                  shorten_filename=self.configuration.shortened_downloaded_filename))) # NOQA 501
                         files_seen.add(file.filename)
 
             # Once the transform is complete we can stop polling since all of the files
