@@ -70,8 +70,8 @@ def list():
 
 
 @cache_app.command()
-def clear():
-    if Confirm.ask("Really clear cache and delete downloaded files?"):
+def clear(force: bool = typer.Option(False, "-y", help="Force, don't has permission")):
+    if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
         shutil.rmtree(sx.config.cache_path)
         rich.print("Cache cleared")
