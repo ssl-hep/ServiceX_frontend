@@ -25,18 +25,32 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
-from typing import Coroutine, List
+from unittest.mock import AsyncMock
 
-from servicex_client.models import TransformedResults
+import pytest
+
+from servicex_client.dataset_group import DatasetGroup
 
 
-class DatasetGroup:
-    def __init__(self, datasets: List[Coroutine]):
-        self.datasets = datasets
+@pytest.mark.asyncio
+async def test_gather_results_async(transformed_result):
+    query1 = AsyncMock(return_value=transformed_result)
+    query2 = AsyncMock(return_value=transformed_result.copy(
+        update={"request_id": "98-765-432"}))
 
-    async def gather_results_async(self) -> List[TransformedResults]:
-        return await asyncio.gather(*self.datasets)
+    group = DatasetGroup([query1(), query2()])
+    results = await group.gather_results_async()
 
-    def gather_results(self) -> List[TransformedResults]:
-        return asyncio.run(self.gather_results_async())
+    assert len(results) == 2
+    assert results[0].request_id == "123-45-6789"
+    assert results[1].request_id == "98-765-432"
+
+
+def test_gather_results(transformed_result):
+    query1 = AsyncMock(return_value=transformed_result)
+    query2 = AsyncMock(return_value=transformed_result)
+
+    group = DatasetGroup([query1(), query2()])
+    results = group.gather_results()
+
+    assert len(results) == 2

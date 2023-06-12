@@ -25,10 +25,12 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from datetime import datetime
+
 from pytest_asyncio import fixture
 
 from servicex_client.models import TransformRequest, ResultDestination, ResultFormat, \
-    TransformStatus
+    TransformStatus, TransformedResults
 
 
 @fixture
@@ -87,3 +89,18 @@ def completed_status() -> TransformStatus:
            "minio-secured": False,
            "minio-access-key": "miniouser",
            "minio-secret-key": "secret"})
+
+
+@fixture
+def transformed_result() -> TransformedResults:
+    return TransformedResults(
+        hash="123-4455",
+        title="Test",
+        codegen="uproot",
+        request_id="123-45-6789",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=["/tmp/1.root", "/tmp/2.root"],
+        files=2,
+        result_format=ResultFormat.root_file
+    )

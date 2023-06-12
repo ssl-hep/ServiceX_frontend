@@ -27,27 +27,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from pydantic import BaseModel
 from tinydb import TinyDB, Query, where
 
 from servicex_client.configuration import Configuration
-from servicex_client.models import TransformRequest, TransformStatus, ResultFormat
-
-
-class CacheRecord(BaseModel):
-    hash: str
-    title: str
-    codegen: str
-    request_id: str
-    submit_time: datetime
-    data_dir: str
-    file_uris: List[str]
-    files: int
-    result_format: ResultFormat
+from servicex_client.models import TransformRequest, TransformStatus, TransformedResults
 
 
 class CacheException(Exception):
@@ -66,22 +52,23 @@ class QueryCache:
     def cache_transform(self, transform: TransformRequest,
                         completed_status: TransformStatus,
                         data_dir: str,
-                        file_uris: List[str]) -> None:
+                        file_uris: List[str]) -> TransformedResults:
 
-        record = CacheRecord(
+        record = TransformedResults(
             hash=transform.compute_hash(),
             title=transform.title,
             codegen=transform.codegen,
             request_id=completed_status.request_id,
             submit_time=completed_status.submit_time,
             data_dir=data_dir,
-            file_uris=file_uris,
+            file_list=file_uris,
             files=completed_status.files,
             result_format=transform.result_format
         )
         self.db.insert(json.loads(record.json()))
+        return record
 
-    def get_transform_by_hash(self, hash: str) -> Optional[CacheRecord]:
+    def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         transforms = Query()
         records = self.db.search(transforms.hash == hash)
         if not records:
@@ -90,9 +77,9 @@ class QueryCache:
         if len(records) != 1:
             raise CacheException("Multiple records found in db for hash")
         else:
-            return CacheRecord(**records[0])
+            return TransformedResults(**records[0])
 
-    def get_transform_by_request_id(self, request_id: str) -> Optional[CacheRecord]:
+    def get_transform_by_request_id(self, request_id: str) -> Optional[TransformedResults]:
         transforms = Query()
         records = self.db.search(transforms.request_id == request_id)
         if not records:
@@ -101,7 +88,7 @@ class QueryCache:
         if len(records) != 1:
             raise CacheException("Multiple records found in db for request_id")
         else:
-            return CacheRecord(**records[0])
+            return TransformedResults(**records[0])
 
     def cache_path_for_transform(self, transform_status: TransformStatus) -> Path:
         base = Path(self.config.cache_path)
@@ -109,8 +96,8 @@ class QueryCache:
         result.mkdir(parents=True, exist_ok=False)
         return result
 
-    def cached_queries(self) -> List[CacheRecord]:
-        return [CacheRecord(**doc) for doc in self.db.all()]
+    def cached_queries(self) -> List[TransformedResults]:
+        return [TransformedResults(**doc) for doc in self.db.all()]
 
     def delete_record_by_request_id(self, request_id: str):
         self.db.remove(where('request_id') == request_id)

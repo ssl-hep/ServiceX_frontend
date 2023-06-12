@@ -25,8 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
 
+from servicex_client.dataset_group import DatasetGroup
 from servicex_client.dataset_identifier import FileListDataset
 from servicex_client.servicex_client import ServiceXClient
 
@@ -35,8 +35,9 @@ dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/Outre
 
 ds = sx.func_adl_uproot_dataset(dataset_id, codegen="uproot", title="Root")
 
-sx3 = asyncio.run(
+sx3 = DatasetGroup([
     ds.Select(lambda e: {'lep_pt': e['lep_pt']}).
     Where(lambda e: e['lep_pt'] > 1000).
-    as_root_files())
+    as_root_files()]).gather_results()
+
 print(sx3)

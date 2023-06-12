@@ -107,3 +107,15 @@ class ResultFile(BaseModel):
     filename: str
     size: int
     extension: str
+
+
+class TransformedResults(BaseModel):
+    hash: str
+    title: str
+    codegen: str
+    request_id: str
+    submit_time: datetime
+    data_dir: str
+    file_list: List[str]
+    files: int
+    result_format: ResultFormat

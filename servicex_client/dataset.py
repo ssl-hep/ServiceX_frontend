@@ -147,7 +147,7 @@ class Dataset(ABC):
 
         if cached_record:
             rich.print("Returning results from cache")
-            return cached_record.file_uris
+            return cached_record.file_list
 
         with Progress(
                 TextColumn("[progress.description]{task.description}"),
@@ -179,10 +179,11 @@ class Dataset(ABC):
                 downloaded_files = await download_files_task
 
                 # Update the cache
-                self.cache.cache_transform(sx_request, self.current_status,
-                                           self.download_path.as_posix(),
-                                           downloaded_files)
-                return downloaded_files
+                transform_report = self.cache.cache_transform(sx_request,
+                                                              self.current_status,
+                                                              self.download_path.as_posix(),
+                                                              downloaded_files)
+                return transform_report
             except CancelledError:
                 rich.print_json("Aborted file downloads due to transform failure")
 
