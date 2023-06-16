@@ -25,14 +25,16 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import annotations
+
 import ast
 import copy
-from typing import Optional, Any, TypeVar, cast, List
-
+from typing import Optional, Any, TypeVar, cast, List, Union, Callable, Iterable, Dict
 from pydantic import typing
 from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset
+from func_adl.object_stream import S
 from servicex_client.configuration import Configuration
 from servicex_client.dataset import Dataset
 from servicex_client.func_adl.util import has_tuple
@@ -90,8 +92,25 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         clone._item_type = new_type
         return clone
 
+    def SelectMany(
+        self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
+    ) -> FuncADLDataset[S]:
+        return super().SelectMany(func)
+
+    def Select(self, f: Union[str, ast.Lambda, Callable[[T], S]]) -> FuncADLDataset[S]:
+        return super().Select(f)
+
     def generate_selection_string(self) -> str:
         return self.generate_qastle(self.query_ast)
+
+    def Where(self, filter: Union[str, ast.Lambda, Callable[[T], bool]]) -> FuncADLDataset[T]:
+        return super().Where(filter)
+
+    def MetaData(self, metadata: Dict[str, Any]) -> FuncADLDataset[T]:
+        return super().MetaData(metadata)
+
+    def QMetaData(self, metadata: Dict[str, Any]) -> FuncADLDataset[T]:
+        return super().QMetaData(metadata)
 
     def generate_qastle(self, a: ast.AST) -> str:
         """Generate the qastle from the ast of the query.
