@@ -26,9 +26,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
+from typing import Optional
 
 from servicex_client.configuration import Configuration
 from servicex_client.func_adl.func_adl_dataset import FuncADLDataset
+from servicex_client.models import ResultFormat
 from servicex_client.query_cache import QueryCache
 from servicex_client.servicex_adapter import ServiceXAdapter
 from servicex_client.types import DID
@@ -78,7 +80,8 @@ class ServiceXClient:
     def func_adl_uproot_dataset(self,
                                 dataset_identifier: DID,
                                 title: str = "ServiceX Client",
-                                codegen: str = "uproot"
+                                codegen: str = "uproot",
+                                result_format: Optional[ResultFormat] = None
                                 ) -> FuncADLDataset:
         if codegen not in self.code_generators:
             raise NameError(
@@ -87,12 +90,13 @@ class ServiceXClient:
 
         return FuncADLDataset(dataset_identifier, sx_adapter=self.servicex,
                               title=title, codegen=codegen, config=self.config,
-                              query_cache=self.query_cache)
+                              query_cache=self.query_cache, result_format=result_format)
 
     def python_dataset(self,
                        dataset_identifier: DID,
                        title: str = "ServiceX Client",
-                       codegen: str = "uproot"
+                       codegen: str = "uproot",
+                       result_format: Optional[ResultFormat] = None
                        ) -> PythonDataset:
         if codegen not in self.code_generators:
             raise NameError(
@@ -101,4 +105,4 @@ class ServiceXClient:
 
         return PythonDataset(dataset_identifier, sx_adapter=self.servicex,
                              title=title, codegen=codegen, config=self.config,
-                             query_cache=self.query_cache)
+                             query_cache=self.query_cache, result_format=result_format)

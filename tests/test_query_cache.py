@@ -56,8 +56,8 @@ def test_cache_transform(transform_request, completed_status):
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status,
-                              data_dir="/foo/bar", file_uris=file_uris)
+                              completed_status=completed_status, data_dir="/foo/bar",
+                              file_list=file_uris, signed_urls=[])
 
         test = cache.get_transform_by_hash(transform_request.compute_hash())
         assert test
@@ -74,8 +74,8 @@ def test_cache_transform(transform_request, completed_status):
 
         # make a duplicate record
         cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status,
-                              data_dir="/foo/baz", file_uris=file_uris)
+                              completed_status=completed_status, data_dir="/foo/baz",
+                              file_list=file_uris, signed_urls=[])
 
         with pytest.raises(CacheException):
             _ = cache.get_transform_by_hash(transform_request.compute_hash())
@@ -106,13 +106,14 @@ def test_record_delete(transform_request, completed_status):
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status,
-                              data_dir="/foo/bar", file_uris=file_uris)
+                              completed_status=completed_status, data_dir="/foo/bar",
+                              file_list=file_uris, signed_urls=[])
 
         cache.cache_transform(transform=transform_request,
                               completed_status=completed_status.copy(
-                                  update={"request_id": "02c64494-4529-49a7-a4a6-95661ea3936e"}),
-                              data_dir="/foo/baz", file_uris=file_uris)
+                                  update={
+                                      "request_id": "02c64494-4529-49a7-a4a6-95661ea3936e"}),
+                              data_dir="/foo/baz", file_list=file_uris, signed_urls=[])
 
         assert len(cache.cached_queries()) == 2
         cache.delete_record_by_request_id("02c64494-4529-49a7-a4a6-95661ea3936e")

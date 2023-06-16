@@ -28,16 +28,20 @@
 
 from servicex_client.dataset_group import DatasetGroup
 from servicex_client.dataset_identifier import FileListDataset
+from servicex_client.models import ResultFormat
 from servicex_client.servicex_client import ServiceXClient
 
 sx = ServiceXClient(backend="localhost")
 dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
 
-ds = sx.func_adl_uproot_dataset(dataset_id, codegen="uproot", title="Root")
+ds = sx.func_adl_uproot_dataset(dataset_id, codegen="uproot",
+                                title="Root",
+                                result_format=ResultFormat.parquet)
 
 sx3 = DatasetGroup([
     ds.Select(lambda e: {'lep_pt': e['lep_pt']}).
     Where(lambda e: e['lep_pt'] > 1000).
-    as_root_files()]).gather_results()
+    as_pandas()
+]).gather_results()
 
 print(sx3)

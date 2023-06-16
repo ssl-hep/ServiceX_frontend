@@ -117,5 +117,6 @@ class TransformedResults(BaseModel):
     submit_time: datetime
     data_dir: str
     file_list: List[str]
+    signed_url_list: List[str]
     files: int
     result_format: ResultFormat

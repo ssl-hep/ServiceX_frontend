@@ -50,9 +50,9 @@ class QueryCache:
         self.db.close()
 
     def cache_transform(self, transform: TransformRequest,
-                        completed_status: TransformStatus,
-                        data_dir: str,
-                        file_uris: List[str]) -> TransformedResults:
+                        completed_status: TransformStatus, data_dir: str,
+                        file_list: List[str],
+                        signed_urls) -> TransformedResults:
 
         record = TransformedResults(
             hash=transform.compute_hash(),
@@ -61,12 +61,17 @@ class QueryCache:
             request_id=completed_status.request_id,
             submit_time=completed_status.submit_time,
             data_dir=data_dir,
-            file_list=file_uris,
+            file_list=file_list,
+            signed_url_list=signed_urls,
             files=completed_status.files,
             result_format=transform.result_format
         )
         self.db.insert(json.loads(record.json()))
         return record
+
+    def update_record(self, record: TransformedResults):
+        transforms = Query()
+        self.db.update(json.loads(record.json()), transforms.hash == record.hash)
 
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         transforms = Query()
@@ -93,7 +98,7 @@ class QueryCache:
     def cache_path_for_transform(self, transform_status: TransformStatus) -> Path:
         base = Path(self.config.cache_path)
         result = Path(os.path.join(base, transform_status.request_id))
-        result.mkdir(parents=True, exist_ok=False)
+        result.mkdir(parents=True, exist_ok=True)
         return result
 
     def cached_queries(self) -> List[TransformedResults]:

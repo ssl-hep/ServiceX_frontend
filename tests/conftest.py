@@ -101,6 +101,7 @@ def transformed_result() -> TransformedResults:
         submit_time=datetime.now(),
         data_dir="/foo/bar",
         file_list=["/tmp/1.root", "/tmp/2.root"],
+        signed_url_list=[],
         files=2,
         result_format=ResultFormat.root_file
     )

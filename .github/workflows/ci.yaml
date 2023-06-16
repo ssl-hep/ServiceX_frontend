@@ -61,7 +61,7 @@ jobs:
           
           # Doing this to insure caio library is installed from source since the wheel is broken for macos
           poetry run pip install --force-reinstall caio --no-binary caio
-          poetry install --with=test
+          poetry install --with=test -E pandas
           pip list
 
       - name: Test with pytest

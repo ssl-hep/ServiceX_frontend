@@ -31,6 +31,7 @@ from base64 import b64encode
 
 from servicex_client.configuration import Configuration
 from servicex_client.dataset import Dataset
+from servicex_client.models import ResultFormat
 from servicex_client.query_cache import QueryCache
 from servicex_client.servicex_adapter import ServiceXAdapter
 from servicex_client.types import DID
@@ -43,14 +44,16 @@ class PythonDataset(Dataset):
                  title: str = "ServiceX Client",
                  codegen: str = None,
                  config: Configuration = None,
-                 query_cache: QueryCache = None
+                 query_cache: QueryCache = None,
+                 result_format: typing.Optional[ResultFormat] = None
                  ):
         super().__init__(dataset_identifier=dataset_identifier,
                          title=title,
                          codegen=codegen,
                          sx_adapter=sx_adapter,
                          config=config,
-                         query_cache=query_cache)
+                         query_cache=query_cache,
+                         result_format=result_format)
 
         self.python_function = None
 
