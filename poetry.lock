@@ -255,7 +255,7 @@ tqdm = ["tqdm"]
 
 [[package]]
 name = "func-adl"
-version = "3.2.5a1"
+version = "3.2.5"
 description = "Functional Analysis Description Language Base Package"
 category = "main"
 optional = false
@@ -880,7 +880,7 @@ pandas = ["pandas", "pyarrow", "fastparquet"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8, < 3.12"
-content-hash = "3ebf73aadb4ed71abc7feae515e1ef4e84d4ab48a0659c3333b93cc7483c1a71"
+content-hash = "e18c5ebd7039a9ab3c105675790e00668cbf2f23057286d9b7fedbf8ef6ee3e7"
 
 [metadata.files]
 aiofile = [
@@ -1359,8 +1359,8 @@ fsspec = [
     {file = "fsspec-2023.6.0.tar.gz", hash = "sha256:d0b2f935446169753e7a5c5c55681c54ea91996cc67be93c39a154fb3a2742af"},
 ]
 func-adl = [
-    {file = "func_adl-3.2.5a1-py3-none-any.whl", hash = "sha256:36ceff9f3e68059806a6270530d0307a4bbd02cc334009b5c9dc8b6b9fefef03"},
-    {file = "func_adl-3.2.5a1.tar.gz", hash = "sha256:633df25db603f959ad9b4c116e0f0efc35de8dc8f8b08650c36b07d0cd1f3cbe"},
+    {file = "func_adl-3.2.5-py3-none-any.whl", hash = "sha256:14c0260bf50ca74a83bf31d75b624a0b15c64a20fcc61ac782cd9dba7236c56c"},
+    {file = "func_adl-3.2.5.tar.gz", hash = "sha256:61e2a2b7553bc1dd39f577bbd696b5035f663029dbc3a248ac04c259013e08d5"},
 ]
 google-auth = [
     {file = "google-auth-2.20.0.tar.gz", hash = "sha256:030af34138909ccde0fbce611afc178f1d65d32fbff281f25738b1fe1c6f3eaa"},

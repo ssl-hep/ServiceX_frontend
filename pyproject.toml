@@ -12,7 +12,7 @@ servicex = "servicex_client.app.main:app"
 [tool.poetry.dependencies]
 python = "^3.8, < 3.12"
 qastle = "^0.16"
-func_adl = "3.2.5-alpha.1"
+func_adl = "3.2.5"
 requests = "^2.31"
 pydantic = "^1.10"
 httpx = "^0.24"
