@@ -27,6 +27,9 @@ pandas = {version = "^2.0.2", optional = true}
 pyarrow = {version = "^12.0.0", optional = true}
 fastparquet = {version="^2023.4.0", optional = true}
 
+sphinx = {version="^7.0.1", optional = true}
+furo = {version="^2023.5.20", optional = true}
+
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2.0"
@@ -41,8 +44,7 @@ asyncmock = "^0.4.2"
 
 [tool.poetry.extras]
 pandas = ["pandas", "pyarrow", "fastparquet"]
-
-
+docs = ["sphinx", "furo"]
 
 
 [build-system]

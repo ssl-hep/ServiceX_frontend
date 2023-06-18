@@ -70,6 +70,22 @@ class Dataset(ABC):
             minio_polling_interval: int = 5,
             result_format: ResultFormat = None
     ):
+        r"""
+        This is the main class for constructing transform requests and receiving the
+        results in a format of your choice. It can be run synchronously or asynchronously.
+
+        :param dataset_identifier: Either a Rucio DID or a list of files
+        :param title: Human readable title for this transform
+        :param codegen: Name of the code generator
+        :param sx_adapter:
+        :param config:
+        :param query_cache:
+        :param servicex_polling_interval: How many seconds between polling for
+                                          transform status?
+        :param minio_polling_interval:  How many seconds between polling the minio bucket
+                                        for new files?
+        :param result_format:
+        """
         super(Dataset, self).__init__()
         self.servicex = sx_adapter
         self.configuration = config
@@ -115,6 +131,12 @@ class Dataset(ABC):
         return sx_request
 
     def set_result_format(self, result_format: ResultFormat):
+        r"""
+        Set the result format - required at constructor time or as part of the query
+        chain of methods
+        :param result_format:
+        :return: self to allow you to chain together query and setup methods
+        """
         self.result_format = result_format
         return self
 
@@ -123,7 +145,11 @@ class Dataset(ABC):
         Submit the transform request to ServiceX. Poll the transform status to see when
         the transform completes and to get the number of files in the dataset along with
         current progress and failed file count.
-        :return:
+
+        :param signed_urls_only: Set to true to skip actually downloading the files and
+                                 just return pre-signed urls
+        :return: Transform results object which contains the list of files downlaoded
+                 or the list of pre-signed urls
         """
         download_files_task = None
         loop = asyncio.get_running_loop()
@@ -341,21 +367,36 @@ class Dataset(ABC):
         await asyncio.gather(*download_tasks)
         return result_uris
 
-    async def as_parquet_files(self) -> TransformedResults:
+    async def as_files(self) -> TransformedResults:
+        r"""
+        Submit the transform and request all the resulting files to be downloaded
+        :return: TransformResult instance with the list of complete paths to the downloaded files
+        """
+        return await self.submit_and_download()
+
+    async def as_pandas_async(self):
+        r"""
+        Return a pandas dataframe containing the results. This only works if you've
+        installed pandas extra
+
+        :return: Pandas Dataframe
+        """
         self.result_format = ResultFormat.parquet
-        return await self.submit_and_download()
-
-    async def as_root_files(self):
-        self.result_format = ResultFormat.root_file
-        return await self.submit_and_download()
-
-    async def as_files(self):
-        return await self.submit_and_download()
-
-    async def as_pandas(self):
-        transformed_result = await self.as_parquet_files()
+        transformed_result = await self.as_files()
         dataframes = pd.concat([pandas.read_parquet(p) for p in transformed_result.file_list])
         return dataframes
 
-    async def as_signed_urls(self):
+    def as_pandas(self):
+        r"""
+        Synchronous version of as_pandas_asynch
+        :return:
+        """
+        return asyncio.run(self.as_pandas_async())
+
+    async def as_signed_urls(self) -> TransformedResults:
+        r"""
+        Presign URLs for each of the transformed files
+
+        :return: TransformedResults object with the presigned_urls list populated
+        """
         return await self.submit_and_download(signed_urls_only=True)

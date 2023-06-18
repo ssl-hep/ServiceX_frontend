@@ -47,6 +47,9 @@ T = TypeVar("T")
 
 
 class FuncADLDataset(Dataset, EventDataset[T]):
+    r"""
+    ServiceX Dataset class that uses func_adl query syntax.
+    """
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
 
@@ -79,6 +82,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         to clone an open file handle, so for this property we will copy by reference
         and share it between the clones. Turns out ast class is also picky about copies,
         so we set that explicitly.
+
         :param new_ast:
         :param new_type:
         :return:
@@ -98,25 +102,93 @@ class FuncADLDataset(Dataset, EventDataset[T]):
     def SelectMany(
         self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
     ) -> FuncADLDataset[S]:
+        r"""
+        Given the current stream's object type is an array or other iterable, return
+        the items in this objects type, one-by-one. This has the effect of flattening a
+        nested array.
+
+        Arguments:
+
+            func:   The function that should be applied to this stream's objects to return
+                    an iterable. Each item of the iterable is now the stream of objects.
+
+        Returns:
+            The Dataset with the SelectMany operator applied
+
+        Notes:
+            - The function can be a `lambda`, the name of a one-line function, a string that
+              contains a lambda definition, or a python `ast` of type `ast.Lambda`.
+        """
         return super().SelectMany(func)
 
     def Select(self, f: Union[str, ast.Lambda, Callable[[T], S]]) -> FuncADLDataset[S]:
+        r"""
+        Apply a transformation function to each object in the stream, yielding a new type of
+        object. There is a one-to-one correspondence between the input objects and output objects.
+
+        Arguments:
+            f:      selection function (lambda)
+
+        Returns:
+            The Dataset with the Select operator applied
+
+        Notes:
+            - The function can be a `lambda`, the name of a one-line function, a string that
+              contains a lambda definition, or a python `ast` of type `ast.Lambda`.
+        """
+
         return super().Select(f)
 
     def generate_selection_string(self) -> str:
         return self.generate_qastle(self.query_ast)
 
     def Where(self, filter: Union[str, ast.Lambda, Callable[[T], bool]]) -> FuncADLDataset[T]:
+        r"""
+        Filter the object stream, allowing only items for which `filter` evaluates as true through.
+
+        Arguments:
+
+            filter      A filter lambda that returns True/False.
+
+        Returns:
+
+            The Dataset with the Where operator applied
+
+        Notes:
+            - The function can be a `lambda`, the name of a one-line function, a string that
+              contains a lambda definition, or a python `ast` of type `ast.Lambda`.
+        """
+
         return super().Where(filter)
 
     def MetaData(self, metadata: Dict[str, Any]) -> FuncADLDataset[T]:
+        r"""Add metadata to the current object stream. The metadata is an arbitrary set of string
+        key-value pairs. The backend must be able to properly interpret the metadata.
+
+        Returns:
+            The Dataset with the MetaData operator applied
+        """
+
         return super().MetaData(metadata)
 
     def QMetaData(self, metadata: Dict[str, Any]) -> FuncADLDataset[T]:
+        r"""Add query metadata to the current object stream.
+
+        - Metadata is never transmitted to any back end
+        - Metadata is per-query, not per sample.
+
+        Warnings are issued if metadata is overwriting metadata.
+
+        Args:
+            metadata (Dict[str, Any]): Metadata to be used later
+
+        Returns:
+            The Dataset with the QMetaData operator applied
+        """
         return super().QMetaData(metadata)
 
     def generate_qastle(self, a: ast.AST) -> str:
-        """Generate the qastle from the ast of the query.
+        r"""Generate the qastle from the ast of the query.
 
         1. The top level function is already marked as being "ok"
         1. If the top level function is something we have to process locally,
@@ -217,4 +289,10 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         return python_ast_to_text_ast(source)
 
     def as_qastle(self):
+        r"""
+        Generate Qastle from this AST
+
+        :returns:
+            Qastle representation of the target's AST
+        """
         return self.value()

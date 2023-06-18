@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import httpx
 from google.auth import jwt
@@ -79,7 +79,7 @@ class ServiceXAdapter:
             await self._get_token(client)
         return {"Authorization": f"Bearer {self.token}"}
 
-    async def get_transforms(self):
+    async def get_transforms(self) -> List[TransformStatus]:
         async with httpx.AsyncClient() as client:
             headers = await self._get_authorization(client)
             r = await client.get(url=f"{self.url}/servicex/transformation",
@@ -111,7 +111,7 @@ class ServiceXAdapter:
                     f"Not authorized to access serviceX at {self.url}")
         return r.json()['request_id']
 
-    async def get_transform_status(self, request_id: str):
+    async def get_transform_status(self, request_id: str) -> TransformStatus:
         async with httpx.AsyncClient() as client:
             headers = await self._get_authorization(client)
             r = await client.get(url=f"{self.url}/servicex/transformation/{request_id}",

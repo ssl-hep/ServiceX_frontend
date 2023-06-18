@@ -17,10 +17,17 @@ api_endpoints:
 default_endpoint: testing4
 
 cache_path: /tmp/ServiceX_Client/cache-dir
+shortened_downloaded_filename: true
+
 ```
 The `default_endpoint` will be used if otherwise not specified. The cache 
 database and downloaded files will be stored in the directory specified by 
 `cache_path`.
+
+The `shortened_downloaded_filename` property controls whether downloaded files
+will have their names shortened for convenience. Setting to false preserves
+the full filename from the dataset.
+`
 
 The library will search for this file in the current working directory and then
 start looking in parent directories until a file is found.
@@ -72,5 +79,54 @@ Delete a specific transform from the cache. Provide the transform request ID
 with the `-t` or `--transform-id` arg.
 
 #### clear
-Clear all of the transforms from the cache.
+Clear all of the transforms from the cache. Add `-y` to force the operation 
+without confirming with the console.
+
+## Python SDK
+Entry to the SDK starts with constructing an instance of ServiceXClient.  The 
+constructor accepts `backend` argument to specify a named backend from the
+`.servicex` file, or `url` for the direct URL to a serviceX server. With the 
+URL option you can't provide a token from `.servicex` so it must either be an
+unsecured endpoint, or the token must be provided via the WLCG standard of a 
+file pointed to by `BEARER_TOKEN_FILE` environment variable.
+
+With an instance of ServiceXClient you can 
+- List the code generators deployed with the ServiceX instance
+- List the transformers that have been run
+- Get the current status of a specific transform
+
+### Create a Dataset Instance to Run Transforms
+The ServiceX client also can create a `Dataset` instance that 
+allows you to specify a query, provide a dataset identifier,
+and retrieve the results of the resulting transform request.
+
+There are two types of datasets
+- func_adl_dataset
+- Python Function dataset
+
+### Dataset Identifiers
+Before we get too deeply into the dataset classes, we should look
+at how to specify a dataset.
+- RucioDatasetIdentifier - for retrieving data files registered with Rucio
+- FileListDataset - A list of URIs for accessing files using xRootd
+
+### FuncADL Dataset
+This dataset is controlled by the func_adl language. The dataset
+supports the `Select`, `SelectMany`, `Where`, `MetaData`, and `QMetaData` 
+operators from func_adl.
+
+
+### Datasets
+This is the abstract class for requesting data from ServiceX. You have to 
+specify the dataset identifier you want data from and provide some sort of 
+selection query. You can set the result format with the `set_result_format` 
+operator (it's also a factory method arg for the dataset).
+
+Operators that cause the client to interact with the server: These terminal 
+operators will call out to the serviceX server and process results. They
+are all implemented as asynchronous coroutines, but they also come with 
+synchronous versions to make it easy to do easy things.
+
+
+#### 
 

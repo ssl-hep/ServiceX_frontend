@@ -34,16 +34,25 @@ from typing import List, Optional
 
 
 class ResultDestination(str, Enum):
+    r"""
+    Direct the output to object store or posix volume
+    """
     object_store = 'object-store'
     volume = 'volume'
 
 
 class ResultFormat(str, Enum):
+    r"""
+    Specify the file format for the generated output
+    """
     parquet = "parquet",
     root_file = "root-file"
 
 
 class Status(str, Enum):
+    r"""
+    Status of a sumbittied transform
+    """
     complete = "Complete",
     fatal = "Fatal",
     canceled = "Canceled",
@@ -52,6 +61,9 @@ class Status(str, Enum):
 
 
 class TransformRequest(BaseModel):
+    r"""
+    Transform request sent to ServiceX
+    """
     title: Optional[str] = None
     did: Optional[str] = None
     file_list: Optional[List[str]] = Field(None, alias='file-list')
@@ -66,6 +78,12 @@ class TransformRequest(BaseModel):
         allow_population_by_field_name = True
 
     def compute_hash(self):
+        r"""
+        Compute a hash for this submission. Only include properties that imapact the result
+        so we have maximal ability to reuse transforms
+
+        :return: SHA256 hash of request
+        """
         sha = hashlib.sha256(str([self.did, self.selection, self.tree_name,
                                   self.codegen, self.image,
                                   self.result_format.name, self.file_list]).
@@ -74,6 +92,9 @@ class TransformRequest(BaseModel):
 
 
 class TransformStatus(BaseModel):
+    r"""
+    Status object returned by servicex
+    """
     request_id: str
     did: str
     selection: str
@@ -104,12 +125,19 @@ class TransformStatus(BaseModel):
 
 
 class ResultFile(BaseModel):
+    r"""
+    Record reporting the properties of a tranformed file result
+    """
     filename: str
     size: int
     extension: str
 
 
 class TransformedResults(BaseModel):
+    r"""
+    Returned for a submission. Gives you everything you need to know about a completed
+    transform.
+    """
     hash: str
     title: str
     codegen: str

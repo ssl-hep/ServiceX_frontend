@@ -31,6 +31,10 @@ from servicex_client.models import TransformRequest
 
 
 class DataSetIdentifier:
+    r"""
+    Base class for specifying the dataset to transform. This can either be a list of
+    xRootD URIs or a rucio DID
+    """
     def __init__(self, scheme: str, dataset: str, num_files: int = None):
         self.scheme = scheme
         self.dataset = dataset
@@ -48,11 +52,26 @@ class DataSetIdentifier:
 
 class RucioDatasetIdentifier(DataSetIdentifier):
     def __init__(self, dataset: str, num_files: int = None):
+        r"""
+        Rucio Dataset - this will be looked up using the Rucio data management
+        service.
+
+        :param dataset: The rucio DID - this can be a dataset or a container of datasets.
+        :param num_files: Maximum number of files to return. This is useful during development
+            to perform quick runs. ServiceX is careful to make sure it always
+            returns the same subset of files.
+
+        """
         super().__init__("rucio", dataset, num_files=num_files)
 
 
 class FileListDataset:
     def __init__(self, files: Union[List[str], str]):
+        r"""
+        Dataset specified as a list of XRootD URIs.
+
+        :param files: Either a list of URIs or a single URI string
+        """
         if type(files) == str:
             self.files = [files]
         else:

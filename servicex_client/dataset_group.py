@@ -33,10 +33,28 @@ from servicex_client.models import TransformedResults
 
 class DatasetGroup:
     def __init__(self, datasets: List[Coroutine]):
+        r"""
+        Simultaneously submit a group of transform requests and offer the ability to wait
+        for them all to finish.
+
+        :param datasets: List of transform requests form dataset instances
+        """
         self.datasets = datasets
 
     async def gather_results_async(self) -> List[TransformedResults]:
+        r"""
+        Await on all of the transform requests in the group.
+
+        :return: List of TransformedResults instances. Use the title property to relate the
+                 result to your submission
+        """
         return await asyncio.gather(*self.datasets)
 
     def gather_results(self) -> List[TransformedResults]:
+        r"""
+        Synchronous wait for all of the transform requests in the group to complete
+
+        :return: List of TransformedResults instances. Use the title property to relate the
+                 result to your submission
+        """
         return asyncio.run(self.gather_results_async())

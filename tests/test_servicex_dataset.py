@@ -32,7 +32,7 @@ import pytest
 
 from servicex_client.configuration import Configuration
 from servicex_client.dataset_identifier import FileListDataset
-from servicex_client.func_adl.func_adl_dataset import FuncADLDataset
+from servicex_client.func_adl_dataset import FuncADLDataset
 from servicex_client.models import TransformStatus, Status, ResultFile, \
     ResultFormat
 from servicex_client.query_cache import QueryCache
