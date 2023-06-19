@@ -25,19 +25,19 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
 
 from servicex_client.dataset_identifier import RucioDatasetIdentifier
+from servicex_client.models import ResultFormat
 from servicex_client.servicex_client import ServiceXClient
 
 sx = ServiceXClient(backend="testing4")
-print(sx.get_code_generators())
 
 dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8")
 
-ds = sx.func_adl_uproot_dataset(dataset_id)
+ds = sx.func_adl_dataset(dataset_id)
 
-sx2 = ds.Select(lambda e: {'el_pt': e['el_pt']}).as_parquet_files()
-sx3 = asyncio.run(sx2)
+sx2 = ds.Select(lambda e: {'el_pt': e['el_pt']})\
+    .set_result_format(ResultFormat.parquet)\
+    .as_files()
 
-print(sx3)
+print(sx2)

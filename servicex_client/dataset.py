@@ -367,12 +367,19 @@ class Dataset(ABC):
         await asyncio.gather(*download_tasks)
         return result_uris
 
-    async def as_files(self) -> TransformedResults:
+    async def as_files_async(self) -> TransformedResults:
         r"""
         Submit the transform and request all the resulting files to be downloaded
         :return: TransformResult instance with the list of complete paths to the downloaded files
         """
         return await self.submit_and_download()
+
+    def as_files(self) -> TransformedResults:
+        r"""
+        Submit the transform and request all the resulting files to be downloaded
+        :return: TransformResult instance with the list of complete paths to the downloaded files
+        """
+        return asyncio.run(self.submit_and_download())
 
     async def as_pandas_async(self):
         r"""
@@ -382,7 +389,7 @@ class Dataset(ABC):
         :return: Pandas Dataframe
         """
         self.result_format = ResultFormat.parquet
-        transformed_result = await self.as_files()
+        transformed_result = await self.as_files_async()
         dataframes = pd.concat([pandas.read_parquet(p) for p in transformed_result.file_list])
         return dataframes
 

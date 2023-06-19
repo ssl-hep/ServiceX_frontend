@@ -25,12 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
 
 from servicex_client.dataset_identifier import FileListDataset
 from servicex_client.servicex_client import ServiceXClient
 
-sx = ServiceXClient(backend="localhost")
+sx = ServiceXClient(backend="testing4")
 dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
 
 ds = sx.python_dataset(dataset_id, codegen="python", title="Python")
@@ -42,7 +41,5 @@ def run_query(input_filenames=None):
     return o.lep_pt
 
 
-sx3 = asyncio.run(
-    ds.with_uproot_function(run_query)
-    .as_pandas())
+sx3 = ds.with_uproot_function(run_query).as_pandas()
 print(sx3)

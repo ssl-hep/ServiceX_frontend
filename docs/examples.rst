@@ -7,6 +7,10 @@ This simple example reads a single root file form the CERN Opendata repo
 
 .. code:: python
 
+    from servicex_client.dataset_identifier import FileListDataset
+    from servicex_client.models import ResultFormat
+    from servicex_client.servicex_client import ServiceXClient
+
     sx = ServiceXClient(backend="localhost")
     dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
 
@@ -26,14 +30,19 @@ parquet files
 
 .. code:: python
 
+    from servicex_client.dataset_identifier import RucioDatasetIdentifier
+    from servicex_client.models import ResultFormat
+    from servicex_client.servicex_client import ServiceXClient
+
     sx = ServiceXClient(backend="testing4")
-    print(sx.get_code_generators())
 
     dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8")
 
     ds = sx.func_adl_dataset(dataset_id)
 
-    sx2 = ds.Select(lambda e: {'el_pt': e['el_pt']}).as_parquet_files()
+    sx2 = ds.Select(lambda e: {'el_pt': e['el_pt']})\
+        .set_result_format(ResultFormat.parquet)\
+        .as_files()
 
     print(sx2)
 
@@ -45,7 +54,10 @@ returns an awkward array
 
 .. code:: python
 
-    sx = ServiceXClient(backend="localhost")
+    from servicex_client.dataset_identifier import FileListDataset
+    from servicex_client.servicex_client import ServiceXClient
+
+    sx = ServiceXClient(backend="testing4")
     dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
 
     ds = sx.python_dataset(dataset_id, codegen="python", title="Python")
@@ -57,5 +69,5 @@ returns an awkward array
         return o.lep_pt
 
 
-    sx3 = ds.with_uproot_function(run_query).as_pandas())
+    sx3 = ds.with_uproot_function(run_query).as_pandas()
     print(sx3)
