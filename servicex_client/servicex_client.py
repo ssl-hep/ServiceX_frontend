@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
-from typing import Optional, List
+from typing import Any, Optional, List, TypeVar
 
 from servicex_client.configuration import Configuration
 from servicex_client.func_adl_dataset import FuncADLDataset
@@ -37,11 +37,14 @@ from servicex_client.types import DID
 from servicex_client.python_dataset import PythonDataset
 
 
+T = TypeVar("T")
+
+
 class ServiceXClient:
     r"""
-        Connection to a ServiceX deployment. Instances of this class can deployment
-        data from the service and also interact with previously run transformations.
-        Instances of this class are factories for `Datasets``
+    Connection to a ServiceX deployment. Instances of this class can deployment
+    data from the service and also interact with previously run transformations.
+    Instances of this class are factories for `Datasets``
     """
 
     def __init__(self, backend=None, url=None, config_path=None):
@@ -53,7 +56,7 @@ class ServiceXClient:
         :param url: Direct URL of a serviceX deployment instead of using .servicex.
                     Can only work with hosts without auth, or the token is found
                     in a file pointed to by the environment variable BEARER_TOKEN_FILE
-        :param config_path: Optional path te the `.servicex` file. If not specificed,
+        :param config_path: Optional path te the `.servicex` file. If not specified,
                     will search in local directory and up in enclosing directories
         """
         self.config = Configuration.read(config_path)
@@ -70,8 +73,10 @@ class ServiceXClient:
         elif backend:
             if backend not in self.endpoints:
                 raise ValueError(f"Backend {backend} not defined in .servicex file")
-            self.servicex = ServiceXAdapter(self.endpoints[backend].endpoint,
-                                            refresh_token=self.endpoints[backend].token)
+            self.servicex = ServiceXAdapter(
+                self.endpoints[backend].endpoint,
+                refresh_token=self.endpoints[backend].token,
+            )
 
         self.query_cache = QueryCache(self.config)
 
@@ -116,12 +121,14 @@ class ServiceXClient:
         """
         return self.servicex.get_code_generators()
 
-    def func_adl_dataset(self,
-                         dataset_identifier: DID,
-                         title: str = "ServiceX Client",
-                         codegen: str = "uproot",
-                         result_format: Optional[ResultFormat] = None
-                         ) -> FuncADLDataset:
+    def func_adl_dataset(
+        self,
+        dataset_identifier: DID,
+        title: str = "ServiceX Client",
+        codegen: str = "uproot",
+        result_format: Optional[ResultFormat] = None,
+        item_type: type[T] = Any,
+    ) -> FuncADLDataset[T]:
         r"""
         Generate a dataset that can use func_adl query language
 
@@ -136,18 +143,27 @@ class ServiceXClient:
         if codegen not in self.code_generators:
             raise NameError(
                 f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}")
+                f"deployment at {self.servicex.url}"
+            )
 
-        return FuncADLDataset(dataset_identifier, sx_adapter=self.servicex,
-                              title=title, codegen=codegen, config=self.config,
-                              query_cache=self.query_cache, result_format=result_format)
+        return FuncADLDataset(
+            dataset_identifier,
+            sx_adapter=self.servicex,
+            title=title,
+            codegen=codegen,
+            config=self.config,
+            query_cache=self.query_cache,
+            result_format=result_format,
+            item_type=item_type,
+        )
 
-    def python_dataset(self,
-                       dataset_identifier: DID,
-                       title: str = "ServiceX Client",
-                       codegen: str = "uproot",
-                       result_format: Optional[ResultFormat] = None
-                       ) -> PythonDataset:
+    def python_dataset(
+        self,
+        dataset_identifier: DID,
+        title: str = "ServiceX Client",
+        codegen: str = "uproot",
+        result_format: Optional[ResultFormat] = None,
+    ) -> PythonDataset:
         r"""
         Generate a dataset that can use accept a python function for the  query
 
@@ -164,8 +180,15 @@ class ServiceXClient:
         if codegen not in self.code_generators:
             raise NameError(
                 f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}")
+                f"deployment at {self.servicex.url}"
+            )
 
-        return PythonDataset(dataset_identifier, sx_adapter=self.servicex,
-                             title=title, codegen=codegen, config=self.config,
-                             query_cache=self.query_cache, result_format=result_format)
+        return PythonDataset(
+            dataset_identifier,
+            sx_adapter=self.servicex,
+            title=title,
+            codegen=codegen,
+            config=self.config,
+            query_cache=self.query_cache,
+            result_format=result_format,
+        )
