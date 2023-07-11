@@ -74,7 +74,7 @@ class Configuration(BaseModel):
             raise NameError("Can't find .servicex config file " + path_extra)
 
     @classmethod
-    def _add_from_path(cls, path: Path = None, walk_up_tree: bool = False):
+    def _add_from_path(cls, path: Optional[Path] = None, walk_up_tree: bool = False):
         config = None
         if path:
             path.resolve()
