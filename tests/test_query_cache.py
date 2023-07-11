@@ -31,6 +31,7 @@ import tempfile
 import pytest
 
 from servicex_client.configuration import Configuration
+from servicex_client.models import ResultFormat
 from servicex_client.query_cache import QueryCache, CacheException
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
@@ -50,21 +51,37 @@ def test_hash(transform_request):
     request2.did = "rucio://baz.bar"
     assert request1.compute_hash() != request2.compute_hash()
 
+    # Changing the did backend does
+    request2 = request1.copy()
+    request2.codegen = "foo"
+    assert request1.compute_hash() != request2.compute_hash()
+
+    # Changing result_format does
+    request2 = request1.copy()
+    request2.result_format = ResultFormat.root_file
+    assert request1.compute_hash() != request2.compute_hash()
+
 
 def test_cache_transform(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status, data_dir="/foo/bar",
-                              file_list=file_uris, signed_urls=[])
+        cache.cache_transform(
+            transform=transform_request,
+            completed_status=completed_status,
+            data_dir="/foo/bar",
+            file_list=file_uris,
+            signed_urls=[],
+        )
 
         test = cache.get_transform_by_hash(transform_request.compute_hash())
         assert test
         assert test.title == "Test submission"
         assert test.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
 
-        test2 = cache.get_transform_by_request_id("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
+        test2 = cache.get_transform_by_request_id(
+            "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+        )
         assert test2
         assert test2.title == "Test submission"
         assert test2.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
@@ -73,15 +90,21 @@ def test_cache_transform(transform_request, completed_status):
         assert not cache.get_transform_by_request_id("this-uuid-does-not-exist")
 
         # make a duplicate record
-        cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status, data_dir="/foo/baz",
-                              file_list=file_uris, signed_urls=[])
+        cache.cache_transform(
+            transform=transform_request,
+            completed_status=completed_status,
+            data_dir="/foo/baz",
+            file_list=file_uris,
+            signed_urls=[],
+        )
 
         with pytest.raises(CacheException):
             _ = cache.get_transform_by_hash(transform_request.compute_hash())
 
         with pytest.raises(CacheException):
-            _ = cache.get_transform_by_request_id("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
+            _ = cache.get_transform_by_request_id(
+                "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+            )
 
         assert len(cache.cached_queries()) == 2
 
@@ -105,15 +128,23 @@ def test_record_delete(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status, data_dir="/foo/bar",
-                              file_list=file_uris, signed_urls=[])
+        cache.cache_transform(
+            transform=transform_request,
+            completed_status=completed_status,
+            data_dir="/foo/bar",
+            file_list=file_uris,
+            signed_urls=[],
+        )
 
-        cache.cache_transform(transform=transform_request,
-                              completed_status=completed_status.copy(
-                                  update={
-                                      "request_id": "02c64494-4529-49a7-a4a6-95661ea3936e"}),
-                              data_dir="/foo/baz", file_list=file_uris, signed_urls=[])
+        cache.cache_transform(
+            transform=transform_request,
+            completed_status=completed_status.copy(
+                update={"request_id": "02c64494-4529-49a7-a4a6-95661ea3936e"}
+            ),
+            data_dir="/foo/baz",
+            file_list=file_uris,
+            signed_urls=[],
+        )
 
         assert len(cache.cached_queries()) == 2
         cache.delete_record_by_request_id("02c64494-4529-49a7-a4a6-95661ea3936e")
