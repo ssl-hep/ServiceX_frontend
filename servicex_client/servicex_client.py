@@ -25,8 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
-from typing import Any, Optional, List, TypeVar
+from typing import Optional, List, TypeVar
 
 from servicex_client.configuration import Configuration
 from servicex_client.func_adl_dataset import FuncADLDataset
@@ -35,6 +34,8 @@ from servicex_client.query_cache import QueryCache
 from servicex_client.servicex_adapter import ServiceXAdapter
 from servicex_client.types import DID
 from servicex_client.python_dataset import PythonDataset
+
+from make_it_sync import make_sync
 
 
 T = TypeVar("T")
@@ -91,20 +92,7 @@ class ServiceXClient:
         """
         return await self.servicex.get_transforms()
 
-    def get_transforms(self) -> List[TransformStatus]:
-        r"""
-        Retrieve all transforms you have run on the server
-        :return: List of Transform status objects
-        """
-        return asyncio.run(self.servicex.get_transforms())
-
-    def get_transform_status(self, transform_id) -> TransformStatus:
-        r"""
-        Get the status of a given transform
-        :param transform_id: The uuid of the transform
-        :return: The current status for the transform
-        """
-        return asyncio.run(self.servicex.get_transform_status(request_id=transform_id))
+    get_transforms = make_sync(get_transforms_async)
 
     async def get_transform_status_async(self, transform_id) -> TransformStatus:
         r"""
@@ -113,6 +101,8 @@ class ServiceXClient:
         :return: The current status for the transform
         """
         return await self.servicex.get_transform_status(request_id=transform_id)
+
+    get_transform_status = make_sync(get_transform_status_async)
 
     def get_code_generators(self):
         r"""
@@ -127,8 +117,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
-        item_type: type[T] = Any,
-    ) -> FuncADLDataset[T]:
+    ) -> FuncADLDataset:
         r"""
         Generate a dataset that can use func_adl query language
 
@@ -154,7 +143,6 @@ class ServiceXClient:
             config=self.config,
             query_cache=self.query_cache,
             result_format=result_format,
-            item_type=item_type,
         )
 
     def python_dataset(
