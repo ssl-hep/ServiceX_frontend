@@ -37,26 +37,26 @@ class ResultDestination(str, Enum):
     r"""
     Direct the output to object store or posix volume
     """
-    object_store = 'object-store'
-    volume = 'volume'
+    object_store = "object-store"
+    volume = "volume"
 
 
 class ResultFormat(str, Enum):
     r"""
     Specify the file format for the generated output
     """
-    parquet = "parquet",
+    parquet = ("parquet",)
     root_file = "root-file"
 
 
 class Status(str, Enum):
     r"""
-    Status of a sumbittied transform
+    Status of a submitted transform
     """
-    complete = "Complete",
-    fatal = "Fatal",
-    canceled = "Canceled",
-    submitted = "Submitted",
+    complete = ("Complete",)
+    fatal = ("Fatal",)
+    canceled = ("Canceled",)
+    submitted = ("Submitted",)
     running = "Running"
 
 
@@ -66,11 +66,11 @@ class TransformRequest(BaseModel):
     """
     title: Optional[str] = None
     did: Optional[str] = None
-    file_list: Optional[List[str]] = Field(None, alias='file-list')
+    file_list: Optional[List[str]] = Field(None, alias="file-list")
     selection: str
     image: Optional[str] = None
     codegen: str
-    tree_name: Optional[str] = Field(None, alias='tree-name')
+    tree_name: Optional[str] = Field(None, alias="tree-name")
     result_destination: ResultDestination = Field(alias="result-destination")
     result_format: ResultFormat = Field(alias="result-format")
 
@@ -79,15 +79,24 @@ class TransformRequest(BaseModel):
 
     def compute_hash(self):
         r"""
-        Compute a hash for this submission. Only include properties that imapact the result
+        Compute a hash for this submission. Only include properties that impact the result
         so we have maximal ability to reuse transforms
 
         :return: SHA256 hash of request
         """
-        sha = hashlib.sha256(str([self.did, self.selection, self.tree_name,
-                                  self.codegen, self.image,
-                                  self.result_format.name, self.file_list]).
-                             encode("utf-8"))
+        sha = hashlib.sha256(
+            str(
+                [
+                    self.did,
+                    self.selection,
+                    self.tree_name,
+                    self.codegen,
+                    self.image,
+                    self.result_format.name,
+                    self.file_list,
+                ]
+            ).encode("utf-8")
+        )
         return sha.hexdigest()
 
 
@@ -126,7 +135,7 @@ class TransformStatus(BaseModel):
 
 class ResultFile(BaseModel):
     r"""
-    Record reporting the properties of a tranformed file result
+    Record reporting the properties of a transformed file result
     """
     filename: str
     size: int

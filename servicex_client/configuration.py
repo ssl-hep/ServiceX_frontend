@@ -60,7 +60,7 @@ class Configuration(BaseModel):
         :param config_path: If provided, use this as the path to the .servicex file.
                             Otherwise, search, starting from the current working directory
                             and look in enclosing directories
-        :return: Populated configuraton object
+        :return: Populated configuration object
         """
         if config_path:
             yaml_config = cls._add_from_path(Path(config_path), walk_up_tree=False)
