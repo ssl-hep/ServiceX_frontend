@@ -74,6 +74,16 @@ async def test_download_file(minio_adapter):
 
 
 @pytest.mark.asyncio
+async def test_download_bad_filename(minio_adapter):
+    minio_adapter.minio.fget_object = AsyncMock(return_value="t::est.txt")
+    result = await minio_adapter.download_file("t::est.txt", local_dir="/tmp/foo")
+    assert str(result).endswith("t__est.txt")
+    minio_adapter.minio.fget_object.assert_called_with(
+        bucket_name="bucket", file_path="/tmp/foo/t__est.txt", object_name="t::est.txt"
+    )
+
+
+@pytest.mark.asyncio
 async def test_get_signed_url(minio_adapter):
     minio_adapter.minio.get_presigned_url = AsyncMock(
         return_value="https://pre-signed.me"
