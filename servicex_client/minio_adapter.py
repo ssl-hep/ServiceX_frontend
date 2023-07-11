@@ -35,6 +35,11 @@ from miniopy_async import Minio
 from servicex_client.models import ResultFile, TransformStatus
 
 
+def _sanitize_filename(fname: str):
+    "No matter the string given, make it an acceptable filename on all platforms"
+    return fname.replace("*", "_").replace(";", "_").replace(":", "_")
+
+
 class MinioAdapter:
     MAX_PATH_LEN = 32
 
@@ -80,7 +85,9 @@ class MinioAdapter:
         path = Path(
             os.path.join(
                 local_dir,
-                self.hash_path(object_name) if shorten_filename else object_name,
+                _sanitize_filename(
+                    self.hash_path(object_name) if shorten_filename else object_name,
+                ),
             )
         )
 
