@@ -38,16 +38,16 @@ from servicex_client.models import ResultFile, TransformStatus
 class MinioAdapter:
     MAX_PATH_LEN = 32
 
-    def __init__(self, endpoint_host: str,
-                 secure: bool,
-                 access_key: str,
-                 secret_key: str,
-                 bucket: str):
+    def __init__(
+        self,
+        endpoint_host: str,
+        secure: bool,
+        access_key: str,
+        secret_key: str,
+        bucket: str,
+    ):
         self.minio = Minio(
-            endpoint_host,
-            access_key=access_key,
-            secret_key=secret_key,
-            secure=secure
+            endpoint_host, access_key=access_key, secret_key=secret_key, secure=secure
         )
 
         self.bucket = bucket
@@ -59,36 +59,39 @@ class MinioAdapter:
             secure=transform.minio_secured,
             access_key=transform.minio_access_key,
             secret_key=transform.minio_secret_key,
-            bucket=transform.request_id
+            bucket=transform.request_id,
         )
 
     async def list_bucket(self) -> List[ResultFile]:
         objects = await self.minio.list_objects(self.bucket)
-        return [ResultFile(
-            filename=obj.object_name,
-            size=obj.size,
-            extension=obj.object_name.split(".")[-1]
-        ) for obj in objects]
+        return [
+            ResultFile(
+                filename=obj.object_name,
+                size=obj.size,
+                extension=obj.object_name.split(".")[-1],
+            )
+            for obj in objects
+        ]
 
-    async def download_file(self, object_name: str,
-                            local_dir: str,
-                            shorten_filename: bool = False) -> Path:
+    async def download_file(
+        self, object_name: str, local_dir: str, shorten_filename: bool = False
+    ) -> Path:
         os.makedirs(local_dir, exist_ok=True)
-        path = Path(os.path.join(local_dir,
-                                 self.hash_path(object_name) if shorten_filename else object_name))
+        path = Path(
+            os.path.join(
+                local_dir,
+                self.hash_path(object_name) if shorten_filename else object_name,
+            )
+        )
 
         _ = await self.minio.fget_object(
-            bucket_name=self.bucket,
-            object_name=object_name,
-            file_path=path.as_posix()
+            bucket_name=self.bucket, object_name=object_name, file_path=path.as_posix()
         )
         return path.resolve()
 
     async def get_signed_url(self, object_name: str) -> str:
         return await self.minio.get_presigned_url(
-            bucket_name=self.bucket,
-            object_name=object_name,
-            method="GET"
+            bucket_name=self.bucket, object_name=object_name, method="GET"
         )
 
     @classmethod
@@ -101,10 +104,13 @@ class MinioAdapter:
         :return: Safe path string
         """
         if len(file_name) > cls.MAX_PATH_LEN:
-            hash = sha1(file_name.encode('utf-8')).hexdigest()
-            return ''.join([
-                '_', hash,
-                file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1):],
-            ])
+            hash = sha1(file_name.encode("utf-8")).hexdigest()
+            return "".join(
+                [
+                    "_",
+                    hash,
+                    file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1) :],
+                ]
+            )
         else:
             return file_name
