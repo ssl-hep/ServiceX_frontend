@@ -29,7 +29,7 @@ import abc
 import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
-from typing import List
+from typing import List, Optional
 
 try:
     import pandas as pd
@@ -45,30 +45,40 @@ except ModuleNotFoundError:
     pass
 
 import rich
-from rich.progress import Progress, TaskID, TextColumn, BarColumn, MofNCompleteColumn, \
-    TimeRemainingColumn
+from rich.progress import (
+    Progress,
+    TaskID,
+    TextColumn,
+    BarColumn,
+    MofNCompleteColumn,
+    TimeRemainingColumn,
+)
 
 from servicex_client.configuration import Configuration
-from servicex_client.minio_adpater import MinioAdapter
-from servicex_client.models import TransformRequest, ResultDestination, ResultFormat, \
-    Status, TransformedResults
+from servicex_client.minio_adapter import MinioAdapter
+from servicex_client.models import (
+    TransformRequest,
+    ResultDestination,
+    ResultFormat,
+    Status,
+    TransformedResults,
+)
 from servicex_client.query_cache import QueryCache
 from servicex_client.servicex_adapter import ServiceXAdapter
 
 
 class Dataset(ABC):
-
     def __init__(
-            self,
-            dataset_identifier: DID = None,
-            title: str = "ServiceX Client",
-            codegen: str = None,
-            sx_adapter: ServiceXAdapter = None,
-            config: Configuration = None,
-            query_cache: QueryCache = None,
-            servicex_polling_interval: int = 10,
-            minio_polling_interval: int = 5,
-            result_format: ResultFormat = None
+        self,
+        dataset_identifier: DID,
+        title: str,
+        codegen: str,
+        sx_adapter: ServiceXAdapter,
+        config: Configuration,
+        query_cache: QueryCache,
+        servicex_polling_interval: int = 10,
+        minio_polling_interval: int = 5,
+        result_format: ResultFormat = ResultFormat.parquet,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -117,15 +127,17 @@ class Dataset(ABC):
     @property
     def transform_request(self):
         if not self.result_format:
-            raise ValueError("Unable to determine the result file format. Use set_result_format method")  # NOQA E501
+            raise ValueError(
+                "Unable to determine the result file format. Use set_result_format method"
+            )  # NOQA E501
 
         sx_request = TransformRequest(
             title=self.title,
             codegen=self.codegen,
-            result_destination=ResultDestination.object_store,
-            result_format=self.result_format,
-            selection=self.generate_selection_string()
-        )
+            result_destination=ResultDestination.object_store,  # type: ignore
+            result_format=self.result_format,  # type: ignore
+            selection=self.generate_selection_string(),
+        )  # type: ignore
         # Transfer the DID into the transform request
         self.dataset_identifier.populate_transform_request(sx_request)
         return sx_request
@@ -140,7 +152,9 @@ class Dataset(ABC):
         self.result_format = result_format
         return self
 
-    async def submit_and_download(self, signed_urls_only: bool = False) -> TransformedResults:
+    async def submit_and_download(
+        self, signed_urls_only: bool = False
+    ) -> Optional[TransformedResults]:
         """
         Submit the transform request to ServiceX. Poll the transform status to see when
         the transform completes and to get the number of files in the dataset along with
@@ -148,7 +162,7 @@ class Dataset(ABC):
 
         :param signed_urls_only: Set to true to skip actually downloading the files and
                                  just return pre-signed urls
-        :return: Transform results object which contains the list of files downlaoded
+        :return: Transform results object which contains the list of files downloaded
                  or the list of pre-signed urls
         """
         download_files_task = None
@@ -168,9 +182,11 @@ class Dataset(ABC):
                 raise task.exception()
 
             if self.current_status.files_failed:
-                rich.print(f"[bold red]Transforms completed with failures[/bold red] "
-                           f"{self.current_status.files_failed} files failed out of "
-                           f"{self.current_status.files}")
+                rich.print(
+                    f"[bold red]Transforms completed with failures[/bold red] "
+                    f"{self.current_status.files_failed} files failed out of "
+                    f"{self.current_status.files}"
+                )
             else:
                 rich.print("Transforms completed successfully")
 
@@ -182,8 +198,12 @@ class Dataset(ABC):
         # And that we grabbed the resulting files in the way that the user requested
         # (Downloaded, or obtained pre-signed URLs)
         if cached_record:
-            if signed_urls_only and cached_record.signed_url_list or \
-                    not signed_urls_only and cached_record.file_list:
+            if (
+                signed_urls_only
+                and cached_record.signed_url_list
+                or not signed_urls_only
+                and cached_record.file_list
+            ):
                 rich.print("Returning results from cache")
                 return cached_record
 
@@ -191,39 +211,44 @@ class Dataset(ABC):
         # has been run, but we just didn't get the files from object store in the way
         # requested by user
         with Progress(
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                MofNCompleteColumn(),
-                TimeRemainingColumn(compact=True, elapsed_when_finished=True),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeRemainingColumn(compact=True, elapsed_when_finished=True),
         ) as progress:
-
             if not cached_record:
-                transform_progress = progress.add_task("Transform", start=False, total=None)
+                transform_progress = progress.add_task(
+                    "Transform", start=False, total=None
+                )
             else:
                 self.request_id = cached_record.request_id
                 await self.retrieve_current_transform_status()
 
-            minio_progress_bar_title = "Download" \
-                if not signed_urls_only else "Signing URLS"
+            minio_progress_bar_title = (
+                "Download" if not signed_urls_only else "Signing URLS"
+            )
 
-            download_progress = progress.add_task(minio_progress_bar_title,
-                                                  start=False, total=None)
+            download_progress = progress.add_task(
+                minio_progress_bar_title, start=False, total=None
+            )
 
             if not cached_record:
                 self.request_id = await self.servicex.submit_transform(sx_request)
 
                 monitor_task = loop.create_task(
-                    self.transform_status_listener(progress,
-                                                   transform_progress,
-                                                   download_progress))
+                    self.transform_status_listener(
+                        progress, transform_progress, download_progress
+                    )
+                )
                 monitor_task.add_done_callback(transform_complete)
             else:
                 self.request_id = cached_record.request_id
 
             download_files_task = loop.create_task(
-                self.download_files(signed_urls_only,
-                                    progress, download_progress,
-                                    cached_record))
+                self.download_files(
+                    signed_urls_only, progress, download_progress, cached_record
+                )
+            )
 
             try:
                 signed_urls = []
@@ -240,10 +265,13 @@ class Dataset(ABC):
 
                 # Update the cache
                 if not cached_record:
-                    transform_report = self.cache.cache_transform(sx_request,
-                                                                  self.current_status,
-                                                                  self.download_path.as_posix(),
-                                                                  downloaded_files, signed_urls)
+                    transform_report = self.cache.cache_transform(
+                        sx_request,
+                        self.current_status,
+                        self.download_path.as_posix(),
+                        downloaded_files,
+                        signed_urls,
+                    )
                 else:
                     self.cache.update_record(cached_record)
                     transform_report = cached_record
@@ -252,8 +280,9 @@ class Dataset(ABC):
             except CancelledError:
                 rich.print_json("Aborted file downloads due to transform failure")
 
-    async def transform_status_listener(self, progress: Progress,
-                                        progress_task: TaskID, download_task: TaskID):
+    async def transform_status_listener(
+        self, progress: Progress, progress_task: TaskID, download_task: TaskID
+    ):
         """
         Poll ServiceX for the status of a transform. Update progress bars and keep track
         of status. Once we know the number of files in the dataset, update the progress
@@ -278,7 +307,9 @@ class Dataset(ABC):
                 progress.update(download_task, total=final_count)
                 progress.start_task(download_task)
 
-            progress.update(progress_task, completed=self.current_status.files_completed)
+            progress.update(
+                progress_task, completed=self.current_status.files_completed
+            )
 
             if self.current_status.status == Status.complete:
                 self.files_completed = self.current_status.files_completed
@@ -304,10 +335,13 @@ class Dataset(ABC):
         if not self.minio:
             self.minio = MinioAdapter.for_transform(self.current_status)
 
-    async def download_files(self, signed_urls_only: bool,
-                             progress: Progress,
-                             download_progress: TaskID,
-                             cached_record: TransformedResults) -> List[str]:
+    async def download_files(
+        self,
+        signed_urls_only: bool,
+        progress: Progress,
+        download_progress: TaskID,
+        cached_record: Optional[TransformedResults],
+    ) -> List[str]:
         """
         Task to monitor the list of files in the transform output's bucket. Any new files
         will be downloaded.
@@ -317,19 +351,25 @@ class Dataset(ABC):
         download_tasks = []
         loop = asyncio.get_running_loop()
 
-        async def download_file(minio: MinioAdapter, filename: str,
-                                progress: Progress,
-                                download_progress: TaskID,
-                                shorten_filename: bool = False):
-            downloaded_filename = await minio.download_file(filename,
-                                                            self.download_path,
-                                                            shorten_filename=shorten_filename)
+        async def download_file(
+            minio: MinioAdapter,
+            filename: str,
+            progress: Progress,
+            download_progress: TaskID,
+            shorten_filename: bool = False,
+        ):
+            downloaded_filename = await minio.download_file(
+                filename, self.download_path, shorten_filename=shorten_filename
+            )
             result_uris.append(downloaded_filename.as_posix())
             progress.advance(download_progress)
 
-        async def get_signed_url(minio: MinioAdapter, filename: str,
-                                 progress: Progress,
-                                 download_progress: TaskID):
+        async def get_signed_url(
+            minio: MinioAdapter,
+            filename: str,
+            progress: Progress,
+            download_progress: TaskID,
+        ):
             print(f"get signed url for {filename}")
             url = await minio.get_signed_url(filename)
             result_uris.append(url)
@@ -345,22 +385,34 @@ class Dataset(ABC):
                         if signed_urls_only:
                             download_tasks.append(
                                 loop.create_task(
-                                    get_signed_url(self.minio, file.filename,
-                                                   progress, download_progress))
+                                    get_signed_url(
+                                        self.minio,
+                                        file.filename,
+                                        progress,
+                                        download_progress,
+                                    )
+                                )
                             )
                         else:
                             download_tasks.append(
                                 loop.create_task(
-                                    download_file(self.minio, file.filename,
-                                                  progress, download_progress,
-                                                  shorten_filename=self.configuration.shortened_downloaded_filename))) # NOQA 501
+                                    download_file(
+                                        self.minio,
+                                        file.filename,
+                                        progress,
+                                        download_progress,
+                                        shorten_filename=self.configuration.shortened_downloaded_filename,
+                                    )
+                                )
+                            )  # NOQA 501
                         files_seen.add(file.filename)
 
             # Once the transform is complete we can stop polling since all the files
             # are guaranteed to be in the bucket. Also, if we are just downloading or
             # signing urls for a previous transform then we know it is complete as well
-            if cached_record or \
-                    (self.current_status and self.current_status.status == Status.complete):
+            if cached_record or (
+                self.current_status and self.current_status.status == Status.complete
+            ):
                 break
 
         # Now just wait until all of our tasks complete
@@ -390,7 +442,9 @@ class Dataset(ABC):
         """
         self.result_format = ResultFormat.parquet
         transformed_result = await self.as_files_async()
-        dataframes = pd.concat([pandas.read_parquet(p) for p in transformed_result.file_list])
+        dataframes = pd.concat(
+            [pandas.read_parquet(p) for p in transformed_result.file_list]
+        )
         return dataframes
 
     def as_pandas(self):
