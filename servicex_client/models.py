@@ -66,11 +66,11 @@ class TransformRequest(BaseModel):
     """
     title: Optional[str] = None
     did: Optional[str] = None
-    file_list: Optional[List[str]] = Field(None, alias="file-list")
+    file_list: Optional[List[str]] = Field(default=None, alias="file-list")
     selection: str
     image: Optional[str] = None
     codegen: str
-    tree_name: Optional[str] = Field(None, alias="tree-name")
+    tree_name: Optional[str] = Field(default=None, alias="tree-name")
     result_destination: ResultDestination = Field(alias="result-destination")
     result_format: ResultFormat = Field(alias="result-format")
 

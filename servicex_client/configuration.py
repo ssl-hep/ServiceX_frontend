@@ -42,8 +42,8 @@ class Endpoint(BaseModel):
 
 class Configuration(BaseModel):
     api_endpoints: List[Endpoint]
-    default_endpoint: Optional[str] = Field(alias="default-endpoint")
-    cache_path: Optional[str] = Field(alias="cache-path")
+    default_endpoint: Optional[str] = Field(alias="default-endpoint", default=None)
+    cache_path: Optional[str] = Field(alias="cache-path", default=None)
     shortened_downloaded_filename: Optional[bool] = False
 
     class Config:

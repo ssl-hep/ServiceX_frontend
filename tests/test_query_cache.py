@@ -64,7 +64,7 @@ def test_hash(transform_request):
 
 def test_cache_transform(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
         cache.cache_transform(
             transform=transform_request,
@@ -116,7 +116,7 @@ def test_cache_transform(transform_request, completed_status):
 
 def test_cache_path(completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
         path_bits = os.path.split(cache.cache_path_for_transform(completed_status))
         assert path_bits[0] == temp_dir
@@ -126,7 +126,7 @@ def test_cache_path(completed_status):
 
 def test_record_delete(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
         cache.cache_transform(
             transform=transform_request,
