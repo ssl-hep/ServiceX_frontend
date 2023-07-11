@@ -109,7 +109,7 @@ class MinioAdapter:
                 [
                     "_",
                     hash,
-                    file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1) :],
+                    file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1) :],  # noqa: E203
                 ]
             )
         else:

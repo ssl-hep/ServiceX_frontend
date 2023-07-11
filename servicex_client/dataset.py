@@ -401,7 +401,7 @@ class Dataset(ABC):
                                         file.filename,
                                         progress,
                                         download_progress,
-                                        shorten_filename=self.configuration.shortened_downloaded_filename,
+                                        shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
                                     )
                                 )
                             )  # NOQA 501
