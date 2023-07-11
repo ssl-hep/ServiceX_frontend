@@ -29,7 +29,18 @@ from __future__ import annotations
 
 import ast
 import copy
-from typing import Optional, Any, TypeVar, cast, List, Union, Callable, Iterable, Dict
+from typing import (
+    Optional,
+    Any,
+    Type,
+    TypeVar,
+    cast,
+    List,
+    Union,
+    Callable,
+    Iterable,
+    Dict,
+)
 from pydantic import typing
 from qastle import python_ast_to_text_ast
 
@@ -53,27 +64,36 @@ class FuncADLDataset(Dataset, EventDataset[T]):
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
 
-    async def execute_result_async(self, a: ast.AST, title: Optional[str] = None) -> Any:
+    async def execute_result_async(
+        self, a: ast.AST, title: Optional[str] = None
+    ) -> Any:
         pass
 
     def check_data_format_request(self, f_name: str):
         pass
 
-    def __init__(self, dataset_identifier: DID,
-                 sx_adapter: ServiceXAdapter = None,
-                 title: str = "ServiceX Client",
-                 codegen: str = None,
-                 config: Configuration = None,
-                 query_cache: QueryCache = None,
-                 result_format: Optional[ResultFormat] = None
-                 ):
-        super().__init__(dataset_identifier=dataset_identifier,
-                         title=title,
-                         codegen=codegen,
-                         sx_adapter=sx_adapter,
-                         config=config,
-                         query_cache=query_cache,
-                         result_format=result_format)
+    def __init__(
+        self,
+        dataset_identifier: DID,
+        sx_adapter: ServiceXAdapter = None,
+        title: str = "ServiceX Client",
+        codegen: str = None,
+        config: Configuration = None,
+        query_cache: QueryCache = None,
+        result_format: Optional[ResultFormat] = None,
+        item_type: Type = Any,
+    ):
+        Dataset.__init__(
+            self,
+            dataset_identifier=dataset_identifier,
+            title=title,
+            codegen=codegen,
+            sx_adapter=sx_adapter,
+            config=config,
+            query_cache=query_cache,
+            result_format=result_format,
+        )
+        EventDataset.__init__(self, item_type=item_type)
 
     def clone_with_new_ast(self, new_ast: ast.AST, new_type: typing.Any):
         """
@@ -142,7 +162,9 @@ class FuncADLDataset(Dataset, EventDataset[T]):
     def generate_selection_string(self) -> str:
         return self.generate_qastle(self.query_ast)
 
-    def Where(self, filter: Union[str, ast.Lambda, Callable[[T], bool]]) -> FuncADLDataset[T]:
+    def Where(
+        self, filter: Union[str, ast.Lambda, Callable[[T], bool]]
+    ) -> FuncADLDataset[T]:
         r"""
         Filter the object stream, allowing only items for which `filter` evaluates as true through.
 

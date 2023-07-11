@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import tempfile
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -146,3 +147,27 @@ def test_transform_request():
         )
         print("Qastle is ", q)
         cache.close()
+
+
+def test_type():
+    "Test that the item type for a dataset is correctly propagated"
+
+    class my_type_info:
+        "typespec for possible event type"
+
+        def fork_it_over(self) -> int:
+            ...
+
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = FuncADLDataset[my_type_info](
+        dataset_identifier=did, codegen="uproot", item_type=my_type_info
+    )
+
+    assert datasource.item_type == my_type_info
+
+
+def test_type_any():
+    "Test the type is any if no type is given"
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = FuncADLDataset(dataset_identifier=did, codegen="uproot")
+    assert datasource.item_type == Any
