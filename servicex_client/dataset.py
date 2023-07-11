@@ -66,6 +66,8 @@ from servicex_client.models import (
 from servicex_client.query_cache import QueryCache
 from servicex_client.servicex_adapter import ServiceXAdapter
 
+from make_it_sync import make_sync
+
 
 class Dataset(ABC):
     def __init__(
@@ -426,12 +428,7 @@ class Dataset(ABC):
         """
         return await self.submit_and_download()
 
-    def as_files(self) -> TransformedResults:
-        r"""
-        Submit the transform and request all the resulting files to be downloaded
-        :return: TransformResult instance with the list of complete paths to the downloaded files
-        """
-        return asyncio.run(self.submit_and_download())
+    as_files = make_sync(as_files_async)
 
     async def as_pandas_async(self):
         r"""
@@ -447,12 +444,7 @@ class Dataset(ABC):
         )
         return dataframes
 
-    def as_pandas(self):
-        r"""
-        Synchronous version of as_pandas_asynch
-        :return:
-        """
-        return asyncio.run(self.as_pandas_async())
+    as_pandas = make_sync(as_pandas_async)
 
     async def as_signed_urls(self) -> TransformedResults:
         r"""

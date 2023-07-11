@@ -29,6 +29,7 @@ import asyncio
 from typing import Coroutine, List
 
 from servicex_client.models import TransformedResults
+from make_it_sync import make_sync
 
 
 class DatasetGroup:
@@ -50,11 +51,4 @@ class DatasetGroup:
         """
         return await asyncio.gather(*self.datasets)
 
-    def gather_results(self) -> List[TransformedResults]:
-        r"""
-        Synchronous wait for all of the transform requests in the group to complete
-
-        :return: List of TransformedResults instances. Use the title property to relate the
-                 result to your submission
-        """
-        return asyncio.run(self.gather_results_async())
+    gather_results = make_sync(gather_results_async)
