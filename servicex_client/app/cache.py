@@ -73,6 +73,7 @@ def list():
 def clear(force: bool = typer.Option(False, "-y", help="Force, don't has permission")):
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
+        sx.query_cache.close()
         shutil.rmtree(sx.config.cache_path)
         rich.print("Cache cleared")
 
