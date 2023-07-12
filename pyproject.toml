@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "servicex"
-version = "2.0.0-alpha.1"
+version = "3.0.0-alpha.1"
 description = ""
 authors = [
     "Ben Galewsky <bengal1@illinois.edu>",
