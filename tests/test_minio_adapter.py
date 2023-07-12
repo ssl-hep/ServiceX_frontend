@@ -31,13 +31,13 @@ import pytest
 from miniopy_async.datatypes import Object
 from pytest_asyncio import fixture
 
-from servicex_client.minio_adpater import MinioAdapter
+from servicex_client.minio_adapter import MinioAdapter
 from servicex_client.models import ResultFile
 
 
 @fixture
 def minio_adapter() -> MinioAdapter:
-    return MinioAdapter('localhost', False, 'access_key', 'secret_key', 'bucket')
+    return MinioAdapter("localhost", False, "access_key", "secret_key", "bucket")
 
 
 @pytest.mark.asyncio
@@ -51,30 +51,35 @@ async def test_initialize_from_status(completed_status):
 
 @pytest.mark.asyncio
 async def test_list_bucket(minio_adapter):
-    files = [ResultFile(filename='test.txt', size=10, extension='txt')]
-    minio_adapter.minio.list_objects = AsyncMock(return_value=[
-        Object(object_name=file.filename, size=file.size, bucket_name="bucket") for file in files])
+    files = [ResultFile(filename="test.txt", size=10, extension="txt")]
+    minio_adapter.minio.list_objects = AsyncMock(
+        return_value=[
+            Object(object_name=file.filename, size=file.size, bucket_name="bucket")
+            for file in files
+        ]
+    )
     result = await minio_adapter.list_bucket()
     assert result == files
-    minio_adapter.minio.list_objects.assert_called_with('bucket')
+    minio_adapter.minio.list_objects.assert_called_with("bucket")
 
 
 @pytest.mark.asyncio
 async def test_download_file(minio_adapter):
-    minio_adapter.minio.fget_object = AsyncMock(return_value='test.txt')
-    result = await minio_adapter.download_file('test.txt', local_dir="/tmp/foo")
-    assert str(result).endswith('test.txt')
-    minio_adapter.minio.fget_object.assert_called_with(bucket_name='bucket',
-                                                       file_path='/tmp/foo/test.txt',
-                                                       object_name='test.txt')
+    minio_adapter.minio.fget_object = AsyncMock(return_value="test.txt")
+    result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
+    assert str(result).endswith("test.txt")
+    minio_adapter.minio.fget_object.assert_called_with(
+        bucket_name="bucket", file_path="/tmp/foo/test.txt", object_name="test.txt"
+    )
 
 
 @pytest.mark.asyncio
 async def test_get_signed_url(minio_adapter):
     minio_adapter.minio.get_presigned_url = AsyncMock(
-        return_value='https://pre-signed.me')
-    result = await minio_adapter.get_signed_url('test.txt')
+        return_value="https://pre-signed.me"
+    )
+    result = await minio_adapter.get_signed_url("test.txt")
     assert result == "https://pre-signed.me"
-    minio_adapter.minio.get_presigned_url.assert_called_with(bucket_name='bucket',
-                                                             method='GET',
-                                                             object_name='test.txt')
+    minio_adapter.minio.get_presigned_url.assert_called_with(
+        bucket_name="bucket", method="GET", object_name="test.txt"
+    )

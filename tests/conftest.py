@@ -29,8 +29,13 @@ from datetime import datetime
 
 from pytest_asyncio import fixture
 
-from servicex_client.models import TransformRequest, ResultDestination, ResultFormat, \
-    TransformStatus, TransformedResults
+from servicex_client.models import (
+    TransformRequest,
+    ResultDestination,
+    ResultFormat,
+    TransformStatus,
+    TransformedResults,
+)
 
 
 @fixture
@@ -40,55 +45,73 @@ def transform_request() -> TransformRequest:
         did="rucio://foo.bar",
         selection="(call EventDataset)",
         codegen="uproot",
-        result_destination=ResultDestination.object_store,
-        result_format=ResultFormat.parquet
-    )
+        result_destination=ResultDestination.object_store,  # type: ignore
+        result_format=ResultFormat.parquet,  # type: ignore
+    )  # type: ignore
 
 
 @fixture
 def transform_status_response() -> dict:
-    return {'requests': [{'request_id': 'b8c508d0-ccf2-4deb-a1f7-65c839eebabf',
-                          'did': 'File List Provided in Request', 'columns': None,
-                          'selection': "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA
-                          'tree-name': None,
-                          'image': 'sslhep/servicex_func_adl_uproot_transformer:uproot4',
-                          'workers': None, 'result-destination': 'object-store',
-                          'result-format': 'parquet',
-                          'workflow-name': 'selection_codegen',
-                          'generated-code-cm': 'b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source',  # NOQA
-                          'status': 'Submitted', 'failure-info': None,
-                          'app-version': 'develop',
-                          'code-gen-image': 'sslhep/servicex_code_gen_func_adl_uproot:v1.2.0',
-                          'files': 1, 'files-completed': 0, 'files-failed': 0,
-                          'files-remaining': 1,
-                          'submit-time': '2023-05-25T20:05:05.564137Z',
-                          'finish-time': 'None'}]}
+    return {
+        "requests": [
+            {
+                "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+                "did": "File List Provided in Request",
+                "columns": None,
+                "selection": "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA
+                "tree-name": None,
+                "image": "sslhep/servicex_func_adl_uproot_transformer:uproot4",
+                "workers": None,
+                "result-destination": "object-store",
+                "result-format": "parquet",
+                "workflow-name": "selection_codegen",
+                "generated-code-cm": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source",  # NOQA
+                "status": "Submitted",
+                "failure-info": None,
+                "app-version": "develop",
+                "code-gen-image": "sslhep/servicex_code_gen_func_adl_uproot:v1.2.0",
+                "files": 1,
+                "files-completed": 0,
+                "files-failed": 0,
+                "files-remaining": 1,
+                "submit-time": "2023-05-25T20:05:05.564137Z",
+                "finish-time": "None",
+            }
+        ]
+    }
 
 
 @fixture
 def completed_status() -> TransformStatus:
     return TransformStatus(
-        **{'request_id': 'b8c508d0-ccf2-4deb-a1f7-65c839eebabf',
-           'did': 'File List Provided in Request',
-           'columns': None,
-           'selection': "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA
-           'tree-name': None,
-           'image': 'sslhep/servicex_func_adl_uproot_transformer:uproot4',
-           'workers': None, 'result-destination': 'object-store',
-           'result-format': 'parquet',
-           'workflow-name': 'selection_codegen',
-           'generated-code-cm': 'b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source',
-           'status': 'Submitted', 'failure-info': None,
-           'app-version': 'develop',
-           'code-gen-image': 'sslhep/servicex_code_gen_func_adl_uproot:v1.2.0',
-           'files': 1, 'files-completed': 0, 'files-failed': 0,
-           'files-remaining': 1,
-           'submit-time': '2023-05-25T20:05:05.564137Z',
-           'finish-time': 'None',
-           "minio-endpoint": "minio.org:9000",
-           "minio-secured": False,
-           "minio-access-key": "miniouser",
-           "minio-secret-key": "secret"})
+        **{
+            "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+            "did": "File List Provided in Request",
+            "columns": None,
+            "selection": "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA
+            "tree-name": None,
+            "image": "sslhep/servicex_func_adl_uproot_transformer:uproot4",
+            "workers": None,
+            "result-destination": "object-store",
+            "result-format": "parquet",
+            "workflow-name": "selection_codegen",
+            "generated-code-cm": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source",
+            "status": "Submitted",
+            "failure-info": None,
+            "app-version": "develop",
+            "code-gen-image": "sslhep/servicex_code_gen_func_adl_uproot:v1.2.0",
+            "files": 1,
+            "files-completed": 0,
+            "files-failed": 0,
+            "files-remaining": 1,
+            "submit-time": "2023-05-25T20:05:05.564137Z",
+            "finish-time": "None",
+            "minio-endpoint": "minio.org:9000",
+            "minio-secured": False,
+            "minio-access-key": "miniouser",
+            "minio-secret-key": "secret",
+        }
+    )
 
 
 @fixture
@@ -103,5 +126,5 @@ def transformed_result() -> TransformedResults:
         file_list=["/tmp/1.root", "/tmp/2.root"],
         signed_url_list=[],
         files=2,
-        result_format=ResultFormat.root_file
+        result_format=ResultFormat.root_file,
     )

@@ -42,8 +42,8 @@ class Endpoint(BaseModel):
 
 class Configuration(BaseModel):
     api_endpoints: List[Endpoint]
-    default_endpoint: Optional[str] = Field(alias="default-endpoint")
-    cache_path: Optional[str] = Field(alias="cache-path")
+    default_endpoint: Optional[str] = Field(alias="default-endpoint", default=None)
+    cache_path: Optional[str] = Field(alias="cache-path", default=None)
     shortened_downloaded_filename: Optional[bool] = False
 
     class Config:
@@ -60,7 +60,7 @@ class Configuration(BaseModel):
         :param config_path: If provided, use this as the path to the .servicex file.
                             Otherwise, search, starting from the current working directory
                             and look in enclosing directories
-        :return: Populated configuraton object
+        :return: Populated configuration object
         """
         if config_path:
             yaml_config = cls._add_from_path(Path(config_path), walk_up_tree=False)
@@ -74,7 +74,7 @@ class Configuration(BaseModel):
             raise NameError("Can't find .servicex config file " + path_extra)
 
     @classmethod
-    def _add_from_path(cls, path: Path = None, walk_up_tree: bool = False):
+    def _add_from_path(cls, path: Optional[Path] = None, walk_up_tree: bool = False):
         config = None
         if path:
             path.resolve()

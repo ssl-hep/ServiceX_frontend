@@ -35,7 +35,7 @@ from rich.progress import Progress
 from rich.table import Table
 
 from servicex_client.app.cli_options import url_cli_option, backend_cli_option
-from servicex_client.minio_adpater import MinioAdapter
+from servicex_client.minio_adapter import MinioAdapter
 from servicex_client.models import Status, ResultFile
 from servicex_client.servicex_client import ServiceXClient
 
@@ -52,11 +52,12 @@ def transforms():
 
 @transforms_app.command(no_args_is_help=True)
 def list(
-        url: Optional[str] = url_cli_option,
-        backend: Optional[str] = backend_cli_option,
-        complete: Optional[bool] = typer.Option(
-            None, "--complete", help="Only show successfully completed transforms"
-        )):
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
+    complete: Optional[bool] = typer.Option(
+        None, "--complete", help="Only show successfully completed transforms"
+    ),
+):
     sx = ServiceXClient(url=url, backend=backend)
     table = Table(title="ServiceX Transforms")
     table.add_column("Transform ID")
@@ -66,18 +67,18 @@ def list(
     transforms = sx.get_transforms()
     for t in transforms:
         if not complete or complete and t.status == Status.complete:
-            table.add_row(t.request_id, "Not implemented", t.status,
-                          str(t.files_completed))
+            table.add_row(
+                t.request_id, "Not implemented", t.status, str(t.files_completed)
+            )
 
     rich.print(table)
 
 
 @transforms_app.command(no_args_is_help=True)
 def files(
-        url: Optional[str] = url_cli_option,
-        backend: Optional[str] = backend_cli_option,
-        transform_id: str = typer.Option(None, "-t", "--transform-id",
-                                         help="Transform ID")
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
+    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
 ):
     async def list_files(sx: ServiceXClient, transform_id: str) -> List[ResultFile]:
         transform = await sx.get_transform_status_async(transform_id)
@@ -97,17 +98,18 @@ def files(
 
 @transforms_app.command(no_args_is_help=True)
 def download(
-        url: Optional[str] = url_cli_option,
-        backend: Optional[str] = backend_cli_option,
-        transform_id: str = typer.Option(None, "-t", "--transform-id",
-                                         help="Transform ID"),
-        local_dir: str = typer.Option(".", "-d", help="Local dir to download to")
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
+    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
 ):
     async def download_files(sx: ServiceXClient, transform_id: str, local_dir):
         async def download_with_progress(filename) -> Path:
-            p = await minio.download_file(filename,
-                                          local_dir,
-                                          shorten_filename=sx.config.shortened_downloaded_filename)
+            p = await minio.download_file(
+                filename,
+                local_dir,
+                shorten_filename=sx.config.shortened_downloaded_filename,
+            )
             progress.advance(download_progress)
             return p
 
@@ -117,9 +119,7 @@ def download(
         progress.update(download_progress, total=len(file_list))
         progress.start_task(download_progress)
 
-        tasks = [
-            download_with_progress(f.filename) for f in file_list
-        ]
+        tasks = [download_with_progress(f.filename) for f in file_list]
         return await asyncio.gather(*tasks)
 
     with Progress() as progress:

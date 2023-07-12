@@ -33,86 +33,93 @@ import pytest
 from servicex_client.configuration import Configuration
 from servicex_client.dataset_identifier import FileListDataset
 from servicex_client.func_adl_dataset import FuncADLDataset
-from servicex_client.models import TransformStatus, Status, ResultFile, \
-    ResultFormat
+from servicex_client.models import TransformStatus, Status, ResultFile, ResultFormat
 from servicex_client.query_cache import QueryCache
 
 transform_status = TransformStatus(
-    **{'request_id': 'b8c508d0-ccf2-4deb-a1f7-65c839eebabf',
-       'did': 'File List Provided in Request',
-       'columns': None,
-       'selection': "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA 501
-       'tree-name': None,
-       'image': 'sslhep/servicex_func_adl_uproot_transformer:uproot4',
-       'workers': None, 'result-destination': 'object-store',
-       'result-format': 'parquet',
-       'workflow-name': 'selection_codegen',
-       'generated-code-cm': 'b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source',
-       'status': 'Complete',
-       'failure-info': None,
-       'app-version': 'develop',
-       'code-gen-image': 'sslhep/servicex_code_gen_func_adl_uproot:v1.2.0',
-       'files': 0, 'files-completed': 0, 'files-failed': 0,
-       'files-remaining': None,
-       'submit-time': '2023-05-25T20:05:05.564137Z',
-       'finish-time': 'None',
-       "minio-endpoint": "minio.org:9000",
-       "minio-secured": False,
-       "minio-access-key": "miniouser",
-       "minio-secret-key": "letmein"})
+    **{
+        "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+        "did": "File List Provided in Request",
+        "columns": None,
+        "selection": "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA 501
+        "tree-name": None,
+        "image": "sslhep/servicex_func_adl_uproot_transformer:uproot4",
+        "workers": None,
+        "result-destination": "object-store",
+        "result-format": "parquet",
+        "workflow-name": "selection_codegen",
+        "generated-code-cm": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source",
+        "status": "Complete",
+        "failure-info": None,
+        "app-version": "develop",
+        "code-gen-image": "sslhep/servicex_code_gen_func_adl_uproot:v1.2.0",
+        "files": 0,
+        "files-completed": 0,
+        "files-failed": 0,
+        "files-remaining": None,
+        "submit-time": "2023-05-25T20:05:05.564137Z",
+        "finish-time": "None",
+        "minio-endpoint": "minio.org:9000",
+        "minio-secured": False,
+        "minio-access-key": "miniouser",
+        "minio-secret-key": "letmein",
+    }
+)
 
 transform_status1 = transform_status.copy(
-    update={"status": Status.running,
-            "files-remaining": None,
-            "files-completed": 0,
-            "files": 0
-            })
+    update={
+        "status": Status.running,
+        "files-remaining": None,
+        "files-completed": 0,
+        "files": 0,
+    }
+)
 transform_status2 = transform_status.copy(
-    update={"status": Status.running,
-            "files-remaining": 1,
-            "files-completed": 1,
-            "files": 2
-            })
+    update={
+        "status": Status.running,
+        "files-remaining": 1,
+        "files-completed": 1,
+        "files": 2,
+    }
+)
 transform_status3 = transform_status.copy(
-    update={"status": Status.complete,
-            "files-remaining": 0,
-            "files-completed": 2,
-            "files": 2
-            })
+    update={
+        "status": Status.complete,
+        "files-remaining": 0,
+        "files-completed": 2,
+        "files": 2,
+    }
+)
 
-file1 = ResultFile(
-    filename="file1",
-    size=100,
-    extension="parquet"
-)
-file2 = ResultFile(
-    filename="file2",
-    size=100,
-    extension="parquet"
-)
+file1 = ResultFile(filename="file1", size=100, extension="parquet")
+file2 = ResultFile(filename="file2", size=100, extension="parquet")
 
 
 @pytest.mark.asyncio
 async def test_submit(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
-    servicex.submit_transform.return_value = {'request_id': '123-456-789"'}
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
     servicex.get_transform_status = AsyncMock()
-    servicex.get_transform_status.side_effect = [transform_status1,
-                                                 transform_status2,
-                                                 transform_status3]
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status3,
+    ]
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
-    mocker.patch("servicex_client.minio_adpater.MinioAdapter", return_value=mock_minio)
+    mocker.patch("servicex_client.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = FuncADLDataset(dataset_identifier=did,
-                                codegen="uproot",
-                                sx_adapter=servicex,
-                                query_cache=mock_cache)
+    datasource = FuncADLDataset(
+        dataset_identifier=did,
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+    )
     datasource.result_format = ResultFormat.parquet
     _ = await datasource.submit_and_download()
     print(mock_minio.download_file.call_args)
@@ -124,14 +131,18 @@ def test_transform_request():
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        datasource = FuncADLDataset(dataset_identifier=did,
-                                    codegen="uproot",
-                                    sx_adapter=servicex,
-                                    config=config, query_cache=cache)
+        datasource = FuncADLDataset(
+            dataset_identifier=did,
+            codegen="uproot",
+            sx_adapter=servicex,
+            config=config,
+            query_cache=cache,
+        )
 
-        q = datasource.Select(
-            lambda e: {'lep_pt': e['lep_pt']}) \
-            .set_result_format(ResultFormat.parquet) \
+        q = (
+            datasource.Select(lambda e: {"lep_pt": e["lep_pt"]})
+            .set_result_format(ResultFormat.parquet)
             .transform_request
+        )
         print("Qastle is ", q)
         cache.close()
