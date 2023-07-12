@@ -41,7 +41,9 @@ def _sanitize_filename(fname: str):
 
 
 class MinioAdapter:
-    MAX_PATH_LEN = 32
+    # This must be at least 40, the length of the `hash` we are using, or
+    # undefined things will happen.
+    MAX_PATH_LEN = 60
 
     def __init__(
         self,

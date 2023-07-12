@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
@@ -80,6 +81,43 @@ async def test_download_bad_filename(minio_adapter):
     assert str(result).endswith("t__est.txt")
     minio_adapter.minio.fget_object.assert_called_with(
         bucket_name="bucket", file_path="/tmp/foo/t__est.txt", object_name="t::est.txt"
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_short_filename_no_change(minio_adapter):
+    minio_adapter.minio.fget_object = AsyncMock(return_value="test.txt")
+    result = await minio_adapter.download_file(
+        "test.txt", local_dir="/tmp/foo", shorten_filename=True
+    )
+    assert str(result).endswith("test.txt")
+    minio_adapter.minio.fget_object.assert_called_with(
+        bucket_name="bucket", file_path="/tmp/foo/test.txt", object_name="test.txt"
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_short_filename_change(minio_adapter):
+    minio_adapter.minio.fget_object = AsyncMock(
+        return_value="test12345678901234567890123456789012345678901234567898012345678901234567890.txt"  # noqa: E501
+    )
+    result = await minio_adapter.download_file(
+        "test123456789012345678901234567890k12345678901234567898012345678901234567890.txt",
+        local_dir="/tmp/foo",
+        shorten_filename=True,
+    )
+
+    # Some of the filename should be left over still...
+    assert str(result).endswith("01234567890.txt")
+
+    # Make sure the length is right
+    assert len(Path(result).name) == 60
+
+    # Make sure we did the right call
+    minio_adapter.minio.fget_object.assert_called_with(
+        bucket_name="bucket",
+        file_path="/tmp/foo/_7405534c58a3f71e5d01cdd2f59356bda6f50a06678901234567890.txt",
+        object_name="test123456789012345678901234567890k12345678901234567898012345678901234567890.txt",  # noqa: E501
     )
 
 
