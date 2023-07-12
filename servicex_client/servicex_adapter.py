@@ -109,6 +109,8 @@ class ServiceXAdapter:
             if r.status_code == 401:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}")
+            elif r.status_code == 400:
+                raise ValueError(f"Invalid transform request: {r.json()['message']}")
         return r.json()['request_id']
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
