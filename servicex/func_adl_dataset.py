@@ -46,13 +46,13 @@ from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset
 from func_adl.object_stream import S
-from servicex_client.configuration import Configuration
-from servicex_client.dataset import Dataset
-from servicex_client.func_adl.util import has_tuple
-from servicex_client.models import ResultFormat
-from servicex_client.query_cache import QueryCache
-from servicex_client.servicex_adapter import ServiceXAdapter
-from servicex_client.types import DID
+from servicex.configuration import Configuration
+from servicex.dataset import Dataset
+from servicex.func_adl.util import has_tuple
+from servicex.models import ResultFormat
+from servicex.query_cache import QueryCache
+from servicex.servicex_adapter import ServiceXAdapter
+from servicex.types import DID
 
 T = TypeVar("T")
 
@@ -94,6 +94,10 @@ class FuncADLDataset(Dataset, EventDataset[T]):
             result_format=result_format,
         )
         EventDataset.__init__(self, item_type=item_type)
+        self.provided_qastle = None
+
+    def set_provided_qastle(self, qastle: str):
+        self.provided_qastle = qastle
 
     def clone_with_new_ast(self, new_ast: ast.AST, new_type: typing.Any):
         """
@@ -160,7 +164,10 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         return super().Select(f)
 
     def generate_selection_string(self) -> str:
-        return self.generate_qastle(self.query_ast)
+        if self.provided_qastle:
+            return self.provided_qastle
+        else:
+            return self.generate_qastle(self.query_ast)
 
     def Where(
         self, filter: Union[str, ast.Lambda, Callable[[T], bool]]

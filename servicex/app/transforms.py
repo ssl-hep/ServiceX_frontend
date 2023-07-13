@@ -34,10 +34,10 @@ import typer
 from rich.progress import Progress
 from rich.table import Table
 
-from servicex_client.app.cli_options import url_cli_option, backend_cli_option
-from servicex_client.minio_adapter import MinioAdapter
-from servicex_client.models import Status, ResultFile
-from servicex_client.servicex_client import ServiceXClient
+from servicex.app.cli_options import url_cli_option, backend_cli_option
+from servicex.minio_adapter import MinioAdapter
+from servicex.models import Status, ResultFile
+from servicex.servicex_client import ServiceXClient
 
 transforms_app = typer.Typer(name="transforms", no_args_is_help=True)
 

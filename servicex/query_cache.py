@@ -32,8 +32,8 @@ from typing import List, Optional
 
 from tinydb import TinyDB, Query, where
 
-from servicex_client.configuration import Configuration
-from servicex_client.models import TransformRequest, TransformStatus, TransformedResults
+from servicex.configuration import Configuration
+from servicex.models import TransformRequest, TransformStatus, TransformedResults
 
 
 class CacheException(Exception):

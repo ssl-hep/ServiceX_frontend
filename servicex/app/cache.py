@@ -32,7 +32,7 @@ import typer
 from rich.prompt import Confirm
 from rich.table import Table
 
-from servicex_client.servicex_client import ServiceXClient
+from servicex.servicex_client import ServiceXClient
 
 cache_app = typer.Typer(name="cache", no_args_is_help=True)
 

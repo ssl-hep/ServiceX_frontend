@@ -34,8 +34,8 @@ import httpx
 import pytest
 from pytest_asyncio import fixture
 
-from servicex_client.models import TransformRequest, ResultDestination, ResultFormat
-from servicex_client.servicex_adapter import ServiceXAdapter, AuthorizationError
+from servicex.models import TransformRequest, ResultDestination, ResultFormat
+from servicex.servicex_adapter import ServiceXAdapter, AuthorizationError
 
 
 @fixture
@@ -44,7 +44,7 @@ def servicex():
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.get')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transforms(get, servicex, transform_status_response):
     get.return_value = httpx.Response(200, json=transform_status_response)
     t = await servicex.get_transforms()
@@ -54,7 +54,7 @@ async def test_get_transforms(get, servicex, transform_status_response):
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.get')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transforms_auth_error(get, servicex):
     with pytest.raises(AuthorizationError):
         get.return_value = httpx.Response(401)
@@ -62,9 +62,9 @@ async def test_get_transforms_auth_error(get, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.get')
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.post')
-@patch('servicex_client.servicex_adapter.jwt.decode')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.get')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.post')
+@patch('servicex.servicex_adapter.jwt.decode')
 async def test_get_transforms_wlcg_bearer_token(decode, post, get, servicex,
                                                 transform_status_response):
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
@@ -87,8 +87,8 @@ async def test_get_transforms_wlcg_bearer_token(decode, post, get, servicex,
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.post')
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.get')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.post')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transforms_with_refresh(get, post, transform_status_response):
     servicex = ServiceXAdapter(url="https://servicex.org", refresh_token="refrescas")
     post.return_value = httpx.Response(200, json={"access_token": "luckycharms"})
@@ -102,7 +102,7 @@ async def test_get_transforms_with_refresh(get, post, transform_status_response)
                            headers={'Authorization': 'Bearer luckycharms'})
 
 
-@patch('servicex_client.servicex_adapter.httpx.Client.get')
+@patch('servicex.servicex_adapter.httpx.Client.get')
 def test_get_codegens(get, servicex):
     get.return_value = httpx.Response(200, json={
         "uproot": "http://uproot-codegen",
@@ -114,7 +114,7 @@ def test_get_codegens(get, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.post')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.post')
 async def test_submit(post, servicex):
     post.return_value = httpx.Response(200, json={"request_id": "123-456-789"})
     request = TransformRequest(
@@ -130,7 +130,7 @@ async def test_submit(post, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.get')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transform_status(get, servicex, transform_status_response):
     get.return_value = httpx.Response(200, json=transform_status_response['requests'][0])
     result = await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
@@ -138,7 +138,7 @@ async def test_get_transform_status(get, servicex, transform_status_response):
 
 
 @pytest.mark.asyncio
-@patch('servicex_client.servicex_adapter.httpx.AsyncClient.get')
+@patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transform_status_auth_error(get, servicex):
     with pytest.raises(AuthorizationError):
         get.return_value = httpx.Response(401)

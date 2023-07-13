@@ -29,7 +29,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from servicex_client.dataset_group import DatasetGroup
+from servicex.dataset_group import DatasetGroup
 
 
 @pytest.mark.asyncio

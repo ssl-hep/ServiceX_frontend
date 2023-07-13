@@ -29,7 +29,7 @@ from datetime import datetime
 
 from pytest_asyncio import fixture
 
-from servicex_client.models import (
+from servicex.models import (
     TransformRequest,
     ResultDestination,
     ResultFormat,

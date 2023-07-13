@@ -32,8 +32,8 @@ import pytest
 from miniopy_async.datatypes import Object
 from pytest_asyncio import fixture
 
-from servicex_client.minio_adapter import MinioAdapter
-from servicex_client.models import ResultFile
+from servicex.minio_adapter import MinioAdapter
+from servicex.models import ResultFile
 
 
 @fixture

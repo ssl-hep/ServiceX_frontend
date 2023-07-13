@@ -25,30 +25,30 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
-from typing import Coroutine, List
+from servicex import dataset
+from servicex import dataset_group
+from servicex import models
+from servicex import servicex_client
+from servicex import dataset_identifier
 
-from servicex_client.models import TransformedResults
-from make_it_sync import make_sync
+from .servicex_client import ServiceXClient
+from .dataset import Dataset
+from .models import ResultFormat, ResultDestination
+from .dataset_group import DatasetGroup
+from .dataset_identifier import RucioDatasetIdentifier, FileListDataset
 
 
-class DatasetGroup:
-    def __init__(self, datasets: List[Coroutine]):
-        r"""
-        Simultaneously submit a group of transform requests and offer the ability to wait
-        for them all to finish.
-
-        :param datasets: List of transform requests form dataset instances
-        """
-        self.datasets = datasets
-
-    async def gather_results_async(self) -> List[TransformedResults]:
-        r"""
-        Await on all of the transform requests in the group.
-
-        :return: List of TransformedResults instances. Use the title property to relate the
-                 result to your submission
-        """
-        return await asyncio.gather(*self.datasets)
-
-    gather_results = make_sync(gather_results_async)
+__all__ = [
+    "ServiceXClient",
+    "Dataset",
+    "DatasetGroup",
+    "ResultFormat",
+    "ResultDestination",
+    "servicex_client",
+    "dataset",
+    "dataset_group",
+    "models",
+    "dataset_identifier",
+    "RucioDatasetIdentifier",
+    "FileListDataset",
+]

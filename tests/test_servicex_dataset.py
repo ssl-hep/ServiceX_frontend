@@ -31,11 +31,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from servicex_client.configuration import Configuration
-from servicex_client.dataset_identifier import FileListDataset
-from servicex_client.func_adl_dataset import FuncADLDataset
-from servicex_client.models import TransformStatus, Status, ResultFile, ResultFormat
-from servicex_client.query_cache import QueryCache
+from servicex.configuration import Configuration
+from servicex.dataset_identifier import FileListDataset
+from servicex.func_adl_dataset import FuncADLDataset
+from servicex.models import TransformStatus, Status, ResultFile, ResultFormat
+from servicex.query_cache import QueryCache
 
 transform_status = TransformStatus(
     **{
@@ -113,7 +113,7 @@ async def test_submit(mocker):
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
-    mocker.patch("servicex_client.minio_adapter.MinioAdapter", return_value=mock_minio)
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
     datasource = FuncADLDataset(
         dataset_identifier=did,
