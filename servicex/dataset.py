@@ -372,7 +372,6 @@ class Dataset(ABC):
             progress: Progress,
             download_progress: TaskID,
         ):
-            print(f"get signed url for {filename}")
             url = await minio.get_signed_url(filename)
             result_uris.append(url)
             progress.advance(download_progress)
@@ -446,10 +445,12 @@ class Dataset(ABC):
 
     as_pandas = make_sync(as_pandas_async)
 
-    async def as_signed_urls(self) -> TransformedResults:
+    async def as_signed_urls_async(self) -> TransformedResults:
         r"""
         Presign URLs for each of the transformed files
 
         :return: TransformedResults object with the presigned_urls list populated
         """
         return await self.submit_and_download(signed_urls_only=True)
+
+    as_signed_urls = make_sync(as_signed_urls_async)
