@@ -25,7 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Optional, List, TypeVar, Any
+from typing import Optional, List, TypeVar, Any, Type
 
 from servicex.configuration import Configuration
 from servicex.func_adl_dataset import FuncADLDataset
@@ -117,7 +117,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
-        item_type: type[T] = Any,
+        item_type: Type[T] = Any,
     ) -> FuncADLDataset[T]:
         r"""
         Generate a dataset that can use func_adl query language
