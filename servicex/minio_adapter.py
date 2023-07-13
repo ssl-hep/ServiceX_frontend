@@ -32,7 +32,7 @@ from typing import List
 
 from miniopy_async import Minio
 
-from servicex_client.models import ResultFile, TransformStatus
+from servicex.models import ResultFile, TransformStatus
 
 
 def _sanitize_filename(fname: str):

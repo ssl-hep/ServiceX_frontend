@@ -32,7 +32,7 @@ from typing import Optional, Dict, List
 import httpx
 from google.auth import jwt
 
-from servicex_client.models import TransformRequest, TransformStatus
+from servicex.models import TransformRequest, TransformStatus
 
 
 class AuthorizationError(BaseException):

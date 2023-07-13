@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from typing import List, Union
 
-from servicex_client.models import TransformRequest
+from servicex.models import TransformRequest
 
 
 class DataSetIdentifier:

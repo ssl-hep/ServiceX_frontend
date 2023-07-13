@@ -30,9 +30,9 @@ import tempfile
 
 import pytest
 
-from servicex_client.configuration import Configuration
-from servicex_client.models import ResultFormat
-from servicex_client.query_cache import QueryCache, CacheException
+from servicex.configuration import Configuration
+from servicex.models import ResultFormat
+from servicex.query_cache import QueryCache, CacheException
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
 

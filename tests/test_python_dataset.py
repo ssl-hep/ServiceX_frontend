@@ -29,8 +29,8 @@ from base64 import b64decode
 
 import pytest
 
-from servicex_client.dataset_identifier import FileListDataset
-from servicex_client.python_dataset import PythonDataset
+from servicex.dataset_identifier import FileListDataset
+from servicex.python_dataset import PythonDataset
 
 
 def test_no_provided_function():

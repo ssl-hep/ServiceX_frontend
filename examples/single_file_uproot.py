@@ -26,9 +26,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex_client.dataset_identifier import FileListDataset
-from servicex_client.models import ResultFormat
-from servicex_client.servicex_client import ServiceXClient
+from servicex import FileListDataset
+from servicex import ResultFormat
+from servicex import ServiceXClient
 
 sx = ServiceXClient(backend="testing4")
 dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501

@@ -29,12 +29,12 @@ import inspect
 import typing
 from base64 import b64encode
 
-from servicex_client.configuration import Configuration
-from servicex_client.dataset import Dataset
-from servicex_client.models import ResultFormat
-from servicex_client.query_cache import QueryCache
-from servicex_client.servicex_adapter import ServiceXAdapter
-from servicex_client.types import DID
+from servicex.configuration import Configuration
+from servicex.dataset import Dataset
+from servicex.models import ResultFormat
+from servicex.query_cache import QueryCache
+from servicex.servicex_adapter import ServiceXAdapter
+from servicex.types import DID
 
 
 class PythonDataset(Dataset):

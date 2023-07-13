@@ -37,7 +37,7 @@ except ModuleNotFoundError:
     pass
 
 
-from servicex_client.types import DID
+from servicex.types import DID
 
 try:
     import pandas
@@ -54,17 +54,17 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from servicex_client.configuration import Configuration
-from servicex_client.minio_adapter import MinioAdapter
-from servicex_client.models import (
+from servicex.configuration import Configuration
+from servicex.minio_adapter import MinioAdapter
+from servicex.models import (
     TransformRequest,
     ResultDestination,
     ResultFormat,
     Status,
     TransformedResults,
 )
-from servicex_client.query_cache import QueryCache
-from servicex_client.servicex_adapter import ServiceXAdapter
+from servicex.query_cache import QueryCache
+from servicex.servicex_adapter import ServiceXAdapter
 
 from make_it_sync import make_sync
 

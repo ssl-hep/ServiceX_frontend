@@ -26,9 +26,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex_client.dataset_identifier import RucioDatasetIdentifier
-from servicex_client.models import ResultFormat
-from servicex_client.servicex_client import ServiceXClient
+from servicex import RucioDatasetIdentifier
+from servicex import ResultFormat
+from servicex import ServiceXClient
 
 sx = ServiceXClient(backend="testing4")
 

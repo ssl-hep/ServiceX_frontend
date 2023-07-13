@@ -27,13 +27,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from typing import Optional, List, TypeVar, Any
 
-from servicex_client.configuration import Configuration
-from servicex_client.func_adl_dataset import FuncADLDataset
-from servicex_client.models import ResultFormat, TransformStatus
-from servicex_client.query_cache import QueryCache
-from servicex_client.servicex_adapter import ServiceXAdapter
-from servicex_client.types import DID
-from servicex_client.python_dataset import PythonDataset
+from servicex.configuration import Configuration
+from servicex.func_adl_dataset import FuncADLDataset
+from servicex.models import ResultFormat, TransformStatus
+from servicex.query_cache import QueryCache
+from servicex.servicex_adapter import ServiceXAdapter
+from servicex.types import DID
+from servicex.python_dataset import PythonDataset
 
 from make_it_sync import make_sync
 
