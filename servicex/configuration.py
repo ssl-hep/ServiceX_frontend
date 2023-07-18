@@ -55,7 +55,7 @@ class Configuration(BaseModel):
     @classmethod
     def read(cls, config_path: Optional[str] = None):
         r"""
-        Read configuration from .servicex file.
+        Read configuration from .servicex or servicex.yaml file.
         :param config_path: If provided, use this as the path to the .servicex file.
                             Otherwise, search, starting from the current working directory
                             and look in enclosing directories
@@ -106,3 +106,4 @@ class Configuration(BaseModel):
             dir = dir.parent
             
         return config
+    
