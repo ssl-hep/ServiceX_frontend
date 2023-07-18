@@ -70,7 +70,9 @@ class Configuration(BaseModel):
             return Configuration(**yaml_config)
         else:
             path_extra = f"in {config_path}" if config_path else ""
-            raise NameError("Can't find .servicex or servicex.yaml config file " + path_extra)
+            raise NameError(
+                "Can't find .servicex or servicex.yaml config file " + path_extra
+            )
 
     @classmethod
     def _add_from_path(cls, path: Optional[Path] = None, walk_up_tree: bool = False):
@@ -80,18 +82,18 @@ class Configuration(BaseModel):
             name = path.name
             dir = path.parent.resolve()
         else:
-            name = ".servicex" 
+            name = ".servicex"
             alt_name = "servicex.yaml"
             dir = Path(os.getcwd())
 
         while True:
-            f = dir / name # user-defined path or .servicex
+            f = dir / name  # user-defined path or .servicex
             if f.exists():
                 with open(f) as config_file:
                     config = yaml.safe_load(config_file)
                     break
 
-            f = dir / alt_name # if neither option above, find servicex.yaml
+            f = dir / alt_name  # if neither option above, find servicex.yaml
             if f.exists():
                 with open(f) as config_file:
                     config = yaml.safe_load(config_file)
@@ -99,11 +101,10 @@ class Configuration(BaseModel):
 
             if not walk_up_tree:
                 break
-            
+
             if dir == dir.parent:
                 break
-            
+
             dir = dir.parent
-            
+
         return config
-    
