@@ -26,10 +26,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
-from pathlib import Path
+import tempfile
+from pathlib import Path, PurePath
 from typing import List, Optional, Dict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 import yaml
 
@@ -45,6 +46,35 @@ class Configuration(BaseModel):
     default_endpoint: Optional[str] = Field(alias="default-endpoint", default=None)
     cache_path: Optional[str] = Field(alias="cache-path", default=None)
     shortened_downloaded_filename: Optional[bool] = False
+
+    @validator("cache_path", always=True)
+    def expand_cache_path(cls, v):
+        """
+        Expand the cache path to a full path, and create it if it doesn't exist.
+        Expand ${USER} to be the user name on the system. Works for windows, too.
+        :param v:
+        :return:
+        """
+        if not v:
+            v = "/tmp"
+
+        s_path = os.path.expanduser(v)
+
+        # If they have tried to use the USER or UserName as an expansion, and it has failed, then
+        # translate it to maintain harmony across platforms.
+        if "${USER}" in s_path and "UserName" in os.environ:
+            s_path = s_path.replace("${USER}", os.environ["UserName"])
+        if "${USER}" in s_path and "USER" in os.environ:
+            s_path = s_path.replace("${USER}", os.environ["USER"])
+
+        p_p = PurePath(s_path)
+        if len(p_p.parts) > 1 and p_p.parts[1] == "tmp":
+            p = Path(tempfile.gettempdir()) / Path(*p_p.parts[2:])
+        else:
+            p = Path(p_p)
+        p.mkdir(exist_ok=True, parents=True)
+
+        return p.as_posix()
 
     class Config:
         allow_population_by_field_name = True
