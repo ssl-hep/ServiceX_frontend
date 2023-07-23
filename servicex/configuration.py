@@ -55,8 +55,7 @@ class Configuration(BaseModel):
     @classmethod
     def read(cls, config_path: Optional[str] = None):
         r"""
-        Read configuration from .servicex file.
-
+        Read configuration from .servicex or servicex.yaml file.
         :param config_path: If provided, use this as the path to the .servicex file.
                             Otherwise, search, starting from the current working directory
                             and look in enclosing directories
@@ -71,7 +70,9 @@ class Configuration(BaseModel):
             return Configuration(**yaml_config)
         else:
             path_extra = f"in {config_path}" if config_path else ""
-            raise NameError("Can't find .servicex config file " + path_extra)
+            raise NameError(
+                "Can't find .servicex or servicex.yaml config file " + path_extra
+            )
 
     @classmethod
     def _add_from_path(cls, path: Optional[Path] = None, walk_up_tree: bool = False):
@@ -82,17 +83,28 @@ class Configuration(BaseModel):
             dir = path.parent.resolve()
         else:
             name = ".servicex"
+            alt_name = "servicex.yaml"
             dir = Path(os.getcwd())
 
         while True:
-            f = dir / name
+            f = dir / name  # user-defined path or .servicex
             if f.exists():
                 with open(f) as config_file:
                     config = yaml.safe_load(config_file)
                     break
+
+            f = dir / alt_name  # if neither option above, find servicex.yaml
+            if f.exists():
+                with open(f) as config_file:
+                    config = yaml.safe_load(config_file)
+                    break
+
             if not walk_up_tree:
                 break
+
             if dir == dir.parent:
                 break
+
             dir = dir.parent
+
         return config
