@@ -25,10 +25,30 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import os
+from unittest.mock import patch
+
 from servicex.configuration import Configuration
 
 
-def test_config_read():
+@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+def test_config_read(tempdir):
+    # Windows style user name
+    os.environ['UserName'] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config.yaml")
-    assert c
-    print(c.endpoint_dict())
+    assert c.cache_path == "mytemp/servicex_p_higgs"
+
+    # Reset environment
+    del os.environ['UserName']
+
+    # Linux style user name
+    os.environ['USER'] = "p_higgs2"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    assert c.cache_path == "mytemp/servicex_p_higgs2"
+
+
+@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+def test_default_cache_path(tempdir):
+
+    c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
+    assert c.cache_path == "mytemp"
