@@ -81,6 +81,7 @@ class Configuration(BaseModel):
             path.resolve()
             name = path.name
             dir = path.parent.resolve()
+            alt_name = None
         else:
             name = ".servicex"
             alt_name = "servicex.yaml"
@@ -93,11 +94,12 @@ class Configuration(BaseModel):
                     config = yaml.safe_load(config_file)
                     break
 
-            f = dir / alt_name  # if neither option above, find servicex.yaml
-            if f.exists():
-                with open(f) as config_file:
-                    config = yaml.safe_load(config_file)
-                    break
+            if alt_name:
+                f = dir / alt_name  # if neither option above, find servicex.yaml
+                if f.exists():
+                    with open(f) as config_file:
+                        config = yaml.safe_load(config_file)
+                        break
 
             if not walk_up_tree:
                 break
