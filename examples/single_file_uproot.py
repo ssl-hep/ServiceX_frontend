@@ -39,6 +39,6 @@ ds = sx.func_adl_dataset(dataset_id, codegen="uproot",
 
 sx3 = ds.Select(lambda e: {'lep_pt': e['lep_pt']}). \
     Where(lambda e: e['lep_pt'] > 1000). \
-    as_pandas()
+    as_pandas(display_progress=False)
 
 print(sx3)
