@@ -28,12 +28,13 @@
 import asyncio
 from typing import Coroutine, List
 
-from servicex.models import TransformedResults
+from servicex.dataset import Dataset
+from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
 
 class DatasetGroup:
-    def __init__(self, datasets: List[Coroutine]):
+    def __init__(self, datasets: List[Dataset]):
         r"""
         Simultaneously submit a group of transform requests and offer the ability to wait
         for them all to finish.
@@ -41,6 +42,23 @@ class DatasetGroup:
         :param datasets: List of transform requests form dataset instances
         """
         self.datasets = datasets
+
+    def set_result_format(self, result_format: ResultFormat):
+        r"""
+        Set the result format for all of the datasets in the group.
+
+        :param result_format: ResultFormat instance
+        """
+        for dataset in self.datasets:
+            dataset.set_result_format(result_format)
+
+    async def as_signed_urls_async(self) -> list[TransformedResults]:
+        self.tasks = [d.as_signed_urls_async() for d in self.datasets]
+        return await asyncio.gather(*self.tasks)
+
+    as_signed_urls = make_sync(as_signed_urls_async)
+
+
 
     async def gather_results_async(self) -> List[TransformedResults]:
         r"""
