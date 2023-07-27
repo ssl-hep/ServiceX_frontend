@@ -29,28 +29,31 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from servicex import ResultFormat
 from servicex.dataset_group import DatasetGroup
 
 
+def test_set_result_format(mocker):
+    ds1 = mocker.Mock()
+    ds2 = mocker.Mock()
+    group = DatasetGroup([ds1, ds2])
+    group.set_result_format(ResultFormat.root_file)
+    ds1.set_result_format.assert_called_once_with(ResultFormat.root_file)
+    ds2.set_result_format.assert_called_once_with(ResultFormat.root_file)
+
+
 @pytest.mark.asyncio
-async def test_gather_results_async(transformed_result):
-    query1 = AsyncMock(return_value=transformed_result)
-    query2 = AsyncMock(return_value=transformed_result.copy(
+async def test_as_signed_urls(mocker, transformed_result):
+    ds1 = mocker.Mock()
+    ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
+
+    ds2 = mocker.Mock()
+    ds2.as_signed_urls_async = AsyncMock(return_value=transformed_result.copy(
         update={"request_id": "98-765-432"}))
 
-    group = DatasetGroup([query1(), query2()])
-    results = await group.gather_results_async()
+    group = DatasetGroup([ds1, ds2])
+    results = await group.as_signed_urls_async()
 
     assert len(results) == 2
     assert results[0].request_id == "123-45-6789"
     assert results[1].request_id == "98-765-432"
-
-
-def test_gather_results(transformed_result):
-    query1 = AsyncMock(return_value=transformed_result)
-    query2 = AsyncMock(return_value=transformed_result)
-
-    group = DatasetGroup([query1(), query2()])
-    results = group.gather_results()
-
-    assert len(results) == 2
