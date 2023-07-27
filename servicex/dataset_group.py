@@ -26,9 +26,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
-from typing import Coroutine, List
+from typing import List, Optional
+
+from rich.progress import Progress
 
 from servicex.dataset import Dataset
+from servicex.expandable_progress import ExpandableProgress
 from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
@@ -36,37 +39,33 @@ from make_it_sync import make_sync
 class DatasetGroup:
     def __init__(self, datasets: List[Dataset]):
         r"""
-        Simultaneously submit a group of transform requests and offer the ability to wait
-        for them all to finish.
+        A group of datasets that are to be transformed together. This is a convenience
+        class to allow you to submit multiple datasets to a ServiceX instance and
+        then wait for all of them to complete.
 
-        :param datasets: List of transform requests form dataset instances
+        :param datasets: List of transform request as dataset instances
         """
+        self.tasks = []
         self.datasets = datasets
 
     def set_result_format(self, result_format: ResultFormat):
         r"""
-        Set the result format for all of the datasets in the group.
+        Set the result format for all the datasets in the group.
 
         :param result_format: ResultFormat instance
         """
         for dataset in self.datasets:
             dataset.set_result_format(result_format)
 
-    async def as_signed_urls_async(self) -> list[TransformedResults]:
-        self.tasks = [d.as_signed_urls_async() for d in self.datasets]
-        return await asyncio.gather(*self.tasks)
+    async def as_signed_urls_async(self,
+                                   display_progress: bool = True,
+                                   provided_progress: Optional[Progress] = None
+                                   ) -> list[TransformedResults]:
+        with ExpandableProgress(display_progress, provided_progress) as progress:
+            self.tasks = [
+                d.as_signed_urls_async(provided_progress=progress)
+                for d in self.datasets
+            ]
+            return await asyncio.gather(*self.tasks)
 
     as_signed_urls = make_sync(as_signed_urls_async)
-
-
-
-    async def gather_results_async(self) -> List[TransformedResults]:
-        r"""
-        Await on all of the transform requests in the group.
-
-        :return: List of TransformedResults instances. Use the title property to relate the
-                 result to your submission
-        """
-        return await asyncio.gather(*self.datasets)
-
-    gather_results = make_sync(gather_results_async)
