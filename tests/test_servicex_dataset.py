@@ -33,6 +33,7 @@ import pytest
 
 from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
+from servicex.expandable_progress import ExpandableProgress
 from servicex.func_adl_dataset import FuncADLDataset
 from servicex.models import TransformStatus, Status, ResultFile, ResultFormat
 from servicex.query_cache import QueryCache
@@ -121,9 +122,11 @@ async def test_submit(mocker):
         sx_adapter=servicex,
         query_cache=mock_cache,
     )
-    datasource.result_format = ResultFormat.parquet
-    _ = await datasource.submit_and_download()
-    print(mock_minio.download_file.call_args)
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+        print(mock_minio.download_file.call_args)
 
 
 def test_transform_request():

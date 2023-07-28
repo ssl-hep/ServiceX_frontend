@@ -25,6 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import annotations
+
 from typing import Optional
 
 from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
@@ -34,7 +36,7 @@ from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
 class ExpandableProgress:
     def __init__(self,
                  display_progress: bool = True,
-                 provided_progress: Optional[Progress] = None):
+                 provided_progress: Optional[Progress | ExpandableProgress] = None):
         """
         We want to be able to use rich progress bars in the async code, but there are
         some situtations where the user doesn't want them. Also we might be running
@@ -52,7 +54,8 @@ class ExpandableProgress:
         self.provided_progress = provided_progress
         if display_progress:
             if provided_progress:
-                self.progress = provided_progress
+                self.progress = provided_progress if isinstance(provided_progress, Progress) \
+                    else provided_progress.progress
             else:
                 self.progress = Progress(
                     TextColumn("[progress.description]{task.description}"),
@@ -86,4 +89,4 @@ class ExpandableProgress:
 
     def add_task(self, param, start, total):
         if self.display_progress:
-            self.progress.add_task(param, start=start, total=total)
+            return self.progress.add_task(param, start=start, total=total)
