@@ -41,20 +41,31 @@ def test_progress(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
-@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
-def test_provided_progress(mock_progress):
-    provided_progress = MagicMock(Progress)
+def test_provided_progress(mocker):
+    class MockedProgress(Progress):
+        def __init__(self):
+            self.start_call_count = 0
+            self.stop_call_count = 0
+
+        def start(self) -> None:
+            self.start_call_count += 1
+
+        def stop(self) -> None:
+            self.stop_call_count += 1
+
+    provided_progress = MockedProgress()
+    provided_progress.start = mocker.Mock()
+    provided_progress.stop = mocker.Mock()
+
     with ExpandableProgress(provided_progress=provided_progress) as progress:
         assert progress.progress == provided_progress
-        mock_progress.return_value.start.assert_not_called()
-        provided_progress.return_value.start.assert_not_called()
+        assert provided_progress.start.call_count == 0
         assert progress.display_progress
     assert provided_progress.stop.call_count == 0
-    assert mock_progress.return_value.stop.call_count == 0
 
 
 @patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
-def test_nod_progress(mock_progress):
+def test_no_progress(mock_progress):
     with ExpandableProgress(display_progress=False) as progress:
         assert not progress.progress
         mock_progress.return_value.assert_not_called()
@@ -62,3 +73,12 @@ def test_nod_progress(mock_progress):
         assert not progress.display_progress
         assert not progress.progress
     assert mock_progress.return_value.stop.call_count == 0
+
+
+def test_nested_expandable_progress():
+    inner_progress = Progress()
+    with ExpandableProgress(provided_progress=inner_progress) as progress:
+        with ExpandableProgress(provided_progress=progress) as progress2:
+            assert progress2.progress == progress.progress
+            assert progress2.display_progress
+            assert progress2.progress == progress.progress

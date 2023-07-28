@@ -152,8 +152,8 @@ class Dataset(ABC):
         return self
 
     async def submit_and_download(
-        self, signed_urls_only: bool = False,
-            provided_progress: Optional[Progress] = None
+        self, signed_urls_only: bool,
+            expandable_progress: ExpandableProgress
     ) -> Optional[TransformedResults]:
         """
         Submit the transform request to ServiceX. Poll the transform status to see when
@@ -163,7 +163,7 @@ class Dataset(ABC):
         :param signed_urls_only: Set to true to skip actually downloading the files and
                                  just return pre-signed urls
         :param display_progress: Set to false to disable the progress bar
-        :param provided_progress: Provide an existing progress bar. Set to None to have
+        :param expandable_progress: Provide an existing progress bar. Set to None to have
                                     one created for you
 
         :return: Transform results object which contains the list of files downloaded
@@ -215,9 +215,9 @@ class Dataset(ABC):
         # has been run, but we just didn't get the files from object store in the way
         # requested by user
         if not cached_record:
-            transform_progress = provided_progress.add_task(
+            transform_progress = expandable_progress.add_task(
                 "Transform", start=False, total=None
-            ) if provided_progress else None
+            ) if expandable_progress else None
         else:
             self.request_id = cached_record.request_id
             transform_progress = None
@@ -227,16 +227,16 @@ class Dataset(ABC):
             "Download" if not signed_urls_only else "Signing URLS"
         )
 
-        download_progress = provided_progress.add_task(
+        download_progress = expandable_progress.add_task(
             minio_progress_bar_title, start=False, total=None
-        ) if provided_progress else None
+        ) if expandable_progress else None
 
         if not cached_record:
             self.request_id = await self.servicex.submit_transform(sx_request)
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
-                    provided_progress, transform_progress, download_progress
+                    expandable_progress.progress, transform_progress, download_progress
                 )
             )
             monitor_task.add_done_callback(transform_complete)
@@ -245,7 +245,7 @@ class Dataset(ABC):
 
         download_files_task = loop.create_task(
             self.download_files(
-                signed_urls_only, provided_progress, download_progress, cached_record
+                signed_urls_only, expandable_progress.progress, download_progress, cached_record
             )
         )
 
@@ -277,7 +277,7 @@ class Dataset(ABC):
 
             return transform_report
         except CancelledError:
-            rich.print_json("Aborted file downloads due to transform failure")
+            rich.print("Aborted file downloads due to transform failure")
 
     async def transform_status_listener(
         self, progress: Progress, progress_task: TaskID, download_task: TaskID
@@ -429,7 +429,8 @@ class Dataset(ABC):
         :return: TransformResult instance with the list of complete paths to the downloaded files
         """
         with ExpandableProgress(display_progress, provided_progress) as progress:
-            return await self.submit_and_download(provided_progress=progress)
+            return await self.submit_and_download(signed_urls_only=False,
+                                                  expandable_progress=progress)
 
     as_files = make_sync(as_files_async)
 
@@ -464,7 +465,9 @@ class Dataset(ABC):
 
         :return: TransformedResults object with the presigned_urls list populated
         """
-        return await self.submit_and_download(signed_urls_only=True,
-                                              provided_progress=provided_progress)
+        with ExpandableProgress(display_progress=display_progress,
+                                provided_progress=provided_progress) as progress:
+            return await self.submit_and_download(signed_urls_only=True,
+                                                  expandable_progress=progress)
 
     as_signed_urls = make_sync(as_signed_urls_async)
