@@ -57,10 +57,11 @@ class DatasetGroup:
         for dataset in self.datasets:
             dataset.set_result_format(result_format)
 
-    async def as_signed_urls_async(self,
-                                   display_progress: bool = True,
-                                   provided_progress: Optional[Progress] = None
-                                   ) -> list[TransformedResults]:
+    async def as_signed_urls_async(
+        self,
+        display_progress: bool = True,
+        provided_progress: Optional[Progress] = None,
+    ) -> List[TransformedResults]:
         with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
                 d.as_signed_urls_async(provided_progress=progress)
