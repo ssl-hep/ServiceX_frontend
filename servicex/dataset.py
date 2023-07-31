@@ -39,7 +39,7 @@ except ModuleNotFoundError:
     pass
 
 
-from servicex.types import DID
+from servicex.types import DID, ProgressIndicators
 
 try:
     import pandas
@@ -422,7 +422,7 @@ class Dataset(ABC):
 
     async def as_files_async(self,
                              display_progress: bool = True,
-                             provided_progress: Optional[Progress] = None
+                             provided_progress: Optional[ProgressIndicators] = None
                              ) -> TransformedResults:
         r"""
         Submit the transform and request all the resulting files to be downloaded
@@ -437,7 +437,8 @@ class Dataset(ABC):
     try:
         async def as_pandas_async(self,
                                   display_progress: bool = True,
-                                  provided_progress: Optional[Progress] = None) -> pd.DataFrame:
+                                  provided_progress: Optional[ProgressIndicators] = None) \
+                -> pd.DataFrame:
             r"""
             Return a pandas dataframe containing the results. This only works if you've
             installed pandas extra
@@ -458,7 +459,7 @@ class Dataset(ABC):
         pass
 
     async def as_signed_urls_async(self, display_progress: bool = True,
-                                   provided_progress: Optional[Progress] = None) \
+                                   provided_progress: Optional[ProgressIndicators] = None) \
             -> TransformedResults:
         r"""
         Presign URLs for each of the transformed files

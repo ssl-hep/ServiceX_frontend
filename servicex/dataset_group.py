@@ -70,3 +70,14 @@ class DatasetGroup:
             return await asyncio.gather(*self.tasks)
 
     as_signed_urls = make_sync(as_signed_urls_async)
+
+    async def as_files_async(self,
+                             display_progress: bool = True,
+                             provided_progress: Optional[Progress] = None
+                             ) -> List[TransformedResults]:
+        with ExpandableProgress(display_progress, provided_progress) as progress:
+            self.tasks = [
+                d.as_files_async(provided_progress=progress)
+                for d in self.datasets
+            ]
+            return await asyncio.gather(*self.tasks)

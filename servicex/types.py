@@ -27,6 +27,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from typing import Union
 
+from rich.progress import Progress
+
 from servicex.dataset_identifier import DataSetIdentifier, FileListDataset
+from servicex.expandable_progress import ExpandableProgress
 
 DID = Union[DataSetIdentifier, FileListDataset]
+
+ProgressIndicators = Union[Progress, ExpandableProgress]
