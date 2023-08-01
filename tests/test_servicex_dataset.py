@@ -34,7 +34,7 @@ import pytest
 from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
-from servicex.func_adl_dataset import FuncADLDataset
+from servicex.func_adl.func_adl_dataset import FuncADLDataset
 from servicex.models import TransformStatus, Status, ResultFile, ResultFormat
 from servicex.query_cache import QueryCache
 

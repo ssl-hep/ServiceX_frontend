@@ -28,7 +28,7 @@
 from typing import Optional, List, TypeVar, Any, Type
 
 from servicex.configuration import Configuration
-from servicex.func_adl_dataset import FuncADLDataset
+from servicex.func_adl.func_adl_dataset import FuncADLDataset
 from servicex.models import ResultFormat, TransformStatus
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
