@@ -26,18 +26,22 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from rich.progress import Progress
 
 from servicex.dataset import Dataset
 from servicex.expandable_progress import ExpandableProgress
+from servicex.func_adl.func_adl_dataset import FuncADLDataset
 from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
 
+DatasetGroupMember = Union[Dataset, FuncADLDataset]
+
+
 class DatasetGroup:
-    def __init__(self, datasets: List[Dataset]):
+    def __init__(self, datasets: List[DatasetGroupMember]):
         r"""
         A group of datasets that are to be transformed together. This is a convenience
         class to allow you to submit multiple datasets to a ServiceX instance and

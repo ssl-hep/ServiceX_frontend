@@ -25,8 +25,31 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Union
+from __future__ import annotations
+from func_adl.object_stream import S
 
-from servicex.dataset_identifier import DataSetIdentifier, FileListDataset
+from typing import Union, Callable, Iterable
+import ast
+from servicex import DatasetGroup
 
-DID = Union[DataSetIdentifier, FileListDataset]
+from func_adl_dataset import T
+
+
+class FuncADLDatasetGroup(DatasetGroup):
+    def SelectMany(
+        self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
+    ) -> FuncADLDatasetGroup:
+        self.datasets = [dataset.SelectMany(func) for dataset in self.datasets]
+        return self
+
+    def Select(
+        self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
+    ) -> FuncADLDatasetGroup:
+        self.datasets = [dataset.Select(func) for dataset in self.datasets]
+        return self
+
+    def Where(
+        self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
+    ) -> FuncADLDatasetGroup:
+        self.datasets = [dataset.Where(func) for dataset in self.datasets]
+        return self
