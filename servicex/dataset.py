@@ -29,8 +29,7 @@ import abc
 import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
-from typing import List, Optional
-
+from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
 
 try:
@@ -39,12 +38,7 @@ except ModuleNotFoundError:
     pass
 
 
-from servicex.types import DID, ProgressIndicators
-
-try:
-    import pandas
-except ModuleNotFoundError:
-    pass
+from servicex.types import DID
 
 import rich
 from rich.progress import (
@@ -64,6 +58,8 @@ from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 
 from make_it_sync import make_sync
+
+ProgressIndicators = Union[Progress, ExpandableProgress]
 
 
 class Dataset(ABC):
@@ -450,7 +446,7 @@ class Dataset(ABC):
                                                            provided_progress=provided_progress
                                                            )
             dataframes = pd.concat(
-                [pandas.read_parquet(p) for p in transformed_result.file_list]
+                [pd.read_parquet(p) for p in transformed_result.file_list]
             )
             return dataframes
 
