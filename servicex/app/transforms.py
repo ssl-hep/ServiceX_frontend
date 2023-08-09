@@ -45,7 +45,7 @@ transforms_app = typer.Typer(name="transforms", no_args_is_help=True)
 @transforms_app.callback()
 def transforms():
     """
-    sub-commands for creating and manipulating Gardens
+    Sub-commands for interacting with transforms.
     """
     pass
 
@@ -58,6 +58,9 @@ def list(
         None, "--complete", help="Only show successfully completed transforms"
     ),
 ):
+    """
+    List the transforms that have been run.
+    """
     sx = ServiceXClient(url=url, backend=backend)
     table = Table(title="ServiceX Transforms")
     table.add_column("Transform ID")
@@ -80,6 +83,9 @@ def files(
     backend: Optional[str] = backend_cli_option,
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
 ):
+    """
+    List the files that were produced by a transform.
+    """
     async def list_files(sx: ServiceXClient, transform_id: str) -> List[ResultFile]:
         transform = await sx.get_transform_status_async(transform_id)
         minio = MinioAdapter.for_transform(transform)
@@ -103,6 +109,9 @@ def download(
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
 ):
+    """
+    Download the files that were produced by a transform.
+    """
     async def download_files(sx: ServiceXClient, transform_id: str, local_dir):
         async def download_with_progress(filename) -> Path:
             p = await minio.download_file(

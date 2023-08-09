@@ -38,15 +38,18 @@ cache_app = typer.Typer(name="cache", no_args_is_help=True)
 
 
 @cache_app.callback()
-def transforms():
+def cache():
     """
-    sub-commands for creating and manipulating the local query cache
+    Sub-commands for creating and manipulating the local query cache
     """
     pass
 
 
 @cache_app.command()
 def list():
+    """
+    List the cached queries
+    """
     sx = ServiceXClient()
     cache = sx.query_cache
     table = Table(title="Cached Queries")
@@ -70,7 +73,10 @@ def list():
 
 
 @cache_app.command()
-def clear(force: bool = typer.Option(False, "-y", help="Force, don't has permission")):
+def clear(force: bool = typer.Option(False, "-y", help="Force, don't ask for permission")):
+    """
+    Clear the local query cache
+    """
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
         sx.query_cache.close()
@@ -80,6 +86,9 @@ def clear(force: bool = typer.Option(False, "-y", help="Force, don't has permiss
 
 @cache_app.command(no_args_is_help=True)
 def delete(transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID")):
+    """
+    Delete a cached query. Use -t to specify the transform ID
+    """
     sx = ServiceXClient()
     cache = sx.query_cache
     rec = cache.get_transform_by_request_id(transform_id)
