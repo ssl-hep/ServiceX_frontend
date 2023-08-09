@@ -44,7 +44,7 @@ app.add_typer(cache_app)
 def show_version(show: bool):
     """Display the installed version and quit."""
     if show:
-        rich.print(f"garden-ai {__version__}")
+        rich.print(f"ServiceX {__version__}")
         raise typer.Exit()
 
 
@@ -55,7 +55,7 @@ def main_info(
     )
 ):
     """
-    🌱 Hello, Garden 🌱
+    ServiceX Client
     """
     pass
 
@@ -65,6 +65,9 @@ def codegens(
         url: Optional[str] = url_cli_option,
         backend: Optional[str] = backend_cli_option
 ):
+    """
+    List the available code generators
+    """
     sx = ServiceXClient(url=url, backend=backend)
     rich.print_json(data=sx.get_code_generators())
 
