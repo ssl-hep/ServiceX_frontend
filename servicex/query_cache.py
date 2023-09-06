@@ -106,3 +106,22 @@ class QueryCache:
 
     def delete_record_by_request_id(self, request_id: str):
         self.db.remove(where('request_id') == request_id)
+
+    def get_codegen_by_backend(self, backend: str) -> Optional[dict]:
+        codegens = Query()
+        records = self.db.search(codegens.backend == backend)
+        if not records:
+            return None
+
+        if len(records) != 1:
+            raise CacheException("Multiple records found in db for same backend")
+        else:
+            return records[0]
+
+    def update_codegen_by_backend(self, backend: str, codegen_list: list) -> Optional[str]:
+        transforms = Query()
+        self.db.upsert({'backend': backend, 'codegens': codegen_list},
+                       transforms.backend == backend)
+
+    def delete_codegen_by_backend(self, backend: str):
+        self.db.remove(where('backend') == backend)

@@ -1,4 +1,7 @@
 from servicex import ServiceXClient, RucioDatasetIdentifier, ResultFormat, DatasetGroup
+from rich.console import Console
+from rich.table import Table
+
 dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8", num_files=3)
 
 sx = ServiceXClient(backend="production")
@@ -19,9 +22,6 @@ group = DatasetGroup([
 group.set_result_format(ResultFormat.parquet)
 
 results = group.as_signed_urls()
-
-from rich.console import Console
-from rich.table import Table
 
 table = Table(title="Dataset Group Example")
 
