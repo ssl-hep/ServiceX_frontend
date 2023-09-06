@@ -37,6 +37,7 @@ from servicex.python_dataset import PythonDataset
 
 from make_it_sync import make_sync
 
+import rich
 
 T = TypeVar("T")
 
@@ -80,10 +81,7 @@ class ServiceXClient:
             )
 
         self.query_cache = QueryCache(self.config)
-
-        # Cache available code generators
-        # @todo allow complete offline use
-        self.code_generators = set(self.get_code_generators().keys())
+        self.code_generators = set(self.get_code_generators(backend).keys())
 
     async def get_transforms_async(self) -> List[TransformStatus]:
         r"""
@@ -104,12 +102,21 @@ class ServiceXClient:
 
     get_transform_status = make_sync(get_transform_status_async)
 
-    def get_code_generators(self):
+    def get_code_generators(self, backend=None):
         r"""
         Retrieve the code generators deployed with the serviceX instance
         :return:  The list of code generators as json dictionary
         """
-        return self.servicex.get_code_generators()
+        cached_backends = None
+        if backend:
+            cached_backends = self.query_cache.get_codegen_by_backend(backend)
+        if cached_backends:
+            rich.print("Returning code generators from cache")
+            return cached_backends["codegens"]
+        else:
+            code_generators = self.servicex.get_code_generators()
+            self.query_cache.update_codegen_by_backend(backend, code_generators)
+            return code_generators
 
     def func_adl_dataset(
         self,
