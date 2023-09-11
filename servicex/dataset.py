@@ -33,6 +33,7 @@ from abc import ABC
 from asyncio import Task, CancelledError
 from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
+from servicex.servicex_logger import rich_logger
 
 try:
     import pandas as pd
@@ -42,10 +43,10 @@ except ModuleNotFoundError:
 
 from servicex.types import DID
 
-import rich
 from rich.progress import (
     Progress,
     TaskID)
+
 
 from servicex.configuration import Configuration
 from servicex.minio_adapter import MinioAdapter
@@ -182,19 +183,20 @@ class Dataset(ABC):
             :return:
             """
             if task.exception():
-                rich.print("ServiceX Exception", task.exception())
+                rich_logger.exception("ServiceX Exception", task.exception())
                 if download_files_task:
                     download_files_task.cancel("Transform failed")
                 raise task.exception()
 
             if self.current_status.files_failed:
-                rich.print(
+                rich_logger.error(
                     f"[bold red]Transforms completed with failures[/bold red] "
                     f"{self.current_status.files_failed} files failed out of "
-                    f"{self.current_status.files}"
+                    f"{self.current_status.files}",
+                    extra={"markup": True}
                 )
             else:
-                rich.print("Transforms completed successfully")
+                rich_logger.info("Transforms completed successfully")
 
         sx_request = self.transform_request
 
@@ -210,7 +212,7 @@ class Dataset(ABC):
                 or not signed_urls_only
                 and cached_record.file_list
             ):
-                rich.print("Returning results from cache")
+                rich_logger.info("Returning results from cache")
                 return cached_record
 
         # If we get here with a cached record, then we know that the transform
@@ -279,7 +281,7 @@ class Dataset(ABC):
 
             return transform_report
         except CancelledError:
-            rich.print("Aborted file downloads due to transform failure")
+            rich_logger.error("Aborted file downloads due to transform failure")
 
     async def transform_status_listener(
         self, progress: Progress, progress_task: TaskID, download_task: TaskID
@@ -327,7 +329,8 @@ class Dataset(ABC):
         # Is this the first time we've polled status? We now know the request ID.
         # Update the display and set our download directory.
         if not self.current_status:
-            rich.print(f"[bold]ServiceX Transform {s.request_id}[/bold]")
+            rich_logger.info(f"[bold]ServiceX Transform {s.request_id}[/bold]",
+                             extra={"markup": True})
             self.download_path = self.cache.cache_path_for_transform(s)
 
         self.current_status = s

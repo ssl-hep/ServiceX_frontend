@@ -34,10 +34,9 @@ from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.types import DID
 from servicex.python_dataset import PythonDataset
+from servicex.servicex_logger import rich_logger
 
 from make_it_sync import make_sync
-
-import rich
 
 T = TypeVar("T")
 
@@ -111,7 +110,7 @@ class ServiceXClient:
         if backend:
             cached_backends = self.query_cache.get_codegen_by_backend(backend)
         if cached_backends:
-            rich.print("Returning code generators from cache")
+            rich_logger.info("Returning code generators from cache")
             return cached_backends["codegens"]
         else:
             code_generators = self.servicex.get_code_generators()
