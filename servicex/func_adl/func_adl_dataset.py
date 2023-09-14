@@ -43,7 +43,7 @@ from typing import (
 )
 from qastle import python_ast_to_text_ast
 
-from func_adl import EventDataset
+from func_adl import EventDataset, find_EventDataset
 from func_adl.object_stream import S
 from servicex.configuration import Configuration
 from servicex.dataset import Dataset
@@ -221,8 +221,9 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         """
 
         clone = self.clone_with_new_ast(copy.deepcopy(self.query_ast), self._item_type)
-        clone._q_ast.args[0].args.append(ast.Str(s="bogus.root"))
-        clone._q_ast.args[0].args.append(ast.Str(s=tree_name))
+        c = find_EventDataset(clone.query_ast)
+        c.args.append(ast.Str(s="bogus.root"))
+        c.args.append(ast.Str(s=tree_name))
         return clone
 
     def generate_qastle(self, a: ast.AST) -> str:
