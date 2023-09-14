@@ -41,7 +41,6 @@ from typing import (
     Iterable,
     Dict,
 )
-from pydantic import typing
 from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset
@@ -99,29 +98,25 @@ class FuncADLDataset(Dataset, EventDataset[T]):
     def set_provided_qastle(self, qastle: str):
         self.provided_qastle = qastle
 
-    def clone_with_new_ast(self, new_ast: ast.AST, new_type: typing.Any):
+    def __deepcopy__(self, memo):
         """
-        Override the method from ObjectStream - We need to be careful because the query
-        cache is a tinyDB database that holds an open file pointer. We are not allowed
-        to clone an open file handle, so for this property we will copy by reference
-        and share it between the clones. Turns out ast class is also picky about copies,
-        so we set that explicitly.
+        Customize deepcopy behavior for this class.
+        We need to be careful because the query cache is a tinyDB database that holds an
+        open file pointer. We are not allowed to clone an open file handle, so for this
+        property we will copy by reference and share it between the clones
+        """
+        cls = self.__class__
+        obj = cls.__new__(cls)
 
-        :param new_ast:
-        :param new_type:
-        :return:
-        """
-        clone = copy.copy(self)
+        memo[id(self)] = obj
+
         for attr, value in vars(self).items():
             if type(value) == QueryCache:
-                setattr(clone, attr, value)
-            elif attr == "_q_ast":
-                setattr(clone, attr, new_ast)
+                setattr(obj, attr, value)
             else:
-                setattr(clone, attr, copy.deepcopy(value))
+                setattr(obj, attr, copy.deepcopy(value, memo))
 
-        clone._item_type = new_type
-        return clone
+        return obj
 
     def SelectMany(
         self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
@@ -215,6 +210,20 @@ class FuncADLDataset(Dataset, EventDataset[T]):
             The Dataset with the QMetaData operator applied
         """
         return super().QMetaData(metadata)
+
+    def set_tree(self, tree_name: str) -> FuncADLDataset[T]:
+        r"""Set the tree name for the query.
+        Args:
+            tree_name (str): Name of the tree to use for the query
+
+        Returns:
+            The Dataset with the tree appended to the first call object
+        """
+
+        clone = self.clone_with_new_ast(copy.deepcopy(self.query_ast), self._item_type)
+        clone._q_ast.args[0].args.append(ast.Str(s="bogus.root"))
+        clone._q_ast.args[0].args.append(ast.Str(s=tree_name))
+        return clone
 
     def generate_qastle(self, a: ast.AST) -> str:
         r"""Generate the qastle from the ast of the query.
