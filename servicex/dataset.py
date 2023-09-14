@@ -25,6 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from __future__ import annotations
+
 import abc
 import asyncio
 from abc import ABC
@@ -136,6 +138,10 @@ class Dataset(ABC):
         # Transfer the DID into the transform request
         self.dataset_identifier.populate_transform_request(sx_request)
         return sx_request
+
+    def set_title(self, title: str) -> Dataset:
+        self.title = title
+        return self
 
     def set_result_format(self, result_format: ResultFormat):
         r"""
