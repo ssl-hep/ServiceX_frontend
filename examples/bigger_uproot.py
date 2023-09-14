@@ -30,14 +30,14 @@ from servicex import RucioDatasetIdentifier
 from servicex import ResultFormat
 from servicex import ServiceXClient
 
-sx = ServiceXClient(backend="testing4")
+sx = ServiceXClient(backend="production")
 
 dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8")
 
-ds = sx.func_adl_dataset(dataset_id)
+ds = sx.func_adl_dataset(dataset_id, title="bigger_uproot")
 
-sx2 = ds.Select(lambda e: {'el_pt': e['el_pt']})\
-    .set_result_format(ResultFormat.parquet)\
-    .as_files()
+q = ds.Select(lambda e: {'el_pt': e['el_pt']})\
+    .set_result_format(ResultFormat.parquet).set_tree("nominal")\
+    .as_signed_urls()
 
-print(sx2)
+print(q)

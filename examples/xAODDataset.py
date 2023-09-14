@@ -25,21 +25,37 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from servicex import ServiceXClient, RucioDatasetIdentifier, ResultFormat
+from func_adl_servicex_xaodr22.event_collection import Event
 
-from servicex import FileListDataset
-from servicex import ResultFormat
-from servicex import ServiceXClient
+# A Z to ee sample - Release 21
+ds_name = r"mc16_13TeV:mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee.deriv.DAOD_PHYS.e3601_e5984_s3126_r10201_r10210_p5313"
 
-sx = ServiceXClient(backend="production")
-dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
+sx = ServiceXClient(backend="testing4")
+did = RucioDatasetIdentifier(ds_name, num_files=10)
 
-ds = sx.func_adl_dataset(dataset_id, codegen="uproot",
-                         title="Root",
-                         result_format=ResultFormat.parquet)
+ds_raw = sx.func_adl_dataset(
+    did, codegen="atlasr21", title="Zee", result_format=ResultFormat.parquet, item_type=Event)
 
-sx3 = ds.Select(lambda e: {'lep_pt': e['lep_pt']}). \
-    Where(lambda e: e['lep_pt'] > 1000). \
-    set_tree("mini"). \
-    as_pandas()
+from func_adl_servicex_xaodr22 import calib_tools
+# ds = calib_tools.apply_calibration(ds_raw, "PHYS") <this is what we should have>
+ds = calib_tools.query_update(ds_raw, calib_tools.default_config("PHYSLITE"))
 
-print(sx3)
+good_ele = ds.Select(
+    lambda e: {
+        "run": e.EventInfo("EventInfo").runNumber(),
+        "event": e.EventInfo("EventInfo").eventNumber(),
+        "good_ele": e.Electrons("Electrons").Where(lambda e: (e.pt() / 1000 > 25.0) and (abs(e.eta()) < 2.5)
+        ),
+    }
+)
+
+electron_pt = good_ele.Select(lambda e: {
+    "run": e.run,
+    "event": e.event,
+    "pt": e.good_ele.Select(lambda ele: ele.pt()/1000.0),
+})
+
+r = electron_pt.as_signed_urls()
+print(f"number of URLs: {len(r.signed_url_list)}")
+
