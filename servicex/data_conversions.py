@@ -97,7 +97,7 @@ class DataConverterAdaptor:
         def do_the_work(file: Path) -> DataFrame:
             import uproot as uproot
 
-            with uproot.open(file) as f_in:
+            with uproot.open(file) as f_in:  # type: ignore
                 r = f_in[f_in.keys()[0]]
                 return r.arrays(library="pd")  # type: ignore
 
@@ -152,10 +152,18 @@ class DataConverterAdaptor:
         def do_the_work(file: Path) -> ak.Array:
             import uproot as uproot
 
-            with uproot.open(file) as f_in:
+            with uproot.open(file) as f_in:  # type: ignore
                 tree_name = f_in.keys()[0]
 
-            return uproot.lazy(f"{file}:{tree_name}")
+            if hasattr(uproot, "lazy"):
+                return uproot.lazy(f"{file}:{tree_name}")  # type: ignore
+
+            if hasattr(uproot, "dask"):
+                return uproot.dask(f"{file}:{tree_name}")  # type: ignore
+
+            assert (
+                False
+            ), "Uproot version does not have either `dask` or `lazy` - please fix environment!"
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 
