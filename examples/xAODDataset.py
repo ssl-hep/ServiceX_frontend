@@ -47,9 +47,8 @@ good_ele = ds.Select(
     lambda e: {
         "run": e.EventInfo("EventInfo").runNumber(),
         "event": e.EventInfo("EventInfo").eventNumber(),
-        "good_ele": e.Electrons("Electrons").
-        Where(lambda e: (e.pt() / 1000 > 25.0) and (abs(e.eta()) < 2.5)
-              ),
+        "good_ele": e.Electrons("Electrons")
+                     .Where(lambda e: (e.pt() / 1000 > 25.0) and (abs(e.eta()) < 2.5)),
     }
 )
 
