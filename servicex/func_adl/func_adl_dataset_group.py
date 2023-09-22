@@ -32,7 +32,7 @@ from typing import Union, Callable, Iterable
 import ast
 from servicex import DatasetGroup
 
-from func_adl_dataset import T
+from servicex.func_adl.func_adl_dataset import T
 
 
 class FuncADLDatasetGroup(DatasetGroup):
