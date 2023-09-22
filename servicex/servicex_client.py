@@ -125,6 +125,7 @@ class ServiceXClient:
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
         item_type: Type[T] = Any,
+        ignore_cache: bool = False
     ) -> FuncADLDataset[T]:
         r"""
         Generate a dataset that can use func_adl query language
@@ -135,6 +136,8 @@ class ServiceXClient:
         :param codegen: Name of the code generator to use with this transform
         :param result_format:  Do you want Paqrquet or Root? This can be set later with
                                the set_result_format method
+        :param item_type: The type of the items that will be returned from the query
+        :param ignore_cache: Ignore the query cache and always run the query
         :return: A func_adl dataset ready to accept query statements.
         """
         if codegen not in self.code_generators:
@@ -152,6 +155,7 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             item_type=item_type,
+            ignore_cache=ignore_cache
         )
 
     def python_dataset(
@@ -160,6 +164,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
+        ignore_cache: bool = False
     ) -> PythonDataset:
         r"""
         Generate a dataset that can use accept a python function for the  query
@@ -170,6 +175,7 @@ class ServiceXClient:
         :param codegen: Name of the code generator to use with this transform
         :param result_format:  Do you want Paqrquet or Root? This can be set later with
                                the set_result_format method
+        :param ignore_cache: Ignore the query cache and always run the query
         :return: A func_adl dataset ready to accept a python function statements.
 
         """
@@ -188,4 +194,5 @@ class ServiceXClient:
             config=self.config,
             query_cache=self.query_cache,
             result_format=result_format,
+            ignore_cache=ignore_cache
         )

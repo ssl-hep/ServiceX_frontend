@@ -76,6 +76,7 @@ class Dataset(ABC):
         servicex_polling_interval: int = 10,
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
+        ignore_cache: bool = False,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -92,6 +93,7 @@ class Dataset(ABC):
         :param minio_polling_interval:  How many seconds between polling the minio bucket
                                         for new files?
         :param result_format:
+        :param ignore_cache:  If true, ignore the cache and always submit a new transform
         """
         super(Dataset, self).__init__()
         self.servicex = sx_adapter
@@ -112,6 +114,7 @@ class Dataset(ABC):
         self._return_qastle = True
 
         self.request_id = None
+        self.ignore_cache = ignore_cache
 
         # Number of seconds in between ServiceX status polls
         self.servicex_polling_interval = servicex_polling_interval
@@ -198,8 +201,11 @@ class Dataset(ABC):
 
         sx_request = self.transform_request
 
-        # Let's see if this is in the cache already
-        cached_record = self.cache.get_transform_by_hash(sx_request.compute_hash())
+        # Let's see if this is in the cache already, but respect the user's wishes
+        # to ignore the cache
+        cached_record = self.cache.get_transform_by_hash(sx_request.compute_hash()) \
+            if not self.ignore_cache \
+            else None
 
         # And that we grabbed the resulting files in the way that the user requested
         # (Downloaded, or obtained pre-signed URLs)

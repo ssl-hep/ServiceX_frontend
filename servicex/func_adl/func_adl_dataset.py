@@ -81,6 +81,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         query_cache: QueryCache = None,
         result_format: Optional[ResultFormat] = None,
         item_type: Type = Any,
+        ignore_cache: bool = False,
     ):
         Dataset.__init__(
             self,
@@ -91,6 +92,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
             config=config,
             query_cache=query_cache,
             result_format=result_format,
+            ignore_cache=ignore_cache,
         )
         EventDataset.__init__(self, item_type=item_type)
         self.provided_qastle = None
@@ -111,7 +113,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         memo[id(self)] = obj
 
         for attr, value in vars(self).items():
-            if type(value) == QueryCache:
+            if type(value) is QueryCache:
                 setattr(obj, attr, value)
             else:
                 setattr(obj, attr, copy.deepcopy(value, memo))

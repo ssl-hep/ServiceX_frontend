@@ -45,7 +45,8 @@ class PythonDataset(Dataset):
                  codegen: str = None,
                  config: Configuration = None,
                  query_cache: QueryCache = None,
-                 result_format: typing.Optional[ResultFormat] = None
+                 result_format: typing.Optional[ResultFormat] = None,
+                 ignore_cache: bool = False
                  ):
         super().__init__(dataset_identifier=dataset_identifier,
                          title=title,
@@ -53,7 +54,8 @@ class PythonDataset(Dataset):
                          sx_adapter=sx_adapter,
                          config=config,
                          query_cache=query_cache,
-                         result_format=result_format)
+                         result_format=result_format,
+                         ignore_cache=ignore_cache)
 
         self.python_function = None
 
