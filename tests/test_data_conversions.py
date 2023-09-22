@@ -120,9 +120,9 @@ def test_combine_awkward_from_root(good_root_file_path):
     def load_df():
         import uproot as uproot
 
-        with uproot.open(good_root_file_path) as f_in:
+        with uproot.open(good_root_file_path) as f_in:  # type: ignore
             tree_name = f_in.keys()[0]
-        return uproot.lazy(f"{good_root_file_path}:{tree_name}")
+            return f_in[tree_name].arrays()  # type: ignore
 
     df1 = load_df()
     df2 = load_df()
