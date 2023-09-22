@@ -72,7 +72,7 @@ class FileListDataset:
 
         :param files: Either a list of URIs or a single URI string
         """
-        if type(files) == str:
+        if type(files) is str:
             self.files = [files]
         else:
             self.files = files
