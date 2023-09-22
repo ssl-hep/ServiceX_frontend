@@ -18,6 +18,20 @@ if version is None:
 else:
     version = version.split("/")[-1]
 
+# Awkward 2.0 is only allowed on Python 3.8+ - so we need to shift the
+# awkward requirement a little bit.
+if sys.version_info < (3, 8):
+    awkward_requirements = [
+        "awkward>=1.0.1,<2",
+        "uproot>=4.0.1,<5",
+    ]
+else:
+    awkward_requirements = [
+        "awkward>=1.0.1",
+        "dask_awkward",
+        "fsspec",
+        "uproot>=4.0.1",
+    ]
 setup(
     name="servicex",
     version=version,
@@ -38,8 +52,6 @@ setup(
         "idna==2.10",  # Required to thread version needle with requests library
         "pandas~=1.0",
         "uproot>=4.0.1",
-        "awkward>=1.0.1",
-        "dask_awkward",
         "backoff>=2.0",
         "aiohttp~=3.6",
         "minio~=5.0",
@@ -49,8 +61,8 @@ setup(
         "google-auth",
         "confuse",
         "pyarrow>=1.0",
-        "fsspec",
-    ],
+    ]
+    + awkward_requirements,
     extras_require={
         "test": [
             "pytest>=3.9",
