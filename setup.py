@@ -39,6 +39,7 @@ setup(
         "pandas~=1.0",
         "uproot>=4.0.1",
         "awkward>=1.0.1",
+        "dask_awkward",
         "backoff>=2.0",
         "aiohttp~=3.6",
         "minio~=5.0",

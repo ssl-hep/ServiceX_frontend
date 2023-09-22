@@ -155,7 +155,15 @@ class DataConverterAdaptor:
             with uproot.open(file) as f_in:
                 tree_name = f_in.keys()[0]
 
-            return uproot.lazy(f"{file}:{tree_name}")
+            if hasattr(uproot, "lazy"):
+                return uproot.lazyarray(f"{file}:{tree_name}")
+
+            if hasattr(uproot, "dask"):
+                return uproot.dask(f"{file}:{tree_name}")
+
+            assert (
+                False
+            ), "Uproot version does not have either `dask` or `lazy` - please fix environment!"
 
         return await asyncio.wrap_future(_conversion_pool.submit(do_the_work, file))
 
