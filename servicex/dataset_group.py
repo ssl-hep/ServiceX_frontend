@@ -60,6 +60,7 @@ class DatasetGroup:
         """
         for dataset in self.datasets:
             dataset.set_result_format(result_format)
+        return self
 
     async def as_signed_urls_async(
         self,
