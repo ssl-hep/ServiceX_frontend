@@ -210,6 +210,18 @@ class ServiceXAdaptor:
                     f"Transform status for {request_id}" ' is marked "Fatal".'
                 )
 
+            if (
+                "status" in info
+                and info["status"] == "Complete"
+                and info["files-remaining"] is None
+                and info["files-processed"] == 0
+            ):
+                raise ServiceXFatalTransformException(
+                    f"Transform status for {request_id}"
+                    ' is marked "Complete" but no files were processed. Either the dataset '
+                    "is empty, or the dataset name is invalid."
+                )
+
             files_remaining = self._get_transform_stat(info, "files-remaining")
             files_failed = self._get_transform_stat(info, "files-skipped")
             files_processed = self._get_transform_stat(info, "files-processed")
