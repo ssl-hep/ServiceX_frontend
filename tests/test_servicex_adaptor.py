@@ -99,6 +99,23 @@ def servicex_status_negative(mocker):
 
 
 @pytest.fixture
+def servicex_no_files(mocker):
+    "Returns a result when there are no files in the dataset"
+    result = {
+        "files-processed": 0,
+        "files-remaining": None,
+        "files-skipped": 0,
+        "request-id": "24e59fa2-e1d7-4831-8c7e-82b2efc7c658",
+        "stats": None,
+        "status": "Complete",
+    }
+    mocker.patch(
+        "aiohttp.ClientSession.get",
+        return_value=ClientSessionMocker(dumps(result), 200),
+    )
+
+
+@pytest.fixture
 def good_submit(mocker):
     client = mocker.MagicMock()
     r = ClientSessionMocker(dumps({"request_id": "111-222-333-444"}), 200)
@@ -191,7 +208,6 @@ async def test_status_no_auth(servicex_status_request):
 
 @pytest.mark.asyncio
 async def test_status_fatal_status(servicex_status_fatal):
-
     sa = ServiceXAdaptor("http://localhost:500/sx")
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ServiceXFatalTransformException) as e:
@@ -202,13 +218,22 @@ async def test_status_fatal_status(servicex_status_fatal):
 
 @pytest.mark.asyncio
 async def test_status_negative_status(servicex_status_negative):
-
     sa = ServiceXAdaptor("http://localhost:500/sx")
     async with aiohttp.ClientSession() as client:
         with pytest.raises(ServiceXFatalTransformException) as e:
             await sa.get_transform_status(client, "123-123-123-444")
 
         assert "negative" in str(e.value)
+
+
+@pytest.mark.asyncio
+async def test_status_empty(servicex_no_files):
+    sa = ServiceXAdaptor("http://localhost:500/sx")
+    async with aiohttp.ClientSession() as client:
+        with pytest.raises(ServiceXFatalTransformException) as e:
+            await sa.get_transform_status(client, "123-123-123-444")
+
+        assert "empty" in str(e.value)
 
 
 @pytest.mark.asyncio
@@ -243,7 +268,6 @@ async def test_status_with_auth(mocker):
 
 @pytest.mark.asyncio
 async def test_status_unknown_request(servicex_status_unknown):
-
     sa = ServiceXAdaptor("http://localhost:5000/sx")
     with pytest.raises(ServiceXUnknownRequestID) as e:
         async with aiohttp.ClientSession() as client:
