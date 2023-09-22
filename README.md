@@ -195,6 +195,7 @@ The file can contain an `api_endpoint` as mentioned earlier. In addition the oth
 All strings are expanded using python's [os.path.expand](https://docs.python.org/3/library/os.path.html#os.path.expandvars) method - so `$NAME` and `${NAME}` will work to expand existing environment variables.
 
 For non-standard use cases, the user can specify:
+
 - The code generator that is used by the backend. This is done by passing a `codegen` argument to ServiceXDataset. This argument is normally inherited from the backend type set in `servicex.yaml`, but can be overridden with any valid `codegen` contained in the default type listing. A `codegen` entry can also be added to a backend in the yaml file to use as default.
 - The type of backend, using the `backend_type` argument on ServiceXDataset. This overrides the backend type setting in the `servicex.yaml` file.
 
@@ -206,7 +207,8 @@ Implemented:
 - Exceptions are used to report back errors of all sorts from the service to the user's code.
 - Data is return in the following forms:
   - `pandas.DataFrame` an in process DataFrame of all the data requested
-  - `awkward` an in process `JaggedArray` or dictionary of `JaggedArray`s
+  - `awkward` an in process `JaggedArray` or dictionary of `JaggedArray`s.
+  - If you have `awkward` 2.0 installed, then a `dask_awkward` array is returned instead.
   - A list of root files that can be opened with `uproot` and used as desired.
   - Not all output formats are compatible with all transformations.
 - Complete returned data must fit in the process' memory
