@@ -20,6 +20,7 @@ else:
 
 # Awkward 2.0 is only allowed on Python 3.8+ - so we need to shift the
 # awkward requirement a little bit.
+# TODO: Remove this when we stop supporting 3.7.
 if sys.version_info < (3, 8):
     awkward_requirements = [
         "awkward>=1.0.1,<2",
