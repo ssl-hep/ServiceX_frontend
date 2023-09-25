@@ -57,7 +57,7 @@ def list():
     table.add_column("Codegen")
     table.add_column("Transform ID")
     table.add_column("Run Date")
-    table.add_column("Files")
+    table.add_column("Files/Failed")
     table.add_column("Format")
     runs = cache.cached_queries()
     for r in runs:
@@ -66,7 +66,7 @@ def list():
             r.codegen,
             r.request_id,
             r.submit_time.astimezone().strftime("%a, %Y-%m-%d %H:%M"),
-            str(r.files),
+            f"{r.files}/{r.failed_files}",
             r.result_format
         )
     rich.print(table)

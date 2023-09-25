@@ -207,6 +207,10 @@ class Dataset(ABC):
             if not self.ignore_cache \
             else None
 
+        # We won't use a cached record if there were any failures in that transform
+        if cached_record and cached_record.failed_files:
+            cached_record = None
+
         # And that we grabbed the resulting files in the way that the user requested
         # (Downloaded, or obtained pre-signed URLs)
         if cached_record:

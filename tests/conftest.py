@@ -126,5 +126,7 @@ def transformed_result() -> TransformedResults:
         file_list=["/tmp/1.root", "/tmp/2.root"],
         signed_url_list=[],
         files=2,
+        failed_files=0,
+        status="Completed",
         result_format=ResultFormat.root_file,
     )
