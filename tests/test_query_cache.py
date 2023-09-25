@@ -28,11 +28,9 @@
 import os
 import tempfile
 
-import pytest
-
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
-from servicex.query_cache import QueryCache, CacheException
+from servicex.query_cache import QueryCache
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
 
@@ -85,28 +83,24 @@ def test_cache_transform(transform_request, completed_status):
         assert test2
         assert test2.title == "Test submission"
         assert test2.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+        assert test2.signed_url_list == []
 
         assert not cache.get_transform_by_hash("thishashdoesnotexist")
         assert not cache.get_transform_by_request_id("this-uuid-does-not-exist")
 
-        # make a duplicate record
+        # Call again and verify that the record is updated
         cache.cache_transform(
             transform=transform_request,
             completed_status=completed_status,
             data_dir="/foo/baz",
             file_list=file_uris,
-            signed_urls=[],
+            signed_urls=["http://foo.bar"]
         )
 
-        with pytest.raises(CacheException):
-            _ = cache.get_transform_by_hash(transform_request.compute_hash())
+        test3 = cache.get_transform_by_hash(transform_request.compute_hash())
+        assert test3.signed_url_list == ["http://foo.bar"]
 
-        with pytest.raises(CacheException):
-            _ = cache.get_transform_by_request_id(
-                "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
-            )
-
-        assert len(cache.cached_queries()) == 2
+        assert len(cache.cached_queries()) == 1
 
         cache.delete_record_by_request_id("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
         assert len(cache.cached_queries()) == 0
@@ -136,8 +130,11 @@ def test_record_delete(transform_request, completed_status):
             signed_urls=[],
         )
 
+        # Make a second request that will have different hash
+        transform_request2 = transform_request.copy()
+        transform_request2.result_format = ResultFormat.root_file
         cache.cache_transform(
-            transform=transform_request,
+            transform=transform_request2,
             completed_status=completed_status.copy(
                 update={"request_id": "02c64494-4529-49a7-a4a6-95661ea3936e"}
             ),

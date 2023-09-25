@@ -35,7 +35,7 @@ from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
 from servicex.func_adl.func_adl_dataset import FuncADLDataset
-from servicex.models import TransformStatus, Status, ResultFile, ResultFormat
+from servicex.models import TransformStatus, Status, ResultFile, ResultFormat, TransformedResults
 from servicex.query_cache import QueryCache
 
 transform_status = TransformStatus(
@@ -96,6 +96,21 @@ transform_status3 = transform_status.copy(
 file1 = ResultFile(filename="file1", size=100, extension="parquet")
 file2 = ResultFile(filename="file2", size=100, extension="parquet")
 
+mock_cache_record = TransformedResults(
+    hash="123",
+    title="title",
+    failed_files=0,
+    codegen="uproot",
+    request_id="123-456-789",
+    submit_time="2023-05-25T20:05:05.564137Z",
+    data_dir="/foo/bar",
+    file_list=["/foo/bar/file1.parquet"],
+    signed_url_list=["/foo/bar/file1.parquet"],
+    files=1,
+    status="Complete",
+    result_format=ResultFormat.parquet
+)
+
 
 @pytest.mark.asyncio
 async def test_submit(mocker):
@@ -114,13 +129,16 @@ async def test_submit(mocker):
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.Mock(return_value=mock_cache_record)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
+    config = Configuration(cache_path=tempfile.gettempdir(), api_endpoints=[])
     datasource = FuncADLDataset(
         dataset_identifier=did,
         codegen="uproot",
         sx_adapter=servicex,
         query_cache=mock_cache,
+        config=config
     )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet

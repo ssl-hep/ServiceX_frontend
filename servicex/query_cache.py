@@ -29,6 +29,7 @@ import json
 import os
 from pathlib import Path
 from typing import List, Optional
+from threading import RLock
 
 from tinydb import TinyDB, Query, where
 
@@ -45,6 +46,7 @@ class QueryCache:
         self.config = config
         Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
         self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
+        self.lock = RLock()
 
     def close(self):
         self.db.close()
@@ -64,18 +66,28 @@ class QueryCache:
             file_list=file_list,
             signed_url_list=signed_urls,
             files=completed_status.files,
+            failed_files=completed_status.files_failed,
+            status=completed_status.status,
             result_format=transform.result_format
         )
-        self.db.insert(json.loads(record.json()))
+        with self.lock:
+            if self.get_transform_by_hash(record.hash):
+                self.update_record(record)
+            else:
+                self.db.insert(json.loads(record.json()))
+
         return record
 
     def update_record(self, record: TransformedResults):
-        transforms = Query()
-        self.db.update(json.loads(record.json()), transforms.hash == record.hash)
+        with self.lock:
+            transforms = Query()
+            self.db.update(json.loads(record.json()), transforms.hash == record.hash)
 
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
-        transforms = Query()
-        records = self.db.search(transforms.hash == hash)
+        with self.lock:
+            transforms = Query()
+            records = self.db.search(transforms.hash == hash)
+
         if not records:
             return None
 
@@ -85,8 +97,9 @@ class QueryCache:
             return TransformedResults(**records[0])
 
     def get_transform_by_request_id(self, request_id: str) -> Optional[TransformedResults]:
-        transforms = Query()
-        records = self.db.search(transforms.request_id == request_id)
+        with self.lock:
+            transforms = Query()
+            records = self.db.search(transforms.request_id == request_id)
         if not records:
             return None
 
@@ -102,10 +115,16 @@ class QueryCache:
         return result
 
     def cached_queries(self) -> List[TransformedResults]:
-        return [TransformedResults(**doc) for doc in self.db.all()]
+        with self.lock:
+            transforms = Query()
+            return [TransformedResults(**doc) for
+                    doc in self.db.search(transforms.request_id.exists())]
 
     def delete_record_by_request_id(self, request_id: str):
-        self.db.remove(where('request_id') == request_id)
+        with self.lock:
+            print(f"Deleting {request_id}")
+            transforms = Query()
+            self.db.remove(transforms.request_id == request_id)
 
     def get_codegen_by_backend(self, backend: str) -> Optional[dict]:
         codegens = Query()

@@ -156,4 +156,6 @@ class TransformedResults(BaseModel):
     file_list: List[str]
     signed_url_list: List[str]
     files: int
+    failed_files: int
+    status: str
     result_format: ResultFormat
