@@ -45,8 +45,8 @@ class ResultFormat(str, Enum):
     r"""
     Specify the file format for the generated output
     """
-    parquet = ("parquet",)
-    root_file = "root-file"
+    parquet = "parquet"
+    root = "root"
 
 
 class Status(str, Enum):
