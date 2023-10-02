@@ -66,12 +66,12 @@ jobs:
 
       - name: Test with pytest
         run: |
-          poetry run coverage run -m pytest
-
-#      - name: Report coverage with Codecov
-#        if: github.event_name == 'push' && matrix.platform == 'ubuntu-latest'
-#        uses: codecov/codecov-action@v3
-#        with:
-#          token: ${{ secrets.CODECOV_TOKEN }}
-#          file: ./coverage.xml # optional
-#          flags: unittests-${{ matrix.python-version }} # optional
+          poetry run coverage run -m pytest --cov=./ --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3.1.4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage/reports/
+          env_vars: OS,PYTHON
+          files: ./coverage.xml
+          flags: unittests

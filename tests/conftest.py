@@ -28,7 +28,7 @@
 from datetime import datetime
 
 from pytest_asyncio import fixture
-
+from servicex.python_dataset import PythonDataset
 from servicex.models import (
     TransformRequest,
     ResultDestination,
@@ -36,6 +36,12 @@ from servicex.models import (
     TransformStatus,
     TransformedResults,
 )
+
+from servicex.dataset_identifier import FileListDataset
+from servicex.minio_adapter import MinioAdapter
+
+import pandas as pd
+import os
 
 
 @fixture
@@ -48,6 +54,44 @@ def transform_request() -> TransformRequest:
         result_destination=ResultDestination.object_store,  # type: ignore
         result_format=ResultFormat.parquet,  # type: ignore
     )  # type: ignore
+
+
+@fixture
+def minio_adapter() -> MinioAdapter:
+    return MinioAdapter("localhost", False, "access_key", "secret_key", "bucket")
+
+
+@fixture
+def python_dataset(dummy_parquet_file):
+    did = FileListDataset(dummy_parquet_file)
+    dataset = PythonDataset(
+        title="Test submission",
+        dataset_identifier=did,
+        codegen="uproot",
+        result_format=ResultFormat.parquet,  # type: ignore
+    )  # type: ignore
+
+    def foo():
+        return
+
+    dataset.with_uproot_function(foo)
+    return dataset
+
+
+@fixture
+def transformed_result_python_dataset(dummy_parquet_file) -> TransformedResults:
+    return TransformedResults(
+        hash="289e90f6fe3780253af35c428b784ac22d3ee9200a7581b8f0a9bdcc5ae93479",
+        title="Test submission",
+        codegen="uproot",
+        request_id="b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=[dummy_parquet_file],
+        signed_url_list=[],
+        files=1,
+        result_format=ResultFormat.parquet,
+    )
 
 
 @fixture
@@ -115,7 +159,7 @@ def completed_status() -> TransformStatus:
 
 
 @fixture
-def transformed_result() -> TransformedResults:
+def transformed_result(dummy_parquet_file) -> TransformedResults:
     return TransformedResults(
         hash="123-4455",
         title="Test",
@@ -123,8 +167,22 @@ def transformed_result() -> TransformedResults:
         request_id="123-45-6789",
         submit_time=datetime.now(),
         data_dir="/foo/bar",
-        file_list=["/tmp/1.root", "/tmp/2.root"],
+        file_list=[dummy_parquet_file],
         signed_url_list=[],
         files=2,
         result_format=ResultFormat.root_file,
     )
+
+
+@fixture
+def dummy_parquet_file():
+    data = {'column1': [1, 2, 3, 4],
+            'column2': ['A', 'B', 'C', 'D']}
+    df = pd.DataFrame(data)
+    parquet_file_path = '1.parquet'
+    df.to_parquet(parquet_file_path, index=False)
+
+    yield parquet_file_path
+
+    if os.path.exists(parquet_file_path):
+        os.remove(parquet_file_path)
