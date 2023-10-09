@@ -324,3 +324,37 @@ async def test_submit_and_download_cache_urls_request_files(python_dataset, tran
         assert result is not None
         assert result.request_id == transformed_result.request_id
         cache.close()
+
+
+@pytest.mark.asyncio
+async def test_network_loss(python_dataset, transformed_result):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        python_dataset.current_status = None
+        python_dataset.servicex = AsyncMock()
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        python_dataset.cache = cache
+        python_dataset.configuration = config
+        python_dataset.download_path = Path("www.a.b.com")
+
+        python_dataset.servicex = AsyncMock()
+        status = Mock(files=10, files_completed=5, files_failed=1, status=Status.fatal)
+        python_dataset.current_status = status
+
+        python_dataset.cache.get_transform_by_hash = Mock()
+        transformed_result.files = status.files
+        python_dataset.cache.get_transform_by_hash.return_value = transformed_result
+
+        python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
+        python_dataset.servicex.get_transform_status.return_value = status
+        python_dataset.servicex.submit_transform = AsyncMock()
+        python_dataset.download_files = AsyncMock()
+        python_dataset.download_files.return_value = []
+
+        signed_urls_only = False
+        expandable_progress = ExpandableProgress()
+
+        result = await python_dataset.submit_and_download(signed_urls_only, expandable_progress)
+        assert result is not None
+        assert result.request_id == "123-45-6789"
+        cache.close()
