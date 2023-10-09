@@ -102,7 +102,9 @@ class QueryCache:
         return result
 
     def cached_queries(self) -> List[TransformedResults]:
-        return [TransformedResults(**doc) for doc in self.db.all()]
+        transforms = Query()
+        return [TransformedResults(**doc) for doc in
+                self.db.search(transforms.request_id.exists())]
 
     def delete_record_by_request_id(self, request_id: str):
         self.db.remove(where('request_id') == request_id)
