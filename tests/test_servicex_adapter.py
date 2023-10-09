@@ -43,6 +43,16 @@ def servicex():
     return ServiceXAdapter("https://servicex.org")
 
 
+def test_result_formats():
+    """
+    This test is just to make sure the enum string representations match the values
+    expected by the service. Compare this to the json parser in
+    servicex.resources.transformation.submit.SubmitTransformationRequest.make_api
+    """
+    assert ResultFormat.parquet == "parquet"
+    assert ResultFormat.root == "root-file"
+
+
 @pytest.mark.asyncio
 @patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transforms(get, servicex, transform_status_response):
