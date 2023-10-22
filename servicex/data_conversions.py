@@ -154,6 +154,10 @@ class DataConverterAdaptor:
 
             with uproot.open(file) as f_in:  # type: ignore
                 tree_name = f_in.keys()[0]
+                # If `tree_name` ends with a ";NN", (where NN is a number
+                # left over from VMS file versioning!), remove everything from the
+                # ';' on
+                tree_name = tree_name.split(";")[0]
 
             if hasattr(uproot, "lazy"):
                 return uproot.lazy(f"{file}:{tree_name}")  # type: ignore
