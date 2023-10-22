@@ -198,7 +198,7 @@ class ServiceXDataset(ServiceXABC):
         Arguments
 
             dataset                     Name of a dataset from which queries will be selected.
-            backend_name                The type of backend. Used only if we need to find an
+            backend_name                The name of backend. Used only if we need to find an
                                         end-point. If we do not have a `servicex_adaptor` then this
                                         will default to xaod, unless you have any endpoint listed
                                         in your servicex file. It will default to best match there,

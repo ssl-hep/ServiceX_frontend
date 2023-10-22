@@ -44,6 +44,7 @@ class ServiceXConfigAdaptor:
 
         Args:
             backend_name (Optional[str]): The backend type string (`xaod`, `uproot`, etc)
+            backend_name (Optional[str]): Override the backend type
 
         Returns:
             str: The backend datatype, like `root` or `parquet`.
@@ -171,6 +172,7 @@ class ServiceXConfigAdaptor:
 
         # Now, extract the type and see if we can figure out any defaults from the
         # `backend_types` info. Skip this if we have a type we are passed in.
+        override_backend_info = backend_type is not None
         type_lookup = (
             backend_type
             if backend_type is not None
@@ -185,7 +187,7 @@ class ServiceXConfigAdaptor:
         for bd in backend_defaults:
             if bd["type"].as_str_expanded() == type_lookup:
                 for k in bd.keys():
-                    if k not in config:
+                    if override_backend_info or (k not in config):
                         config[k] = str(bd[k].as_str_expanded())
 
         # Finally, a default return type
