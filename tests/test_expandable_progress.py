@@ -41,6 +41,24 @@ def test_progress(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
+@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
+def test_overall_progress(mock_progress):
+    with ExpandableProgress(overall_progress=True) as progress:
+        assert progress.progress == mock_progress.return_value
+        mock_progress.return_value.start.assert_called_once()
+        assert progress.display_progress
+    assert mock_progress.return_value.stop.call_count == 1
+
+
+@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
+def test_overall_progress_mock(mock_progress):
+    with ExpandableProgress(overall_progress=True) as progress:
+        assert progress.progress == mock_progress.return_value
+        mock_progress.return_value.start.assert_called_once()
+        assert progress.display_progress
+    assert mock_progress.return_value.stop.call_count == 1
+
+
 def test_provided_progress(mocker):
     class MockedProgress(Progress):
         def __init__(self):
