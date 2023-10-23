@@ -33,6 +33,20 @@ async def test_as_signed_urls_happy(transformed_result):
 
 
 @pytest.mark.asyncio
+async def test_as_signed_urls_happy_dataset_group(transformed_result):
+    # Test when display_progress is True and provided_progress is None
+    did = FileListDataset("/foo/bar/baz.root")
+    dataset = PythonDataset(dataset_identifier=did, codegen="uproot",
+                            sx_adapter=None, query_cache=None)
+    dataset.submit_and_download = AsyncMock()
+    dataset.submit_and_download.return_value = transformed_result
+
+    result = dataset.as_signed_urls(display_progress=True, provided_progress=None,
+                                    dataset_group=True)
+    assert result == transformed_result
+
+
+@pytest.mark.asyncio
 async def test_as_files_happy(transformed_result):
     did = FileListDataset("/foo/bar/baz.root")
     dataset = PythonDataset(dataset_identifier=did, codegen="uproot",
@@ -138,7 +152,8 @@ async def test_transform_status_listener_happy(python_dataset):
     status = Mock(files=10, files_completed=5, files_failed=1, status=Status.complete)
     python_dataset.current_status = status
     python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
-    await python_dataset.transform_status_listener(progress, progress_task, download_task)
+    await python_dataset.transform_status_listener(progress, progress_task, "mock_title",
+                                                   download_task, "mock_title")
 
     python_dataset.retrieve_current_transform_status.assert_awaited_once()
     # progress.update.assert_called_with(progress_task, total=10)
@@ -212,6 +227,36 @@ async def test_submit_and_download_cache_miss(python_dataset, completed_status):
         expandable_progress = ExpandableProgress()
 
         result = await python_dataset.submit_and_download(signed_urls_only, expandable_progress)
+        assert result is not None
+        assert result.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+        cache.close()
+
+
+@pytest.mark.asyncio
+async def test_submit_and_download_cache_miss_overall_progress(python_dataset, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        python_dataset.current_status = None
+        python_dataset.servicex = AsyncMock()
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        python_dataset.cache = cache
+        python_dataset.configuration = config
+
+        python_dataset.servicex = AsyncMock()
+        python_dataset.cache.get_transform_by_hash = Mock()
+        python_dataset.cache.get_transform_by_hash.return_value = None
+        python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
+        python_dataset.servicex.get_transform_status.return_value = completed_status
+        python_dataset.servicex.submit_transform = AsyncMock()
+        python_dataset.download_files = AsyncMock()
+        python_dataset.download_files.return_value = []
+
+        signed_urls_only = False
+        expandable_progress = ExpandableProgress(overall_progress=True)
+        dataset_group = True
+
+        result = await python_dataset.submit_and_download(signed_urls_only, expandable_progress,
+                                                          dataset_group)
         assert result is not None
         assert result.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
         cache.close()

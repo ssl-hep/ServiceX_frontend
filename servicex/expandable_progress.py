@@ -30,13 +30,29 @@ from __future__ import annotations
 from typing import Optional
 
 from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
-    TimeRemainingColumn
+    TimeRemainingColumn, TaskID
+
+
+class ProgressCounts:
+    def __init__(self,
+                 description: str,
+                 task_id: TaskID,
+                 start: Optional[int] = None,
+                 total: Optional[int] = None,
+                 completed: Optional[int] = None):
+
+        self.description = description
+        self.taskId = task_id
+        self.start = start
+        self.total = total
+        self.completed = completed
 
 
 class ExpandableProgress:
     def __init__(self,
                  display_progress: bool = True,
-                 provided_progress: Optional[Progress | ExpandableProgress] = None):
+                 provided_progress: Optional[Progress | ExpandableProgress] = None,
+                 overall_progress: bool = False):
         """
         We want to be able to use rich progress bars in the async code, but there are
         some situtations where the user doesn't want them. Also we might be running
@@ -52,17 +68,22 @@ class ExpandableProgress:
         """
         self.display_progress = display_progress
         self.provided_progress = provided_progress
+        self.overall_progress = overall_progress
+        self.overall_progress_transform_task = None
+        self.overall_progress_download_task = None
+        self.progress_counts = {}
         if display_progress:
-            if provided_progress:
-                self.progress = provided_progress if isinstance(provided_progress, Progress) \
-                    else provided_progress.progress
-            else:
+            if self.overall_progress or not provided_progress:
                 self.progress = Progress(
                     TextColumn("[progress.description]{task.description}"),
                     BarColumn(),
                     MofNCompleteColumn(),
                     TimeRemainingColumn(compact=True, elapsed_when_finished=True)
                 )
+
+            if provided_progress:
+                self.progress = provided_progress if isinstance(provided_progress, Progress) \
+                    else provided_progress.progress
         else:
             self.progress = None
 
@@ -88,5 +109,77 @@ class ExpandableProgress:
             self.progress.stop()
 
     def add_task(self, param, start, total):
-        if self.display_progress:
+        if self.display_progress and self.overall_progress:
+            if (
+                not self.overall_progress_download_task
+                and not self.overall_progress_transform_task
+            ):
+                self.overall_progress_transform_task = self.progress.add_task("Transform",
+                                                                              start=False,
+                                                                              total=None)
+                self.overall_progress_download_task = self.progress.add_task("Download/URLs",
+                                                                             start=False,
+                                                                             total=None)
+
+            task_id = self.progress.add_task(param, start=start, total=total, visible=False)
+            new_task = ProgressCounts(param, task_id, start=start, total=total)
+            self.progress_counts[task_id] = new_task
+            return task_id
+        if self.display_progress and not self.overall_progress:
             return self.progress.add_task(param, start=start, total=total)
+
+    def update(self, task_id, task_type, total=None, completed=None):
+
+        if self.display_progress and self.overall_progress:
+            # Calculate and update
+            overall_completed = 0
+            overall_total = 0
+            if completed:
+                self.progress_counts[task_id].completed = completed
+
+            elif total:
+                self.progress_counts[task_id].total = total
+
+            for task in self.progress_counts:
+                if (
+                    self.progress_counts[task].description == task_type
+                    and self.progress_counts[task].completed
+                ):
+                    overall_completed += self.progress_counts[task].completed
+
+            for task in self.progress_counts:
+                if (
+                    self.progress_counts[task].description == task_type
+                    and self.progress_counts[task].total
+                ):
+                    overall_total += self.progress_counts[task].total
+
+            if task_type == "Transform":
+                return self.progress.update(self.overall_progress_transform_task,
+                                            completed=overall_completed,
+                                            total=overall_total)
+            else:
+                return self.progress.update(self.overall_progress_download_task,
+                                            completed=overall_completed,
+                                            total=overall_total)
+
+        if self.display_progress and not self.overall_progress:
+            return self.progress.update(task_id, completed=completed, total=total)
+
+    def start_task(self, task_id, task_type):
+        if self.display_progress and self.overall_progress:
+            if task_type == "Transform":
+                self.progress.start_task(task_id=self.overall_progress_transform_task)
+            else:
+                self.progress.start_task(task_id=self.overall_progress_download_task)
+        elif self.display_progress and not self.overall_progress:
+            self.progress.start_task(task_id=task_id)
+
+    def advance(self, task_id, task_type):
+        if self.display_progress and self.overall_progress:
+            if task_type == "Transform":
+                self.progress.advance(task_id=self.overall_progress_transform_task)
+            else:
+                self.progress.advance(task_id=self.overall_progress_download_task)
+        elif self.display_progress and not self.overall_progress:
+            self.progress.advance(task_id=task_id)

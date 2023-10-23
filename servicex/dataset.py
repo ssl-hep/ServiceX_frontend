@@ -73,7 +73,7 @@ class Dataset(ABC):
         sx_adapter: ServiceXAdapter,
         config: Configuration,
         query_cache: QueryCache,
-        servicex_polling_interval: int = 10,
+        servicex_polling_interval: int = 5,
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
@@ -158,7 +158,8 @@ class Dataset(ABC):
 
     async def submit_and_download(
         self, signed_urls_only: bool,
-            expandable_progress: ExpandableProgress
+            expandable_progress: ExpandableProgress,
+            dataset_group: Optional[bool] = False,
     ) -> Optional[TransformedResults]:
         """
         Submit the transform request to ServiceX. Poll the transform status to see when
@@ -222,9 +223,10 @@ class Dataset(ABC):
         # If we get here with a cached record, then we know that the transform
         # has been run, but we just didn't get the files from object store in the way
         # requested by user
+        transform_bar_title = "Transform"
         if not cached_record:
             transform_progress = expandable_progress.add_task(
-                "Transform", start=False, total=None
+                transform_bar_title, start=False, total=None
             ) if expandable_progress else None
         else:
             self.request_id = cached_record.request_id
@@ -244,7 +246,8 @@ class Dataset(ABC):
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
-                    expandable_progress.progress, transform_progress, download_progress
+                    expandable_progress, transform_progress, transform_bar_title,
+                    download_progress, minio_progress_bar_title
                 )
             )
             monitor_task.add_done_callback(transform_complete)
@@ -253,7 +256,7 @@ class Dataset(ABC):
 
         download_files_task = loop.create_task(
             self.download_files(
-                signed_urls_only, expandable_progress.progress, download_progress, cached_record
+                signed_urls_only, expandable_progress, download_progress, cached_record
             )
         )
 
@@ -288,7 +291,8 @@ class Dataset(ABC):
             rich.print("Aborted file downloads due to transform failure")
 
     async def transform_status_listener(
-        self, progress: Progress, progress_task: TaskID, download_task: TaskID
+        self, progress: ExpandableProgress, progress_task: TaskID,
+        progress_bar_title: str, download_task: TaskID, download_bar_title: str
     ):
         """
         Poll ServiceX for the status of a transform. Update progress bars and keep track
@@ -309,15 +313,16 @@ class Dataset(ABC):
             if not final_count and self.current_status.files:
                 final_count = self.current_status.files
                 if progress:
-                    progress.update(progress_task, total=final_count)
-                    progress.start_task(progress_task)
+                    progress.update(progress_task, progress_bar_title, total=final_count)
+                    progress.start_task(task_id=progress_task, task_type="Transform")
 
-                    progress.update(download_task, total=final_count)
-                    progress.start_task(download_task)
+                    progress.update(download_task, download_bar_title, total=final_count)
+                    progress.start_task(task_id=download_task, task_type="Download")
 
             if progress:
                 progress.update(
-                    progress_task, completed=self.current_status.files_completed
+                    progress_task, progress_bar_title,
+                    completed=self.current_status.files_completed
                 )
 
             if self.current_status.status == Status.complete:
@@ -347,7 +352,7 @@ class Dataset(ABC):
     async def download_files(
         self,
         signed_urls_only: bool,
-        progress: Progress,
+        progress: ExpandableProgress,
         download_progress: TaskID,
         cached_record: Optional[TransformedResults],
     ) -> List[str]:
@@ -371,7 +376,7 @@ class Dataset(ABC):
                 filename, self.download_path, shorten_filename=shorten_filename
             )
             result_uris.append(downloaded_filename.as_posix())
-            progress.advance(download_progress)
+            progress.advance(task_id=download_progress, task_type="Download")
 
         async def get_signed_url(
             minio: MinioAdapter,
@@ -382,7 +387,7 @@ class Dataset(ABC):
             url = await minio.get_signed_url(filename)
             result_uris.append(url)
             if progress:
-                progress.advance(download_progress)
+                progress.advance(task_id=download_progress, task_type="Download")
 
         while True:
             if not cached_record:
@@ -467,16 +472,23 @@ class Dataset(ABC):
         pass
 
     async def as_signed_urls_async(self, display_progress: bool = True,
-                                   provided_progress: Optional[ProgressIndicators] = None) \
+                                   provided_progress: Optional[ProgressIndicators] = None,
+                                   dataset_group: bool = False) \
             -> TransformedResults:
         r"""
         Presign URLs for each of the transformed files
 
         :return: TransformedResults object with the presigned_urls list populated
         """
+        if dataset_group:
+            return await self.submit_and_download(signed_urls_only=True,
+                                                  expandable_progress=provided_progress,
+                                                  dataset_group=dataset_group)
+
         with ExpandableProgress(display_progress=display_progress,
                                 provided_progress=provided_progress) as progress:
             return await self.submit_and_download(signed_urls_only=True,
-                                                  expandable_progress=progress)
+                                                  expandable_progress=progress,
+                                                  dataset_group=dataset_group)
 
     as_signed_urls = make_sync(as_signed_urls_async)

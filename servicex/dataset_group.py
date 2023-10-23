@@ -67,9 +67,10 @@ class DatasetGroup:
         display_progress: bool = True,
         provided_progress: Optional[Progress] = None,
     ) -> List[TransformedResults]:
-        with ExpandableProgress(display_progress, provided_progress) as progress:
+        with ExpandableProgress(display_progress, provided_progress,
+                                overall_progress=True) as progress:
             self.tasks = [
-                d.as_signed_urls_async(provided_progress=progress)
+                d.as_signed_urls_async(provided_progress=progress, dataset_group=True)
                 for d in self.datasets
             ]
             return await asyncio.gather(*self.tasks)
