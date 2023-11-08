@@ -1,0 +1,228 @@
+# Copyright (c) 2022, IRIS-HEP
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import yaml
+import pathlib
+from typing import Any, Dict, Union
+import rich
+
+# from servicex.configuration import Configuration
+
+
+def load_databinder_config(input_config:
+                           Union[str, pathlib.Path, Dict[str, Any]]
+                           ) -> Dict[str, Any]:
+    """
+    Loads, validates, and returns DataBinder configuration
+    Args:
+        input_config (Union[str, pathlib.Path, Dict[str, Any]]):
+            path to config file or config as dict
+    Returns:
+        Dict[str, Any]: configuration
+    """
+
+    if isinstance(input_config, Dict):
+        _set_default_values(input_config)
+        ndef = _replace_definition_in_sample_block(input_config)
+        rich.print(f"Replaced {ndef} Option values from Definition block")
+        _update_backend_per_sample(input_config)
+        return _validate_config(input_config)
+    else:
+        file_path = pathlib.Path(input_config)
+        rich.print(f"Loading DataBinder config file: {file_path}")
+        config = yaml.safe_load(file_path.read_text())
+        _set_default_values(config)
+        ndef = _replace_definition_in_sample_block(config)
+        rich.print(f"Replaced {ndef} Option values from Definition block")
+        _update_backend_per_sample(config)
+        return _validate_config(config)
+
+
+def _set_default_values(config: Dict[str, Any]) -> Dict:
+    """
+    Default values in General block:
+        Delivery: LocalPath
+        OutputFormat: root
+    """
+    if 'Delivery' in config['General'].keys():
+        config['General']['Delivery'] = config['General']['Delivery'].lower()
+    else:
+        config['General']['Delivery'] = 'localpath'
+
+    if 'OutputFormat' not in config['General'].keys():
+        config['General']['OutputFormat'] = 'root'
+
+    return config
+
+
+def _update_backend_per_sample(config: Dict[str, Any]) -> Dict:
+    """ from General block """
+    pair = ("default_transformer", "default_codegen")
+    if 'Transformer' in config['General'].keys():
+        if config['General']['Transformer'] == "atlasr21":
+            pair = ("xaod", "atlasr21")
+        elif config['General']['Transformer'] == "uproot":
+            pair = ("uproot", "uproot")
+        elif config['General']['Transformer'] == "python":
+            pair = ("uproot", "python")
+
+    """ from Sample block """
+    for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
+        if 'Transformer' in sample.keys():
+            if sample['Transformer'] == "atlasr21":
+                config['Sample'][idx]['Type'] = "xaod"
+            elif sample['Transformer'] == "uproot":
+                config['Sample'][idx]['Type'] = "uproot"
+            elif sample['Transformer'] == "python":
+                config['Sample'][idx]['Type'] = "uproot"
+        else:
+            config['Sample'][idx]['Type'] = pair[0]
+            config['Sample'][idx]['Transformer'] = pair[1]
+
+    return config
+
+
+def _replace_definition_in_sample_block(config: Dict[str, Any]):
+    ndef = 0
+    definition = config.get('Definition')
+    if definition is not None:
+        samples = config.get('Sample')
+        if samples is not None:
+            for n, sample in enumerate(samples):
+                for field, value in sample.items():
+                    if 'DEF_' in value:
+                        def_in_value = True
+                        for repre, new_str in definition.items():
+                            if repre == value:
+                                samples[n][field] \
+                                    = samples[n][field] \
+                                    .replace(repre, new_str)
+                                ndef = ndef + 1
+                                def_in_value = False
+                        if def_in_value:
+                            raise NotImplementedError(
+                                f"{value} is NOT defined in the Definition block"
+                            )
+        return ndef
+    else:
+        return ndef
+
+
+def _validate_config(config: Dict[str, Any]):
+    """Returns True if the config file is validated,
+    otherwise raises exceptions.
+    Checks that the config satisfies the json schema,
+    and performs additional checks to
+    validate the config further.
+    Args:
+        config (Dict[str, Any]): configuration
+    Raises:
+        NotImplementedError
+        ValueError
+        KeyError
+    Returns:
+        bool: whether the validation was successful
+    """
+
+    # Option names
+    available_keys = [
+        'General', 'ServiceXName', 'OutputDirectory', 'Transformer',
+        'OutputFormat', 'WriteOutputDict', 'Name',
+        'IgnoreLocalCache', 'Sample', 'RucioDID', 'XRootDFiles', 'Tree',
+        'Filter', 'Columns', 'FuncADL', 'LocalPath', 'Definition',
+        'Delivery', 'Function', 'Type'
+    ]
+
+    # General and Sample are mandatory blocks
+    if 'General' not in config.keys() and 'Sample' not in config.keys():
+        raise KeyError("You should have 'General' block and "
+                       "at least one 'Sample' block in the config")
+
+    # Check all Opion names
+    keys_in_config = set()
+    for item in config['General']:
+        keys_in_config.add(item)
+    for sample in config['Sample']:
+        for item in sample.keys():
+            keys_in_config.add(item)
+    for key in keys_in_config:
+        if key not in available_keys:
+            raise KeyError(f"Unknown Option {key} in the config")
+
+    # Check General block option values
+    if 'Delivery' in config['General'].keys():
+        if config['General']['Delivery'] not in [
+                'localpath', 'localcache', 'objectstore']:
+            raise ValueError(
+                f"Unsupported delivery option: {config['General']['Delivery']}"
+                f" - supported options: LocalPath, LocalCache, ObjectStore"
+            )
+    if ('ServiceXName' not in config['General'].keys()) and \
+            ('ServiceXBackendName' not in config['General'].keys()):
+        raise KeyError(
+            "Option 'ServiceXName' is required in General block"
+        )
+    if config['General']['OutputFormat'].lower() != 'parquet' and \
+            config['General']['OutputFormat'].lower() != 'root':
+        raise ValueError(
+            "OutputFormat can be either parquet or root"
+        )
+
+    # Check Sample block option values
+    for sample in config['Sample']:
+        if ('RucioDID' not in sample.keys()) \
+                and ('XRootDFiles' not in sample.keys()) \
+                and ('LocalPath' not in sample.keys()):
+            raise KeyError(
+                "Please specify a valid input source "
+                f"for Sample {sample['Name']} e.g. RucioDID, XRootDFiles"
+            )
+        if 'RucioDID' in sample.keys():
+            for did in sample['RucioDID'].split(","):
+                if len(did.split(":")) != 2:
+                    raise ValueError(
+                        f"Sample {sample['Name']} "
+                        f"- RucioDID {did} is missing the scope"
+                    )
+        if ('Tree' in sample) and \
+                ('uproot' not in sample['Transformer']):
+            raise KeyError(
+                f"Option Tree in Sample {sample['Name']} "
+                "is only available for uproot transformer"
+            )
+        if 'Columns' in sample and 'FuncADL' in sample:
+            raise KeyError(
+                f"Sample {sample['Name']} - Use one type of query per sample: "
+                "Columns for TCut and FuncADL for func-adl"
+            )
+        if 'FuncADL' in sample and 'Filter' in sample:
+            raise KeyError(
+                f"Sample {sample['Name']} - "
+                "You cannot use Filter with func-adl query"
+            )
+
+    return config
