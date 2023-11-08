@@ -30,36 +30,34 @@ import pathlib
 from typing import Any, Dict, Union
 import rich
 
-# from servicex.configuration import Configuration
-
 
 def load_databinder_config(input_config:
                            Union[str, pathlib.Path, Dict[str, Any]]
                            ) -> Dict[str, Any]:
     """
-    Loads, validates, and returns DataBinder configuration
+    Loads, validates, and returns DataBinder configuration.
+    The order of function call matters.
     Args:
         input_config (Union[str, pathlib.Path, Dict[str, Any]]):
             path to config file or config as dict
     Returns:
         Dict[str, Any]: configuration
     """
-
-    if isinstance(input_config, Dict):
-        _set_default_values(input_config)
-        ndef = _replace_definition_in_sample_block(input_config)
-        rich.print(f"Replaced {ndef} Option values from Definition block")
-        _update_backend_per_sample(input_config)
-        return _validate_config(input_config)
-    else:
-        file_path = pathlib.Path(input_config)
-        rich.print(f"Loading DataBinder config file: {file_path}")
-        config = yaml.safe_load(file_path.read_text())
+    def prepare_config(config):
         _set_default_values(config)
         ndef = _replace_definition_in_sample_block(config)
         rich.print(f"Replaced {ndef} Option values from Definition block")
-        _update_backend_per_sample(config)
+        _support_old_option_names(config)
+        _decorate_backend_per_sample(config)
         return _validate_config(config)
+
+    if isinstance(input_config, Dict):
+        return prepare_config(input_config)
+    else:
+        file_path = pathlib.Path(input_config)
+        config = yaml.safe_load(file_path.read_text())
+        rich.print(f"Loading DataBinder config file: {file_path}")
+        return prepare_config(config)
 
 
 def _set_default_values(config: Dict[str, Any]) -> Dict:
@@ -75,33 +73,6 @@ def _set_default_values(config: Dict[str, Any]) -> Dict:
 
     if 'OutputFormat' not in config['General'].keys():
         config['General']['OutputFormat'] = 'root'
-
-    return config
-
-
-def _update_backend_per_sample(config: Dict[str, Any]) -> Dict:
-    """ from General block """
-    pair = ("default_transformer", "default_codegen")
-    if 'Transformer' in config['General'].keys():
-        if config['General']['Transformer'] == "atlasr21":
-            pair = ("xaod", "atlasr21")
-        elif config['General']['Transformer'] == "uproot":
-            pair = ("uproot", "uproot")
-        elif config['General']['Transformer'] == "python":
-            pair = ("uproot", "python")
-
-    """ from Sample block """
-    for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
-        if 'Transformer' in sample.keys():
-            if sample['Transformer'] == "atlasr21":
-                config['Sample'][idx]['Type'] = "xaod"
-            elif sample['Transformer'] == "uproot":
-                config['Sample'][idx]['Type'] = "uproot"
-            elif sample['Transformer'] == "python":
-                config['Sample'][idx]['Type'] = "uproot"
-        else:
-            config['Sample'][idx]['Type'] = pair[0]
-            config['Sample'][idx]['Transformer'] = pair[1]
 
     return config
 
@@ -132,6 +103,53 @@ def _replace_definition_in_sample_block(config: Dict[str, Any]):
         return ndef
 
 
+def _support_old_option_names(config: Dict[str, Any]) -> Dict:
+    """ """
+    if 'ServiceXName' in config['General'].keys():
+        config['General']['ServiceX'] = config['General'].pop('ServiceXName')
+
+    if 'Transformer' in config['General'].keys():
+        config['General']['Codegen'] = config['General'].pop('Transformer')
+    for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
+        if 'Transformer' in sample.keys():
+            config['Sample'][idx]['Codegen'] = config['Sample'][idx].pop('Transformer')
+
+    if 'IgnoreServiceXCache' in config['General'].keys():
+        config['General']['IgnoreLocalCache'] = config['General'].pop('IgnoreServiceXCache')
+    for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
+        if 'IgnoreServiceXCache' in sample.keys():
+            config['Sample'][idx]['IgnoreLocalCache'] = config['Sample'][idx].pop(
+                'IgnoreServiceXCache')
+    return config
+
+
+def _decorate_backend_per_sample(config: Dict[str, Any]) -> Dict:
+    """ from General block """
+    pair = ("default_transformer", "default_codegen")
+    if 'Codegen' in config['General'].keys():
+        if config['General']['Codegen'] == "atlasr21":
+            pair = ("xaod", "atlasr21")
+        elif config['General']['Codegen'] == "uproot":
+            pair = ("uproot", "uproot")
+        elif config['General']['Codegen'] == "python":
+            pair = ("uproot", "python")
+
+    """ from Sample block """
+    for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
+        if 'Codegen' in sample.keys():
+            if sample['Codegen'] == "atlasr21":
+                config['Sample'][idx]['Transformer'] = "xaod"
+            elif sample['Codegen'] == "uproot":
+                config['Sample'][idx]['Transformer'] = "uproot"
+            elif sample['Codegen'] == "python":
+                config['Sample'][idx]['Transformer'] = "uproot"
+        else:
+            config['Sample'][idx]['Transformer'] = pair[0]
+            config['Sample'][idx]['Codegen'] = pair[1]
+
+    return config
+
+
 def _validate_config(config: Dict[str, Any]):
     """Returns True if the config file is validated,
     otherwise raises exceptions.
@@ -150,11 +168,11 @@ def _validate_config(config: Dict[str, Any]):
 
     # Option names
     available_keys = [
-        'General', 'ServiceXName', 'OutputDirectory', 'Transformer',
+        'General', 'ServiceX', 'OutputDirectory', 'Transformer', 'Codegen',
         'OutputFormat', 'WriteOutputDict', 'Name',
         'IgnoreLocalCache', 'Sample', 'RucioDID', 'XRootDFiles', 'Tree',
         'Filter', 'Columns', 'FuncADL', 'LocalPath', 'Definition',
-        'Delivery', 'Function', 'Type'
+        'Delivery', 'Function'
     ]
 
     # General and Sample are mandatory blocks
@@ -181,8 +199,7 @@ def _validate_config(config: Dict[str, Any]):
                 f"Unsupported delivery option: {config['General']['Delivery']}"
                 f" - supported options: LocalPath, LocalCache, ObjectStore"
             )
-    if ('ServiceXName' not in config['General'].keys()) and \
-            ('ServiceXBackendName' not in config['General'].keys()):
+    if 'ServiceX' not in config['General'].keys():
         raise KeyError(
             "Option 'ServiceXName' is required in General block"
         )
