@@ -177,10 +177,11 @@ def _validate_config(config: Dict[str, Any]):
     # Option names
     available_keys = [
         'General', 'ServiceX', 'OutputDirectory', 'Transformer', 'Codegen',
-        'OutputFormat', 'WriteOutputDict', 'Name',
-        'IgnoreLocalCache', 'Sample', 'RucioDID', 'XRootDFiles', 'Tree',
+        'OutputFormat', 'WriteOutputDict', 'IgnoreLocalCache', 'Delivery',
+        'Name',
+        'Sample', 'RucioDID', 'XRootDFiles', 'Tree',
         'Filter', 'Columns', 'FuncADL', 'LocalPath', 'Definition',
-        'Delivery', 'Function'
+        'Function', 'NFiles'
     ]
 
     # General and Sample are mandatory blocks
