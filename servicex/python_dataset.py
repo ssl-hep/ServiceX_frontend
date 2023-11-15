@@ -67,6 +67,9 @@ class PythonDataset(Dataset):
         if not self.python_function:
             raise ValueError("You must provide a python function using with_uproot_function")
 
-        return b64encode(inspect.getsource(self.python_function)
-                         .encode("utf-8"))\
-            .decode("utf-8")
+        if isinstance(self.python_function, str):
+            return b64encode(self.python_function.encode("utf-8")).decode("utf-8")
+        else:
+            return b64encode(inspect.getsource(self.python_function)
+                             .encode("utf-8"))\
+                .decode("utf-8")
