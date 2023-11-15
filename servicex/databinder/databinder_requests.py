@@ -52,7 +52,7 @@ class DataBinderRequests:
         flist_requests = [request for x in list_requests for request in x]
         return flist_requests
 
-    def _build_request(self, sample):
+    def _build_request(self, sample: Dict[str, Any]):
         """
         Return a list containing ServiceX request(s) of the given sample
         """
@@ -116,11 +116,21 @@ class DataBinderRequests:
                 return _get_servicex_dataset(sample).with_uproot_function(
                     query
                 )
+            else:
+                raise TypeError(
+                    f"Unknown code-generator in Sample {sample['Name']}"
+                )
+
+        def _servicex_dataset_query_output(sample):
+            if self._config['General']['Delivery'].lower() == "object-store":
+                return _servicex_dataset_query(sample).as_signed_urls_async()
+            else:
+                return _servicex_dataset_query(sample).as_files_async()
 
         requests_sample.append(
             {
-                "Name": sample['Name'],
-                "ServiceXDataset": _servicex_dataset_query(sample)
+                "sample_name": sample['Name'],
+                "request_coroutine": _servicex_dataset_query_output(sample)
             }
         )
         return requests_sample
