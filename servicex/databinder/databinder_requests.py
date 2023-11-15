@@ -86,6 +86,16 @@ class DataBinderRequests:
                 )
             return input_source
 
+        def _set_result_format():
+            if self._config['General']['OutputFormat'].lower() == "root":
+                return ResultFormat.root
+            elif self._config['General']['OutputFormat'].lower() == "parquet":
+                return ResultFormat.parquet
+            else:
+                raise ValueError(
+                    f"Output format {self._config['General']['OutputFormat']} is not supported"
+                )
+
         def _get_servicex_dataset(sample):
             if sample['Codegen'] == 'python':
                 return _get_client().python_dataset(
@@ -93,7 +103,7 @@ class DataBinderRequests:
                     title=sample['Name'],
                     codegen="python",
                     ignore_cache=sample['IgnoreLocalCache'],
-                    result_format=ResultFormat.parquet
+                    result_format=_set_result_format()
                 )
             else:
                 raise TypeError(
