@@ -74,6 +74,13 @@ def _set_default_values(config: Dict[str, Any]) -> Dict:
     if 'OutputFormat' not in config['General'].keys():
         config['General']['OutputFormat'] = 'root'
 
+    for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
+        if 'IgnoreLocalCache' not in sample.keys():
+            if 'IgnoreLocalCache' in config['General'].keys():
+                config['Sample'][idx]['IgnoreLocalCache'] = config['General']['IgnoreLocalCache']
+            else:
+                config['Sample'][idx]['IgnoreLocalCache'] = False
+
     return config
 
 

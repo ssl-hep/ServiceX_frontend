@@ -92,7 +92,7 @@ class DataBinderRequests:
                     dataset_identifier=_get_input_source(sample),
                     title=sample['Name'],
                     codegen="python",
-                    ignore_cache=True,
+                    ignore_cache=sample['IgnoreLocalCache'],
                     result_format=ResultFormat.parquet
                 )
             else:
