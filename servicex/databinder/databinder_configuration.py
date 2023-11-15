@@ -85,19 +85,20 @@ def _replace_definition_in_sample_block(config: Dict[str, Any]):
         if samples is not None:
             for n, sample in enumerate(samples):
                 for field, value in sample.items():
-                    if 'DEF_' in value:
-                        def_in_value = True
-                        for repre, new_str in definition.items():
-                            if repre == value:
-                                samples[n][field] \
-                                    = samples[n][field] \
-                                    .replace(repre, new_str)
-                                ndef = ndef + 1
-                                def_in_value = False
-                        if def_in_value:
-                            raise NotImplementedError(
-                                f"{value} is NOT defined in the Definition block"
-                            )
+                    if isinstance(value, str):
+                        if 'DEF_' in value:
+                            def_in_value = True
+                            for repre, new_str in definition.items():
+                                if repre == value:
+                                    samples[n][field] \
+                                        = samples[n][field] \
+                                        .replace(repre, new_str)
+                                    ndef = ndef + 1
+                                    def_in_value = False
+                            if def_in_value:
+                                raise NotImplementedError(
+                                    f"{value} is NOT defined in the Definition block"
+                                )
         return ndef
     else:
         return ndef
