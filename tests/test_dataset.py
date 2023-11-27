@@ -4,7 +4,6 @@ import tempfile
 import os
 
 from unittest.mock import AsyncMock, Mock
-from servicex.dataset_identifier import FileListDataset
 from servicex.configuration import Configuration
 from servicex.minio_adapter import MinioAdapter
 from servicex.python_dataset import PythonDataset
@@ -22,7 +21,7 @@ from rich.progress import Progress
 @pytest.mark.asyncio
 async def test_as_signed_urls_happy(transformed_result):
     # Test when display_progress is True and provided_progress is None
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     dataset = PythonDataset(dataset_identifier=did, codegen="uproot",
                             sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
@@ -35,7 +34,7 @@ async def test_as_signed_urls_happy(transformed_result):
 @pytest.mark.asyncio
 async def test_as_signed_urls_happy_dataset_group(transformed_result):
     # Test when display_progress is True and provided_progress is None
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     dataset = PythonDataset(dataset_identifier=did, codegen="uproot",
                             sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
@@ -48,7 +47,7 @@ async def test_as_signed_urls_happy_dataset_group(transformed_result):
 
 @pytest.mark.asyncio
 async def test_as_files_happy(transformed_result):
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     dataset = PythonDataset(dataset_identifier=did, codegen="uproot",
                             sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
@@ -60,7 +59,7 @@ async def test_as_files_happy(transformed_result):
 
 @pytest.mark.asyncio
 async def test_as_pandas_happy(transformed_result):
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     servicex = AsyncMock()
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])

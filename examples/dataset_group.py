@@ -1,14 +1,15 @@
-from servicex import ServiceXClient, RucioDatasetIdentifier, ResultFormat, DatasetGroup
+from servicex import ServiceXClient, ResultFormat, DatasetGroup
 from rich.console import Console
 from rich.table import Table
 
-dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8", num_files=3)
+dataset_id = "rucio://user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8"
 
-sx = ServiceXClient(backend="production")
+sx = ServiceXClient(backend="uproot")
 ds_raw = sx.func_adl_dataset(
     dataset_id,
     codegen="uproot",
     title="Dataset Group Example",
+    num_files=3,
 ).Select(lambda e: {'el_pt': e['el_pt']})
 
 trees = ["nominal", "EG_RESOLUTION_ALL__1down",

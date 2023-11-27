@@ -34,12 +34,11 @@ from servicex.dataset import Dataset
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
-from servicex.types import DID
 
 
 class PythonDataset(Dataset):
 
-    def __init__(self, dataset_identifier: DID,
+    def __init__(self, dataset_identifier: str,
                  sx_adapter: ServiceXAdapter = None,
                  title: str = "ServiceX Client",
                  codegen: str = None,

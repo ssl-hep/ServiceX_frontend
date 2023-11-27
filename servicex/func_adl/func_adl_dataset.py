@@ -48,10 +48,8 @@ from func_adl.object_stream import S
 from servicex.configuration import Configuration
 from servicex.dataset import Dataset
 from servicex.func_adl.util import has_tuple
-from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
-from servicex.types import DID
 
 T = TypeVar("T")
 
@@ -73,15 +71,17 @@ class FuncADLDataset(Dataset, EventDataset[T]):
 
     def __init__(
         self,
-        dataset_identifier: DID,
+        dataset_identifier: str,
         sx_adapter: ServiceXAdapter = None,
         title: str = "ServiceX Client",
         codegen: str = None,
         config: Configuration = None,
         query_cache: QueryCache = None,
-        result_format: Optional[ResultFormat] = None,
+        result_format: str = "parquet",
         item_type: Type = Any,
         ignore_cache: bool = False,
+        tree: Optional[str] = None,
+        num_files: Optional[int] = None,
     ):
         Dataset.__init__(
             self,
@@ -93,9 +93,16 @@ class FuncADLDataset(Dataset, EventDataset[T]):
             query_cache=query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
+            num_files=num_files,
         )
         EventDataset.__init__(self, item_type=item_type)
         self.provided_qastle = None
+
+        if tree:
+            # clone = self.clone_with_new_ast(copy.deepcopy(self.query_ast), self._item_type)
+            c = find_EventDataset(self._q_ast)
+            c.args.append(ast.Str(s="bogus.root"))
+            c.args.append(ast.Str(s=tree))
 
     def set_provided_qastle(self, qastle: str):
         self.provided_qastle = qastle

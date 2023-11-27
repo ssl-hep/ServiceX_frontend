@@ -29,13 +29,11 @@ from servicex import dataset
 from servicex import dataset_group
 from servicex import models
 from servicex import servicex_client
-from servicex import dataset_identifier
 
 from .servicex_client import ServiceXClient
 from .dataset import Dataset
 from .models import ResultFormat, ResultDestination
 from .dataset_group import DatasetGroup
-from .dataset_identifier import RucioDatasetIdentifier, FileListDataset
 
 
 __all__ = [
@@ -48,7 +46,4 @@ __all__ = [
     "dataset",
     "dataset_group",
     "models",
-    "dataset_identifier",
-    "RucioDatasetIdentifier",
-    "FileListDataset",
 ]

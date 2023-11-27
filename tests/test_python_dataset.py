@@ -29,12 +29,11 @@ from base64 import b64decode
 
 import pytest
 
-from servicex.dataset_identifier import FileListDataset
 from servicex.python_dataset import PythonDataset
 
 
 def test_no_provided_function():
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     datasource = PythonDataset(dataset_identifier=did,
                                codegen="uproot",
                                sx_adapter=None,
@@ -45,7 +44,7 @@ def test_no_provided_function():
 
 
 def test_generate_transform():
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     datasource = PythonDataset(dataset_identifier=did,
                                codegen="uproot",
                                sx_adapter=None,

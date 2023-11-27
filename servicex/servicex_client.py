@@ -32,7 +32,6 @@ from servicex.func_adl.func_adl_dataset import FuncADLDataset
 from servicex.models import ResultFormat, TransformStatus
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
-from servicex.types import DID
 from servicex.python_dataset import PythonDataset
 
 from make_it_sync import make_sync
@@ -120,12 +119,14 @@ class ServiceXClient:
 
     def func_adl_dataset(
         self,
-        dataset_identifier: DID,
+        dataset_identifier: str,
         title: str = "ServiceX Client",
         codegen: str = "uproot",
-        result_format: Optional[ResultFormat] = None,
+        result_format: str = "parquet",
         item_type: Type[T] = Any,
-        ignore_cache: bool = False
+        ignore_cache: bool = False,
+        tree: Optional[str] = None,
+        num_files: Optional[int] = None,
     ) -> FuncADLDataset[T]:
         r"""
         Generate a dataset that can use func_adl query language
@@ -155,12 +156,14 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             item_type=item_type,
-            ignore_cache=ignore_cache
+            ignore_cache=ignore_cache,
+            tree=tree,
+            num_files=num_files,
         )
 
     def python_dataset(
         self,
-        dataset_identifier: DID,
+        dataset_identifier: str,
         title: str = "ServiceX Client",
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,

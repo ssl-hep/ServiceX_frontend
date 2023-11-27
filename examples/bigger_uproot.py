@@ -26,18 +26,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex import RucioDatasetIdentifier
-from servicex import ResultFormat
 from servicex import ServiceXClient
 
-sx = ServiceXClient(backend="production")
+sx = ServiceXClient(backend="uproot")
 
-dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8")
+dataset_id = "rucio://user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8"
 
-ds = sx.func_adl_dataset(dataset_id, title="bigger_uproot")
+ds = sx.func_adl_dataset(dataset_id, title="bigger_uproot", result_format="parquet",
+                         tree="nominal")
 
 q = ds.Select(lambda e: {'el_pt': e['el_pt']})\
-    .set_result_format(ResultFormat.parquet).set_tree("nominal")\
     .as_signed_urls()
 
 print(q)

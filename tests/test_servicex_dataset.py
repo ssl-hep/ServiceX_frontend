@@ -32,7 +32,6 @@ from unittest.mock import AsyncMock
 import pytest
 
 from servicex.configuration import Configuration
-from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
 from servicex.func_adl.func_adl_dataset import FuncADLDataset
 from servicex.models import TransformStatus, Status, ResultFile, ResultFormat
@@ -115,7 +114,7 @@ async def test_submit(mocker):
 
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     datasource = FuncADLDataset(
         dataset_identifier=did,
         codegen="uproot",
@@ -131,7 +130,7 @@ async def test_submit(mocker):
 
 def test_transform_request():
     servicex = AsyncMock()
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
@@ -161,7 +160,7 @@ def test_type():
         def fork_it_over(self) -> int:
             ...
 
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     datasource = FuncADLDataset[my_type_info](
         dataset_identifier=did, codegen="uproot", item_type=my_type_info
     )
@@ -171,6 +170,6 @@ def test_type():
 
 def test_type_any():
     "Test the type is any if no type is given"
-    did = FileListDataset("/foo/bar/baz.root")
+    did = "/foo/bar/baz.root"
     datasource = FuncADLDataset(dataset_identifier=did, codegen="uproot")
     assert datasource.item_type == Any

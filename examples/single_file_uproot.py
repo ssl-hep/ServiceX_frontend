@@ -26,20 +26,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex import FileListDataset
-from servicex import ResultFormat
 from servicex import ServiceXClient
 
-sx = ServiceXClient(backend="testing4")
-dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
+sx = ServiceXClient(backend="uproot")
+dataset_id = "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root" # NOQA 501
 
 ds = sx.func_adl_dataset(dataset_id, codegen="uproot",
                          title="Root",
-                         result_format=ResultFormat.parquet)
+                         result_format="parquet",
+                         tree="mini")
 
 sx3 = ds.Select(lambda e: {'lep_pt': e['lep_pt']}). \
-    Where(lambda e: e['lep_pt'] > 1000). \
-    set_tree("mini"). \
-    as_pandas()
+    Where(lambda e: e['lep_pt'] > 1000).as_pandas()
 
 print(sx3)

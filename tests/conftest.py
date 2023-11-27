@@ -37,7 +37,6 @@ from servicex.models import (
     TransformedResults,
 )
 
-from servicex.dataset_identifier import FileListDataset
 from servicex.minio_adapter import MinioAdapter
 
 import pandas as pd
@@ -63,7 +62,7 @@ def minio_adapter() -> MinioAdapter:
 
 @fixture
 def python_dataset(dummy_parquet_file):
-    did = FileListDataset(dummy_parquet_file)
+    did = dummy_parquet_file
     dataset = PythonDataset(
         title="Test submission",
         dataset_identifier=did,

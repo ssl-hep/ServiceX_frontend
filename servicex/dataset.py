@@ -31,7 +31,7 @@ import abc
 import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from servicex.expandable_progress import ExpandableProgress
 
 try:
@@ -40,7 +40,7 @@ except ModuleNotFoundError:
     pass
 
 
-from servicex.types import DID
+# from servicex.types import DID
 
 import rich
 from rich.progress import (
@@ -59,6 +59,7 @@ from servicex.models import (
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 
+
 from make_it_sync import make_sync
 
 ProgressIndicators = Union[Progress, ExpandableProgress]
@@ -67,7 +68,7 @@ ProgressIndicators = Union[Progress, ExpandableProgress]
 class Dataset(ABC):
     def __init__(
         self,
-        dataset_identifier: DID,
+        dataset_identifier: Union[List[str], str],
         title: str,
         codegen: str,
         sx_adapter: ServiceXAdapter,
@@ -75,8 +76,9 @@ class Dataset(ABC):
         query_cache: QueryCache,
         servicex_polling_interval: int = 5,
         minio_polling_interval: int = 5,
-        result_format: ResultFormat = ResultFormat.parquet,
+        result_format: str = "parquet",
         ignore_cache: bool = False,
+        num_files: Optional[int] = None,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -119,10 +121,36 @@ class Dataset(ABC):
         # Number of seconds in between ServiceX status polls
         self.servicex_polling_interval = servicex_polling_interval
         self.minio_polling_interval = minio_polling_interval
+        self.num_files = num_files
+        self.scheme, self.dataset = self.extractscheme()
+
+        if self.scheme == "root":
+            if type(self.dataset_identifier) == list:
+                self.files = self.dataset_identifier
+            else:
+                self.files = [self.dataset_identifier]
+
+    def extractscheme(self) -> Tuple[str, str]:
+        if type(self.dataset_identifier) == str:
+            scheme_split = self.dataset_identifier.split("://")
+            if len(scheme_split) == 2:
+                return scheme_split[0], scheme_split[1]
+            else:
+                return "root", scheme_split[0]
 
     @abc.abstractmethod
     def generate_selection_string(self) -> str:
         pass
+
+    def populate_transform_request(self, transform_request):
+        if self.scheme == "rucio":
+            num_files_arg = f"?files={self.num_files}" if self.num_files else ""
+            did = f"{self.scheme}://{self.dataset}{num_files_arg}"
+            transform_request.did = did
+            transform_request.file_list = None
+        else:
+            transform_request.file_list = self.files
+            transform_request.did = None
 
     @property
     def transform_request(self):
@@ -139,7 +167,7 @@ class Dataset(ABC):
             selection=self.generate_selection_string(),
         )  # type: ignore
         # Transfer the DID into the transform request
-        self.dataset_identifier.populate_transform_request(sx_request)
+        self.populate_transform_request(sx_request)
         return sx_request
 
     def set_title(self, title: str) -> Dataset:
