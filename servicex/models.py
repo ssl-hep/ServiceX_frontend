@@ -111,7 +111,6 @@ class TransformStatus(BaseModel):
     image: str
     result_destination: ResultDestination = Field(alias="result-destination")
     result_format: ResultFormat = Field(alias="result-format")
-    workflow_name: str = Field(alias="workflow-name")
     generated_code_cm: str = Field(alias="generated-code-cm")
     status: Status
     app_version: str = Field(alias="app-version")
