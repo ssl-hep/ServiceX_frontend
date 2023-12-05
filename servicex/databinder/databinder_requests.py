@@ -25,15 +25,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import pathlib
-from typing import Any, Dict, Union, List
+# import pathlib
+from typing import Any, Dict, List
+from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
+    TimeRemainingColumn
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
 from servicex.servicex_client import ServiceXClient
-# from servicex.servicex_adapter import ServiceXAdapter
 from servicex.models import ResultFormat
-
-from servicex.databinder.databinder_configuration import load_databinder_config
 
 
 class DataBinderRequests:
@@ -41,8 +40,22 @@ class DataBinderRequests:
     Prepare ServiceX requests from DataBinder configuration
     """
 
-    def __init__(self, config: Union[str, pathlib.Path, Dict[str, Any]]):
-        self._config = load_databinder_config(config)
+    def __init__(self, updated_config: Dict[str, Any]):
+        self._config = updated_config
+        self._client = self._get_client()
+        # self._progress = ExpandableProgress(display_progress=True, provided_progress=None)
+        self._progress = Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+        )
+
+    def _get_client(self):
+        if 'http' in self._config['General']['ServiceX']:
+            return ServiceXClient(backend=None, url=self._config['General']['ServiceX'])
+        else:
+            return ServiceXClient(backend=self._config['General']['ServiceX'], url=None)
 
     def get_requests(self) -> List:
         list_requests = []
@@ -58,15 +71,6 @@ class DataBinderRequests:
         """
         requests_sample = []
 
-        def _get_client():
-            if 'http' in self._config['General']['ServiceX']:
-                url = self._config['General']['ServiceX']
-                backend = None
-            else:
-                url = None
-                backend = self._config['General']['ServiceX']
-            return ServiceXClient(backend=backend, url=url)
-
         def _get_input_source(sample):
             if 'RucioDID' in sample.keys():
                 nfiles = None
@@ -74,7 +78,7 @@ class DataBinderRequests:
                     nfiles = int(sample['NFiles'])
                 input_source = RucioDatasetIdentifier(
                     str(sample['RucioDID']),
-                    num_files=nfiles
+                    num_files=nfiles or 0
                 )
             elif 'XRootDFiles' in sample.keys():
                 input_source = FileListDataset(
@@ -98,7 +102,7 @@ class DataBinderRequests:
 
         def _get_servicex_dataset(sample):
             if sample['Codegen'] == 'python':
-                return _get_client().python_dataset(
+                return self._client.python_dataset(
                     dataset_identifier=_get_input_source(sample),
                     title=sample['Name'],
                     codegen="python",
@@ -121,16 +125,24 @@ class DataBinderRequests:
                     f"Unknown code-generator in Sample {sample['Name']}"
                 )
 
-        def _servicex_dataset_query_output(sample):
-            if self._config['General']['Delivery'].lower() == "object-store":
-                return _servicex_dataset_query(sample).as_signed_urls_async()
-            else:
-                return _servicex_dataset_query(sample).as_files_async()
+        # def _servicex_dataset_query_output(sample):
+        #     if self._config['General']['Delivery'].lower() == "objectstore":
+        #         return _servicex_dataset_query(sample).as_signed_urls_async(
+        #             display_progress=True,
+        #             provided_progress=self._progress
+        #         )
+        #     else:
+        #         return _servicex_dataset_query(sample).as_files_async(
+        #             # display_progress=True,
+        #             # provided_progress=self._progress
+        #         )
 
         requests_sample.append(
             {
                 "sample_name": sample['Name'],
-                "request_coroutine": _servicex_dataset_query_output(sample)
+                "delivery": self._config['General']['Delivery'].lower(),
+                "ds_query": _servicex_dataset_query(sample)
+                # "request_coroutine": _servicex_dataset_query_output(sample)
             }
         )
         return requests_sample
