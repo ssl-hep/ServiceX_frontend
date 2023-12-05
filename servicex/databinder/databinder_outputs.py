@@ -25,49 +25,43 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Any, Dict
-# from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
-#     TimeRemainingColumn
-import asyncio
-import nest_asyncio
-
-from servicex.databinder.databinder_requests import DataBinderRequests
-from servicex.databinder.databinder_outputs import OutputHandler
-from servicex.expandable_progress import ExpandableProgress
-
-nest_asyncio.apply()
+import yaml
+from pathlib import Path
+from typing import Dict, Any
 
 
-class DataBinderDeliver:
-    """
-    a
-    """
-
-    def __init__(self, updated_config: Dict[str, Any]) -> None:
+class OutputHandler:
+    def __init__(self, updated_config: Dict[str, Any]):
         self._config = updated_config
-        self._requests = DataBinderRequests(self._config).get_requests()
-        self._output_handler = OutputHandler(self._config)
+        self.out_dict = self._initialize_out_dict()
+        self._out_path = self._get_out_dir()
 
-    async def deliver_and_copy(self, req, progress):
-        if req['delivery'] == "objectstore":
-            results = await req['ds_query'].as_signed_urls_async(provided_progress=progress)
+    def _initialize_out_dict(self):
+        return {"general_info": {}, "samples": {}}
+
+    def _get_out_dir(self):
+        """
+        Get output directory
+        """
+        if 'OutputDirectory' in self._config['General'].keys():
+            self.output_path = Path(
+                self._config['General']['OutputDirectory']
+            ).absolute()
+            self.output_path.mkdir(parents=True, exist_ok=True)
         else:
-            results = await req['ds_query'].as_files_async(provided_progress=progress)
+            self.output_path = Path().absolute()
 
-        self._output_handler.update_out_dict(results)
+    def update_out_dict(self, results):
+        """
+        Update output dict
+        """
+        self.out_dict['samples'].update(
+            {results.title: results.signed_url_list}
+        )
 
-        # return results
-
-    async def get_data(self):
-        tasks = []
-        with ExpandableProgress() as progress:
-            for req in self._requests:
-                tasks.append(self.deliver_and_copy(req, progress))
-
-            for f in asyncio.as_completed(tasks):
-                await f
-                # print(value)
-
-        self._output_handler.write_out_dict()
-
-        return self._output_handler.out_dict
+    def write_out_dict(self):
+        file_out_paths = \
+            (f"{self.output_path}/"
+             f"{self._config['General']['OutFilesetName']}.yml")
+        with open(file_out_paths, 'w') as f:
+            yaml.dump(self.out_dict, f, default_flow_style=False)

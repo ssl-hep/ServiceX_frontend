@@ -73,6 +73,9 @@ def _set_default_values(config: Dict[str, Any]) -> Dict:
 
     if 'OutputFormat' not in config['General'].keys():
         config['General']['OutputFormat'] = 'root'
+    
+    if 'OutFilesetName' not in config['General'].keys():
+        config['General']['OutFilesetName'] = 'servicex_fileset'
 
     for (idx, sample) in zip(range(len(config['Sample'])), config['Sample']):
         if 'IgnoreLocalCache' not in sample.keys():
@@ -177,7 +180,7 @@ def _validate_config(config: Dict[str, Any]):
     # Option names
     available_keys = [
         'General', 'ServiceX', 'OutputDirectory', 'Transformer', 'Codegen',
-        'OutputFormat', 'WriteOutputDict', 'IgnoreLocalCache', 'Delivery',
+        'OutputFormat', 'OutFilesetName', 'IgnoreLocalCache', 'Delivery',
         'Name',
         'Sample', 'RucioDID', 'XRootDFiles', 'Tree',
         'Filter', 'Columns', 'FuncADL', 'LocalPath', 'Definition',
