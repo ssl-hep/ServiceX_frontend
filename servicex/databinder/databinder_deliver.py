@@ -54,7 +54,7 @@ class DataBinderDeliver:
         else:
             results = await req['ds_query'].as_files_async(provided_progress=progress)
 
-        self._output_handler.update_out_dict(results)
+        self._output_handler.update_out_dict(req['delivery'], results)
 
         # return results
 

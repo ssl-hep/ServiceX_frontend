@@ -51,13 +51,18 @@ class OutputHandler:
         else:
             self.output_path = Path().absolute()
 
-    def update_out_dict(self, results):
+    def update_out_dict(self, delivery: str, results):
         """
         Update output dict
         """
-        self.out_dict['samples'].update(
-            {results.title: results.signed_url_list}
-        )
+        if delivery == "objectstore":
+            self.out_dict['samples'].update(
+                {results.title: results.signed_url_list}
+            )
+        else:
+            self.out_dict['samples'].update(
+                {results.title: results.file_list}
+            )
 
     def write_out_dict(self):
         file_out_paths = \
