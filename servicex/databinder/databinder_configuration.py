@@ -73,7 +73,7 @@ def _set_default_values(config: Dict[str, Any]) -> Dict:
 
     if 'OutputFormat' not in config['General'].keys():
         config['General']['OutputFormat'] = 'root'
-    
+
     if 'OutFilesetName' not in config['General'].keys():
         config['General']['OutFilesetName'] = 'servicex_fileset'
 
