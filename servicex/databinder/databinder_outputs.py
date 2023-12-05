@@ -28,6 +28,8 @@
 import yaml
 from pathlib import Path
 from typing import Dict, Any
+from rich import print
+# from rich.panel import Panel
 
 
 class OutputHandler:
@@ -70,3 +72,16 @@ class OutputHandler:
              f"{self._config['General']['OutFilesetName']}.yml")
         with open(file_out_paths, 'w') as f:
             yaml.dump(self.out_dict, f, default_flow_style=False)
+
+    def copy_to_destination(self, delivery: str, results):
+        sample_name = f"[bold red]{results.title}[/bold red]"
+        if delivery == "objectstore":
+            if len(results.signed_url_list):
+                print(f"{sample_name} is available at the object store")
+            else:
+                print(f"Failed to deliver {sample_name}")
+        else:
+            if len(results.file_list):
+                print(f"{sample_name} is delivered to the local cache directory")
+            else:
+                print(f"Failed to deliver {sample_name}")

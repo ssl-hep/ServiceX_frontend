@@ -28,6 +28,7 @@
 from typing import Any, Dict
 # from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
 #     TimeRemainingColumn
+from rich import print
 import asyncio
 import nest_asyncio
 
@@ -45,7 +46,11 @@ class DataBinderDeliver:
 
     def __init__(self, updated_config: Dict[str, Any]) -> None:
         self._config = updated_config
-        self._requests = DataBinderRequests(self._config).get_requests()
+
+        databinder_requests = DataBinderRequests(self._config)
+        self._requests = databinder_requests.get_requests()
+        self._endpoint = databinder_requests._client \
+            .endpoints[updated_config['General']['ServiceX']].endpoint
         self._output_handler = OutputHandler(self._config)
 
     async def deliver_and_copy(self, req, progress):
@@ -54,11 +59,21 @@ class DataBinderDeliver:
         else:
             results = await req['ds_query'].as_files_async(provided_progress=progress)
 
-        self._output_handler.update_out_dict(req['delivery'], results)
+        # Update out_dict
+        self._output_handler.update_out_dict(
+            delivery=req['delivery'],
+            results=results
+        )
 
-        # return results
+        #
+        self._output_handler.copy_to_destination(
+            delivery=req['delivery'],
+            results=results
+        )
 
     async def get_data(self):
+        print(f"Deliver via ServiceX endpoint: [link=self._endpoint]{self._endpoint}[/link]")
+
         tasks = []
         with ExpandableProgress() as progress:
             for req in self._requests:
