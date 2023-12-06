@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 
 from servicex.models import TransformedResults
+# from servicex.dataset import Dataset
 
 from servicex.databinder.databinder_configuration import load_databinder_config
 from servicex.databinder.databinder_requests import DataBinderRequests
@@ -74,6 +75,7 @@ def test_requests_python_transformer(_get_client):
     assert reqs[1]["sample_name"] == "sampleB"
     assert len(reqs) == 2
     assert len(reqs[0].keys()) == 3
+    # assert isinstance(reqs[0]["ds_query"], Dataset)
 
 
 def test_output_handler():
@@ -143,6 +145,9 @@ async def test_deliver(_get_client):
     }
     deliv = DataBinderDeliver(config)
 
+    assert deliv._requests[0]['sample_name'] == "sampleA"
+    # assert deliv.deliver_and_copy()
+
 
 @patch('servicex.databinder.databinder_requests.DataBinderRequests._get_client')
 def test_databinder(_get_client):
@@ -151,9 +156,7 @@ def test_databinder(_get_client):
         {
             "ServiceX": "servicex",
             "OutputDirectory": "./temp_dir2",
-            "Delivery": "objectstore",
             "OutFilesetName": "out_dict",
-            "OutputFormat": "root"
         },
         "Sample":
         [
@@ -163,15 +166,15 @@ def test_databinder(_get_client):
                 "Codegen": "python",
                 "Function": "DEF_a",
                 "NFiles": "5",
-                "IgnoreLocalCache": "False"
             },
             {
                 "Name": "sampleB",
                 "XRootDFiles": "root://a.root",
                 "Function": "DEF_a",
                 "Codegen": "python",
-                "IgnoreLocalCache": "False"
             }
         ]
     }
     sx_db = DataBinder(config)
+
+    assert sx_db._config["General"]["OutputFormat"] == "root"
