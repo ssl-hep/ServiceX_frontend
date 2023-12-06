@@ -1,0 +1,38 @@
+General:
+  ServiceX: servicex-uc-af
+  Codegen: python
+  OutputFormat: root
+  Delivery: ObjectStore
+
+Sample:
+  - Name: ttH
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    NFiles: 5
+    Function: DEF_function1
+    # IgnoreLocalCache: False
+
+  - Name: ttZ
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttZ.v11
+    NFiles: 3
+    Function: DEF_function1
+
+  - Name: ggH
+    XRootDFiles: root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root
+    Function: DEF_function2
+
+Definition:
+  DEF_function1: |
+    def run_query(input_filenames=None):
+        import uproot
+      
+        with uproot.open(f"{input_filenames}:nominal") as o:
+            br = o.arrays("mu_pt")
+        return br
+
+  DEF_function2: |
+    def run_query(input_filenames=None):
+        import uproot
+      
+        with uproot.open(f"{input_filenames}:mini") as o:
+            br = o.arrays("lep_pt")
+        return br
