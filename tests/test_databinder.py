@@ -6,7 +6,9 @@ import yaml
 from servicex.models import TransformedResults
 # from servicex.dataset import Dataset
 
-from servicex.databinder.databinder_configuration import load_databinder_config
+from servicex.databinder.databinder_configuration \
+    import load_databinder_config, _set_default_values, \
+    _support_old_option_names
 from servicex.databinder.databinder_requests import DataBinderRequests
 from servicex.databinder.databinder_outputs import OutputHandler
 from servicex.databinder.databinder_deliver import DataBinderDeliver
@@ -17,9 +19,9 @@ def test_load_config():
     config = {
         "General":
         {
-            "ServiceXName": "servicex",
+            "ServiceX": "servicex",
             "Codegen": "python",
-            "IgnoreServiceXCache": True
+            "Delivery": "ObjectStore"
         },
         "Sample":
         [
@@ -40,7 +42,51 @@ def test_load_config():
             "DEF_a": "a"
         }
     }
-    assert type(load_databinder_config(config)) == dict
+    new_config = load_databinder_config(config)
+    assert new_config["Sample"][0]["Function"] == "a"
+
+    with open("temp_databinder.yaml", "w") as f:
+        yaml.dump(new_config, f, default_flow_style=False)
+    new_config = load_databinder_config("temp_databinder.yaml")
+    assert new_config["Sample"][0]["Function"] == "a"
+
+
+def test_config_default_value():
+    config = {
+        "General": {
+            "IgnoreLocalCache": True
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.kchoi:sampleA",
+                "Function": "DEF_a"
+            }
+        ]
+    }
+    new_config = _set_default_values(config)
+    assert new_config["General"]["Delivery"] == "localpath"
+
+
+def test_config_old_option_names():
+    config = {
+        "General": {
+            "ServiceXName": "servicex",
+            "Transformer": "uproot",
+            "IgnoreServiceXCache": True
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.kchoi:sampleA",
+                "Transformer": "python",
+                "Function": "DEF_a",
+                "IgnoreServiceXCache": True
+            }
+        ]
+    }
+    new_config = _support_old_option_names(config)
+    assert new_config["General"]["ServiceX"] == "servicex"
 
 
 @patch('servicex.databinder.databinder_requests.DataBinderRequests._get_client')
