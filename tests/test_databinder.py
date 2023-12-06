@@ -1,4 +1,4 @@
-# import pytest
+from unittest.mock import patch
 
 from servicex.databinder.databinder_configuration import load_databinder_config
 from servicex.databinder.databinder_requests import DataBinderRequests
@@ -36,11 +36,12 @@ def test_load_config():
     assert type(load_databinder_config(config)) == dict
 
 
-def test_requests_python_transformer():
+@patch('servicex.databinder.databinder_requests.DataBinderRequests._get_client')
+def test_requests_python_transformer(_get_client):
     config = {
         "General":
         {
-            "ServiceX": "testing4",
+            "ServiceX": "servicex",
             "OutputFormat": "root",
             "Delivery": "objectstore"
         },
