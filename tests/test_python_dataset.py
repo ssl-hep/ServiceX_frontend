@@ -59,3 +59,21 @@ def test_generate_transform():
     print(selection)
     print("==============")
     print(b64decode(selection))
+
+
+def test_function_as_string():
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = PythonDataset(dataset_identifier=did,
+                               codegen="uproot",
+                               sx_adapter=None,
+                               query_cache=None)
+
+    string_function = """
+        def run_query(input_filenames=None):
+            print("Greetings from your query")
+            return []
+    """
+    selection = datasource.with_uproot_function(string_function).generate_selection_string()
+    print(selection)
+    print("==============")
+    print(b64decode(selection))
