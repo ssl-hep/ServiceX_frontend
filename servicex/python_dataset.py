@@ -59,7 +59,7 @@ class PythonDataset(Dataset):
 
         self.python_function = None
 
-    def with_uproot_function(self, f: typing.Callable) -> Dataset:
+    def with_uproot_function(self, f: typing.Union[str, typing.Callable]) -> Dataset:
         self.python_function = f
         return self
 
