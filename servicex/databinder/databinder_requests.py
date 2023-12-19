@@ -43,7 +43,6 @@ class DataBinderRequests:
     def __init__(self, updated_config: Dict[str, Any]):
         self._config = updated_config
         self._client = self._get_client()
-        # self._progress = ExpandableProgress(display_progress=True, provided_progress=None)
         self._progress = Progress(
             TextColumn("[progress.description]{task.description}"),
             BarColumn(),
@@ -125,24 +124,11 @@ class DataBinderRequests:
                     f"Unknown code-generator in Sample {sample['Name']}"
                 )
 
-        # def _servicex_dataset_query_output(sample):
-        #     if self._config['General']['Delivery'].lower() == "objectstore":
-        #         return _servicex_dataset_query(sample).as_signed_urls_async(
-        #             display_progress=True,
-        #             provided_progress=self._progress
-        #         )
-        #     else:
-        #         return _servicex_dataset_query(sample).as_files_async(
-        #             # display_progress=True,
-        #             # provided_progress=self._progress
-        #         )
-
         requests_sample.append(
             {
                 "sample_name": sample['Name'],
                 "delivery": self._config['General']['Delivery'].lower(),
                 "ds_query": _servicex_dataset_query(sample)
-                # "request_coroutine": _servicex_dataset_query_output(sample)
             }
         )
         return requests_sample

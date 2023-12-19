@@ -88,6 +88,10 @@ def _set_default_values(config: Dict[str, Any]) -> Dict:
 
 
 def _replace_definition_in_sample_block(config: Dict[str, Any]):
+    """
+    Replace DEF_X in the Sample block with
+    a value of the same DEF_X key in the Definition block
+    """
     ndef = 0
     definition = config.get('Definition')
     if definition is not None:

@@ -35,25 +35,13 @@ from servicex.databinder.databinder_deliver import DataBinderDeliver
 
 class DataBinder:
     """
-
+    DataBinder base class
     """
     def __init__(self, config: Union[str, Path, Dict[str, Any]]):
         self._config = load_databinder_config(config)
         self._sx_ds = DataBinderDeliver(self._config)
 
-    def deliver(self, overall_progress_only: bool = False):
+    def deliver(self):
         out_paths_dict = asyncio.run(self._sx_ds.get_data())
 
-        # x = Thread(target=OutputHandler(self._config)
-        #            .clean_up_files_not_in_requests, args=(out_paths_dict,))
-        # x.start()
-
-        # if len(self._sx_db.failed_request):
-        #     log.warning(f"{len(self._sx_db.failed_request)} "
-        #                 "failed delivery request(s)")
-        #     log.warning("get_failed_requests() for detail of failed requests")
-
         return out_paths_dict
-
-    # def get_failed_requests(self):
-    #     return self._sx_db.failed_request
