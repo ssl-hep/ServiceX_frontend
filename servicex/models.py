@@ -57,6 +57,7 @@ class Status(str, Enum):
     fatal = ("Fatal",)
     canceled = ("Canceled",)
     submitted = ("Submitted",)
+    looking = ("Lookup",)
     running = "Running"
 
 
