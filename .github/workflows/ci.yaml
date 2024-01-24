@@ -31,10 +31,7 @@ jobs:
       - name: Check for vulnerable libraries
         run: |
           python -m pip install safety
-          python -m pip list
-          python -m pip freeze
-          python -m pip show pip
-          python -m pip freeze | python -m safety check
+          python -m pip freeze | safety check
 
   test:
     needs:
