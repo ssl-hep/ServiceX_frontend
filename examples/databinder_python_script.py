@@ -1,9 +1,10 @@
+# flake8: noqa
 from servicex.databinder import DataBinder
 
 
 def run_query(input_filenames=None):
     import uproot
-    with uproot.open({input_filenames:"mini"}) as o:
+    with uproot.open({input_filenames:"mini"}) as o: 
         br = o.arrays("lep_pt")
     return br
 

@@ -1,3 +1,4 @@
+# flake8: noqa
 # Copyright (c) 2022, IRIS-HEP
 # All rights reserved.
 #
@@ -33,13 +34,20 @@ from servicex import ResultFormat
 sx = ServiceXClient(backend="uc-af")
 dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
 
-ds = sx.python_dataset(dataset_id, codegen="python", title="Python", result_format=ResultFormat.parquet)
+ds = sx.python_dataset(
+    dataset_id,
+    codegen="python",
+    title="Python",
+    result_format=ResultFormat.parquet
+)
+
 
 def run_query(input_filenames=None):
     import uproot
-    with uproot.open({input_filenames:"mini"}) as o:
+    with uproot.open({input_filenames:"mini"}) as o: 
         br = o.arrays("lep_pt")
     return br
+
 
 sx3 = ds.with_uproot_function(run_query).as_pandas()
 print(sx3)
