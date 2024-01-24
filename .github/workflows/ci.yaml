@@ -33,7 +33,7 @@ jobs:
           python -m pip install safety
           python -m pip list
           python -m pip freeze
-          python -m pip freeze | safety check
+          python -m pip freeze | python -m safety check
 
   test:
     needs:
