@@ -30,7 +30,7 @@ from servicex import RucioDatasetIdentifier
 from servicex import ResultFormat
 from servicex import ServiceXClient
 
-sx = ServiceXClient(backend="production")
+sx = ServiceXClient(backend="uc-af")
 
 dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8")
 

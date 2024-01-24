@@ -31,10 +31,10 @@ from func_adl_servicex_xaodr22 import calib_tools
 
 # A Z to ee sample - Release 21
 ds_name = (
-    r"mc16_13TeV: mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee"
+    r"mc16_13TeV:mc16_13TeV.361106.PowhegPythia8EvtGen_AZNLOCTEQ6L1_Zee"
     r".deriv.DAOD_PHYS.e3601_e5984_s3126_r10201_r10210_p5313")
 
-sx = ServiceXClient(backend="testing4")
+sx = ServiceXClient(backend="uc-af")
 did = RucioDatasetIdentifier(ds_name, num_files=10)
 
 ds_raw = sx.func_adl_dataset(

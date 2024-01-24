@@ -30,7 +30,7 @@ from servicex import FileListDataset
 from servicex import ResultFormat
 from servicex import ServiceXClient
 
-sx = ServiceXClient(backend="testing4")
+sx = ServiceXClient(backend="uc-af")
 dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
 
 ds = sx.func_adl_dataset(dataset_id, codegen="uproot",

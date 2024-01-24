@@ -4,7 +4,7 @@ from rich.table import Table
 
 dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8", num_files=3)
 
-sx = ServiceXClient(backend="production")
+sx = ServiceXClient(backend="uc-af")
 ds_raw = sx.func_adl_dataset(
     dataset_id,
     codegen="uproot",

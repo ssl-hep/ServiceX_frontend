@@ -1,8 +1,8 @@
 General:
-  ServiceX: servicex-uc-af
+  ServiceX: uc-af
   Codegen: python
   OutputFormat: root
-  Delivery: ObjectStore
+  Delivery: LocalCache
 
 Sample:
   - Name: ttH
@@ -25,7 +25,7 @@ Definition:
     def run_query(input_filenames=None):
         import uproot
       
-        with uproot.open(f"{input_filenames}:nominal") as o:
+        with uproot.open({input_filenames:"nominal"}) as o:
             br = o.arrays("mu_pt")
         return br
 
@@ -33,6 +33,6 @@ Definition:
     def run_query(input_filenames=None):
         import uproot
       
-        with uproot.open(f"{input_filenames}:mini") as o:
+        with uproot.open({input_filenames:"mini"}) as o:
             br = o.arrays("lep_pt")
         return br
