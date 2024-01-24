@@ -1,3 +1,4 @@
+import shutil
 from servicex import ServiceXException
 from servicex.data_conversions import DataConverterAdaptor
 import pytest
@@ -58,6 +59,17 @@ async def test_parquet_to_awkward(good_uproot_file_path):
 @pytest.mark.asyncio
 async def test_root_to_awkward(good_root_file_path):
     df = await DataConverterAdaptor("root-file").convert_to_awkward(good_root_file_path)
+    assert len(df["JetPt"]) == 283458  # type: ignore
+    check_awkward_accessible(df["JetPt"])  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_root_to_awkward_postfix_filename(good_root_file_path, tmp_path):
+    # Found in the wild see #337.
+    postfix_file = tmp_path / "test.root.1"
+    shutil.copy(good_root_file_path, postfix_file)
+
+    df = await DataConverterAdaptor("root-file").convert_to_awkward(postfix_file)
     assert len(df["JetPt"]) == 283458  # type: ignore
     check_awkward_accessible(df["JetPt"])  # type: ignore
 

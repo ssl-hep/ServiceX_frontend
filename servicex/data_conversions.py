@@ -163,7 +163,7 @@ class DataConverterAdaptor:
                 return uproot.lazy(f"{file}:{tree_name}")  # type: ignore
 
             if hasattr(uproot, "dask"):
-                return uproot.dask(f"{file}:{tree_name}")  # type: ignore
+                return uproot.dask({str(file): tree_name})  # type: ignore
 
             assert (
                 False
