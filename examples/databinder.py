@@ -28,7 +28,6 @@
 
 from servicex.databinder import DataBinder
 
-
 sx = DataBinder("config_databinder.yaml")
 
 out_dict = sx.deliver()
