@@ -27,10 +27,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 from servicex import ServiceXSpec, General, Sample
-from servicex.func_adl.func_adl_dataset import FuncADLDataset
+from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.servicex_client import deliver
 
-query = FuncADLDataset().Select(lambda e: {'el_pt': e['el_pt']})
+query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
 spec = ServiceXSpec(
     General=General(

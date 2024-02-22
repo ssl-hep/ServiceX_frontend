@@ -30,15 +30,15 @@ from base64 import b64decode
 import pytest
 
 from servicex.dataset_identifier import FileListDataset
-from servicex.python_dataset import PythonDataset
+from servicex.python_dataset import PythonQuery
 
 
 def test_no_provided_function():
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = PythonDataset(dataset_identifier=did,
-                               codegen="uproot",
-                               sx_adapter=None,
-                               query_cache=None)
+    datasource = PythonQuery(dataset_identifier=did,
+                             codegen="uproot",
+                             sx_adapter=None,
+                             query_cache=None)
 
     with pytest.raises(ValueError):
         print(datasource.generate_selection_string())
@@ -46,10 +46,10 @@ def test_no_provided_function():
 
 def test_generate_transform():
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = PythonDataset(dataset_identifier=did,
-                               codegen="uproot",
-                               sx_adapter=None,
-                               query_cache=None)
+    datasource = PythonQuery(dataset_identifier=did,
+                             codegen="uproot",
+                             sx_adapter=None,
+                             query_cache=None)
 
     def run_query(input_filenames=None):
         print("Greetings from your query")
@@ -63,10 +63,10 @@ def test_generate_transform():
 
 def test_function_as_string():
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = PythonDataset(dataset_identifier=did,
-                               codegen="uproot",
-                               sx_adapter=None,
-                               query_cache=None)
+    datasource = PythonQuery(dataset_identifier=did,
+                             codegen="uproot",
+                             sx_adapter=None,
+                             query_cache=None)
 
     string_function = """
         def run_query(input_filenames=None):

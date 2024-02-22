@@ -64,7 +64,7 @@ from make_it_sync import make_sync
 ProgressIndicators = Union[Progress, ExpandableProgress]
 
 
-class Dataset(ABC):
+class Query(ABC):
     def __init__(
         self,
         dataset_identifier: DID,
@@ -95,7 +95,7 @@ class Dataset(ABC):
         :param result_format:
         :param ignore_cache:  If true, ignore the cache and always submit a new transform
         """
-        super(Dataset, self).__init__()
+        super(Query, self).__init__()
         self.servicex = sx_adapter
         self.configuration = config
         self.cache = query_cache
@@ -142,7 +142,7 @@ class Dataset(ABC):
         self.dataset_identifier.populate_transform_request(sx_request)
         return sx_request
 
-    def set_title(self, title: str) -> Dataset:
+    def set_title(self, title: str) -> Query:
         self.title = title
         return self
 

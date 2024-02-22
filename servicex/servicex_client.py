@@ -28,12 +28,12 @@
 from typing import Optional, List, TypeVar, Any, Type
 
 from servicex.configuration import Configuration
-from servicex.func_adl.func_adl_dataset import FuncADLDataset
+from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.types import DID
-from servicex.python_dataset import PythonDataset
+from servicex.python_dataset import PythonQuery
 from servicex.dataset_group import DatasetGroup
 import ast
 import qastle
@@ -53,7 +53,7 @@ def deliver(config: ServiceXSpec):
         if sample.Query:
             if type(sample.Query) is str:
                 qastle_query = qastle.python_ast_to_text_ast(ast.parse(sample.Query)) # NOQA E501
-                sample.Query = FuncADLDataset()
+                sample.Query = FuncADLQuery()
 
                 sample.Query.set_provided_qastle(qastle_query)
 
@@ -182,7 +182,7 @@ class ServiceXClient:
         result_format: Optional[ResultFormat] = None,
         item_type: Type[T] = Any,
         ignore_cache: bool = False
-    ) -> FuncADLDataset[T]:
+    ) -> FuncADLQuery[T]:
         r"""
         Generate a dataset that can use func_adl query language
 
@@ -202,7 +202,7 @@ class ServiceXClient:
                 f"deployment at {self.servicex.url}"
             )
 
-        return FuncADLDataset(
+        return FuncADLQuery(
             dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
@@ -221,7 +221,7 @@ class ServiceXClient:
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
         ignore_cache: bool = False
-    ) -> PythonDataset:
+    ) -> PythonQuery:
         r"""
         Generate a dataset that can use accept a python function for the  query
 
@@ -242,7 +242,7 @@ class ServiceXClient:
                 f"deployment at {self.servicex.url}"
             )
 
-        return PythonDataset(
+        return PythonQuery(
             dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
