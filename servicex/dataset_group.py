@@ -87,3 +87,5 @@ class DatasetGroup:
                 for d in self.datasets
             ]
             return await asyncio.gather(*self.tasks)
+
+    as_files = make_sync(as_files_async)

@@ -34,12 +34,68 @@ from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.types import DID
 from servicex.python_dataset import PythonDataset
+from servicex.dataset_group import DatasetGroup
+import ast
+import qastle
 
 from make_it_sync import make_sync
+from servicex.databinder_models import ServiceXSpec, General
 
 import rich
 
 T = TypeVar("T")
+
+
+def deliver(config: ServiceXSpec):
+    sx = ServiceXClient(backend=config.General.ServiceX)
+    datasets = []
+    for sample in config.Sample:
+        if sample.Query:
+            if type(sample.Query) is str:
+                qastle_query = qastle.python_ast_to_text_ast(ast.parse(sample.Query)) # NOQA E501
+                sample.Query = FuncADLDataset()
+
+                sample.Query.set_provided_qastle(qastle_query)
+
+            query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
+                                        config.General.Codegen,
+                                        config.General.OutputFormat)
+            query._q_ast = sample.Query._q_ast
+            query._item_type = sample.Query._item_type
+            if sample.Tree:
+                query = query.set_tree(sample.Tree)
+
+            sample.Query = query
+            sample.Query.ignore_cache = sample.IgnoreLocalCache
+
+            datasets.append(sample.Query)
+        elif sample.Function:
+            # The function field can be a callable if this was all initialized
+            # in python, or it can be a string if it was initialized from a
+            # yaml file. If it comes from a string, let's validate the syntax
+            # now to avoid nasty surprises later.
+            if type(sample.Function) == str:
+                try:
+                    exec(sample.Function)
+                except SyntaxError as e:
+                    raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
+
+            dataset = sx.python_dataset(sample.dataset_identifier, sample.Name,
+                                        config.General.Codegen,
+                                        config.General.OutputFormat)
+            dataset.python_function = sample.Function
+            dataset.ignore_cache = sample.IgnoreLocalCache
+            datasets.append(dataset)
+
+    group = DatasetGroup(datasets)
+
+    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
+        results = group.as_signed_urls()
+        return {obj.title: obj.signed_url_list for obj in results}
+
+    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
+        results = group.as_files()
+        return {obj.title: obj.file_list for obj in results}
 
 
 class ServiceXClient:

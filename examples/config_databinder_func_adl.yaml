@@ -1,0 +1,19 @@
+General:
+  ServiceX: DEF_backend
+  Codegen: uproot
+  OutputFormat: root-file
+  Delivery: LocalCache
+
+Sample:
+  - Name: ggH
+    RootFile: DEF_ggH_input
+    NFiles: 5
+    Query: DEF_ttH_nominal_query
+
+Definition:
+  DEF_backend: "testing1"
+  DEF_ttH_nominal_query: |
+    Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
+
+  DEF_ggH_input: "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
+                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"

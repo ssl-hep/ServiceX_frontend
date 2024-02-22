@@ -25,11 +25,24 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import sys
 
-from servicex.databinder import DataBinder
+import yaml
 
-sx = DataBinder("config_databinder.yaml")
+from servicex import ServiceXSpec
+from servicex.servicex_client import deliver
 
-out_dict = sx.deliver()
+if len(sys.argv) != 2:
+    print("Usage: python databinder.py <config_file>")
+    sys.exit(1)
 
-print(out_dict)
+try:
+    with open(sys.argv[1]) as f:
+        data = yaml.safe_load(f)
+except FileNotFoundError:
+    print(f"File {sys.argv[1]} not found")
+    sys.exit(1)
+
+
+spec = ServiceXSpec.parse_obj(data)
+print(deliver(spec))

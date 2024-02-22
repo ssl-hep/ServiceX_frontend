@@ -30,7 +30,7 @@ from servicex import dataset_group
 from servicex import models
 from servicex import servicex_client
 from servicex import dataset_identifier
-
+from servicex.databinder_models import Sample, General, ServiceXSpec
 from .servicex_client import ServiceXClient
 from .dataset import Dataset
 from .models import ResultFormat, ResultDestination
@@ -51,4 +51,7 @@ __all__ = [
     "dataset_identifier",
     "RucioDatasetIdentifier",
     "FileListDataset",
+    "Sample",
+    "General",
+    "ServiceXSpec",
 ]
