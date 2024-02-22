@@ -73,7 +73,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
 
     def __init__(
         self,
-        dataset_identifier: DID,
+        dataset_identifier: DID = None,
         sx_adapter: ServiceXAdapter = None,
         title: str = "ServiceX Client",
         codegen: str = None,

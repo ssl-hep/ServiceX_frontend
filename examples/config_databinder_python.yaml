@@ -1,7 +1,7 @@
 General:
-  ServiceX: uc-af
+  ServiceX: DEF_backend
   Codegen: python
-  OutputFormat: root
+  OutputFormat: root-file
   Delivery: LocalCache
 
 Sample:
@@ -17,14 +17,19 @@ Sample:
     Function: DEF_function1
 
   - Name: ggH
-    XRootDFiles: root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root
+    RootFile: DEF_ggH_input
     Function: DEF_function2
 
 Definition:
+  DEF_backend: "testing1"
+
+  DEF_ggH_input: "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
+                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
+
   DEF_function1: |
     def run_query(input_filenames=None):
         import uproot
-      
+  
         with uproot.open({input_filenames:"nominal"}) as o:
             br = o.arrays("mu_pt")
         return br

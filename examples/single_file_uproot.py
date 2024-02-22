@@ -26,20 +26,42 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex import FileListDataset
-from servicex import ResultFormat
-from servicex import ServiceXClient
+import ast
 
-sx = ServiceXClient(backend="uc-af")
-dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
+import qastle
 
-ds = sx.func_adl_dataset(dataset_id, codegen="uproot",
-                         title="Root",
-                         result_format=ResultFormat.parquet)
+from servicex import ServiceXSpec, General, Sample
+from servicex.func_adl.func_adl_dataset import FuncADLDataset
+from servicex.servicex_client import deliver
 
-sx3 = ds.Select(lambda e: {'lep_pt': e['lep_pt']}). \
-    Where(lambda e: e['lep_pt'] > 1000). \
-    set_tree("mini"). \
-    as_pandas()
+query = FuncADLDataset().Select(lambda e: {'lep_pt': e['lep_pt']}). \
+    Where(lambda e: e['lep_pt'] > 1000)
 
-print(sx3)
+qstr = """
+FuncADLDataset().Select(lambda e: {'lep_pt': e['lep_pt']}). \
+         Where(lambda e: e['lep_pt'] > 1000)
+"""
+query_ast = ast.parse(qstr)
+qastle_query = qastle.python_ast_to_text_ast(qastle.insert_linq_nodes(query_ast))
+print("From str", qastle_query)
+q2 = FuncADLDataset()
+q2.set_provided_qastle(qastle_query)
+print(q2.generate_selection_string())
+print("From python", query.generate_selection_string())
+spec = ServiceXSpec(
+    General=General(
+        ServiceX="testing1",
+        Codegen="uproot",
+        OutputFormat="parquet",
+        Delivery="LocalCache"
+    ),
+    Sample=[
+        Sample(
+            Name="mc_345060.ggH125_ZZ4lep.4lep",
+            RootFile="root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root", # NOQA E501
+            Query=query
+        )
+    ]
+)
+
+print(deliver(spec))
