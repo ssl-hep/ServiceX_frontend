@@ -30,7 +30,7 @@ from typing import Union, Optional, Callable
 from pydantic import BaseModel, Field, AnyUrl, root_validator, constr, validator
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
-from servicex.func_adl.func_adl_dataset import Dataset
+from servicex.func_adl import func_adl_dataset
 
 
 class Sample(BaseModel):
@@ -39,7 +39,7 @@ class Sample(BaseModel):
     RootFile: Optional[Union[str, AnyUrl]]
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
-    Query: Optional[Union[str, Dataset]] = Field(default=None)
+    Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
     Tree: Optional[str] = Field(default=None)
     IgnoreLocalCache: bool = False
 

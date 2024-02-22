@@ -25,14 +25,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from servicex import dataset
 from servicex import dataset_group
 from servicex import models
 from servicex import servicex_client
 from servicex import dataset_identifier
 from servicex.databinder_models import Sample, General, ServiceXSpec
 from .servicex_client import ServiceXClient
-from .dataset import Dataset
+from .query import Query
 from .models import ResultFormat, ResultDestination
 from .dataset_group import DatasetGroup
 from .dataset_identifier import RucioDatasetIdentifier, FileListDataset
@@ -40,12 +39,11 @@ from .dataset_identifier import RucioDatasetIdentifier, FileListDataset
 
 __all__ = [
     "ServiceXClient",
-    "Dataset",
+    "Query",
     "DatasetGroup",
     "ResultFormat",
     "ResultDestination",
     "servicex_client",
-    "dataset",
     "dataset_group",
     "models",
     "dataset_identifier",

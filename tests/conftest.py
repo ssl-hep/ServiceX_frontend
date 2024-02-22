@@ -28,7 +28,7 @@
 from datetime import datetime
 
 from pytest_asyncio import fixture
-from servicex.python_dataset import PythonDataset
+from servicex.python_dataset import PythonQuery
 from servicex.models import (
     TransformRequest,
     ResultDestination,
@@ -64,7 +64,7 @@ def minio_adapter() -> MinioAdapter:
 @fixture
 def python_dataset(dummy_parquet_file):
     did = FileListDataset(dummy_parquet_file)
-    dataset = PythonDataset(
+    dataset = PythonQuery(
         title="Test submission",
         dataset_identifier=did,
         codegen="uproot",

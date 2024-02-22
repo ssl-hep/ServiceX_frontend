@@ -30,14 +30,14 @@ from typing import List, Optional, Union
 
 from rich.progress import Progress
 
-from servicex.dataset import Dataset
+from servicex.query import Query
 from servicex.expandable_progress import ExpandableProgress
-from servicex.func_adl.func_adl_dataset import FuncADLDataset
+from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
 
-DatasetGroupMember = Union[Dataset, FuncADLDataset]
+DatasetGroupMember = Union[Query, FuncADLQuery]
 
 
 class DatasetGroup:

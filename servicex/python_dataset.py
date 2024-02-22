@@ -30,14 +30,14 @@ import typing
 from base64 import b64encode
 
 from servicex.configuration import Configuration
-from servicex.dataset import Dataset
+from servicex.query import Query
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.types import DID
 
 
-class PythonDataset(Dataset):
+class PythonQuery(Query):
 
     def __init__(self, dataset_identifier: DID,
                  sx_adapter: ServiceXAdapter = None,
@@ -59,7 +59,7 @@ class PythonDataset(Dataset):
 
         self.python_function = None
 
-    def with_uproot_function(self, f: typing.Union[str, typing.Callable]) -> Dataset:
+    def with_uproot_function(self, f: typing.Union[str, typing.Callable]) -> Query:
         self.python_function = f
         return self
 

@@ -31,10 +31,10 @@ import ast
 import qastle
 
 from servicex import ServiceXSpec, General, Sample
-from servicex.func_adl.func_adl_dataset import FuncADLDataset
+from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.servicex_client import deliver
 
-query = FuncADLDataset().Select(lambda e: {'lep_pt': e['lep_pt']}). \
+query = FuncADLQuery().Select(lambda e: {'lep_pt': e['lep_pt']}). \
     Where(lambda e: e['lep_pt'] > 1000)
 
 qstr = """
@@ -44,7 +44,7 @@ FuncADLDataset().Select(lambda e: {'lep_pt': e['lep_pt']}). \
 query_ast = ast.parse(qstr)
 qastle_query = qastle.python_ast_to_text_ast(qastle.insert_linq_nodes(query_ast))
 print("From str", qastle_query)
-q2 = FuncADLDataset()
+q2 = FuncADLQuery()
 q2.set_provided_qastle(qastle_query)
 print(q2.generate_selection_string())
 print("From python", query.generate_selection_string())

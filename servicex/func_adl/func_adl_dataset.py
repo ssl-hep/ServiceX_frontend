@@ -46,7 +46,7 @@ from qastle import python_ast_to_text_ast
 from func_adl import EventDataset, find_EventDataset
 from func_adl.object_stream import S
 from servicex.configuration import Configuration
-from servicex.dataset import Dataset
+from servicex.query import Query
 from servicex.func_adl.util import has_tuple
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
@@ -56,7 +56,7 @@ from servicex.types import DID
 T = TypeVar("T")
 
 
-class FuncADLDataset(Dataset, EventDataset[T]):
+class FuncADLQuery(Query, EventDataset[T]):
     r"""
     ServiceX Dataset class that uses func_adl query syntax.
     """
@@ -83,7 +83,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         item_type: Type = Any,
         ignore_cache: bool = False,
     ):
-        Dataset.__init__(
+        Query.__init__(
             self,
             dataset_identifier=dataset_identifier,
             title=title,
@@ -122,7 +122,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
 
     def SelectMany(
         self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
-    ) -> FuncADLDataset[S]:
+    ) -> FuncADLQuery[S]:
         r"""
         Given the current stream's object type is an array or other iterable, return
         the items in this objects type, one-by-one. This has the effect of flattening a
@@ -142,7 +142,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         """
         return super().SelectMany(func)
 
-    def Select(self, f: Union[str, ast.Lambda, Callable[[T], S]]) -> FuncADLDataset[S]:
+    def Select(self, f: Union[str, ast.Lambda, Callable[[T], S]]) -> FuncADLQuery[S]:
         r"""
         Apply a transformation function to each object in the stream, yielding a new type of
         object. There is a one-to-one correspondence between the input objects and output objects.
@@ -168,7 +168,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
 
     def Where(
         self, filter: Union[str, ast.Lambda, Callable[[T], bool]]
-    ) -> FuncADLDataset[T]:
+    ) -> FuncADLQuery[T]:
         r"""
         Filter the object stream, allowing only items for which `filter` evaluates as true through.
 
@@ -187,7 +187,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
 
         return super().Where(filter)
 
-    def MetaData(self, metadata: Dict[str, Any]) -> FuncADLDataset[T]:
+    def MetaData(self, metadata: Dict[str, Any]) -> FuncADLQuery[T]:
         r"""Add metadata to the current object stream. The metadata is an arbitrary set of string
         key-value pairs. The backend must be able to properly interpret the metadata.
 
@@ -197,7 +197,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
 
         return super().MetaData(metadata)
 
-    def QMetaData(self, metadata: Dict[str, Any]) -> FuncADLDataset[T]:
+    def QMetaData(self, metadata: Dict[str, Any]) -> FuncADLQuery[T]:
         r"""Add query metadata to the current object stream.
 
         - Metadata is never transmitted to any back end
@@ -213,7 +213,7 @@ class FuncADLDataset(Dataset, EventDataset[T]):
         """
         return super().QMetaData(metadata)
 
-    def set_tree(self, tree_name: str) -> FuncADLDataset[T]:
+    def set_tree(self, tree_name: str) -> FuncADLQuery[T]:
         r"""Set the tree name for the query.
         Args:
             tree_name (str): Name of the tree to use for the query
