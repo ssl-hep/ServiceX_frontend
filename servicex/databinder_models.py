@@ -151,7 +151,7 @@ class ServiceXSpec(BaseModel):
                         raise ValueError(f"Definition {value} not found")
             return value
 
-        if 'Definition' in values:
+        if 'Definition' in values and values['Definition'] is not None:
             defs = values['Definition'].dict()
         else:
             defs = {}
