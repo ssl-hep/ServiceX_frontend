@@ -161,5 +161,4 @@ class ServiceXSpec(BaseModel):
 
         replace_value_from_def(values['General'].__dict__, defs)
 
-        print(values)
         return values
