@@ -36,7 +36,7 @@ from servicex.func_adl import func_adl_dataset
 class Sample(BaseModel):
     Name: str
     RucioDID: Optional[str]
-    RootFile: Optional[Union[str, AnyUrl]]
+    XRootdFile: Optional[Union[str, AnyUrl]]
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
     Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
@@ -50,8 +50,8 @@ class Sample(BaseModel):
     def dataset_identifier(self):
         if self.RucioDID:
             return RucioDatasetIdentifier(self.RucioDID)
-        elif self.RootFile:
-            return FileListDataset(self.RootFile)
+        elif self.XRootdFile:
+            return FileListDataset(self.XRootdFile)
 
     @root_validator
     def validate_did_xor_file(cls, values):
@@ -60,10 +60,10 @@ class Sample(BaseModel):
         :param values:
         :return:
         """
-        if values['RootFile'] and values['RucioDID']:
-            raise ValueError("Only specify one of RootFile or RucioDID, not both.")
-        if not values['RootFile'] and not values['RucioDID']:
-            raise ValueError("Must specify one of RootFile or RucioDID.")
+        if values['XRootdFile'] and values['RucioDID']:
+            raise ValueError("Only specify one of XRootdFile or RucioDID, not both.")
+        if not values['XRootdFile'] and not values['RucioDID']:
+            raise ValueError("Must specify one of XRootdFile or RucioDID.")
         return values
 
     @root_validator
