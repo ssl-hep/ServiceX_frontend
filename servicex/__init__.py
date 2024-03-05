@@ -29,8 +29,9 @@ from servicex import dataset_group
 from servicex import models
 from servicex import servicex_client
 from servicex import dataset_identifier
-from servicex.databinder_models import Sample, General, ServiceXSpec
-from .servicex_client import ServiceXClient
+from servicex.databinder_models import Sample, General, Definition, ServiceXSpec
+from servicex.func_adl.func_adl_dataset import FuncADLQuery
+from servicex.servicex_client import ServiceXClient, deliver
 from .query import Query
 from .models import ResultFormat, ResultDestination
 from .dataset_group import DatasetGroup
@@ -49,7 +50,10 @@ __all__ = [
     "dataset_identifier",
     "RucioDatasetIdentifier",
     "FileListDataset",
+    "FuncADLQuery",
     "Sample",
     "General",
+    "Definition",
     "ServiceXSpec",
+    "deliver"
 ]
