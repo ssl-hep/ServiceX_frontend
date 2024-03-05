@@ -57,8 +57,13 @@ def deliver(config: ServiceXSpec):
 
                 sample.Query.set_provided_qastle(qastle_query)
 
+            if sample.Codegen:
+                codegen = sample.Codegen
+            else:
+                codegen = config.General.Codegen
+
             query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
-                                        config.General.Codegen,
+                                        codegen,
                                         config.General.OutputFormat)
             query._q_ast = sample.Query._q_ast
             query._item_type = sample.Query._item_type
@@ -80,8 +85,13 @@ def deliver(config: ServiceXSpec):
                 except SyntaxError as e:
                     raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
 
+            if sample.Codegen:
+                codegen = sample.Codegen
+            else:
+                codegen = config.General.Codegen
+
             dataset = sx.python_dataset(sample.dataset_identifier, sample.Name,
-                                        config.General.Codegen,
+                                        codegen,
                                         config.General.OutputFormat)
             dataset.python_function = sample.Function
             dataset.ignore_cache = sample.IgnoreLocalCache
