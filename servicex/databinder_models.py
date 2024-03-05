@@ -35,6 +35,7 @@ from servicex.func_adl import func_adl_dataset
 
 class Sample(BaseModel):
     Name: str
+    Codegen: Optional[str]
     RucioDID: Optional[str]
     XRootdFile: Optional[Union[str, AnyUrl]]
     NFiles: Optional[int] = Field(default=None)
