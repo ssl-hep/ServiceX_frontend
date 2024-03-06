@@ -50,7 +50,7 @@ class Sample(BaseModel):
     @property
     def dataset_identifier(self):
         if self.RucioDID:
-            return RucioDatasetIdentifier(self.RucioDID)
+            return RucioDatasetIdentifier(self.RucioDID, num_files=self.NFiles or 0)
         elif self.XRootdFile:
             return FileListDataset(self.XRootdFile)
 
