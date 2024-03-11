@@ -55,8 +55,9 @@ class Configuration(BaseModel):
         :param v:
         :return:
         """
+        #create a folder inside the tmp directory if not specified in cache_path
         if not v:
-            v = "/tmp"
+            v = "/tmp/servicex_${USER}"
 
         s_path = os.path.expanduser(v)
 
