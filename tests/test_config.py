@@ -50,5 +50,14 @@ def test_config_read(tempdir):
 @patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
 def test_default_cache_path(tempdir):
 
+    # Windows style user name
+    os.environ['UserName'] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
-    assert c.cache_path == "mytemp"
+    assert c.cache_path == "mytemp/servicex_p_higgs"
+    del os.environ['UserName']
+
+    # Linux style user name
+    os.environ['USER'] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
+    assert c.cache_path == "mytemp/servicex_p_higgs"
+    del os.environ['USER']
