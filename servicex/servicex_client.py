@@ -39,7 +39,7 @@ import ast
 import qastle
 
 from make_it_sync import make_sync
-from servicex.databinder_models import ServiceXSpec, General
+from servicex.databinder_models import ServiceXSpec, General, Sample
 
 import rich
 
@@ -47,6 +47,12 @@ T = TypeVar("T")
 
 
 def deliver(config: ServiceXSpec):
+    def get_codegen(_sample: Sample, _general: General):
+        if _sample.Codegen:
+            return _sample.Codegen
+        else:
+            return _general.Codegen
+
     sx = ServiceXClient(backend=config.General.ServiceX)
     datasets = []
     for sample in config.Sample:
@@ -57,13 +63,8 @@ def deliver(config: ServiceXSpec):
 
                 sample.Query.set_provided_qastle(qastle_query)
 
-            if sample.Codegen:
-                codegen = sample.Codegen
-            else:
-                codegen = config.General.Codegen
-
             query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
-                                        codegen,
+                                        get_codegen(sample, config.General),
                                         config.General.OutputFormat)
             query._q_ast = sample.Query._q_ast
             query._item_type = sample.Query._item_type
@@ -85,13 +86,8 @@ def deliver(config: ServiceXSpec):
                 except SyntaxError as e:
                     raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
 
-            if sample.Codegen:
-                codegen = sample.Codegen
-            else:
-                codegen = config.General.Codegen
-
             dataset = sx.python_dataset(sample.dataset_identifier, sample.Name,
-                                        codegen,
+                                        get_codegen(sample, config.General),
                                         config.General.OutputFormat)
             dataset.python_function = sample.Function
             dataset.ignore_cache = sample.IgnoreLocalCache
