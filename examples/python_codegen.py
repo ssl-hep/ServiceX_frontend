@@ -50,7 +50,7 @@ spec = ServiceXSpec(
     Sample=[
         Sample(
             Name="Python Codegen",
-            RootFile="root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root",
+            XRootdFile="root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root",
             Function=run_query
         )
     ]

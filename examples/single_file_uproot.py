@@ -58,7 +58,7 @@ spec = ServiceXSpec(
     Sample=[
         Sample(
             Name="mc_345060.ggH125_ZZ4lep.4lep",
-            RootFile="root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root", # NOQA E501
+            XRootdFile="root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root", # NOQA E501
             Query=query
         )
     ]
