@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
-from typing import Union, Optional, Callable
+from typing import Union, Optional, Callable, List
 from pydantic import BaseModel, Field, AnyUrl, root_validator, constr, validator
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
@@ -115,7 +115,7 @@ class Definition(BaseModel):
 
 class ServiceXSpec(BaseModel):
     General: General
-    Sample: list[Sample]
+    Sample: List[Sample]
     Definition: Optional[Definition]
 
     @validator('Sample')
