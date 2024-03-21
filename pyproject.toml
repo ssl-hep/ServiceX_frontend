@@ -17,7 +17,7 @@ python = ">=3.9"
 qastle = { version = ">=0.17", python = ">=3.8,<3.13" }
 func_adl = { version = ">=3.2.6", python = ">=3.8,<3.13" }
 requests = ">=2.31"
-pydantic = ">=1.10"
+pydantic = ">=1.10,<2"
 httpx = ">=0.24"
 miniopy-async = ">=1.15"
 tinydb = { version = ">=4.7", python = ">=3.8,<3.13" }
@@ -38,7 +38,7 @@ jupyter = ">=1.0.0"
 
 
 [tool.poetry.group.test.dependencies]
-pytest = ">=7.2.0,<8"
+pytest = ">=7.2.0"
 pytest-mock = ">=3.10.0"
 pytest-cov = ">=4.0.0"
 flake8 = ">=5.0.4"
