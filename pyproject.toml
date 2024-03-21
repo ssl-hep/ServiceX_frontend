@@ -13,7 +13,7 @@ packages = [{ include = "servicex" }]
 servicex = "servicex.app.main:app"
 
 [tool.poetry.dependencies]
-python = ">=3.9"
+python = ">=3.8"
 qastle = { version = ">=0.17", python = ">=3.8,<3.13" }
 func_adl = { version = ">=3.2.6", python = ">=3.8,<3.13" }
 requests = ">=2.31"
