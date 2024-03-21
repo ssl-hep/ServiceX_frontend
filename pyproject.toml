@@ -28,7 +28,9 @@ types-PyYAML = ">=6.0"
 make_it_sync = ">=1.0.0"
 aiofile = { version = ">=3.8.8", python = ">=3.8,<3.13" }
 
-pandas = { version = ">=2.0.2", optional = true }
+pandas = [ { version = ">=2.0.2", optional = true },
+           { version = ">=2.2", python = ">=3.12", optional = true }
+         ]
 pyarrow = { version = ">=12.0.0", optional = true }
 fastparquet = { version = ">=2023.4.0", optional = true }
 
