@@ -7,6 +7,10 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Mandatory for publishing with a trusted publisher
+    # c.f. https://docs.pypi.org/trusted-publishers/using-a-publisher/
+    permissions:
+      id-token: write
 
     steps:
     - uses: actions/checkout@v4
@@ -59,7 +63,6 @@ jobs:
       if: github.repository == 'ssl-hep/ServiceX_frontend'
       uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
-        password: ${{ secrets.pypi_password_servicex }}
         print-hash: true
 
   build-docs:
