@@ -49,6 +49,9 @@ dependencies = [
     "make-it-sync",  # compatible versions controlled through func_adl
 ]
 
+[project.scripts]
+servicex = "servicex.app.main:app"
+
 [project.urls]
 Documentation = "https://github.com/ssl-hep/ServiceX_frontend"
 Homepage = "https://github.com/ssl-hep/ServiceX_frontend"
