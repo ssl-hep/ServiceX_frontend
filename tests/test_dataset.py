@@ -180,7 +180,7 @@ async def test_retrieve_current_transform_status_status_none(python_dataset, com
                       completed_status.request_id))
         python_dataset.download_path = result
         assert python_dataset.minio is not None
-        assert type(python_dataset.minio) == MinioAdapter
+        assert isinstance(python_dataset.minio, MinioAdapter)
         cache.close()
 
 
@@ -200,7 +200,7 @@ async def test_retrieve_current_transform_status_status_not(python_dataset, comp
                       completed_status.request_id))
         python_dataset.download_path = result
         assert python_dataset.minio is not None
-        assert type(python_dataset.minio) == MinioAdapter
+        assert isinstance(python_dataset.minio, MinioAdapter)
         cache.close()
 
 
