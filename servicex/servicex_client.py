@@ -80,7 +80,7 @@ def deliver(config: ServiceXSpec):
             # in python, or it can be a string if it was initialized from a
             # yaml file. If it comes from a string, let's validate the syntax
             # now to avoid nasty surprises later.
-            if type(sample.Function) == str:
+            if isinstance(sample.Function, str):
                 try:
                     exec(sample.Function)
                 except SyntaxError as e:
