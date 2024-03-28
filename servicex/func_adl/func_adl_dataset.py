@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import ast
+import asyncio
 import copy
 from typing import (
     Optional,
@@ -82,6 +83,7 @@ class FuncADLQuery(Query, EventDataset[T]):
         result_format: Optional[ResultFormat] = None,
         item_type: Type = Any,
         ignore_cache: bool = False,
+        download_semaphore: Optional[asyncio.Semaphore] = None,
     ):
         Query.__init__(
             self,
@@ -93,6 +95,7 @@ class FuncADLQuery(Query, EventDataset[T]):
             query_cache=query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
+            download_semaphore=download_semaphore,
         )
         EventDataset.__init__(self, item_type=item_type)
         self.provided_qastle = None
@@ -114,6 +117,8 @@ class FuncADLQuery(Query, EventDataset[T]):
 
         for attr, value in vars(self).items():
             if type(value) is QueryCache:
+                setattr(obj, attr, value)
+            elif type(value) is ServiceXAdapter:
                 setattr(obj, attr, value)
             else:
                 setattr(obj, attr, copy.deepcopy(value, memo))

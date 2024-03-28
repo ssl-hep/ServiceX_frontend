@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 import os.path
 from hashlib import sha1
 from pathlib import Path
@@ -52,21 +53,24 @@ class MinioAdapter:
         access_key: str,
         secret_key: str,
         bucket: str,
+        semaphore: asyncio.Semaphore
     ):
         self.minio = Minio(
             endpoint_host, access_key=access_key, secret_key=secret_key, secure=secure
         )
 
         self.bucket = bucket
+        self.semaphore = semaphore
 
     @classmethod
-    def for_transform(cls, transform: TransformStatus):
+    def for_transform(cls, transform: TransformStatus, semaphore: asyncio.Semaphore=None):
         return MinioAdapter(
             endpoint_host=transform.minio_endpoint,
             secure=transform.minio_secured,
             access_key=transform.minio_access_key,
             secret_key=transform.minio_secret_key,
             bucket=transform.request_id,
+            semaphore=semaphore
         )
 
     async def list_bucket(self) -> List[ResultFile]:

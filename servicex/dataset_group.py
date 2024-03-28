@@ -41,7 +41,7 @@ DatasetGroupMember = Union[Query, FuncADLQuery]
 
 
 class DatasetGroup:
-    def __init__(self, datasets: List[DatasetGroupMember]):
+    def __init__(self, datasets: List[DatasetGroupMember], download_semaphore: Optional[asyncio.Semaphore] = None):
         r"""
         A group of datasets that are to be transformed together. This is a convenience
         class to allow you to submit multiple datasets to a ServiceX instance and
@@ -51,6 +51,9 @@ class DatasetGroup:
         """
         self.tasks = []
         self.datasets = datasets
+        assert download_semaphore
+        self.download_semaphore = download_semaphore if download_semaphore is not None \
+            else asyncio.Semaphore(10)
 
     def set_result_format(self, result_format: ResultFormat):
         r"""
@@ -67,10 +70,10 @@ class DatasetGroup:
         display_progress: bool = True,
         provided_progress: Optional[Progress] = None,
     ) -> List[TransformedResults]:
-        with ExpandableProgress(display_progress, provided_progress,
-                                overall_progress=True) as progress:
+        with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
-                d.as_signed_urls_async(provided_progress=progress, dataset_group=True)
+                d.as_signed_urls_async(provided_progress=progress,
+                                       semaphore=self.download_semaphore)
                 for d in self.datasets
             ]
             return await asyncio.gather(*self.tasks)
@@ -83,7 +86,8 @@ class DatasetGroup:
                              ) -> List[TransformedResults]:
         with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
-                d.as_files_async(provided_progress=progress)
+                d.as_files_async(provided_progress=progress,
+                                 semaphore=self.download_semaphore)
                 for d in self.datasets
             ]
             return await asyncio.gather(*self.tasks)

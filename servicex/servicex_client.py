@@ -25,7 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
+import logging
 from typing import Optional, List, TypeVar, Any, Type
+
+import httpx
 
 from servicex.configuration import Configuration
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
@@ -46,63 +50,74 @@ import rich
 T = TypeVar("T")
 
 
-def deliver(config: ServiceXSpec):
+async def deliver_async(config: ServiceXSpec):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen:
             return _sample.Codegen
         else:
             return _general.Codegen
 
-    sx = ServiceXClient(backend=config.General.ServiceX)
-    datasets = []
-    for sample in config.Sample:
-        if sample.Query:
-            if type(sample.Query) is str:
-                qastle_query = qastle.python_ast_to_text_ast(ast.parse(sample.Query)) # NOQA E501
-                sample.Query = FuncADLQuery()
 
-                sample.Query.set_provided_qastle(qastle_query)
+    async with httpx.AsyncClient(limits=httpx.Limits(max_connections=4)) as client:
+        download_semaphore = asyncio.Semaphore(10)
+        servicex_semaphore = asyncio.Semaphore(4)
 
-            query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
-                                        get_codegen(sample, config.General),
-                                        config.General.OutputFormat)
-            query._q_ast = sample.Query._q_ast
-            query._item_type = sample.Query._item_type
-            if sample.Tree:
-                query = query.set_tree(sample.Tree)
+        sx = ServiceXClient(backend=config.General.ServiceX,
+                            httpx_client=client,
+                            servicex_semaphore=servicex_semaphore)
 
-            sample.Query = query
-            sample.Query.ignore_cache = sample.IgnoreLocalCache
+        # await sx.update_code_generators_async()
+        datasets = []
 
-            datasets.append(sample.Query)
-        elif sample.Function:
-            # The function field can be a callable if this was all initialized
-            # in python, or it can be a string if it was initialized from a
-            # yaml file. If it comes from a string, let's validate the syntax
-            # now to avoid nasty surprises later.
-            if isinstance(sample.Function, str):
-                try:
-                    exec(sample.Function)
-                except SyntaxError as e:
-                    raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
+        for sample in config.Sample:
+            if sample.Query:
+                if type(sample.Query) is str:
+                    qastle_query = qastle.python_ast_to_text_ast(ast.parse(sample.Query)) # NOQA E501
+                    sample.Query = FuncADLQuery()
 
-            dataset = sx.python_dataset(sample.dataset_identifier, sample.Name,
-                                        get_codegen(sample, config.General),
-                                        config.General.OutputFormat)
-            dataset.python_function = sample.Function
-            dataset.ignore_cache = sample.IgnoreLocalCache
-            datasets.append(dataset)
+                    sample.Query.set_provided_qastle(qastle_query)
 
-    group = DatasetGroup(datasets)
+                query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
+                                            get_codegen(sample, config.General),
+                                            config.General.OutputFormat,
+                                            download_semaphore=download_semaphore)
+                query._q_ast = sample.Query._q_ast
+                query._item_type = sample.Query._item_type
+                if sample.Tree:
+                    query = query.set_tree(sample.Tree)
 
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        results = group.as_signed_urls()
-        return {obj.title: obj.signed_url_list for obj in results}
+                sample.Query = query
+                sample.Query.ignore_cache = sample.IgnoreLocalCache
 
-    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files()
-        return {obj.title: obj.file_list for obj in results}
+                datasets.append(sample.Query)
+            elif sample.Function:
+                # The function field can be a callable if this was all initialized
+                # in python, or it can be a string if it was initialized from a
+                # yaml file. If it comes from a string, let's validate the syntax
+                # now to avoid nasty surprises later.
+                if isinstance(sample.Function, str):
+                    try:
+                        exec(sample.Function)
+                    except SyntaxError as e:
+                        raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
 
+                dataset = sx.python_dataset(sample.dataset_identifier, sample.Name,
+                                            get_codegen(sample, config.General),
+                                            config.General.OutputFormat)
+                dataset.python_function = sample.Function
+                dataset.ignore_cache = sample.IgnoreLocalCache
+                datasets.append(dataset)
+
+        group = DatasetGroup(datasets, download_semaphore=download_semaphore)
+
+        if config.General.Delivery == General.DeliveryEnum.LocalCache:
+            results = group.as_files()
+            return {obj.title: obj.signed_url_list for obj in results}
+        elif config.General.Delivery == General.DeliveryEnum.SignedURLs:
+            results = group.as_signed_urls()
+            return {obj.title: obj.file_list for obj in results}
+
+deliver = make_sync(deliver_async)
 
 class ServiceXClient:
     r"""
@@ -111,7 +126,9 @@ class ServiceXClient:
     Instances of this class are factories for `Datasets``
     """
 
-    def __init__(self, backend=None, url=None, config_path=None):
+    def __init__(self, backend=None, url=None, config_path=None,
+                 httpx_client=None,
+                 servicex_semaphore=None):
         r"""
         If both `backend` and `url` are unspecified then it will attempt to pick up
         the default backend from `.servicex`
@@ -126,6 +143,10 @@ class ServiceXClient:
         self.config = Configuration.read(config_path)
         self.endpoints = self.config.endpoint_dict()
 
+        assert servicex_semaphore
+        self.servicex_semaphore = servicex_semaphore
+
+        self.backend = backend
         if not url and not backend:
             backend = self.config.default_endpoint
 
@@ -133,24 +154,35 @@ class ServiceXClient:
             raise ValueError("Only specify backend or url... not both")
 
         if url:
-            self.servicex = ServiceXAdapter(url)
+            self.servicex = ServiceXAdapter(url,
+                                            httpx_client = httpx_client,
+                                            semaphore=self.servicex_semaphore)
         elif backend:
             if backend not in self.endpoints:
                 raise ValueError(f"Backend {backend} not defined in .servicex file")
             self.servicex = ServiceXAdapter(
                 self.endpoints[backend].endpoint,
                 refresh_token=self.endpoints[backend].token,
+                httpx_client=httpx_client,
+                semaphore=self.servicex_semaphore
             )
 
         self.query_cache = QueryCache(self.config)
-        self.code_generators = set(self.get_code_generators(backend).keys())
+        self.code_generators = {}
+
+    async def update_code_generators_async(self):
+        r"""
+        Update the code generators from the server
+        """
+        code_gen_dict = await self.get_code_generators_async()
+        self.code_generators = set(code_gen_dict.keys())
 
     async def get_transforms_async(self) -> List[TransformStatus]:
         r"""
         Retrieve all transforms you have run on the server
         :return: List of Transform status objects
         """
-        return await self.servicex.get_transforms()
+        return await self.servicex.get_transforms(self.servicex_semaphore)
 
     get_transforms = make_sync(get_transforms_async)
 
@@ -160,25 +192,28 @@ class ServiceXClient:
         :param transform_id: The uuid of the transform
         :return: The current status for the transform
         """
-        return await self.servicex.get_transform_status(request_id=transform_id)
+        return await self.servicex.get_transform_status(request_id=transform_id,
+                                                        semaphore=self.servicex_semaphore)
 
     get_transform_status = make_sync(get_transform_status_async)
 
-    def get_code_generators(self, backend=None):
+    async def get_code_generators_async(self):
         r"""
         Retrieve the code generators deployed with the serviceX instance
         :return:  The list of code generators as json dictionary
         """
         cached_backends = None
-        if backend:
-            cached_backends = self.query_cache.get_codegen_by_backend(backend)
+        if self.backend:
+            cached_backends = self.query_cache.get_codegen_by_backend(self.backend)
         if cached_backends:
             rich.print("Returning code generators from cache")
             return cached_backends["codegens"]
         else:
-            code_generators = self.servicex.get_code_generators()
-            self.query_cache.update_codegen_by_backend(backend, code_generators)
+            code_generators = await self.servicex.get_code_generators()
+            self.query_cache.update_codegen_by_backend(self.backend, code_generators)
             return code_generators
+
+    get_code_generators = make_sync(get_code_generators_async)
 
     def func_adl_dataset(
         self,
@@ -187,7 +222,8 @@ class ServiceXClient:
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
         item_type: Type[T] = Any,
-        ignore_cache: bool = False
+        ignore_cache: bool = False,
+        download_semaphore: asyncio.Semaphore=None,
     ) -> FuncADLQuery[T]:
         r"""
         Generate a dataset that can use func_adl query language
@@ -202,11 +238,11 @@ class ServiceXClient:
         :param ignore_cache: Ignore the query cache and always run the query
         :return: A func_adl dataset ready to accept query statements.
         """
-        if codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
-            )
+        # if codegen not in self.code_generators:
+        #     raise NameError(
+        #         f"{codegen} code generator not supported by serviceX "
+        #         f"deployment at {self.servicex.url}"
+        #     )
 
         return FuncADLQuery(
             dataset_identifier,
@@ -217,7 +253,8 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             item_type=item_type,
-            ignore_cache=ignore_cache
+            ignore_cache=ignore_cache,
+            download_semaphore=download_semaphore,
         )
 
     def python_dataset(
@@ -226,7 +263,8 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
-        ignore_cache: bool = False
+        ignore_cache: bool = False,
+        download_semaphore: asyncio.Semaphore=None,
     ) -> PythonQuery:
         r"""
         Generate a dataset that can use accept a python function for the  query
@@ -256,5 +294,6 @@ class ServiceXClient:
             config=self.config,
             query_cache=self.query_cache,
             result_format=result_format,
-            ignore_cache=ignore_cache
+            ignore_cache=ignore_cache,
+            download_semaphore=download_semaphore,
         )

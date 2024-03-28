@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 import inspect
 import typing
 from base64 import b64encode
@@ -46,7 +47,8 @@ class PythonQuery(Query):
                  config: Configuration = None,
                  query_cache: QueryCache = None,
                  result_format: typing.Optional[ResultFormat] = None,
-                 ignore_cache: bool = False
+                 ignore_cache: bool = False,
+                 download_semaphore: asyncio.Semaphore = None
                  ):
         super().__init__(dataset_identifier=dataset_identifier,
                          title=title,
@@ -55,7 +57,8 @@ class PythonQuery(Query):
                          config=config,
                          query_cache=query_cache,
                          result_format=result_format,
-                         ignore_cache=ignore_cache)
+                         ignore_cache=ignore_cache,
+                         download_semaphore=download_semaphore)
 
         self.python_function = None
 

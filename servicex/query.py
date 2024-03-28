@@ -77,6 +77,7 @@ class Query(ABC):
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
+        download_semaphore: asyncio.Semaphore = None,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -109,6 +110,7 @@ class Query(ABC):
         self.current_status = None
         self.download_path = None
         self.minio = None
+        self.download_semaphore = download_semaphore
         self.files_failed = None
         self.files_completed = None
         self._return_qastle = True
@@ -159,7 +161,7 @@ class Query(ABC):
     async def submit_and_download(
         self, signed_urls_only: bool,
             expandable_progress: ExpandableProgress,
-            dataset_group: Optional[bool] = False,
+            download_semaphore: asyncio.Semaphore
     ) -> Optional[TransformedResults]:
         """
         Submit the transform request to ServiceX. Poll the transform status to see when
@@ -247,8 +249,7 @@ class Query(ABC):
             monitor_task = loop.create_task(
                 self.transform_status_listener(
                     expandable_progress, transform_progress, transform_bar_title,
-                    download_progress, minio_progress_bar_title
-                )
+                    download_progress, minio_progress_bar_title)
             )
             monitor_task.add_done_callback(transform_complete)
         else:
@@ -256,7 +257,8 @@ class Query(ABC):
 
         download_files_task = loop.create_task(
             self.download_files(
-                signed_urls_only, expandable_progress, download_progress, cached_record
+                signed_urls_only, expandable_progress, download_progress,
+                cached_record, download_semaphore
             )
         )
 
@@ -292,7 +294,7 @@ class Query(ABC):
 
     async def transform_status_listener(
         self, progress: ExpandableProgress, progress_task: TaskID,
-        progress_bar_title: str, download_task: TaskID, download_bar_title: str
+        progress_bar_title: str, download_task: TaskID, download_bar_title: str,
     ):
         """
         Poll ServiceX for the status of a transform. Update progress bars and keep track
@@ -307,6 +309,11 @@ class Query(ABC):
 
         while True:
             await self.retrieve_current_transform_status()
+
+            # If this polling attempt failed then just go around for the next
+            # polling interval
+            if not self.current_status:
+                continue
 
             # Do we finally know the final number of files in the dataset? Now is the
             # time to properly initialize the progress bars
@@ -335,6 +342,11 @@ class Query(ABC):
     async def retrieve_current_transform_status(self):
         s = await self.servicex.get_transform_status(self.request_id)
 
+        # If we get a none back then the call to serviceX timeed out
+        # do not fret we will try again at the next polling interval
+        if not s:
+            return
+
         # Is this the first time we've polled status? We now know the request ID.
         # Update the display and set our download directory.
         if not self.current_status:
@@ -347,7 +359,7 @@ class Query(ABC):
         # status. This includes the minio host and credentials. We use the
         # transform id as the bucket.
         if not self.minio:
-            self.minio = MinioAdapter.for_transform(self.current_status)
+            self.minio = MinioAdapter.for_transform(self.current_status, self.download_semaphore)
 
     async def download_files(
         self,
@@ -355,6 +367,7 @@ class Query(ABC):
         progress: ExpandableProgress,
         download_progress: TaskID,
         cached_record: Optional[TransformedResults],
+        download_semaphore: asyncio.Semaphore,
     ) -> List[str]:
         """
         Task to monitor the list of files in the transform output's bucket. Any new files
@@ -371,10 +384,13 @@ class Query(ABC):
             progress: Progress,
             download_progress: TaskID,
             shorten_filename: bool = False,
+            semaphore: asyncio.Semaphore = None
+
         ):
-            downloaded_filename = await minio.download_file(
-                filename, self.download_path, shorten_filename=shorten_filename
-            )
+            async with semaphore:
+                downloaded_filename = await minio.download_file(
+                    filename, self.download_path, shorten_filename=shorten_filename
+                )
             result_uris.append(downloaded_filename.as_posix())
             progress.advance(task_id=download_progress, task_type="Download")
 
@@ -383,8 +399,10 @@ class Query(ABC):
             filename: str,
             progress: Optional[Progress],
             download_progress: TaskID,
+            semaphore: asyncio.Semaphore = None
         ):
-            url = await minio.get_signed_url(filename)
+            async with semaphore:
+                url = await minio.get_signed_url(filename)
             result_uris.append(url)
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
@@ -393,7 +411,9 @@ class Query(ABC):
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
             if self.minio:
-                files = await self.minio.list_bucket()
+                async with download_semaphore:
+                    files = await self.minio.list_bucket()
+
                 for file in files:
                     if file.filename not in files_seen:
                         if signed_urls_only:
@@ -404,6 +424,7 @@ class Query(ABC):
                                         file.filename,
                                         progress,
                                         download_progress,
+                                        download_semaphore
                                     )
                                 )
                             )
@@ -416,6 +437,7 @@ class Query(ABC):
                                         progress,
                                         download_progress,
                                         shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
+                                        semaphore=download_semaphore
                                     )
                                 )
                             )  # NOQA 501
@@ -435,7 +457,8 @@ class Query(ABC):
 
     async def as_files_async(self,
                              display_progress: bool = True,
-                             provided_progress: Optional[ProgressIndicators] = None
+                             provided_progress: Optional[ProgressIndicators] = None,
+                             semaphore: Optional[asyncio.Semaphore] = None
                              ) -> TransformedResults:
         r"""
         Submit the transform and request all the resulting files to be downloaded
@@ -443,14 +466,16 @@ class Query(ABC):
         """
         with ExpandableProgress(display_progress, provided_progress) as progress:
             return await self.submit_and_download(signed_urls_only=False,
-                                                  expandable_progress=progress)
+                                                  expandable_progress=progress,
+                                                  download_semaphore=semaphore)
 
     as_files = make_sync(as_files_async)
 
     try:
         async def as_pandas_async(self,
                                   display_progress: bool = True,
-                                  provided_progress: Optional[ProgressIndicators] = None) \
+                                  provided_progress: Optional[ProgressIndicators] = None,
+                                  semaphore: Optional[asyncio.Semaphore] = None) \
                 -> pd.DataFrame:
             r"""
             Return a pandas dataframe containing the results. This only works if you've
@@ -460,8 +485,8 @@ class Query(ABC):
             """
             self.result_format = ResultFormat.parquet
             transformed_result = await self.as_files_async(display_progress=display_progress,
-                                                           provided_progress=provided_progress
-                                                           )
+                                                           provided_progress=provided_progress,
+                                                           semaphore=semaphore)
             dataframes = pd.concat(
                 [pd.read_parquet(p) for p in transformed_result.file_list]
             )
@@ -473,22 +498,19 @@ class Query(ABC):
 
     async def as_signed_urls_async(self, display_progress: bool = True,
                                    provided_progress: Optional[ProgressIndicators] = None,
-                                   dataset_group: bool = False) \
+                                   dataset_group: bool = False,
+                                   semaphore: Optional[asyncio.Semaphore] = None) \
             -> TransformedResults:
         r"""
         Presign URLs for each of the transformed files
 
         :return: TransformedResults object with the presigned_urls list populated
         """
-        if dataset_group:
-            return await self.submit_and_download(signed_urls_only=True,
-                                                  expandable_progress=provided_progress,
-                                                  dataset_group=dataset_group)
 
         with ExpandableProgress(display_progress=display_progress,
                                 provided_progress=provided_progress) as progress:
             return await self.submit_and_download(signed_urls_only=True,
                                                   expandable_progress=progress,
-                                                  dataset_group=dataset_group)
+                                                  download_semaphore=semaphore)
 
     as_signed_urls = make_sync(as_signed_urls_async)
