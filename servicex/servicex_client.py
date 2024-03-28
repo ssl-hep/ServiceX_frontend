@@ -66,7 +66,7 @@ async def deliver_async(config: ServiceXSpec):
                             httpx_client=client,
                             servicex_semaphore=servicex_semaphore)
 
-        # await sx.update_code_generators_async()
+        await sx.update_code_generators_async()
         datasets = []
 
         for sample in config.Sample:
