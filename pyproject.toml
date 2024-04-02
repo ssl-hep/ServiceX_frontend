@@ -44,7 +44,6 @@ dependencies = [
     "PyYAML>=6.0",
     "types-PyYAML>=6.0",
     "rich>=13.0.0",  # databinder
-    "nest-asyncio>=1.5.7",  # databinder # FIXME: nest-asyncio deprecated
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
 ]
@@ -61,6 +60,10 @@ Homepage = "https://github.com/ssl-hep/ServiceX_frontend"
 "Source Code" = "https://github.com/ssl-hep/ServiceX_frontend"
 
 [project.optional-dependencies]
+
+databinder = [
+    "nest-asyncio>=1.5.7",  # databinder # FIXME: nest-asyncio deprecated
+]
 pandas = [
     "pandas>=2.0.2",
     "pyarrow>=12.0.0",
@@ -81,7 +84,7 @@ docs = [
     "furo>=2023.5.20",
 ]
 develop = [
-    "servicex[pandas,test,docs]",
+    "servicex[databinder,pandas,test,docs]",
 ]
 
 [tool.hatch.build.targets.sdist]
