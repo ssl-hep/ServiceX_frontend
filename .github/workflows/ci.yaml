@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --upgrade '.[pandas,test]'
+          python -m pip install --upgrade '.[databinder,pandas,test]'
           python -m pip list
 
       - name: Test with pytest
