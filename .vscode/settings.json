@@ -1,7 +1,5 @@
 {
     "python.analysis.logLevel": "Information",
-    "python.analysis.memory.keepLibraryAst": true,
-    "python.linting.flake8Enabled": true,
     "cSpell.words": [
         "accesskey",
         "aenter",
@@ -109,13 +107,8 @@
         "tests",
         "-s"
     ],
-    "python.pythonPath": ".venv\\Scripts\\python.exe",
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "editor.formatOnSave": true,
-    "python.formatting.provider": "black",
     "restructuredtext.preview.docutils.disabled": true,
-    "python.linting.flake8Args": [
-        "--config=.flake8"
-    ],
 }

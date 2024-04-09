@@ -47,11 +47,11 @@ setup(
     maintainer_email="gwatts@uw.edu",
     url="https://github.com/ssl-hep/ServiceX_frontend",
     license="TBD",
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     test_suite="tests",
     install_requires=[
         "idna==2.10",  # Required to thread version needle with requests library
-        "pandas~=1.0",
+        "pandas>1.5",
         "uproot>=4.0.1",
         "backoff>=2.0",
         "aiohttp~=3.6",
@@ -93,11 +93,11 @@ setup(
         "Topic :: Software Development",
         "Topic :: Utilities",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     package_data={
         "servicex": ["config_default.yaml"],
