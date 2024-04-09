@@ -51,7 +51,7 @@ setup(
     test_suite="tests",
     install_requires=[
         "idna==2.10",  # Required to thread version needle with requests library
-        "pandas~=1.0",
+        "pandas>1.5",
         "uproot>=4.0.1",
         "backoff>=2.0",
         "aiohttp~=3.6",
