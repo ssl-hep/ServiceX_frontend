@@ -71,7 +71,7 @@ def list(
     for t in transforms:
         if not complete or complete and t.status == Status.complete:
             table.add_row(
-                t.request_id, "Not implemented", t.status, str(t.files_completed)
+                t.request_id, t.title, t.status, str(t.files_completed)
             )
 
     rich.print(table)
