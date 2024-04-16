@@ -43,17 +43,15 @@ FuncADLDataset().Select(lambda e: {'lep_pt': e['lep_pt']}). \
 """
 query_ast = ast.parse(qstr)
 qastle_query = qastle.python_ast_to_text_ast(qastle.insert_linq_nodes(query_ast))
-print("From str", qastle_query)
 q2 = FuncADLQuery()
 q2.set_provided_qastle(qastle_query)
 print(q2.generate_selection_string())
-print("From python", query.generate_selection_string())
 spec = ServiceXSpec(
     General=General(
-        ServiceX="testing1",
+        ServiceX="servicex-uc-af",
         Codegen="uproot",
         OutputFormat="parquet",
-        Delivery="LocalCache"
+        Delivery="SignedURLs"
     ),
     Sample=[
         Sample(

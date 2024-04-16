@@ -57,7 +57,7 @@ def test_result_formats():
 @patch('servicex.servicex_adapter.httpx.AsyncClient.get')
 async def test_get_transforms(get, servicex, transform_status_response):
     get.return_value = httpx.Response(200, json=transform_status_response)
-    t = await servicex.get_transforms()
+    t = await servicex.get_transforms(self.servicex_semaphore)
     assert len(t) == 1
     assert t[0].request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
     get.assert_called_with(url='https://servicex.org/servicex/transformation', headers={})
@@ -68,7 +68,7 @@ async def test_get_transforms(get, servicex, transform_status_response):
 async def test_get_transforms_auth_error(get, servicex):
     with pytest.raises(AuthorizationError):
         get.return_value = httpx.Response(401)
-        await servicex.get_transforms()
+        await servicex.get_transforms(self.servicex_semaphore)
 
 
 @pytest.mark.asyncio
@@ -85,12 +85,12 @@ async def test_get_transforms_wlcg_bearer_token(decode, post, get, servicex,
 
     get.return_value = httpx.Response(200, json=transform_status_response)
     decode.return_value = {'exp': math.inf}
-    await servicex.get_transforms()
+    await servicex.get_transforms(self.servicex_semaphore)
 
     # Try with an expired token
     with pytest.raises(AuthorizationError):
         decode.return_value = {'exp': 0.0}
-        await servicex.get_transforms()
+        await servicex.get_transforms(self.servicex_semaphore)
 
     os.remove(token_file.name)
     del os.environ['BEARER_TOKEN_FILE']
@@ -103,7 +103,7 @@ async def test_get_transforms_with_refresh(get, post, transform_status_response)
     servicex = ServiceXAdapter(url="https://servicex.org", refresh_token="refrescas")
     post.return_value = httpx.Response(200, json={"access_token": "luckycharms"})
     get.return_value = httpx.Response(200, json=transform_status_response)
-    await servicex.get_transforms()
+    await servicex.get_transforms(self.servicex_semaphore)
 
     post.assert_called_with('https://servicex.org/token/refresh',
                             headers={'Authorization': 'Bearer refrescas'}, json=None)
@@ -118,7 +118,7 @@ def test_get_codegens(get, servicex):
         "uproot": "http://uproot-codegen",
         "xaod": "http://xaod-codegen"
     })
-    c = servicex.get_code_generators()
+    c = servicex.get_code_generators(self.servicex_semaphore)
     assert len(c) == 2
     assert c["uproot"] == "http://uproot-codegen"
 

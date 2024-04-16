@@ -58,8 +58,8 @@ async def deliver_async(config: ServiceXSpec):
             return _general.Codegen
 
 
-    async with httpx.AsyncClient(limits=httpx.Limits(max_connections=4)) as client:
-        download_semaphore = asyncio.Semaphore(10)
+    async with httpx.AsyncClient(limits=httpx.Limits(max_connections=4), timeout=None) as client:
+        download_semaphore = asyncio.Semaphore(20)
         servicex_semaphore = asyncio.Semaphore(4)
 
         sx = ServiceXClient(backend=config.General.ServiceX,
@@ -111,11 +111,11 @@ async def deliver_async(config: ServiceXSpec):
         group = DatasetGroup(datasets, download_semaphore=download_semaphore)
 
         if config.General.Delivery == General.DeliveryEnum.LocalCache:
-            results = group.as_files()
-            return {obj.title: obj.signed_url_list for obj in results}
-        elif config.General.Delivery == General.DeliveryEnum.SignedURLs:
-            results = group.as_signed_urls()
+            results = await group.as_files_async()
             return {obj.title: obj.file_list for obj in results}
+        elif config.General.Delivery == General.DeliveryEnum.SignedURLs:
+            results = await group.as_signed_urls_async()
+            return {obj.title: obj.signed_url_list for obj in results}
 
 deliver = make_sync(deliver_async)
 

@@ -34,7 +34,7 @@ query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
 spec = ServiceXSpec(
     General=General(
-        ServiceX="testing1",
+        ServiceX="servicex-uc-af",
         Codegen="uproot",
         OutputFormat="parquet",
         Delivery="LocalCache"

@@ -407,9 +407,20 @@ class Query(ABC):
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
 
-        while True:
+        transform_is_complete = False
+        while not transform_is_complete:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
+
+            # Once the transform is complete we can stop polling since all the files
+            # are guaranteed to be in the bucket. Also, if we are just downloading or
+            # signing urls for a previous transform then we know it is complete as well
+            if cached_record or (
+                self.current_status and self.current_status.status == Status.complete
+            ):
+                transform_is_complete = True
+                await asyncio.sleep(10)
+
             if self.minio:
                 async with download_semaphore:
                     files = await self.minio.list_bucket()
@@ -443,13 +454,6 @@ class Query(ABC):
                             )  # NOQA 501
                         files_seen.add(file.filename)
 
-            # Once the transform is complete we can stop polling since all the files
-            # are guaranteed to be in the bucket. Also, if we are just downloading or
-            # signing urls for a previous transform then we know it is complete as well
-            if cached_record or (
-                self.current_status and self.current_status.status == Status.complete
-            ):
-                break
 
         # Now just wait until all of our tasks complete
         await asyncio.gather(*download_tasks)
