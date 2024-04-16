@@ -107,6 +107,7 @@ class TransformStatus(BaseModel):
     """
     request_id: str
     did: str
+    title: Optional[str]
     selection: str
     tree_name: Optional[str] = Field(alias="tree-name")
     image: str
@@ -125,6 +126,7 @@ class TransformStatus(BaseModel):
     minio_secured: Optional[bool] = Field(alias="minio-secured")
     minio_access_key: Optional[str] = Field(alias="minio-access-key")
     minio_secret_key: Optional[str] = Field(alias="minio-secret-key")
+    log_url: Optional[str] = Field(alias="log-url")
 
     @validator("finish_time", pre=True)
     def parse_finish_time(cls, v):
