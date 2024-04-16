@@ -223,7 +223,7 @@ class Query(ABC):
         # If we get here with a cached record, then we know that the transform
         # has been run, but we just didn't get the files from object store in the way
         # requested by user
-        transform_bar_title = "Transform"
+        transform_bar_title = f"{sx_request.title}: Transform"
         if not cached_record:
             transform_progress = expandable_progress.add_task(
                 transform_bar_title, start=False, total=None
