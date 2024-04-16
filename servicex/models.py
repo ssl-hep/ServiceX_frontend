@@ -159,3 +159,4 @@ class TransformedResults(BaseModel):
     signed_url_list: List[str]
     files: int
     result_format: ResultFormat
+    log_url: Optional[str]

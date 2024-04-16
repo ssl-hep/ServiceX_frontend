@@ -64,7 +64,8 @@ class QueryCache:
             file_list=file_list,
             signed_url_list=signed_urls,
             files=completed_status.files,
-            result_format=transform.result_format
+            result_format=transform.result_format,
+            log_url=completed_status.log_url
         )
         self.db.insert(json.loads(record.json()))
         return record
