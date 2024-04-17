@@ -17,7 +17,7 @@ Sample:
     Function: DEF_function1
 
   - Name: ggH
-    XRootdFiles: DEF_ggH_input
+    XRootDFiles: DEF_ggH_input
     Function: DEF_function2
 
 Definition:
