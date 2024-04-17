@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
 from typing import Union, Optional, Callable, List
-from pydantic import BaseModel, Field, AnyUrl, root_validator, constr, validator
+from pydantic import BaseModel, Field, root_validator, constr, validator
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
 from servicex.func_adl import func_adl_dataset
@@ -95,7 +95,7 @@ class General(BaseModel):
     OutputFormat: Union[OutputFormatEnum,
         constr(regex='^(parquet|root-file)$')] = Field(default=OutputFormatEnum.root)  # NOQA F722
 
-    Delivery: Union[DeliveryEnum, constr(regex='^(LocalCache|SignedURLs)$')] # NOQA F722
+    Delivery: Union[DeliveryEnum, constr(regex='^(LocalCache|SignedURLs)$')] = Field(default=DeliveryEnum.LocalCache) # NOQA F722
 
 
 class Definition(BaseModel):

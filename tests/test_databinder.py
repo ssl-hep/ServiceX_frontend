@@ -1,226 +1,152 @@
-from unittest.mock import patch
 import pytest
-from pathlib import Path
-import yaml
+from pydantic import ValidationError
 
-from servicex.models import TransformedResults
-# from servicex.dataset import Dataset
+from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier
 
-from servicex.databinder.databinder_configuration \
-    import load_databinder_config, _set_default_values, \
-    _support_old_option_names
-from servicex.databinder.databinder_requests import DataBinderRequests
-from servicex.databinder.databinder_outputs import OutputHandler
-from servicex.databinder.databinder_deliver import DataBinderDeliver
-from servicex.databinder.databinder import DataBinder
+
+def basic_spec(samples=None):
+    return {
+        "General": {
+            "ServiceX": "servicex",
+            "Codegen": "python",
+        },
+        "Sample": samples
+        or [{"Name": "sampleA", "XRootDFiles": "root://a.root", "Function": "a"}],
+    }
 
 
 def test_load_config():
     config = {
-        "General":
-        {
+        "General": {
             "ServiceX": "servicex",
             "Codegen": "python",
-            "Delivery": "ObjectStore"
+            "Delivery": "LocalCache",
         },
-        "Sample":
-        [
-            {
-                "Name": "sampleA",
-                "RucioDID": "user.kchoi:sampleA",
-                "Function": "DEF_a"
-            },
+        "Sample": [
+            {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Function": "DEF_a"},
             {
                 "Name": "sampleB",
                 "XRootDFiles": "root://a.root",
                 "Columns": "el_pt",
-                "Codegen": "uproot"
-            }
+                "Codegen": "uproot",
+                "Function": "DEF_a",
+            },
         ],
-        "Definition":
-        {
-            "DEF_a": "a"
-        }
+        "Definition": {"DEF_a": "a"},
     }
-    new_config = load_databinder_config(config)
-    assert new_config["Sample"][0]["Function"] == "a"
-
-    with open("temp_databinder.yaml", "w") as f:
-        yaml.dump(new_config, f, default_flow_style=False)
-    new_config = load_databinder_config("temp_databinder.yaml")
-    assert new_config["Sample"][0]["Function"] == "a"
+    new_config = ServiceXSpec.parse_obj(config)
+    assert new_config.Sample[0].Function == "a"
 
 
-def test_config_default_value():
-    config = {
-        "General": {
-            "IgnoreLocalCache": True
-        },
-        "Sample": [
-            {
-                "Name": "sampleA",
-                "RucioDID": "user.kchoi:sampleA",
-                "Function": "DEF_a"
-            }
-        ]
-    }
-    new_config = _set_default_values(config)
-    assert new_config["General"]["Delivery"] == "localpath"
+def test_single_root_file():
+
+    spec = ServiceXSpec.parse_obj(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "XRootDFiles": "root://eospublic.cern.ch//file1.root",
+                    "Function": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert spec.Sample[0].dataset_identifier.files == [
+        "root://eospublic.cern.ch//file1.root"
+    ]
 
 
-def test_config_old_option_names():
-    config = {
-        "General": {
-            "ServiceXName": "servicex",
-            "Transformer": "uproot",
-            "IgnoreServiceXCache": True
-        },
-        "Sample": [
-            {
-                "Name": "sampleA",
-                "RucioDID": "user.kchoi:sampleA",
-                "Transformer": "python",
-                "Function": "DEF_a",
-                "IgnoreServiceXCache": True
-            }
-        ]
-    }
-    new_config = _support_old_option_names(config)
-    assert new_config["General"]["ServiceX"] == "servicex"
+def test_list_of_root_files():
+    spec = ServiceXSpec.parse_obj(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "XRootDFiles": [
+                        "root://eospublic.cern.ch//file1.root",
+                        "root://eospublic.cern.ch//file2.root",
+                    ],
+                    "Function": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert spec.Sample[0].dataset_identifier.files == [
+        "root://eospublic.cern.ch//file1.root",
+        "root://eospublic.cern.ch//file2.root",
+    ]
 
 
-@patch('servicex.databinder.databinder_requests.DataBinderRequests._get_client')
-def test_requests_python_transformer(_get_client):
-    config = {
-        "General":
-        {
-            "ServiceX": "servicex",
-            "OutputFormat": "root",
-            "Delivery": "objectstore"
-        },
-        "Sample":
-        [
-            {
-                "Name": "sampleA",
-                "RucioDID": "user.kchoi:sampleA",
-                "Codegen": "python",
-                "Function": "DEF_a",
-                "NFiles": "5",
-                "IgnoreLocalCache": "False"
-            },
-            {
-                "Name": "sampleB",
-                "XRootDFiles": "root://a.root",
-                "Function": "DEF_a",
-                "Codegen": "python",
-                "IgnoreLocalCache": "False"
-            }
-        ]
-    }
-    reqs = DataBinderRequests(config).get_requests()
-    assert reqs[1]["sample_name"] == "sampleB"
-    assert len(reqs) == 2
-    assert len(reqs[0].keys()) == 3
-    # assert isinstance(reqs[0]["ds_query"], Dataset)
+def test_rucio_did():
+    spec = ServiceXSpec.parse_obj(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Function": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, RucioDatasetIdentifier)
+    assert (
+        spec.Sample[0].dataset_identifier.did
+        == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal"
+    )
 
 
-def test_output_handler():
-    config = {
-        "General":
-        {
-            "OutputDirectory": "./temp_dir2",
-            "Delivery": "objectstore",
-            "OutFilesetName": "out_dict"
-        },
-        "Sample":
-        [
-            {
-                "Name": "sampleA",
-            },
-            {
-                "Name": "sampleB",
-            }
-        ]
-    }
-    result = TransformedResults
-    result.title = "sampleA"
-    result.signed_url_list = ["a", "b"]
-    result.file_list = ["c", "d"]
+def test_rucio_did_numfiles():
+    spec = ServiceXSpec.parse_obj(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "NFiles": 10,
+                    "Function": "a",
+                }
+            ]
+        )
+    )
 
-    out = OutputHandler(config)
-
-    out.update_out_dict("objectstore", result)
-    assert len(out.out_dict['samples']['sampleA']) == 2
-
-    out.write_out_dict()
-    with open(Path("temp_dir2/out_dict.yml"), "r") as f:
-        out_yaml = yaml.safe_load(f)
-    assert len(out_yaml["samples"]["sampleA"]) == 2
+    assert isinstance(spec.Sample[0].dataset_identifier, RucioDatasetIdentifier)
+    assert (
+        spec.Sample[0].dataset_identifier.did
+        == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal?files=10"
+    )
 
 
-@pytest.mark.asyncio
-@patch('servicex.databinder.databinder_requests.DataBinderRequests._get_client')
-async def test_deliver(_get_client):
-    config = {
-        "General":
-        {
-            "ServiceX": "servicex",
-            "OutputDirectory": "./temp_dir2",
-            "Delivery": "objectstore",
-            "OutFilesetName": "out_dict",
-            "OutputFormat": "root"
-        },
-        "Sample":
-        [
-            {
-                "Name": "sampleA",
-                "RucioDID": "user.kchoi:sampleA",
-                "Codegen": "python",
-                "Function": "DEF_a",
-                "NFiles": "5",
-                "IgnoreLocalCache": "False"
-            },
-            {
-                "Name": "sampleB",
-                "XRootDFiles": "root://a.root",
-                "Function": "DEF_a",
-                "Codegen": "python",
-                "IgnoreLocalCache": "False"
-            }
-        ]
-    }
-    deliv = DataBinderDeliver(config)
+def test_invalid_dataset_identifier():
+    with pytest.raises(ValidationError):
+        ServiceXSpec.parse_obj(
+            basic_spec(
+                samples=[
+                    {
+                        "Name": "sampleA",
+                        "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                        "XRootDFiles": "root://eospublic.cern.ch//file1.root",
+                        "NFiles": 10,
+                        "Function": "a",
+                    }
+                ]
+            )
+        )
 
-    assert deliv._requests[0]['sample_name'] == "sampleA"
-    # assert deliv.deliver_and_copy()
-
-
-@patch('servicex.databinder.databinder_requests.DataBinderRequests._get_client')
-def test_databinder(_get_client):
-    config = {
-        "General":
-        {
-            "ServiceX": "servicex",
-            "OutputDirectory": "./temp_dir2",
-            "OutFilesetName": "out_dict",
-        },
-        "Sample":
-        [
-            {
-                "Name": "sampleA",
-                "RucioDID": "user.kchoi:sampleA",
-                "Codegen": "python",
-                "Function": "DEF_a",
-                "NFiles": "5",
-            },
-            {
-                "Name": "sampleB",
-                "XRootDFiles": "root://a.root",
-                "Function": "DEF_a",
-                "Codegen": "python",
-            }
-        ]
-    }
-    sx_db = DataBinder(config)
-
-    assert sx_db._config["General"]["OutputFormat"] == "root"
+    with pytest.raises(ValidationError):
+        ServiceXSpec.parse_obj(
+            basic_spec(
+                samples=[
+                    {
+                        "Name": "sampleA",
+                        "NFiles": 10,
+                        "Function": "a",
+                    }
+                ]
+            )
+        )
