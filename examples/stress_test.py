@@ -25,43 +25,33 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-import ast
-
-import qastle
+import asyncio
 
 from servicex import ServiceXSpec, General, Sample
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.servicex_client import deliver
 
-query = FuncADLQuery().Select(lambda e: {'lep_pt': e['lep_pt']}). \
-    Where(lambda e: e['lep_pt'] > 1000)
+print(f"Is it running {asyncio.get_event_loop().is_running()}")
+query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
-qstr = """
-FuncADLDataset().Select(lambda e: {'lep_pt': e['lep_pt']}). \
-         Where(lambda e: e['lep_pt'] > 1000)
-"""
-query_ast = ast.parse(qstr)
-qastle_query = qastle.python_ast_to_text_ast(qastle.insert_linq_nodes(query_ast))
-print("From str", qastle_query)
-q2 = FuncADLQuery()
-q2.set_provided_qastle(qastle_query)
-print(q2.generate_selection_string())
-print("From python", query.generate_selection_string())
 spec = ServiceXSpec(
     General=General(
-        ServiceX="testing1",
+        ServiceX="servicex-uc-af",
         Codegen="uproot",
         OutputFormat="parquet",
-        Delivery="LocalCache"
+        # Delivery="LocalCache"
+        Delivery="SignedURLs"
     ),
     Sample=[
         Sample(
-            Name="mc_345060.ggH125_ZZ4lep.4lep",
-            XRootDFiles="root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root", # NOQA E501
+            Name=f"bigger_uproot_{i}",
+            RucioDID="user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
+            Tree="nominal",
             Query=query
-        )
+        ) for i in range(20)
     ]
 )
 
-print(deliver(spec))
+result = deliver(spec)
+for k in result.keys():
+    print(f"key: {k} values: {len(result[k])}")
