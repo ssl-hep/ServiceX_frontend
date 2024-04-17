@@ -6,7 +6,7 @@ General:
 
 Sample:
   - Name: ggH
-    XRootdFile: DEF_ggH_input
+    XRootDdFiles: DEF_ggH_input
     NFiles: 5
     Query: DEF_ttH_nominal_query
 

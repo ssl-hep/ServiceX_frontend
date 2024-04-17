@@ -37,7 +37,7 @@ class Sample(BaseModel):
     Name: str
     Codegen: Optional[str]
     RucioDID: Optional[str]
-    XRootdFile: Optional[Union[str, AnyUrl]]
+    XRootDFiles: Optional[Union[str, list[str]]]
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
     Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
@@ -51,8 +51,8 @@ class Sample(BaseModel):
     def dataset_identifier(self):
         if self.RucioDID:
             return RucioDatasetIdentifier(self.RucioDID, num_files=self.NFiles or 0)
-        elif self.XRootdFile:
-            return FileListDataset(self.XRootdFile)
+        elif self.XRootDFiles:
+            return FileListDataset(self.XRootDFiles)
 
     @root_validator
     def validate_did_xor_file(cls, values):
@@ -61,10 +61,10 @@ class Sample(BaseModel):
         :param values:
         :return:
         """
-        if values['XRootdFile'] and values['RucioDID']:
-            raise ValueError("Only specify one of XRootdFile or RucioDID, not both.")
-        if not values['XRootdFile'] and not values['RucioDID']:
-            raise ValueError("Must specify one of XRootdFile or RucioDID.")
+        if values['XRootDFiles'] and values['RucioDID']:
+            raise ValueError("Only specify one of XRootDFiles or RucioDID, not both.")
+        if not values['XRootDFiles'] and not values['RucioDID']:
+            raise ValueError("Must specify one of XRootDFiles or RucioDID.")
         return values
 
     @root_validator
@@ -92,7 +92,9 @@ class General(BaseModel):
 
     ServiceX: str = Field(..., alias="ServiceX")
     Codegen: str
-    OutputFormat: Union[OutputFormatEnum, constr(regex='^(parquet|root-file)$')]  # NOQA F722
+    OutputFormat: Union[OutputFormatEnum,
+        constr(regex='^(parquet|root-file)$')] = Field(default=OutputFormatEnum.root)  # NOQA F722
+
     Delivery: Union[DeliveryEnum, constr(regex='^(LocalCache|SignedURLs)$')] # NOQA F722
 
 
