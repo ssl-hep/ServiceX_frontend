@@ -37,7 +37,7 @@ class Sample(BaseModel):
     Name: str
     Codegen: Optional[str]
     RucioDID: Optional[str]
-    XRootDFiles: Optional[Union[str, list[str]]]
+    XRootDFiles: Optional[Union[str, List[str]]]
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
     Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
