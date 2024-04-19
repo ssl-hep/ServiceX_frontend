@@ -61,6 +61,14 @@ class Status(str, Enum):
     running = "Running"
 
 
+class LogLevel(str, Enum):
+    r"""
+    Level of the log messages: INFO & ERROR
+    """
+    info = ("INFO",)
+    error = ("ERROR",)
+
+
 class TransformRequest(BaseModel):
     r"""
     Transform request sent to ServiceX
