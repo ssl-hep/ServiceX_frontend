@@ -37,7 +37,7 @@ from rich.table import Table
 
 from servicex.app.cli_options import url_cli_option, backend_cli_option
 from servicex.minio_adapter import MinioAdapter
-from servicex.models import Status, ResultFile
+from servicex.models import Status, ResultFile, LogLevel
 from servicex.servicex_client import ServiceXClient
 
 transforms_app = typer.Typer(name="transforms", no_args_is_help=True)
@@ -140,36 +140,38 @@ def download(
     for path in result_files:
         print(path.as_posix())
 
+
 @transforms_app.command(no_args_is_help=True)
 def logs(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
-    open_link: Optional[bool] = typer.Option(False, "-o", "--open-link", help="Open Link in browser")
+    log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
+                                                 help="Level of Logs",
+                                                 case_sensitive=False)
 ):
     """
-    Show logs of the transform requests submitted
+    Open the URL to the Kibana dashboard of the logs of a tranformer
     """
-    kibana_link = "https://atlas-kibana.mwt2.org:5601/s/servicex/app/dashboards?auth_provider_hint=anonymous1#/view/2242a220-5481-11ed-afcf-d91dad577662?embed=true&_g=(refreshInterval:(pause:!t,value:0),time:(from:now-24h%2Fh,to:now))&_a=(filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,field:requestId,index:'923eaa00-45b9-11ed-afcf-d91dad577662',key:requestId,negate:!f,params:(query:'{0}'),type:phrase),query:(match_phrase:(requestId:'{0}'))),('$state':(store:appState),meta:(alias:!n,disabled:!f,field:level,index:'923eaa00-45b9-11ed-afcf-d91dad577662',key:level,negate:!f,params:(query:error),type:phrase),query:(match_phrase:(level:error)))))&show-top-menu=true&show-query-input=true&show-time-filter=true"
+    kibana_link = "https://atlas-kibana.mwt2.org:5601/s/servicex/app/dashboards?"\
+                  "auth_provider_hint=anonymous1#/view/2242a220-5481-11ed-afcf-d91dad577662?"\
+                  "embed=true&_g=(refreshInterval:(pause:!t,value:0),time:"\
+                  "(from:now-24h%2Fh,to:now))&_a=(filters:!(('$state':(store:appState),"\
+                  "meta:(alias:!n,disabled:!f,field:requestId,index:'923eaa00-45b9-11ed-"\
+                  "afcf-d91dad577662',key:requestId,negate:!f,params:(query:'{0}'),type:"\
+                  "phrase),query:(match_phrase:(requestId:'{0}'))),('$state':(store:appState)"\
+                  ",meta:(alias:!n,disabled:!f,field:level,index:'923eaa00-45b9-11ed-afcf-"\
+                  "d91dad577662',key:level,negate:!f,params:(query:{1}),type:phrase),query:"\
+                  "(match_phrase:(level:{1})))))&show-top-menu=true&show-query-input=true&"\
+                  "show-time-filter=true"
     sx = ServiceXClient(backend=backend, url=url)
-    table = Table(title="ServiceX Transforms")
-    table.add_column("Transform ID")
-    table.add_column("Status")
-    table.add_column("Files Completed")
-    table.add_column("Files Failed")
-    table.add_column("Files")
-    transforms = sx.get_transforms()
+    transforms = sx.get_transform_status(transform_id)
     single_transform = None
-    for t in transforms:
-            if t.request_id==transform_id:
-                table.add_row(
-                    t.request_id, t.status, str(t.files_completed), str(t.files_failed) ,str(t.files)
-                )
-                single_transform = t
+    if transforms and transforms.request_id == transform_id:
+        single_transform = transforms
 
     if single_transform:
-        rich.print(table)
-        if open_link:
-            webbrowser.open(kibana_link.format(t.request_id))
+        webbrowser.open(kibana_link.format(transforms.request_id, log_level.name.lower()))
+        return kibana_link.format(transforms.request_id, log_level.name.lower())
     else:
         rich.print("Invalid Request ID")
