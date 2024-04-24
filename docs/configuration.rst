@@ -1,6 +1,7 @@
 Configuration
 =============
-.. autoclass:: servicex_client.configuration.Configuration
+
+.. autoclass:: servicex.configuration.Configuration
    :members:
    :exclude-members: Config
    :undoc-members:
@@ -8,7 +9,8 @@ Configuration
 
 Endpoint
 --------
-.. autoclass:: servicex_client.configuration.Endpoint
+
+.. autoclass:: servicex.configuration.Endpoint
    :members:
    :undoc-members:
    :show-inheritance:

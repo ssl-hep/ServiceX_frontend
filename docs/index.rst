@@ -8,6 +8,11 @@ ServiceX Client
 
 Python SDK and CLI Client for ServiceX
 
+Introduction
+------------
+
+Why do
+
 Configuration
 -------------
 
@@ -177,13 +182,16 @@ also come with synchronous versions to make it easy to do easy things.
    :maxdepth: 2
    :caption: Contents:
 
+   introduction
+   installation
+   getting_started
+   transformer_matrix
+   databinder
    examples
-   servicex_client
-   dataset_identifier
-   dataset
-   dataset_group
-   models
-   configuration
+   contribute
+   troubleshoot
+   about
+   modules
 
 Indices and tables
 ==================
