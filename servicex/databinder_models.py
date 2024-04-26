@@ -30,7 +30,7 @@ from typing import Union, Optional, Callable, List
 from pydantic import BaseModel, Field, root_validator, constr, validator
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
-from servicex.func_adl import func_adl_dataset
+from servicex.query import Query as SXQuery, QueryStringGenerator
 
 
 class Sample(BaseModel):
@@ -40,7 +40,7 @@ class Sample(BaseModel):
     XRootDFiles: Optional[Union[str, List[str]]]
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
-    Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
+    Query: Optional[Union[str, SXQuery, QueryStringGenerator]] = Field(default=None)
     Tree: Optional[str] = Field(default=None)
     IgnoreLocalCache: bool = False
 

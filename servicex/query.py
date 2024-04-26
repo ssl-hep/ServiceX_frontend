@@ -492,3 +492,32 @@ class Query(ABC):
                                                   dataset_group=dataset_group)
 
     as_signed_urls = make_sync(as_signed_urls_async)
+
+
+class QueryStringGenerator(ABC):
+    '''This abstract class just defines an interface to give the selection string'''
+    @abc.abstractmethod    
+    def generate_selection_string(self) -> str:
+        pass
+
+
+class GenericQueryStringGenerator(QueryStringGenerator):
+    '''Return the string from the initializer'''
+    def __init__(self, query: str):
+        self.query = query
+
+    def generate_selection_string(self) -> str:
+        return self.query
+
+
+class GenericQuery(Query):
+    '''
+    This class gives a "generic" Query object which doesn't require 
+    overloading the constructor
+    '''
+    query_string_generator: Optional[QueryStringGenerator] = None
+
+    def generate_selection_string(self) -> str:
+        if self.query_string_generator is None:
+            raise RuntimeError('query string generator not set')
+        return self.query_string_generator.generate_selection_string()
