@@ -202,30 +202,22 @@ def logs(
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
     log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
                                                  help="Level of Logs",
-                                                 case_sensitive=False)
+                                                 case_sensitive=False),
+    time_frame: Optional[TimeFrame] = typer.Option("month", "-f", "--time-frame",
+                                                   help="Time Frame",
+                                                   case_sensitive=False)
 ):
     """
     Open the URL to the Kibana dashboard of the logs of a tranformer
     """
-    kibana_link = "https://atlas-kibana.mwt2.org:5601/s/servicex/app/dashboards?"\
-                  "auth_provider_hint=anonymous1#/view/2242a220-5481-11ed-afcf-d91dad577662?"\
-                  "embed=true&_g=(refreshInterval:(pause:!t,value:0),time:"\
-                  "(from:now-24h%2Fh,to:now))&_a=(filters:!(('$state':(store:appState),"\
-                  "meta:(alias:!n,disabled:!f,field:requestId,index:'923eaa00-45b9-11ed-"\
-                  "afcf-d91dad577662',key:requestId,negate:!f,params:(query:'{0}'),type:"\
-                  "phrase),query:(match_phrase:(requestId:'{0}'))),('$state':(store:appState)"\
-                  ",meta:(alias:!n,disabled:!f,field:level,index:'923eaa00-45b9-11ed-afcf-"\
-                  "d91dad577662',key:level,negate:!f,params:(query:{1}),type:phrase),query:"\
-                  "(match_phrase:(level:{1})))))&show-top-menu=true&show-query-input=true&"\
-                  "show-time-filter=true"
     sx = ServiceXClient(backend=backend, url=url)
     transforms = sx.get_transform_status(transform_id)
-    single_transform = None
     if transforms and transforms.request_id == transform_id:
-        single_transform = transforms
-
-    if single_transform:
-        webbrowser.open(kibana_link.format(transforms.request_id, log_level.name.lower()))
-        return kibana_link.format(transforms.request_id, log_level.name.lower())
+        kibana_link = create_kibana_link_parameters(transforms.log_url,
+                                                    transform_id=transform_id,
+                                                    log_level=log_level,
+                                                    time_frame=time_frame)
+        print(kibana_link)
+        webbrowser.open(kibana_link)
     else:
         rich.print("Invalid Request ID")
