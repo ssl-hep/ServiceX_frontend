@@ -184,7 +184,7 @@ def select_time(time_frame=TimeFrame.day):
     return time_string
 
 
-def create_kibana_link_parameters(log_url,transform_id=None, log_level=None, time_frame=None):
+def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, time_frame=None):
     """
     Create the _a and _g parameters for the kibana dashboard link
     """
