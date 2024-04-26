@@ -26,13 +26,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type
+from typing import Optional, List, TypeVar, Any, Type, Union
 
 from servicex.configuration import Configuration
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
+from servicex.query import Query, GenericQuery, QueryStringGenerator, GenericQueryStringGenerator
 from servicex.types import DID
 from servicex.python_dataset import PythonQuery
 from servicex.dataset_group import DatasetGroup
@@ -57,26 +58,24 @@ def deliver(config: ServiceXSpec):
     datasets = []
     for sample in config.Sample:
         if sample.Query:
-            if type(sample.Query) is str:
-                qastle_query = qastle.python_ast_to_text_ast(
-                    ast.parse(sample.Query)
-                )  # NOQA E501
-                sample.Query = FuncADLQuery()
+            # if string or QueryStringGenerator, turn into a Query
+            if isinstance(sample.Query, str) or isinstance(sample.Query, QueryStringGenerator):
+                sample.Query = sx.generic_query(dataset_identifier=sample.dataset_identifier, 
+                                    title=sample.Name,
+                                     codegen=get_codegen(sample, config.General),
+                                     result_format=config.General.OutputFormat,
+                                     ignore_cache=sample.IgnoreLocalCache,
+                                     query=sample.Query)
+            if isinstance(sample.Query, FuncADLQuery):
+                query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
+                                            get_codegen(sample, config.General),
+                                            config.General.OutputFormat)
+                query._q_ast = sample.Query._q_ast
+                query._item_type = sample.Query._item_type
+                if sample.Tree:
+                    query = query.set_tree(sample.Tree)
+                sample.Query = query
 
-                sample.Query.set_provided_qastle(qastle_query)
-
-            query = sx.func_adl_dataset(
-                sample.dataset_identifier,
-                sample.Name,
-                get_codegen(sample, config.General),
-                config.General.OutputFormat,
-            )
-            query._q_ast = sample.Query._q_ast
-            query._item_type = sample.Query._item_type
-            if sample.Tree:
-                query = query.set_tree(sample.Tree)
-
-            sample.Query = query
             sample.Query.ignore_cache = sample.IgnoreLocalCache
 
             datasets.append(sample.Query)
@@ -266,3 +265,49 @@ class ServiceXClient:
             result_format=result_format,
             ignore_cache=ignore_cache,
         )
+
+    def generic_query(
+        self,
+        dataset_identifier: DID,
+        codegen: str,
+        query: Union[str, QueryStringGenerator],
+        title: str = "ServiceX Client",
+        result_format: ResultFormat = ResultFormat.parquet,
+        ignore_cache: bool = False
+    ) -> Query:
+        r"""
+        Generate a Query object for a generic codegen specification
+
+        :param dataset_identifier:  The dataset identifier or filelist to be the source of files
+        :param title: Title to be applied to the transform. This is also useful for
+                      relating transform results.
+        :param codegen: Name of the code generator to use with this transform
+        :param result_format:  Do you want Paqrquet or Root? This can be set later with
+                               the set_result_format method
+        :param ignore_cache: Ignore the query cache and always run the query
+        :return: A Query object
+
+        """
+
+        if codegen not in self.code_generators:
+            raise NameError(
+                f"{codegen} code generator not supported by serviceX "
+                f"deployment at {self.servicex.url}"
+            )
+
+        if isinstance(query, str):
+            query = GenericQueryStringGenerator(query)
+        if not isinstance(query, QueryStringGenerator):
+            raise ValueError("query argument must be string or QueryStringGenerator")
+
+        qobj = GenericQuery(dataset_identifier=dataset_identifier,
+                            sx_adapter=self.servicex,
+                            title=title,
+                            codegen=codegen,
+                            config=self.config,
+                            query_cache=self.query_cache,
+                            result_format=result_format,
+                            ignore_cache=ignore_cache
+                            )
+        qobj.query_string_generator = query
+        return qobj
