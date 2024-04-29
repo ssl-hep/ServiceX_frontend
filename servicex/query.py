@@ -538,7 +538,7 @@ class Query(ABC):
 
 class QueryStringGenerator(ABC):
     '''This abstract class just defines an interface to give the selection string'''
-    @abc.abstractmethod    
+    @abc.abstractmethod
     def generate_selection_string(self) -> str:
         pass
 
@@ -554,7 +554,7 @@ class GenericQueryStringGenerator(QueryStringGenerator):
 
 class GenericQuery(Query):
     '''
-    This class gives a "generic" Query object which doesn't require 
+    This class gives a "generic" Query object which doesn't require
     overloading the constructor
     '''
     query_string_generator: Optional[QueryStringGenerator] = None

@@ -32,13 +32,14 @@ import pydantic
 from typing import List, Union, Mapping, Optional
 from ..query import QueryStringGenerator
 
+
 class SubQuery(pydantic.BaseModel):
-    treename: Union[Mapping[str,str], List[str], str]
+    treename: Union[Mapping[str, str], List[str], str]
     expressions: Optional[Union[List[str], str]]
     cut: Optional[str]
     filter_name: Optional[Union[List[str], str]]
     filter_typename: Optional[Union[List[str], str]]
-    aliases: Optional[Mapping[str,str]]
+    aliases: Optional[Mapping[str, str]]
     copy_histogram: Optional[bool]
 
 
