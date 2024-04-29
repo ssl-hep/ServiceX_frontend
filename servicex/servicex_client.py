@@ -36,8 +36,6 @@ from servicex.query import Query, GenericQuery, QueryStringGenerator, GenericQue
 from servicex.types import DID
 from servicex.python_dataset import PythonQuery
 from servicex.dataset_group import DatasetGroup
-import ast
-import qastle
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
@@ -60,12 +58,12 @@ def deliver(config: ServiceXSpec):
         if sample.Query:
             # if string or QueryStringGenerator, turn into a Query
             if isinstance(sample.Query, str) or isinstance(sample.Query, QueryStringGenerator):
-                sample.Query = sx.generic_query(dataset_identifier=sample.dataset_identifier, 
-                                    title=sample.Name,
-                                     codegen=get_codegen(sample, config.General),
-                                     result_format=config.General.OutputFormat,
-                                     ignore_cache=sample.IgnoreLocalCache,
-                                     query=sample.Query)
+                sample.Query = sx.generic_query(dataset_identifier=sample.dataset_identifier,
+                                                title=sample.Name,
+                                                codegen=get_codegen(sample, config.General),
+                                                result_format=config.General.OutputFormat,
+                                                ignore_cache=sample.IgnoreLocalCache,
+                                                query=sample.Query)
             # query._q_ast = sample.Query._q_ast
             # query._item_type = sample.Query._item_type
             if isinstance(sample.Query, FuncADLQuery):
