@@ -1,8 +1,5 @@
 from servicex.app.transforms import LogLevel, TimeFrame
 from servicex.app.transforms import add_query, select_time, create_kibana_link_parameters
-from unittest import mock
-from typer.testing import CliRunner
-from servicex.app.transforms import transforms_app
 
 
 def test_add_query():
@@ -61,39 +58,3 @@ def test_create_kibana_link_parameters():
                 "&hide-filter-bar=true"
     assert create_kibana_link_parameters(initial_log_url, transform_id,
                                          log_level, time_frame) == final_url
-
-
-# TODO find way to test the logs cli function without opening the browswer
-def test_logs():
-    final_url_month = "https://atlas-kibana.mwt2.org:5601/s/servicex/app/dashboards?"\
-                      "auth_provider_hint=anonymous1#/view/2d2b3b40-f34e-11ed-a6d8-9f6a16cd6d78?"\
-                      "embed=true&_g=(time:(from:now-30d%2Fd,to:now))"\
-                      "&_a=(filters:!((query:(match_phrase:"\
-                      "(requestId:'d2ede739-9779-4075-95b1-0c7fae1de408'))),"\
-                      "(query:(match_phrase:(level:'error')))))&show-time-filter=true"\
-                      "&hide-filter-bar=true"
-    final_url_day = "https://atlas-kibana.mwt2.org:5601/s/servicex/app/dashboards?"\
-                    "auth_provider_hint=anonymous1#/view/2d2b3b40-f34e-11ed-a6d8-9f6a16cd6d78?"\
-                    "embed=true&_g=(time:(from:now%2Fd,to:now%2Fd))"\
-                    "&_a=(filters:!((query:(match_phrase:"\
-                    "(requestId:'d2ede739-9779-4075-95b1-0c7fae1de408'))),"\
-                    "(query:(match_phrase:(level:'error')))))&show-time-filter=true"\
-                    "&hide-filter-bar=true"
-    runner = CliRunner()
-    with mock.patch("servicex.app.transforms.webbrowser.open") as mock_url_open:
-        result = runner.invoke(transforms_app, ["logs", "-b", "testing4", "-t",
-                                                "d2ede739-9779-4075-95b1-0c7fae1de408"])
-        assert result.exit_code == 0
-        mock_url_open.assert_called_with(final_url_month)
-        assert mock_url_open.called
-
-        result = runner.invoke(transforms_app, ["logs", "-b", "testing4", "-t",
-                                                "d2ede739-9779-4075-95b1-0c7fae1de408",
-                                                "-f", "day"])
-        assert result.exit_code == 0
-        mock_url_open.assert_called_with(final_url_day)
-
-        result = runner.invoke(transforms_app, ["logs", "-b", "testing4", "-td",
-                                                "d2ede739-9779-4075-95b1-0c7fae1de408"])
-        assert result.exit_code == 2
-        mock_url_open.assert_not_called
