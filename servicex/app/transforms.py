@@ -28,6 +28,9 @@
 import asyncio
 from pathlib import Path
 from typing import Optional, List
+import webbrowser
+import re
+from enum import Enum
 
 import rich
 import typer
@@ -138,3 +141,83 @@ def download(
 
     for path in result_files:
         print(path.as_posix())
+
+
+class TimeFrame(str, Enum):
+    r"""
+    Time Frame levels: 'day', 'week' & 'month'
+    """
+    day = ("day",)
+    week = ("week",)
+    month = ("month")
+
+
+class LogLevel(str, Enum):
+    r"""
+    Level of the log messages: INFO & ERROR
+    """
+    info = ("INFO",)
+    error = ("ERROR",)
+
+
+def add_query(key, value):
+    """
+    Creates query string from the key and value pairs
+    """
+    query_string = "(query:(match_phrase:({0}:'{1}')))".format(key, value)
+    return query_string
+
+
+def select_time(time_frame=TimeFrame.day):
+    """
+    Takes input as 'day','week','month' and returns the time filter
+    """
+    time_string = time_frame
+    if time_frame.lower() == TimeFrame.day:
+        time_string = "time:(from:now%2Fd,to:now%2Fd)"
+    elif time_frame.lower() == TimeFrame.week:
+        time_string = "time:(from:now%2Fw,to:now%2Fw)"
+    elif time_frame.lower() == TimeFrame.month:
+        time_string = "time:(from:now-30d%2Fd,to:now)"
+    else:
+        rich.print("Got a time frame apart from 'day', 'week', 'month'")
+    return time_string
+
+
+def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, time_frame=None):
+    """
+    Create the _a and _g parameters for the kibana dashboard link
+    """
+    a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)},"\
+                  f"{add_query('level', log_level.value.lower())}))"
+    g_parameter = f"&_g=({select_time(time_frame.value.lower())})"
+    kibana_link = re.sub(r"\&\_g\=\(\)", g_parameter + a_parameter, log_url)
+    return kibana_link
+
+
+@transforms_app.command(no_args_is_help=True)
+def logs(
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
+    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
+                                                 help="Level of Logs",
+                                                 case_sensitive=False),
+    time_frame: Optional[TimeFrame] = typer.Option("month", "-f", "--time-frame",
+                                                   help="Time Frame",
+                                                   case_sensitive=False)
+):
+    """
+    Open the URL to the Kibana dashboard of the logs of a tranformer
+    """
+    sx = ServiceXClient(backend=backend, url=url)
+    transforms = sx.get_transform_status(transform_id)
+    if transforms and transforms.request_id == transform_id:
+        kibana_link = create_kibana_link_parameters(transforms.log_url,
+                                                    transform_id=transform_id,
+                                                    log_level=log_level,
+                                                    time_frame=time_frame)
+        print(kibana_link)
+        webbrowser.open(kibana_link)
+    else:
+        rich.print("Invalid Request ID")
