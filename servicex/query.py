@@ -236,6 +236,7 @@ class Query(ABC):
         minio_progress_bar_title = (
             "Download" if not signed_urls_only else "Signing URLS"
         )
+        minio_progress_bar_title = minio_progress_bar_title.rjust(len(transform_bar_title))
 
         download_progress = expandable_progress.add_task(
             minio_progress_bar_title, start=False, total=None
