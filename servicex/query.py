@@ -338,7 +338,7 @@ class Query(ABC):
         # Is this the first time we've polled status? We now know the request ID.
         # Update the display and set our download directory.
         if not self.current_status:
-            rich.print(f"[bold]ServiceX Transform {s.request_id}[/bold]")
+            rich.print(f"[bold]ServiceX Transform {s.title}: {s.request_id}[/bold]")
             self.download_path = self.cache.cache_path_for_transform(s)
 
         self.current_status = s
