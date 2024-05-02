@@ -30,7 +30,7 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Union
+from typing import List, Optional
 
 
 class ResultDestination(str, Enum):
@@ -76,10 +76,10 @@ class TransformRequest(BaseModel):
     image: Optional[str] = None
     codegen: str
     tree_name: Optional[str] = Field(default=None, alias="tree-name")
-    result_destination: Union[str, ResultDestination] = Field(
+    result_destination: ResultDestination = Field(
         serialization_alias="result-destination"
     )
-    result_format: Union[str, ResultFormat] = Field(serialization_alias="result-format")
+    result_format: ResultFormat = Field(serialization_alias="result-format")
 
     class Config:
         populate_by_name = True
@@ -135,7 +135,7 @@ class TransformStatus(BaseModel):
     minio_secret_key: Optional[str] = Field(validation_alias="minio-secret-key", default=None)
     log_url: Optional[str] = Field(validation_alias="log-url", default=None)
 
-    @field_validator("finish_time")
+    @field_validator("finish_time", mode="before")
     @classmethod
     def parse_finish_time(cls, v):
         if isinstance(v, str) and v == "None":
