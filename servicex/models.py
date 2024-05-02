@@ -136,6 +136,7 @@ class TransformStatus(BaseModel):
     log_url: Optional[str] = Field(validation_alias="log-url", default=None)
 
     @field_validator("finish_time")
+    @classmethod
     def parse_finish_time(cls, v):
         if isinstance(v, str) and v == "None":
             return None
