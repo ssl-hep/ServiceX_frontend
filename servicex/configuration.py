@@ -30,7 +30,7 @@ import tempfile
 from pathlib import Path, PurePath
 from typing import List, Optional, Dict
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, AliasChoices, model_validator
 
 import yaml
 
@@ -38,17 +38,20 @@ import yaml
 class Endpoint(BaseModel):
     endpoint: str
     name: str
-    token: Optional[str]
+    token: Optional[str] = ""
 
 
 class Configuration(BaseModel):
     api_endpoints: List[Endpoint]
     default_endpoint: Optional[str] = Field(alias="default-endpoint", default=None)
-    cache_path: Optional[str] = Field(alias="cache-path", default=None)
+    cache_path: Optional[str] = Field(
+        validation_alias=AliasChoices("cache-path", "cache_path"), default=None
+    )
+
     shortened_downloaded_filename: Optional[bool] = False
 
-    @validator("cache_path", always=True)
-    def expand_cache_path(cls, v):
+    @model_validator(mode="after")
+    def expand_cache_path(self):
         """
         Expand the cache path to a full path, and create it if it doesn't exist.
         Expand ${USER} to be the user name on the system. Works for windows, too.
@@ -56,10 +59,10 @@ class Configuration(BaseModel):
         :return:
         """
         # create a folder inside the tmp directory if not specified in cache_path
-        if not v:
-            v = "/tmp/servicex_${USER}"
+        if not self.cache_path:
+            self.cache_path = "/tmp/servicex_${USER}"
 
-        s_path = os.path.expanduser(v)
+        s_path = os.path.expanduser(self.cache_path)
 
         # If they have tried to use the USER or UserName as an expansion, and it has failed, then
         # translate it to maintain harmony across platforms.
@@ -75,10 +78,11 @@ class Configuration(BaseModel):
             p = Path(p_p)
         p.mkdir(exist_ok=True, parents=True)
 
-        return p.as_posix()
+        self.cache_path = p.as_posix()
+        return self
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
     def endpoint_dict(self) -> Dict[str, Endpoint]:
         return {endpoint.name: endpoint for endpoint in self.api_endpoints}
@@ -98,7 +102,7 @@ class Configuration(BaseModel):
             yaml_config = cls._add_from_path(walk_up_tree=True)
 
         if yaml_config:
-            return Configuration(**yaml_config)
+            return Configuration.model_validate(yaml_config)
         else:
             path_extra = f"in {config_path}" if config_path else ""
             raise NameError(

@@ -29,14 +29,15 @@ import hashlib
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field, validator
-from typing import List, Optional
+from pydantic import BaseModel, Field, field_validator
+from typing import List, Optional, Union
 
 
 class ResultDestination(str, Enum):
     r"""
     Direct the output to object store or posix volume
     """
+
     object_store = "object-store"
     volume = "volume"
 
@@ -45,6 +46,7 @@ class ResultFormat(str, Enum):
     r"""
     Specify the file format for the generated output
     """
+
     parquet = "parquet"
     root = "root-file"
 
@@ -53,6 +55,7 @@ class Status(str, Enum):
     r"""
     Status of a submitted transform
     """
+
     complete = ("Complete",)
     fatal = ("Fatal",)
     canceled = ("Canceled",)
@@ -65,6 +68,7 @@ class TransformRequest(BaseModel):
     r"""
     Transform request sent to ServiceX
     """
+
     title: Optional[str] = None
     did: Optional[str] = None
     file_list: Optional[List[str]] = Field(default=None, alias="file-list")
@@ -72,11 +76,13 @@ class TransformRequest(BaseModel):
     image: Optional[str] = None
     codegen: str
     tree_name: Optional[str] = Field(default=None, alias="tree-name")
-    result_destination: ResultDestination = Field(alias="result-destination")
-    result_format: ResultFormat = Field(alias="result-format")
+    result_destination: Union[str, ResultDestination] = Field(
+        serialization_alias="result-destination"
+    )
+    result_format: Union[str, ResultFormat] = Field(serialization_alias="result-format")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
     def compute_hash(self):
         r"""
@@ -105,30 +111,31 @@ class TransformStatus(BaseModel):
     r"""
     Status object returned by servicex
     """
+
     request_id: str
     did: str
-    title: Optional[str]
+    title: Optional[str] = None
     selection: str
-    tree_name: Optional[str] = Field(alias="tree-name")
+    tree_name: Optional[str] = Field(validation_alias="tree-name")
     image: str
-    result_destination: ResultDestination = Field(alias="result-destination")
-    result_format: ResultFormat = Field(alias="result-format")
-    generated_code_cm: str = Field(alias="generated-code-cm")
+    result_destination: ResultDestination = Field(validation_alias="result-destination")
+    result_format: ResultFormat = Field(validation_alias="result-format")
+    generated_code_cm: str = Field(validation_alias="generated-code-cm")
     status: Status
-    app_version: str = Field(alias="app-version")
+    app_version: str = Field(validation_alias="app-version")
     files: int
-    files_completed: int = Field(alias="files-completed")
-    files_failed: int = Field(alias="files-failed")
-    files_remaining: Optional[int] = Field(alias="files-remaining")
-    submit_time: datetime = Field(alias="submit-time")
-    finish_time: Optional[datetime] = Field(alias="finish-time")
-    minio_endpoint: Optional[str] = Field(alias="minio-endpoint")
-    minio_secured: Optional[bool] = Field(alias="minio-secured")
-    minio_access_key: Optional[str] = Field(alias="minio-access-key")
-    minio_secret_key: Optional[str] = Field(alias="minio-secret-key")
-    log_url: Optional[str] = Field(alias="log-url")
+    files_completed: int = Field(validation_alias="files-completed")
+    files_failed: int = Field(validation_alias="files-failed")
+    files_remaining: Optional[int] = Field(validation_alias="files-remaining", default=0)
+    submit_time: datetime = Field(validation_alias="submit-time", default=None)
+    finish_time: Optional[datetime] = Field(validation_alias="finish-time", default=None)
+    minio_endpoint: Optional[str] = Field(validation_alias="minio-endpoint", default=None)
+    minio_secured: Optional[bool] = Field(validation_alias="minio-secured", default=None)
+    minio_access_key: Optional[str] = Field(validation_alias="minio-access-key", default=None)
+    minio_secret_key: Optional[str] = Field(validation_alias="minio-secret-key", default=None)
+    log_url: Optional[str] = Field(validation_alias="log-url", default=None)
 
-    @validator("finish_time", pre=True)
+    @field_validator("finish_time")
     def parse_finish_time(cls, v):
         if isinstance(v, str) and v == "None":
             return None
@@ -139,6 +146,7 @@ class ResultFile(BaseModel):
     r"""
     Record reporting the properties of a transformed file result
     """
+
     filename: str
     size: int
     extension: str
@@ -149,6 +157,7 @@ class TransformedResults(BaseModel):
     Returned for a submission. Gives you everything you need to know about a completed
     transform.
     """
+
     hash: str
     title: str
     codegen: str
@@ -159,4 +168,4 @@ class TransformedResults(BaseModel):
     signed_url_list: List[str]
     files: int
     result_format: ResultFormat
-    log_url: Optional[str]
+    log_url: Optional[str] = None

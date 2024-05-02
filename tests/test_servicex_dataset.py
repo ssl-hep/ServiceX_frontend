@@ -60,7 +60,7 @@ transform_status = TransformStatus(
         "files-failed": 0,
         "files-remaining": None,
         "submit-time": "2023-05-25T20:05:05.564137Z",
-        "finish-time": "None",
+        "finish-time": None,
         "minio-endpoint": "minio.org:9000",
         "minio-secured": False,
         "minio-access-key": "miniouser",
