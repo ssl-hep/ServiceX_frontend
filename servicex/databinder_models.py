@@ -27,7 +27,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
 from typing import Union, Optional, Callable, List
-from pydantic import BaseModel, Field, root_validator, constr, validator
+from pydantic import (
+    BaseModel,
+    Field,
+    model_validator,
+)
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
 from servicex.func_adl import func_adl_dataset
@@ -35,9 +39,9 @@ from servicex.func_adl import func_adl_dataset
 
 class Sample(BaseModel):
     Name: str
-    Codegen: Optional[str]
-    RucioDID: Optional[str]
-    XRootDFiles: Optional[Union[str, List[str]]]
+    Codegen: Optional[str] = None
+    RucioDID: Optional[str] = None
+    XRootDFiles: Optional[Union[str, List[str]]] = None
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
     Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
@@ -54,29 +58,29 @@ class Sample(BaseModel):
         elif self.XRootDFiles:
             return FileListDataset(self.XRootDFiles)
 
-    @root_validator
+    @model_validator(mode="before")
     def validate_did_xor_file(cls, values):
         """
         Ensure that only one of RootFile or RucioDID is specified.
         :param values:
         :return:
         """
-        if values['XRootDFiles'] and values['RucioDID']:
+        if "XRootDFiles" in values and "RucioDID" in values:
             raise ValueError("Only specify one of XRootDFiles or RucioDID, not both.")
-        if not values['XRootDFiles'] and not values['RucioDID']:
+        if "XRootDFiles" not in values and "RucioDID" not in values:
             raise ValueError("Must specify one of XRootDFiles or RucioDID.")
         return values
 
-    @root_validator
+    @model_validator(mode="before")
     def validate_function_xor_query(cls, values):
         """
         Ensure that only one of Function or Query is specified.
         :param values:
         :return:
         """
-        if values['Function'] and values['Query']:
+        if "Function" in values and "Query" in values:
             raise ValueError("Only specify one of Function or Query, not both.")
-        if not values['Function'] and not values['Query']:
+        if "Function" not in values and "Query" not in values:
             raise ValueError("Must specify one of Function or Query.")
         return values
 
@@ -92,17 +96,21 @@ class General(BaseModel):
 
     ServiceX: str = Field(..., alias="ServiceX")
     Codegen: str
-    OutputFormat: Union[OutputFormatEnum,
-        constr(regex='^(parquet|root-file)$')] = Field(default=OutputFormatEnum.root)  # NOQA F722
+    OutputFormat: OutputFormatEnum = (
+        Field(default=OutputFormatEnum.root, pattern="^(parquet|root-file)$")
+    )  # NOQA F722
 
-    Delivery: Union[DeliveryEnum, constr(regex='^(LocalCache|SignedURLs)$')] = Field(default=DeliveryEnum.LocalCache) # NOQA F722
+    Delivery: DeliveryEnum = Field(
+        default=DeliveryEnum.LocalCache, pattern="^(LocalCache|SignedURLs)$"
+    )  # NOQA F722
 
 
-class Definition(BaseModel):
+class DefinitionDict(BaseModel):
     class Config:
         extra = "allow"  # Allow additional fields not defined in the model
 
-    @root_validator
+    @model_validator(mode="before")
+    @classmethod
     def check_def_name(cls, values):
         """
         Ensure that the definition name is DEF_XXX format
@@ -111,31 +119,36 @@ class Definition(BaseModel):
         """
         for field in values:
             if not field.startswith("DEF_"):
-                raise ValueError(f"Definition key {field} does not meet the convention of DEF_XXX format") # NOQA E501
+                raise ValueError(
+                    f"Definition key {field} does not meet the convention of DEF_XXX format"
+                )  # NOQA E501
         return values
 
 
 class ServiceXSpec(BaseModel):
     General: General
     Sample: List[Sample]
-    Definition: Optional[Definition]
+    Definition: Optional[DefinitionDict] = None
 
-    @validator('Sample')
-    def check_tree_property(cls, v, values):
-        if 'General' in values and values['General'].Codegen != 'uproot':
-            for sample in v:
-                if 'Tree' in sample:
-                    raise ValueError('"Tree" property is not allowed when codegen is not "uproot"')
-        return v
+    @model_validator(mode="after")
+    def check_tree_property(self):
+        if self.General and self.General.Codegen != "uproot":
+            for sample in self.Sample:
+                if "Tree" in sample:
+                    raise ValueError(
+                        '"Tree" property is not allowed when codegen is not "uproot"'
+                    )
+        return self
 
-    @root_validator(pre=False, skip_on_failure=True)
-    def replace_definition(cls, values):
+    @model_validator(mode="after")
+    def replace_definition(self):
         """
         Replace the definition name with the actual definition value looking
         through the Samples and the General sections
         :param values:
         :return:
         """
+
         def replace_value_from_def(value, defs):
             """
             Replace the value with the actual definition value
@@ -154,14 +167,14 @@ class ServiceXSpec(BaseModel):
                         raise ValueError(f"Definition {value} not found")
             return value
 
-        if 'Definition' in values and values['Definition'] is not None:
-            defs = values['Definition'].dict()
+        if self.Definition and self.Definition:
+            defs = self.Definition.dict()
         else:
             defs = {}
 
-        for sample_field in values['Sample']:
+        for sample_field in self.Sample:
             replace_value_from_def(sample_field.__dict__, defs)
 
-        replace_value_from_def(values['General'].__dict__, defs)
+        replace_value_from_def(self.General.__dict__, defs)
 
-        return values
+        return self

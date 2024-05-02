@@ -34,13 +34,13 @@ def test_load_config():
         ],
         "Definition": {"DEF_a": "a"},
     }
-    new_config = ServiceXSpec.parse_obj(config)
+    new_config = ServiceXSpec.model_validate(config)
     assert new_config.Sample[0].Function == "a"
 
 
 def test_single_root_file():
 
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
