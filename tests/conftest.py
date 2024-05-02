@@ -119,7 +119,7 @@ def transform_status_response() -> dict:
                 "files-failed": 0,
                 "files-remaining": 1,
                 "submit-time": "2023-05-25T20:05:05.564137Z",
-                "finish-time": None,
+                "finish-time": "None",
             }
         ]
     }
