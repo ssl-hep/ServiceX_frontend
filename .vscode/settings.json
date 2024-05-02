@@ -102,5 +102,5 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": false,
 }
