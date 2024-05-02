@@ -106,7 +106,7 @@ class ServiceXAdapter:
                                   headers=headers,
                                   json=transform_request.dict(by_alias=True,
                                                               exclude_none=True),
-                                  timeout=20)
+                                  timeout=60)
             if r.status_code == 401:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}")
