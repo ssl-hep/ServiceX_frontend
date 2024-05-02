@@ -59,6 +59,7 @@ class Sample(BaseModel):
             return FileListDataset(self.XRootDFiles)
 
     @model_validator(mode="before")
+    @classmethod
     def validate_did_xor_file(cls, values):
         """
         Ensure that only one of RootFile or RucioDID is specified.
@@ -72,6 +73,7 @@ class Sample(BaseModel):
         return values
 
     @model_validator(mode="before")
+    @classmethod
     def validate_function_xor_query(cls, values):
         """
         Ensure that only one of Function or Query is specified.
