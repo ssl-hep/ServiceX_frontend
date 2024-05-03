@@ -43,6 +43,7 @@ from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
 
 T = TypeVar("T")
+logger = logging.getLogger(__name__)
 
 
 def deliver(config: ServiceXSpec):
@@ -180,7 +181,7 @@ class ServiceXClient:
         if backend:
             cached_backends = self.query_cache.get_codegen_by_backend(backend)
         if cached_backends:
-            logging.getLogger(__name__).info("Returning code generators from cache")
+            logger.info("Returning code generators from cache")
             return cached_backends["codegens"]
         else:
             code_generators = self.servicex.get_code_generators()
