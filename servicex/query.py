@@ -60,6 +60,7 @@ from servicex.servicex_adapter import ServiceXAdapter
 from make_it_sync import make_sync
 
 ProgressIndicators = Union[Progress, ExpandableProgress]
+logger = logging.getLogger(__name__)
 
 
 class Query(ABC):
@@ -185,7 +186,7 @@ class Query(ABC):
             :return:
             """
             if task.exception():
-                logging.getLogger(__name__).error(
+                logger.error(
                     "ServiceX Exception", exc_info=task.exception()
                 )
                 if download_files_task:
@@ -193,13 +194,13 @@ class Query(ABC):
                 raise task.exception()
 
             if self.current_status.files_failed:
-                logging.getLogger(__name__).warning(
+                logger.warning(
                     f"Transforms completed with failures "
                     f"{self.current_status.files_failed} files failed out of "
                     f"{self.current_status.files}"
                 )
             else:
-                logging.getLogger(__name__).info("Transforms completed successfully")
+                logger.info("Transforms completed successfully")
 
         sx_request = self.transform_request
 
@@ -220,7 +221,7 @@ class Query(ABC):
                 or not signed_urls_only
                 and cached_record.file_list
             ):
-                logging.getLogger(__name__).info("Returning results from cache")
+                logger.info("Returning results from cache")
                 return cached_record
 
         # If we get here with a cached record, then we know that the transform
@@ -305,7 +306,7 @@ class Query(ABC):
 
             return transform_report
         except CancelledError:
-            logging.getLogger(__name__).warning(
+            logger.warning(
                 "Aborted file downloads due to transform failure"
             )
 
@@ -366,7 +367,7 @@ class Query(ABC):
         # Is this the first time we've polled status? We now know the request ID.
         # Update the display and set our download directory.
         if not self.current_status:
-            logging.getLogger(__name__).info(
+            logger.info(
                 f"ServiceX Transform {s.title}: {s.request_id}"
             )
             self.download_path = self.cache.cache_path_for_transform(s)

@@ -31,9 +31,14 @@ import yaml
 
 from servicex import ServiceXSpec
 from servicex.servicex_client import deliver
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("servicex")
+logger.setLevel(logging.DEBUG)
 
 if len(sys.argv) != 2:
-    print("Usage: python databinder.py <config_file>")
+    logger.fatal("Usage: python databinder.py <config_file>")
     sys.exit(1)
 
 try:
