@@ -58,14 +58,19 @@ def deliver(config: ServiceXSpec):
     for sample in config.Sample:
         if sample.Query:
             if type(sample.Query) is str:
-                qastle_query = qastle.python_ast_to_text_ast(ast.parse(sample.Query)) # NOQA E501
+                qastle_query = qastle.python_ast_to_text_ast(
+                    ast.parse(sample.Query)
+                )  # NOQA E501
                 sample.Query = FuncADLQuery()
 
                 sample.Query.set_provided_qastle(qastle_query)
 
-            query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
-                                        get_codegen(sample, config.General),
-                                        config.General.OutputFormat)
+            query = sx.func_adl_dataset(
+                sample.dataset_identifier,
+                sample.Name,
+                get_codegen(sample, config.General),
+                config.General.OutputFormat,
+            )
             query._q_ast = sample.Query._q_ast
             query._item_type = sample.Query._item_type
             if sample.Tree:
@@ -86,9 +91,12 @@ def deliver(config: ServiceXSpec):
                 except SyntaxError as e:
                     raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
 
-            dataset = sx.python_dataset(sample.dataset_identifier, sample.Name,
-                                        get_codegen(sample, config.General),
-                                        config.General.OutputFormat)
+            dataset = sx.python_dataset(
+                sample.dataset_identifier,
+                sample.Name,
+                get_codegen(sample, config.General),
+                config.General.OutputFormat,
+            )
             dataset.python_function = sample.Function
             dataset.ignore_cache = sample.IgnoreLocalCache
             datasets.append(dataset)
@@ -173,7 +181,7 @@ class ServiceXClient:
         if backend:
             cached_backends = self.query_cache.get_codegen_by_backend(backend)
         if cached_backends:
-            rich.print("Returning code generators from cache")
+            logging.getLogger(__name__).info("Returning code generators from cache")
             return cached_backends["codegens"]
         else:
             code_generators = self.servicex.get_code_generators()
@@ -187,7 +195,7 @@ class ServiceXClient:
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
         item_type: Type[T] = Any,
-        ignore_cache: bool = False
+        ignore_cache: bool = False,
     ) -> FuncADLQuery[T]:
         r"""
         Generate a dataset that can use func_adl query language
@@ -217,7 +225,7 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             item_type=item_type,
-            ignore_cache=ignore_cache
+            ignore_cache=ignore_cache,
         )
 
     def python_dataset(
@@ -226,7 +234,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
-        ignore_cache: bool = False
+        ignore_cache: bool = False,
     ) -> PythonQuery:
         r"""
         Generate a dataset that can use accept a python function for the  query
@@ -256,5 +264,5 @@ class ServiceXClient:
             config=self.config,
             query_cache=self.query_cache,
             result_format=result_format,
-            ignore_cache=ignore_cache
+            ignore_cache=ignore_cache,
         )
