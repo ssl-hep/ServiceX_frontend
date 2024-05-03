@@ -43,7 +43,6 @@ except ModuleNotFoundError:
 
 from servicex.types import DID
 
-import rich
 from rich.progress import Progress, TaskID
 
 from servicex.configuration import Configuration
