@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import logging
 from typing import Optional, List, TypeVar, Any, Type
 
 from servicex.configuration import Configuration
@@ -40,8 +41,6 @@ import qastle
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
-
-import rich
 
 T = TypeVar("T")
 
