@@ -29,6 +29,11 @@
 from servicex import ServiceXSpec, General, Sample
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.servicex_client import deliver
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("servicex")
+logger.setLevel(logging.DEBUG)
 
 query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
