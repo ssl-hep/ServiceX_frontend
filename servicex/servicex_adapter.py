@@ -118,7 +118,8 @@ class ServiceXAdapter:
         async with httpx.AsyncClient() as client:
             headers = await self._get_authorization(client)
             r = await client.get(url=f"{self.url}/servicex/transformation/{request_id}",
-                                 headers=headers)
+                                 headers=headers,
+                                 timeout=10)
             if r.status_code == 401:
                 raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
             if r.status_code == 404:
