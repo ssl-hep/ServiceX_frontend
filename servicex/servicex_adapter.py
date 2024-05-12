@@ -112,8 +112,10 @@ class ServiceXAdapter:
                     f"Not authorized to access serviceX at {self.url}")
             elif r.status_code == 400:
                 raise ValueError(f"Invalid transform request: {r.json()['message']}")
-            elif r.status_code >= 400:
-                raise ValueError(f"Error in transformation submission: {r}")
+            elif r.status_code > 400:
+                error_message = r.json().get('message', str(r))
+                raise RuntimeError("ServiceX WebAPI Error during transformation "
+                                   f"submission: {r.status_code} - {error_message}")
         return r.json()['request_id']
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
