@@ -113,7 +113,7 @@ class ServiceXAdapter:
             elif r.status_code == 400:
                 raise ValueError(f"Invalid transform request: {r.json()['message']}")
             elif r.status_code >= 400:
-                raise ValueError(f"Error in transformation submission: {r.json()['message']}")
+                raise ValueError(f"Error in transformation submission: {r}")
         return r.json()['request_id']
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
