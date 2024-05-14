@@ -41,6 +41,7 @@ class TreeSubQuery(pydantic.BaseModel):
     filter_typename: Optional[Union[List[str], str]]
     aliases: Optional[Mapping[str, str]]
 
+
 class CopyHistogramSubQuery(pydantic.BaseModel):
     copy_histograms: Union[List[str], str]
 
