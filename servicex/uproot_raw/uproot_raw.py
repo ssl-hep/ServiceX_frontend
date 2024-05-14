@@ -33,14 +33,19 @@ from typing import List, Union, Mapping, Optional
 from ..query import QueryStringGenerator
 
 
-class SubQuery(pydantic.BaseModel):
+class TreeSubQuery(pydantic.BaseModel):
     treename: Union[Mapping[str, str], List[str], str]
     expressions: Optional[Union[List[str], str]]
     cut: Optional[str]
     filter_name: Optional[Union[List[str], str]]
     filter_typename: Optional[Union[List[str], str]]
     aliases: Optional[Mapping[str, str]]
-    copy_histogram: Optional[bool]
+
+class CopyHistogramSubQuery(pydantic.BaseModel):
+    copy_histograms: Union[List[str], str]
+
+
+SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
 
 
 @pydantic.dataclasses.dataclass
