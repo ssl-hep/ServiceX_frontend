@@ -64,6 +64,8 @@ def deliver(config: ServiceXSpec):
                                                 result_format=config.General.OutputFormat,
                                                 ignore_cache=sample.IgnoreLocalCache,
                                                 query=sample.Query)
+            # query._q_ast = sample.Query._q_ast
+            # query._item_type = sample.Query._item_type
             if isinstance(sample.Query, FuncADLQuery):
                 query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
                                             get_codegen(sample, config.General),
