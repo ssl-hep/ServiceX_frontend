@@ -30,8 +30,8 @@ from servicex import ServiceXSpec, General, Sample
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.servicex_client import deliver
 
+
 def bigger_uproot():
-    
     query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
     spec = ServiceXSpec(
@@ -51,6 +51,7 @@ def bigger_uproot():
         ]
     )
     print(deliver(spec))
+
 
 if __name__ == "__main__":
     bigger_uproot()
