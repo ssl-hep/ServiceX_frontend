@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type
+from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
 
 from servicex.configuration import Configuration
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
@@ -46,7 +46,9 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def deliver(config: ServiceXSpec):
+def deliver(config: Union[ServiceXSpec, Mapping[str,Any]]):
+    if isinstance(config, Mapping):
+        config = ServiceXSpec(**config)
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen:
             return _sample.Codegen

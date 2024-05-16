@@ -12,7 +12,7 @@ def run_query(input_filenames=None):
 config = {
     "General":
     {
-        "ServiceX": "uc-af",
+        "ServiceX": "servicex-uc-af",
         "Codegen": "python",
         "Delivery": "LocalCache"
     },

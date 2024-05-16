@@ -337,3 +337,16 @@ class FuncADLQuery(Query, EventDataset[T]):
             Qastle representation of the target's AST
         """
         return self.value()
+
+
+def FuncADLQuery_constructor(loader, node):
+    import qastle
+    print(node)
+    query_string = loader.construct_scalar(node)
+    qastle_query = qastle.python_ast_to_text_ast(
+                    ast.parse(query_string)
+                )  # NOQA E501
+    query = FuncADLQuery()
+    query.set_provided_qastle(qastle_query)
+    print(qastle_query, query, type(query))
+    return query

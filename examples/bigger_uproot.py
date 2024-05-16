@@ -39,22 +39,20 @@ logger.setLevel(logging.DEBUG)
 def bigger_uproot():
     query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
-    spec = ServiceXSpec(
-        General=General(
-            ServiceX="servicex-uc-af",
-            Codegen="uproot",
-            OutputFormat="parquet",
-            Delivery="LocalCache"
-        ),
-        Sample=[
-            Sample(
-                Name="bigger_uproot",
-                RucioDID="user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
-                Tree="nominal",
-                Query=query
-            )
-        ]
-    )
+    spec = {
+        'General': {
+            'ServiceX': "servicex-uc-af",
+            'Codegen': "uproot",
+            'OutputFormat': "parquet",
+            'Delivery': "LocalCache"
+        },
+        'Sample': [{
+                'Name': "bigger_uproot",
+                'RucioDID': "user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
+                'Tree': "nominal",
+                'Query': query
+        }]
+    }
     print(deliver(spec))
 
 

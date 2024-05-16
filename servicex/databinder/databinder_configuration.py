@@ -29,11 +29,25 @@ import yaml
 import pathlib
 from typing import Any, Dict, Union
 import rich
+from .. import ServiceXSpec
 
+
+def configure_loaders():
+    # from ..func_adl.func_adl_dataset import FuncADLQuery_constructor
+    # yaml.add_constructor('!FuncADL', FuncADLQuery_constructor)
+    import sys
+    if sys.version_info < (3, 10):
+        from importlib_metadata import entry_points
+    else:
+        from importlib.metadata import entry_points
+
+    plugins = entry_points(group='servicex.queries')
+    for _ in plugins:
+        yaml.add_constructor(f'!{_.name}', _.load())
 
 def load_databinder_config(input_config:
                            Union[str, pathlib.Path, Dict[str, Any]]
-                           ) -> Dict[str, Any]:
+                           ) -> ServiceXSpec:
     """
     Loads, validates, and returns DataBinder configuration.
     The order of function call matters.
@@ -44,19 +58,21 @@ def load_databinder_config(input_config:
         Dict[str, Any]: configuration
     """
     def prepare_config(config):
-        _set_default_values(config)
-        ndef = _replace_definition_in_sample_block(config)
-        rich.print(f"Replaced {ndef} Option values from Definition block")
+        # _set_default_values(config) # Handled by pydantic
+        # ndef = _replace_definition_in_sample_block(config) # handled by YAML
+        # rich.print(f"Replaced {ndef} Option values from Definition block")
         _support_old_option_names(config)
         _decorate_backend_per_sample(config)
-        return _validate_config(config)
+        return ServiceXSpec(**config)
+        # return _validate_config(config)
 
     if isinstance(input_config, Dict):
         return prepare_config(input_config)
     else:
         file_path = pathlib.Path(input_config)
-        config = yaml.safe_load(file_path.read_text())
         rich.print(f"Loading DataBinder config file: {file_path}")
+        configure_loaders()
+        config = yaml.full_load(file_path.read_text())
         return prepare_config(config)
 
 
@@ -102,11 +118,16 @@ def _replace_definition_in_sample_block(config: Dict[str, Any]):
                     if isinstance(value, str):
                         if 'DEF_' in value:
                             def_in_value = True
-                            for repre, new_str in definition.items():
+                            for repre, new_val in definition.items():
                                 if repre == value:
-                                    samples[n][field] \
-                                        = samples[n][field] \
-                                        .replace(repre, new_str)
+                                    if isinstance(new_val, str):
+                                        print(f'fixing up {samples[n][field]}')
+                                        samples[n][field] \
+                                            = samples[n][field] \
+                                            .replace(repre, new_val)
+                                    else:
+                                        print('alternative', samples[n][field])
+                                        samples[n][field] = new_val
                                     ndef = ndef + 1
                                     def_in_value = False
                             if def_in_value:
