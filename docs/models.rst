@@ -1,6 +1,6 @@
 Models
 ======
-.. automodule:: servicex_client.models
+.. automodule:: servicex.models
    :members:
    :exclude-members: Config, parse_finish_time
    :undoc-members:

@@ -35,22 +35,28 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("servicex")
 logger.setLevel(logging.DEBUG)
 
-query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
 
-spec = ServiceXSpec(
-    General=General(
-        ServiceX="testing1",
-        Codegen="uproot",
-        OutputFormat="parquet",
-        Delivery="LocalCache"
-    ),
-    Sample=[
-        Sample(
-            Name="bigger_uproot",
-            RucioDID="user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
-            Tree="nominal",
-            Query=query
-        )
-    ]
-)
-print(deliver(spec))
+def bigger_uproot():
+    query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
+
+    spec = ServiceXSpec(
+        General=General(
+            ServiceX="servicex-uc-af",
+            Codegen="uproot",
+            OutputFormat="parquet",
+            Delivery="LocalCache"
+        ),
+        Sample=[
+            Sample(
+                Name="bigger_uproot",
+                RucioDID="user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
+                Tree="nominal",
+                Query=query
+            )
+        ]
+    )
+    print(deliver(spec))
+
+
+if __name__ == "__main__":
+    bigger_uproot()
