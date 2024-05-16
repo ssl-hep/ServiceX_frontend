@@ -82,6 +82,7 @@ test = [
 docs = [
     "sphinx>=7.0.1",
     "furo>=2023.5.20",
+    "sphinx-code-include>=1.4.0"
 ]
 develop = [
     "servicex[databinder,pandas,test,docs]",
