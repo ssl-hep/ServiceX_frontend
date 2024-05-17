@@ -24,6 +24,14 @@ Before you can use this library you'll need:
 - An environment based on python 3.7 or later. 3.11 is highest supported at the moment.
 - A `ServiceX` end-point. This is usually gotten by logging into and getting approved at the servicex endpoint. Once you do that, you'll have an API token, which this library needs to access the `ServiceX` endpoint, and the web address where you got that token (the `endpoint` address).
 
+### Installation
+
+```python -m pip install servicex```
+
+This will install the servicex client library and dependencies. For some deployments, it may be desired
+to use an older version of awkward array (https://pypi.org/project/awkward/); if `FORCE_AWKWARD1` is 
+detected in the environment at install time, the package will depend on awkward version 1.
+
 ### How to access your endpoint
 
 The API access information is normally placed in a configuration file (see the section below). Create a config file, `servicex.yaml`, in the `yaml` format, in the appropriate place for your work that contains the following (for the `xaod` backend; use `uproot` for the `type` for the uproot backend):
