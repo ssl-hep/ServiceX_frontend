@@ -35,6 +35,7 @@ from pydantic import (
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
 from servicex.func_adl import func_adl_dataset
+from servicex.models import ResultFormat
 
 
 class Sample(BaseModel):
@@ -98,39 +99,27 @@ class General(BaseModel):
 
     ServiceX: str = Field(..., alias="ServiceX")
     Codegen: str
-    OutputFormat: OutputFormatEnum = (
-        Field(default=OutputFormatEnum.root, pattern="^(parquet|root-file)$")
+    OutputFormat: ResultFormat = (
+        Field(default=ResultFormat.root, pattern="^(parquet|root-file)$")
     )  # NOQA F722
 
     Delivery: DeliveryEnum = Field(
         default=DeliveryEnum.LocalCache, pattern="^(LocalCache|SignedURLs)$"
     )  # NOQA F722
 
+    OutputDirectory: Optional[str] = None
+    OutFilesetName: str = 'servicex_fileset'
 
-class DefinitionDict(BaseModel):
-    class Config:
-        extra = "allow"  # Allow additional fields not defined in the model
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_def_name(cls, values):
-        """
-        Ensure that the definition name is DEF_XXX format
-        :param values:
-        :return:
-        """
-        for field in values:
-            if not field.startswith("DEF_"):
-                raise ValueError(
-                    f"Definition key {field} does not meet the convention of DEF_XXX format"
-                )  # NOQA E501
-        return values
+# class DefinitionList(List):
+#     # This can have basically arbitrary shape, we will not do anything here
+#     class Config:
+#         extra = "allow"  # Allow additional fields not defined in the model
 
 
 class ServiceXSpec(BaseModel):
     General: General
     Sample: List[Sample]
-    Definition: Optional[DefinitionDict] = None
+    Definition: Optional[List] = None
 
     @model_validator(mode="after")
     def check_tree_property(self):
@@ -142,41 +131,41 @@ class ServiceXSpec(BaseModel):
                     )
         return self
 
-    @model_validator(mode="after")
-    def replace_definition(self):
-        """
-        Replace the definition name with the actual definition value looking
-        through the Samples and the General sections
-        :param values:
-        :return:
-        """
+    # @model_validator(mode="after")
+    # def replace_definition(self):
+    #     """
+    #     Replace the definition name with the actual definition value looking
+    #     through the Samples and the General sections
+    #     :param values:
+    #     :return:
+    #     """
 
-        def replace_value_from_def(value, defs):
-            """
-            Replace the value with the actual definition value
-            :param value:
-            :param defs:
-            :return:
-            """
-            if isinstance(value, dict):
-                for field in value.keys():
-                    value[field] = replace_value_from_def(value[field], defs)
-            elif isinstance(value, str):
-                if value.startswith("DEF_"):
-                    if value in defs:
-                        value = defs[value]
-                    else:
-                        raise ValueError(f"Definition {value} not found")
-            return value
+    #     def replace_value_from_def(value, defs):
+    #         """
+    #         Replace the value with the actual definition value
+    #         :param value:
+    #         :param defs:
+    #         :return:
+    #         """
+    #         if isinstance(value, dict):
+    #             for field in value.keys():
+    #                 value[field] = replace_value_from_def(value[field], defs)
+    #         elif isinstance(value, str):
+    #             if value.startswith("DEF_"):
+    #                 if value in defs:
+    #                     value = defs[value]
+    #                 else:
+    #                     raise ValueError(f"Definition {value} not found")
+    #         return value
 
-        if self.Definition and self.Definition:
-            defs = self.Definition.dict()
-        else:
-            defs = {}
+    #     if self.Definition and self.Definition:
+    #         defs = self.Definition.dict()
+    #     else:
+    #         defs = {}
 
-        for sample_field in self.Sample:
-            replace_value_from_def(sample_field.__dict__, defs)
+    #     for sample_field in self.Sample:
+    #         replace_value_from_def(sample_field.__dict__, defs)
 
-        replace_value_from_def(self.General.__dict__, defs)
+    #     replace_value_from_def(self.General.__dict__, defs)
 
-        return self
+    #     return self

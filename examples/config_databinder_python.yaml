@@ -1,18 +1,19 @@
 Definition:
-  - &DEF_backend "testing1"
+  - &DEF_backend "servicex-uc-af"
 
   - &DEF_ggH_input "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
                   /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
 
-  - &DEF_function1: !Python |
+  - &DEF_function1 !Python |
     def run_query(input_filenames=None):
         import uproot
-  
+
         with uproot.open({input_filenames:"nominal"}) as o:
             br = o.arrays("mu_pt")
         return br
 
-  - &DEF_function2: !Python |
+
+  - &DEF_function2 !Python |
     def run_query(input_filenames=None):
         import uproot
       
@@ -39,5 +40,5 @@ Sample:
     Query: *DEF_function1
 
   - Name: ggH
-    XRootDFiles: DEF_ggH_input
+    XRootDFiles: *DEF_ggH_input
     Query: *DEF_function2

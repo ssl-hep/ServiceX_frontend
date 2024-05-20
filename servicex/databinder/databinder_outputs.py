@@ -29,11 +29,12 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any
 from rich import print
+from .. import ServiceXSpec
 # from rich.panel import Panel
 
 
 class OutputHandler:
-    def __init__(self, updated_config: Dict[str, Any]):
+    def __init__(self, updated_config: ServiceXSpec):
         self._config = updated_config
         self.out_dict = self._initialize_out_dict()
         self._out_path = self._get_out_dir()
@@ -45,9 +46,9 @@ class OutputHandler:
         """
         Get output directory
         """
-        if 'OutputDirectory' in self._config['General'].keys():
+        if self._config.General.OutputDirectory is not None:
             self.output_path = Path(
-                self._config['General']['OutputDirectory']
+                self._config.General.OutputDirectory
             ).absolute()
             self.output_path.mkdir(parents=True, exist_ok=True)
         else:
@@ -69,7 +70,7 @@ class OutputHandler:
     def write_out_dict(self):
         file_out_paths = \
             (f"{self.output_path}/"
-             f"{self._config['General']['OutFilesetName']}.yml")
+             f"{self._config.General.OutFilesetName}.yml")
         with open(file_out_paths, 'w') as f:
             yaml.dump(self.out_dict, f, default_flow_style=False)
 

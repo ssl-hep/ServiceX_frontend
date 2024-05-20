@@ -38,6 +38,6 @@ if len(sys.argv) != 2:
     logger.fatal("Usage: python databinder.py <config_file>")
     sys.exit(1)
 
-d = DataBinder(sys.argv[1])
+sx = DataBinder(sys.argv[1])
 
-print(d.deliver())
+print(sx.deliver())
