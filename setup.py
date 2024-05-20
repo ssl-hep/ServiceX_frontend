@@ -26,6 +26,11 @@ if sys.version_info < (3, 8):
         "awkward>=1.0.1,<2",
         "uproot>=4.0.1,<5",
     ]
+elif os.getenv("FORCE_AWKWARD1"):
+    awkward_requirements = [
+        "awkward>=1.0.1,<2",
+        "uproot>=4.0.1,<5",
+        "fsspec"]
 else:
     awkward_requirements = [
         "awkward>=1.0.1",
