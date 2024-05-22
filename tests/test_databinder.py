@@ -23,16 +23,15 @@ def test_load_config():
             "Delivery": "LocalCache",
         },
         "Sample": [
-            {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Function": "DEF_a"},
+            {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Function": "a"},
             {
                 "Name": "sampleB",
                 "XRootDFiles": "root://a.root",
                 "Columns": "el_pt",
                 "Codegen": "uproot",
-                "Function": "DEF_a",
+                "Function": "a",
             },
         ],
-        "Definition": {"DEF_a": "a"},
     }
     new_config = ServiceXSpec.model_validate(config)
     assert new_config.Sample[0].Function == "a"
