@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from pydantic import ValidationError
 
 from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier
@@ -150,3 +151,23 @@ def test_invalid_dataset_identifier():
                 ]
             )
         )
+
+
+def test_string_query(transformed_result):
+    from servicex import deliver
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Query": "[{'treename': 'nominal'}]"
+                }
+            ]
+        })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+                return_value=[transformed_result]):
+        deliver(spec, config_path='tests/example_config.yaml')

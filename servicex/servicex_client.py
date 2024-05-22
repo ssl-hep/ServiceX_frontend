@@ -45,14 +45,14 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def deliver(config: ServiceXSpec):
+def deliver(config: ServiceXSpec, config_path=None):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen:
             return _sample.Codegen
         else:
             return _general.Codegen
 
-    sx = ServiceXClient(backend=config.General.ServiceX)
+    sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
     datasets = []
     for sample in config.Sample:
         if sample.Query:
