@@ -171,3 +171,49 @@ def test_string_query(transformed_result):
     with patch('servicex.dataset_group.DatasetGroup.as_files',
                return_value=[transformed_result]):
         deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_funcadl_query(transformed_result):
+    from servicex import deliver
+    from servicex.func_adl.func_adl_dataset import FuncADLQuery
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": FuncADLQuery().Select(lambda e: {"lep_pt": e["lep_pt"]})
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_python_query(transformed_result):
+    from servicex import deliver
+    string_function = """
+def run_query(input_filenames=None):
+    print("Greetings from your query")
+    return []
+"""
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Function": string_function
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]):
+        deliver(spec, config_path='tests/example_config.yaml')

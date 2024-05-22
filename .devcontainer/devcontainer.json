@@ -35,6 +35,7 @@
 	"extensions": [
 		"ms-python.python",
 		"ms-python.vscode-pylance",
+		"ms-python.flake8",
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
