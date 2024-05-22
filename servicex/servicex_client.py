@@ -274,7 +274,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False
-    ) -> Query:
+    ) -> GenericQuery:
         r"""
         Generate a Query object for a generic codegen specification
 

@@ -239,6 +239,9 @@ def test_generic_query():
     query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                              codegen=spec.General.Codegen, query=spec.Sample[0].Query)
     assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+    query.query_string_generator = None
+    with pytest.raises(RuntimeError):
+        query.generate_selection_string()
     with pytest.raises(ValueError):
         query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                                  codegen=spec.General.Codegen, query=5)
