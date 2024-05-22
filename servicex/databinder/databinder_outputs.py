@@ -27,7 +27,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import yaml
 from pathlib import Path
-from typing import Dict, Any
 from rich import print
 from .. import ServiceXSpec
 # from rich.panel import Panel

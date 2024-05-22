@@ -26,7 +26,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex import ServiceXSpec, General, Sample
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.servicex_client import deliver
 import logging
@@ -47,10 +46,10 @@ def bigger_uproot():
             'Delivery': "LocalCache"
         },
         'Sample': [{
-                'Name': "bigger_uproot",
-                'RucioDID': "user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
-                'Tree': "nominal",
-                'Query': query
+            'Name': "bigger_uproot",
+            'RucioDID': "user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8",
+            'Tree': "nominal",
+            'Query': query
         }]
     }
     print(deliver(spec))

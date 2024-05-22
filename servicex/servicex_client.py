@@ -46,9 +46,10 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def deliver(config: Union[ServiceXSpec, Mapping[str,Any]]):
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any]]):
     if isinstance(config, Mapping):
         config = ServiceXSpec(**config)
+
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen:
             return _sample.Codegen

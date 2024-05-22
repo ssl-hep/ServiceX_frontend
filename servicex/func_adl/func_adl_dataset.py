@@ -344,8 +344,8 @@ def FuncADLQuery_constructor(loader, node):
     print(node)
     query_string = "EventDataset()." + loader.construct_scalar(node)
     qastle_query = qastle.python_ast_to_text_ast(
-                    ast.parse(query_string)
-                )  # NOQA E501
+        ast.parse(query_string)
+    )
     query = FuncADLQuery()
     query.set_provided_qastle(qastle_query)
     print(qastle_query, query, type(query))

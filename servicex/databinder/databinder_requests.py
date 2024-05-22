@@ -26,13 +26,12 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # import pathlib
-from typing import Any, Dict, List
+from typing import List
 from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
     TimeRemainingColumn
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
 from servicex.servicex_client import ServiceXClient, ServiceXSpec
-from servicex.models import ResultFormat
 from ..databinder_models import Sample
 
 
@@ -92,15 +91,6 @@ class DataBinderRequests:
 
         def _set_result_format():
             return self._config.General.OutputFormat
-            # print(self._config.General.OutputFormat, type(self._config.General.OutputFormat.lower()))
-            # if self._config.General.OutputFormat "root":
-            #     return ResultFormat.root
-            # elif self._config.General.OutputFormat.lower() == "parquet":
-            #     return ResultFormat.parquet
-            # else:
-            #     raise ValueError(
-            #         f"Output format {self._config.General.OutputFormat} is not supported"
-            #     )
 
         def _get_servicex_dataset(sample):
             if sample.Codegen == 'python':
@@ -119,22 +109,13 @@ class DataBinderRequests:
         def _servicex_dataset_query(sample):
             print(sample.Query)
             sample.Query.set_result_format(_set_result_format())  # why like this???
-            sample.Query.dataset_identifier=_get_input_source(sample)
-            sample.Query.title=sample.Name
+            sample.Query.dataset_identifier = _get_input_source(sample)
+            sample.Query.title = sample.Name
             sample.Query.codegen = sample.Codegen
             sample.Query.cache = self._client.query_cache
             sample.Query.servicex = self._client.servicex
             sample.Query.configuration = self._client.config
             return sample.Query
-            # if sample.Codegen == 'python':
-            #     query = sample.Function
-            #     return _get_servicex_dataset(sample).with_uproot_function(
-            #         query
-            #     )
-            # else:
-            #     raise TypeError(
-            #         f"Unknown code-generator in Sample {sample.Name}"
-            #     )
 
         requests_sample.append(
             {

@@ -45,6 +45,7 @@ def configure_loaders():
     for _ in plugins:
         yaml.add_constructor(f'!{_.name}', _.load())
 
+
 def load_databinder_config(input_config:
                            Union[str, pathlib.Path, Dict[str, Any]]
                            ) -> ServiceXSpec:
