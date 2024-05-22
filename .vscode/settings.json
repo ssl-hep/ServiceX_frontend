@@ -98,7 +98,7 @@
     ],
     "python.analysis.typeCheckingMode": "basic",
     "python.testing.pytestArgs": [
-			"--cov=servicex",
+            "--cov=servicex",
 	        "tests"
     ],
     "python.testing.unittestEnabled": false,

@@ -179,13 +179,14 @@ def test_funcadl_query(transformed_result):
     spec = ServiceXSpec.model_validate({
         "General": {
             "ServiceX": "testing4",
-            "Codegen": "uproot-raw",
+            "Codegen": "uproot",
         },
         "Sample": [
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADLQuery().Select(lambda e: {"lep_pt": e["lep_pt"]})
+                "Query": FuncADLQuery().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Tree": "nominal"
             }
         ]
     })
@@ -217,3 +218,30 @@ def run_query(input_filenames=None):
     with patch('servicex.dataset_group.DatasetGroup.as_files',
                return_value=[transformed_result]):
         deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_generic_query():
+    from servicex.servicex_client import ServiceXClient
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]"
+            }
+        ]
+    })
+    sx = ServiceXClient(backend=spec.General.ServiceX, config_path='tests/example_config.yaml')
+    query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                             codegen=spec.General.Codegen, query=spec.Sample[0].Query)
+    assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+    with pytest.raises(ValueError):
+        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                 codegen=spec.General.Codegen, query=5)
+    with pytest.raises(NameError):
+        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                 codegen='nonsense', query=spec.Sample[0].Query)

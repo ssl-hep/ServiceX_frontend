@@ -540,7 +540,7 @@ class QueryStringGenerator(ABC):
     '''This abstract class just defines an interface to give the selection string'''
     @abc.abstractmethod
     def generate_selection_string(self) -> str:
-        pass
+        """ override with the selection string to send to ServiceX """
 
 
 class GenericQueryStringGenerator(QueryStringGenerator):
