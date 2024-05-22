@@ -161,13 +161,13 @@ def test_string_query(transformed_result):
             "Codegen": "uproot-raw",
         },
         "Sample": [
-                {
-                    "Name": "sampleA",
-                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                    "Query": "[{'treename': 'nominal'}]"
-                }
-            ]
-        })
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]"
+            }
+        ]
+    })
     with patch('servicex.dataset_group.DatasetGroup.as_files',
-                return_value=[transformed_result]):
+               return_value=[transformed_result]):
         deliver(spec, config_path='tests/example_config.yaml')
