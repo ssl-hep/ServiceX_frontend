@@ -33,8 +33,6 @@ from .. import ServiceXSpec
 
 
 def configure_loaders():
-    # from ..func_adl.func_adl_dataset import FuncADLQuery_constructor
-    # yaml.add_constructor('!FuncADL', FuncADLQuery_constructor)
     import sys
     if sys.version_info < (3, 10):
         from importlib_metadata import entry_points

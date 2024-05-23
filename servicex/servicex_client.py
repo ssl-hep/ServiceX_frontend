@@ -46,7 +46,7 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any]]):
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
     if isinstance(config, Mapping):
         config = ServiceXSpec(**config)
 
@@ -56,7 +56,7 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]]):
         else:
             return _general.Codegen
 
-    sx = ServiceXClient(backend=config.General.ServiceX)
+    sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
     datasets = []
     for sample in config.Sample:
         if sample.Query:

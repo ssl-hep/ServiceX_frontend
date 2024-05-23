@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import patch
 from pydantic import ValidationError
 
 from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier
@@ -149,3 +150,46 @@ def test_invalid_dataset_identifier():
                 ]
             )
         )
+
+
+def test_submit_mapping(transformed_result):
+    from servicex import deliver
+    spec = {
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]",
+                "Codegen": "uproot-raw"
+            }
+        ]
+    }
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_bad_yaml(tmp_path):
+    from servicex.databinder.databinder_configuration import load_databinder_config
+    # Python syntax error
+    with open(path := (tmp_path / "funcadl.yaml"), "w") as f:
+        f.write("""
+General:
+  ServiceX: "servicex-uc-af"
+  Codegen: python
+  OutputFormat: root-file
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !Python |
+    def run_query(input_filenames=None):
+        bluck # syntax error
+""")
+        f.flush()
+        load_databinder_config(path)
