@@ -226,8 +226,8 @@ Sample:
 def test_yaml_include(tmp_path):
     from servicex.databinder.databinder_configuration import load_databinder_config
     # Create two files, one has definitions for the other and is included by it
-    with (open(tmp_path / "definitions.yaml", "w") as f1,
-          open(path2 := (tmp_path / "parent.yaml"), "w") as f2):
+    with open(tmp_path / "definitions.yaml", "w") as f1, \
+         open(path2 := (tmp_path / "parent.yaml"), "w") as f2:
         f1.write("""
 - &DEF_facility servicex-uc-af
 - &DEF_query !Python |
