@@ -31,8 +31,8 @@ from typing import Any, Dict, Union
 import rich
 from .. import ServiceXSpec
 
-
 yaml = YAML()
+
 
 def configure_loaders():
     import sys

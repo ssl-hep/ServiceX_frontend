@@ -222,22 +222,22 @@ Sample:
         with pytest.raises(SyntaxError):
             load_databinder_config(path)
 
+
 def test_yaml_include(tmp_path):
     from servicex.databinder.databinder_configuration import load_databinder_config
     # Create two files, one has definitions for the other and is included by it
-    with (open(path1 := (tmp_path / "definitions.yaml"), "w") as f1,
+    with (open(tmp_path / "definitions.yaml", "w") as f1,
           open(path2 := (tmp_path / "parent.yaml"), "w") as f2):
         f1.write("""
 - &DEF_facility servicex-uc-af
 - &DEF_query !Python |
         def run_query(input_filenames=None):
             return []
-"""
-        )
+""")
         f2.write("""
 Definitions:
     !include definitions.yaml
-                 
+
 General:
   ServiceX: *DEF_facility
   Codegen: python
