@@ -4,7 +4,7 @@ from servicex.python_dataset import PythonQuery
 
 
 def run_query(input_filenames=None):
-    import uproot
+    import uproot  # type: ignore
     with uproot.open({input_filenames:"mini"}) as o: 
         br = o.arrays("lep_pt")
     return br

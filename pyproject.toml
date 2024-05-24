@@ -47,6 +47,8 @@ dependencies = [
     "rich>=13.0.0",  # databinder
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
+    "ruamel.yaml>=0.18",
+    "ccorp-yaml-include-relative-path>=0.0.4",
 ]
 
 [project.scripts]
@@ -90,8 +92,8 @@ develop = [
 ]
 
 [project.entry-points.'servicex.queries']
-FuncADL = "servicex.func_adl.func_adl_dataset:FuncADLQuery_constructor"
-Python = "servicex.python_dataset:PythonQuery_constructor"
+FuncADL = "servicex.func_adl.func_adl_dataset:FuncADLQuery"
+Python = "servicex.python_dataset:PythonQuery"
 
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:

@@ -198,7 +198,9 @@ Sample:
     Codegen: uproot
 """)
         f.flush()
-        load_databinder_config(path)
+        result = load_databinder_config(path)
+        assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
+        assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery'
 
     # Python syntax error
     with open(path := (tmp_path / "python.yaml"), "w") as f:
@@ -219,3 +221,34 @@ Sample:
         f.flush()
         with pytest.raises(SyntaxError):
             load_databinder_config(path)
+
+def test_yaml_include(tmp_path):
+    from servicex.databinder.databinder_configuration import load_databinder_config
+    # Create two files, one has definitions for the other and is included by it
+    with (open(path1 := (tmp_path / "definitions.yaml"), "w") as f1,
+          open(path2 := (tmp_path / "parent.yaml"), "w") as f2):
+        f1.write("""
+- &DEF_facility servicex-uc-af
+- &DEF_query !Python |
+        def run_query(input_filenames=None):
+            return []
+"""
+        )
+        f2.write("""
+Definitions:
+    !include definitions.yaml
+                 
+General:
+  ServiceX: *DEF_facility
+  Codegen: python
+  OutputFormat: root-file
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: *DEF_query
+""")
+        f1.flush()
+        f2.flush()
+        load_databinder_config(path2)

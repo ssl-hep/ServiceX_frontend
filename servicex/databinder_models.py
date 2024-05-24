@@ -125,7 +125,7 @@ class ServiceXSpec(BaseModel):
     def check_tree_property(self):
         if self.General and self.General.Codegen != "uproot":
             for sample in self.Sample:
-                if "Tree" in sample:
+                if sample.Tree is not None:
                     raise ValueError(
                         '"Tree" property is not allowed when codegen is not "uproot"'
                     )

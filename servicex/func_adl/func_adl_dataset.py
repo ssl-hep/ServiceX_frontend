@@ -62,6 +62,7 @@ class FuncADLQuery(Query, EventDataset[T]):
     """
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
+    yaml_tag = '!FuncADL'
 
     async def execute_result_async(
         self, a: ast.AST, title: Optional[str] = None
@@ -338,13 +339,13 @@ class FuncADLQuery(Query, EventDataset[T]):
         """
         return self.value()
 
-
-def FuncADLQuery_constructor(loader, node):
-    import qastle
-    query_string = "EventDataset()." + loader.construct_scalar(node)
-    qastle_query = qastle.python_ast_to_text_ast(
-        ast.parse(query_string)
-    )
-    query = FuncADLQuery()
-    query.set_provided_qastle(qastle_query)
-    return query
+    @classmethod
+    def from_yaml(cls, _, node):
+        import qastle
+        query_string = "EventDataset()." + node.value
+        qastle_query = qastle.python_ast_to_text_ast(
+            ast.parse(query_string)
+        )
+        query = cls()
+        query.set_provided_qastle(qastle_query)
+        return query

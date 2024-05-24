@@ -38,6 +38,7 @@ from servicex.types import DID
 
 
 class PythonQuery(Query):
+    yaml_tag = '!Python'
 
     def __init__(self, dataset_identifier: DID = None,
                  sx_adapter: ServiceXAdapter = None,
@@ -74,13 +75,13 @@ class PythonQuery(Query):
                              .encode("utf-8"))\
                 .decode("utf-8")
 
-
-def PythonQuery_constructor(loader, node):
-    code = loader.construct_scalar(node)
-    try:
-        exec(code)
-    except SyntaxError as e:
-        raise SyntaxError(f"Syntax error {e} interpreting\n{code}")
-    q = PythonQuery()
-    q.with_uproot_function(code)
-    return q
+    @classmethod
+    def from_yaml(cls, _, node):
+        code = node.value
+        try:
+            exec(code)
+        except SyntaxError as e:
+            raise SyntaxError(f"Syntax error {e} interpreting\n{code}")
+        q = PythonQuery()
+        q.with_uproot_function(code)
+        return q

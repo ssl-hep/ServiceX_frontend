@@ -25,12 +25,14 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import yaml
+from ccorp.ruamel.yaml.include import YAML
 import pathlib
 from typing import Any, Dict, Union
 import rich
 from .. import ServiceXSpec
 
+
+yaml = YAML()
 
 def configure_loaders():
     import sys
@@ -41,7 +43,7 @@ def configure_loaders():
 
     plugins = entry_points(group='servicex.queries')
     for _ in plugins:
-        yaml.add_constructor(f'!{_.name}', _.load())
+        yaml.register_class(_.load())
 
 
 def load_databinder_config(input_config:
@@ -68,5 +70,5 @@ def load_databinder_config(input_config:
         file_path = pathlib.Path(input_config)
         rich.print(f"Loading DataBinder config file: {file_path}")
         configure_loaders()
-        config = yaml.full_load(file_path.read_text())
+        config = yaml.load(file_path)
         return prepare_config(config)
