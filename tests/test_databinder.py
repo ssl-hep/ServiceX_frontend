@@ -173,10 +173,10 @@ def test_submit_mapping(transformed_result):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
-def test_bad_yaml(tmp_path):
+def test_yaml(tmp_path):
     from servicex.databinder.databinder_configuration import load_databinder_config
-    # Python syntax error
-    with open(path := (tmp_path / "funcadl.yaml"), "w") as f:
+    # Nominal paths
+    with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
   ServiceX: "servicex-uc-af"
@@ -188,8 +188,34 @@ Sample:
   - Name: ttH
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     Query: !Python |
-    def run_query(input_filenames=None):
-        bluck # syntax error
+        def run_query(input_filenames=None):
+            return []
+    Codegen: python
+  - Name: ttH2
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !FuncADL |
+                Select(lambda e: {'lep_pt': e['lep_pt']})
+    Codegen: uproot
 """)
         f.flush()
         load_databinder_config(path)
+
+    # Python syntax error
+    with open(path := (tmp_path / "python.yaml"), "w") as f:
+        f.write("""
+General:
+  ServiceX: "servicex-uc-af"
+  Codegen: python
+  OutputFormat: root-file
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !Python |
+        def run_query(input_filenames=None):
+            i ==== 18 # syntax error
+""")
+        f.flush()
+        with pytest.raises(SyntaxError):
+            load_databinder_config(path)
