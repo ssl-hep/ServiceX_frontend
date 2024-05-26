@@ -70,53 +70,53 @@ transform_status = TransformStatus(
     }
 )
 
-transform_status1 = transform_status.copy(
+transform_status1 = transform_status.model_copy(
     update={
         "status": Status.running,
-        "files-remaining": None,
-        "files-completed": 0,
+        "files_remaining": None,
+        "files_completed": 0,
         "files": 0,
     }
 )
-transform_status2 = transform_status.copy(
+transform_status2 = transform_status.model_copy(
     update={
         "status": Status.running,
-        "files-remaining": 1,
-        "files-completed": 1,
+        "files_remaining": 1,
+        "files_completed": 1,
         "files": 2,
     }
 )
-transform_status3 = transform_status.copy(
+transform_status3 = transform_status.model_copy(
     update={
         "status": Status.complete,
-        "files-remaining": 0,
-        "files-completed": 2,
+        "files_remaining": 0,
+        "files_completed": 2,
         "files": 2,
     }
 )
-transform_status4 = transform_status.copy(
+transform_status4 = transform_status.model_copy(
     update={
         "status": Status.canceled,
-        "files-remaining": 1,
-        "files-completed": 1,
+        "files_remaining": 1,
+        "files_completed": 1,
         "files": 2,
     }
 )
 transform_status5 = transform_status.copy(
     update={
         "status": Status.fatal,
-        "files-remaining": 0,
-        "files-completed": 1,
-        "files-failed": 1,
+        "files_remaining": 0,
+        "files_completed": 1,
+        "files_failed": 1,
         "files": 2,
     }
 )
-transform_status6 = transform_status.copy(
+transform_status6 = transform_status.model_copy(
     update={
         "status": Status.complete,
-        "files-remaining": 0,
-        "files-completed": 1,
-        "files-failed": 1,
+        "files_remaining": 0,
+        "files_completed": 1,
+        "files_failed": 1,
         "files": 2,
     }
 )
@@ -129,7 +129,6 @@ def cache_transform(transform: TransformRequest,
                     completed_status: TransformStatus, data_dir: str,
                     file_list: List[str],
                     signed_urls) -> TransformedResults:
-    print(file_list)
     return TransformedResults(
         hash=transform.compute_hash(),
         title=transform.title,
