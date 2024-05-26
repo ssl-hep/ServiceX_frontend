@@ -105,16 +105,18 @@ transform_status4 = transform_status.copy(
 transform_status5 = transform_status.copy(
     update={
         "status": Status.fatal,
-        "files-remaining": 1,
+        "files-remaining": 0,
         "files-completed": 1,
+        "files-failed": 1,
         "files": 2,
     }
 )
 transform_status6 = transform_status.copy(
     update={
         "status": Status.complete,
-        "files-remaining": 1,
+        "files-remaining": 0,
         "files-completed": 1,
+        "files-failed": 1,
         "files": 2,
     }
 )
