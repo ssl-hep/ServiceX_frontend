@@ -26,8 +26,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import tempfile
-from typing import Any
+from typing import Any, List
 from unittest.mock import AsyncMock
+from pathlib import PurePath
 
 import pytest
 
@@ -35,7 +36,8 @@ from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
-from servicex.models import TransformStatus, Status, ResultFile, ResultFormat
+from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
+                             TransformRequest, TransformedResults)
 from servicex.query_cache import QueryCache
 
 transform_status = TransformStatus(
@@ -92,9 +94,37 @@ transform_status3 = transform_status.copy(
         "files": 2,
     }
 )
+transform_status4 = transform_status.copy(
+    update={
+        "status": Status.canceled,
+        "files-remaining": 1,
+        "files-completed": 1,
+        "files": 2,
+    }
+)
 
 file1 = ResultFile(filename="file1", size=100, extension="parquet")
 file2 = ResultFile(filename="file2", size=100, extension="parquet")
+
+
+def cache_transform(transform: TransformRequest,
+                    completed_status: TransformStatus, data_dir: str,
+                    file_list: List[str],
+                    signed_urls) -> TransformedResults:
+    print(file_list)
+    return TransformedResults(
+        hash=transform.compute_hash(),
+        title=transform.title,
+        codegen=transform.codegen,
+        request_id=completed_status.request_id,
+        submit_time=completed_status.submit_time,
+        data_dir=data_dir,
+        file_list=file_list,
+        signed_url_list=signed_urls,
+        files=completed_status.files,
+        result_format=transform.result_format,
+        log_url=completed_status.log_url
+    )
 
 
 @pytest.mark.asyncio
@@ -111,9 +141,12 @@ async def test_submit(mocker):
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
-    mock_minio.download_file = AsyncMock()
+    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
 
     mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
     datasource = FuncADLQuery(
@@ -121,12 +154,51 @@ async def test_submit(mocker):
         codegen="uproot",
         sx_adapter=servicex,
         query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
     )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
+        result = await datasource.submit_and_download(signed_urls_only=False,
+                                                      expandable_progress=progress)
         print(mock_minio.download_file.call_args)
+    assert result.file_list == ['file1', 'file2']
+
+
+@pytest.mark.asyncio
+async def test_submit_cancel(mocker):
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status4,
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
+    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = FuncADLQuery(
+        dataset_identifier=did,
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        result = await datasource.submit_and_download(signed_urls_only=False,
+                                                      expandable_progress=progress)
+        print(mock_minio.download_file.call_args)
+    assert result.file_list == ['file1']
 
 
 def test_transform_request():
