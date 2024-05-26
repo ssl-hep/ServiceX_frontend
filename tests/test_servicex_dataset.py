@@ -128,6 +128,22 @@ transform_status4 = transform_status.copy(
         "files": 2,
     }
 )
+transform_status5 = transform_status.copy(
+    update={
+        "status": Status.fatal,
+        "files-remaining": 1,
+        "files-completed": 1,
+        "files": 2,
+    }
+)
+transform_status6 = transform_status.copy(
+    update={
+        "status": Status.complete,
+        "files-remaining": 1,
+        "files-completed": 1,
+        "files": 2,
+    }
+)
 
 file1 = ResultFile(filename="file1", size=100, extension="parquet")
 file2 = ResultFile(filename="file2", size=100, extension="parquet")
@@ -312,6 +328,43 @@ async def test_submit_fatal(mocker):
 
 
 @pytest.mark.asyncio
+async def test_submit_partial_success(mocker):
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status6,
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
+    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = FuncADLQuery(
+        dataset_identifier=did,
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        result = await datasource.submit_and_download(signed_urls_only=False,
+                                                      expandable_progress=progress)
+        print(mock_minio.download_file.call_args)
+    assert result.file_list == ['file1']
+
+
+@pytest.mark.asyncio
 async def test_submit_cancel(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
@@ -347,6 +400,41 @@ async def test_submit_cancel(mocker):
         print(mock_minio.download_file.call_args)
     assert result.file_list == ['file1']
 >>>>>>> 7409a5e (Fix for issue #370 and fix for tests)
+
+
+@pytest.mark.asyncio
+async def test_submit_fatal(mocker):
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status5,
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
+    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = FuncADLQuery(
+        dataset_identifier=did,
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
 
 
 def test_transform_request():
