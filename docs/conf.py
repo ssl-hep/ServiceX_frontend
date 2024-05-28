@@ -19,7 +19,8 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
-    'code_include.extension'
+    'code_include.extension',
+    'myst_parser'
 ]
 
 templates_path = ['_templates']
