@@ -131,7 +131,7 @@ transform_status4 = transform_status.model_copy(
         "files": 2,
     }
 )
-transform_status5 = transform_status.copy(
+transform_status5 = transform_status.model_copy(
     update={
         "status": Status.fatal,
         "files_remaining": 0,
