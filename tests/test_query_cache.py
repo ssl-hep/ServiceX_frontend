@@ -39,8 +39,8 @@ file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
 
 
 def test_hash(transform_request):
-    request1 = transform_request.copy()
-    request2 = transform_request.copy()
+    request1 = transform_request.model_copy()
+    request2 = transform_request.model_copy()
 
     assert request1.compute_hash() == request2.compute_hash()
 
@@ -53,12 +53,12 @@ def test_hash(transform_request):
     assert request1.compute_hash() != request2.compute_hash()
 
     # Changing the did backend does
-    request2 = request1.copy()
+    request2 = request1.model_copy()
     request2.codegen = "foo"
     assert request1.compute_hash() != request2.compute_hash()
 
     # Changing result_format does
-    request2 = request1.copy()
+    request2 = request1.model_copy()
     request2.result_format = ResultFormat.root
     assert request1.compute_hash() != request2.compute_hash()
 
@@ -139,7 +139,7 @@ def test_record_delete(transform_request, completed_status):
 
         cache.cache_transform(
             transform=transform_request,
-            completed_status=completed_status.copy(
+            completed_status=completed_status.model_copy(
                 update={"request_id": "02c64494-4529-49a7-a4a6-95661ea3936e"}
             ),
             data_dir="/foo/baz",

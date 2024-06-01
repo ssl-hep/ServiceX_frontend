@@ -81,8 +81,7 @@ class Configuration(BaseModel):
         self.cache_path = p.as_posix()
         return self
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
     def endpoint_dict(self) -> Dict[str, Endpoint]:
         return {endpoint.name: endpoint for endpoint in self.api_endpoints}

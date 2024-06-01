@@ -103,7 +103,7 @@ async def test_download_files(python_dataset, transformed_result):
                                            Mock(filename="file2.txt")]
 
     progress_mock = Mock()
-    cached_record_mock = Mock(spec=transformed_result)
+    cached_record_mock = Mock(return_value=transformed_result)
     python_dataset.minio_polling_interval = 0
     python_dataset.minio = minio_mock
     python_dataset.current_status = Mock(status="complete")
@@ -129,7 +129,7 @@ async def test_download_files_with_signed_urls(python_dataset, transformed_resul
     minio_mock.list_bucket.return_value = [Mock(filename="file1.txt"),
                                            Mock(filename="file2.txt")]
     progress_mock = Mock()
-    cached_record_mock = Mock(spec=transformed_result)
+    cached_record_mock = Mock(return_value=transformed_result)
 
     python_dataset.minio_polling_interval = 0
     python_dataset.minio = minio_mock
