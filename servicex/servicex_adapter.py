@@ -104,8 +104,8 @@ class ServiceXAdapter:
             headers = await self._get_authorization(client)
             r = await client.post(url=f"{self.url}/servicex/transformation",
                                   headers=headers,
-                                  json=transform_request.dict(by_alias=True,
-                                                              exclude_none=True),
+                                  json=transform_request.model_dump(by_alias=True,
+                                                                    exclude_none=True),
                                   timeout=60)
             if r.status_code == 401:
                 raise AuthorizationError(
