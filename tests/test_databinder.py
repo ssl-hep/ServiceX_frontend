@@ -59,7 +59,7 @@ def test_single_root_file():
 
 
 def test_list_of_root_files():
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
@@ -82,7 +82,7 @@ def test_list_of_root_files():
 
 
 def test_rucio_did():
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
@@ -102,7 +102,7 @@ def test_rucio_did():
 
 
 def test_rucio_did_numfiles():
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
@@ -124,7 +124,7 @@ def test_rucio_did_numfiles():
 
 def test_invalid_dataset_identifier():
     with pytest.raises(ValidationError):
-        ServiceXSpec.parse_obj(
+        ServiceXSpec.model_validate(
             basic_spec(
                 samples=[
                     {
@@ -139,7 +139,7 @@ def test_invalid_dataset_identifier():
         )
 
     with pytest.raises(ValidationError):
-        ServiceXSpec.parse_obj(
+        ServiceXSpec.model_validate(
             basic_spec(
                 samples=[
                     {

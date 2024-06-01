@@ -48,8 +48,7 @@ class Sample(BaseModel):
     Tree: Optional[str] = Field(default=None)
     IgnoreLocalCache: bool = False
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}
 
     @property
     def dataset_identifier(self):
@@ -108,8 +107,7 @@ class General(BaseModel):
 
 
 class DefinitionDict(BaseModel):
-    class Config:
-        extra = "allow"  # Allow additional fields not defined in the model
+    model_config = {"extra": "allow"}  # Allow additional fields not defined in the model
 
     @model_validator(mode="before")
     @classmethod
@@ -170,7 +168,7 @@ class ServiceXSpec(BaseModel):
             return value
 
         if self.Definition and self.Definition:
-            defs = self.Definition.dict()
+            defs = self.Definition.model_dump()
         else:
             defs = {}
 
