@@ -190,7 +190,11 @@ class Query(ABC):
                     "ServiceX Exception", exc_info=task.exception()
                 )
                 if download_files_task:
-                    download_files_task.cancel("Transform failed")
+                    import sys
+                    if sys.version_info < (3, 9):
+                        download_files_task.cancel()
+                    else:
+                        download_files_task.cancel("Transform failed")
                 raise task.exception()
 
             if self.current_status.status == Status.canceled:
