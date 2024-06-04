@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pydantic 1.10 API
+# pydantic 2 API
 
 import pydantic
 from typing import List, Union, Mapping, Optional
@@ -35,11 +35,11 @@ from ..query import QueryStringGenerator
 
 class TreeSubQuery(pydantic.BaseModel):
     treename: Union[Mapping[str, str], List[str], str]
-    expressions: Optional[Union[List[str], str]]
-    cut: Optional[str]
-    filter_name: Optional[Union[List[str], str]]
-    filter_typename: Optional[Union[List[str], str]]
-    aliases: Optional[Mapping[str, str]]
+    expressions: Optional[Union[List[str], str]] = None
+    cut: Optional[str] = None
+    filter_name: Optional[Union[List[str], str]] = None
+    filter_typename: Optional[Union[List[str], str]] = None
+    aliases: Optional[Mapping[str, str]] = None
 
 
 class CopyHistogramSubQuery(pydantic.BaseModel):
