@@ -91,7 +91,6 @@ transform_status3 = transform_status.model_copy(
         "status": Status.complete,
         "files_remaining": 0,
         "files_completed": 2,
-<<<<<<< HEAD
         "files": 2,
     }
 )
@@ -118,8 +117,6 @@ transform_status6 = transform_status.model_copy(
         "files_remaining": 0,
         "files_completed": 1,
         "files_failed": 1,
-=======
->>>>>>> d12bcbf (Further test fixes)
         "files": 2,
     }
 )
@@ -158,13 +155,6 @@ def cache_transform(transform: TransformRequest,
                     completed_status: TransformStatus, data_dir: str,
                     file_list: List[str],
                     signed_urls) -> TransformedResults:
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    print(file_list)
->>>>>>> 7409a5e (Fix for issue #370 and fix for tests)
-=======
->>>>>>> d12bcbf (Further test fixes)
     return TransformedResults(
         hash=transform.compute_hash(),
         title=transform.title,
@@ -208,7 +198,6 @@ async def test_submit(mocker):
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
-<<<<<<< HEAD
     )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
@@ -325,8 +314,7 @@ async def test_submit_fatal(mocker):
         datasource.result_format = ResultFormat.parquet
         _ = await datasource.submit_and_download(signed_urls_only=False,
                                                  expandable_progress=progress)
-=======
-    )
+
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         result = await datasource.submit_and_download(signed_urls_only=False,
@@ -407,7 +395,6 @@ async def test_submit_cancel(mocker):
                                                       expandable_progress=progress)
         print(mock_minio.download_file.call_args)
     assert result.file_list == ['file1']
->>>>>>> 7409a5e (Fix for issue #370 and fix for tests)
 
 
 @pytest.mark.asyncio
