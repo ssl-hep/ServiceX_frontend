@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,35 +25,38 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from unittest.mock import AsyncMock
 
-import pytest
+# pydantic 2 API
 
-from servicex import ResultFormat
-from servicex.dataset_group import DatasetGroup
-
-
-def test_set_result_format(mocker):
-    ds1 = mocker.Mock()
-    ds2 = mocker.Mock()
-    group = DatasetGroup([ds1, ds2])
-    group.set_result_format(ResultFormat.root)
-    ds1.set_result_format.assert_called_once_with(ResultFormat.root)
-    ds2.set_result_format.assert_called_once_with(ResultFormat.root)
+import pydantic
+from typing import List, Union, Mapping, Optional
+from ..query import QueryStringGenerator
 
 
-@pytest.mark.asyncio
-async def test_as_signed_urls(mocker, transformed_result):
-    ds1 = mocker.Mock()
-    ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
+class TreeSubQuery(pydantic.BaseModel):
+    treename: Union[Mapping[str, str], List[str], str]
+    expressions: Optional[Union[List[str], str]] = None
+    cut: Optional[str] = None
+    filter_name: Optional[Union[List[str], str]] = None
+    filter_typename: Optional[Union[List[str], str]] = None
+    aliases: Optional[Mapping[str, str]] = None
 
-    ds2 = mocker.Mock()
-    ds2.as_signed_urls_async = AsyncMock(return_value=transformed_result.copy(
-        update={"request_id": "98-765-432"}))
 
-    group = DatasetGroup([ds1, ds2])
-    results = await group.as_signed_urls_async()
+class CopyHistogramSubQuery(pydantic.BaseModel):
+    copy_histograms: Union[List[str], str]
 
-    assert len(results) == 2
-    assert results[0].request_id == "123-45-6789"
-    assert results[1].request_id == "98-765-432"
+
+SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
+
+
+@pydantic.dataclasses.dataclass
+class UprootRawQuery(QueryStringGenerator):
+    query: Union[List[SubQuery], SubQuery]
+
+    def generate_selection_string(self):
+        import json
+        if isinstance(self.query, SubQuery):
+            final_query = [self.query]
+        else:
+            final_query = self.query
+        return json.dumps([json.loads(_.json()) for _ in final_query])

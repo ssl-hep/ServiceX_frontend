@@ -68,7 +68,7 @@ transform_status = TransformStatus(
     }
 )
 
-transform_status1 = transform_status.copy(
+transform_status1 = transform_status.model_copy(
     update={
         "status": Status.running,
         "files-remaining": None,
@@ -76,7 +76,7 @@ transform_status1 = transform_status.copy(
         "files": 0,
     }
 )
-transform_status2 = transform_status.copy(
+transform_status2 = transform_status.model_copy(
     update={
         "status": Status.running,
         "files-remaining": 1,
@@ -84,7 +84,7 @@ transform_status2 = transform_status.copy(
         "files": 2,
     }
 )
-transform_status3 = transform_status.copy(
+transform_status3 = transform_status.model_copy(
     update={
         "status": Status.complete,
         "files-remaining": 0,

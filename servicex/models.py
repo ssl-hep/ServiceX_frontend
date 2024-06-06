@@ -81,8 +81,7 @@ class TransformRequest(BaseModel):
     )
     result_format: ResultFormat = Field(serialization_alias="result-format")
 
-    class Config:
-        populate_by_name = True
+    model_config = {"populate_by_name": True}
 
     def compute_hash(self):
         r"""

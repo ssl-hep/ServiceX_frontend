@@ -59,7 +59,7 @@ def test_single_root_file():
 
 
 def test_list_of_root_files():
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
@@ -82,7 +82,7 @@ def test_list_of_root_files():
 
 
 def test_rucio_did():
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
@@ -102,7 +102,7 @@ def test_rucio_did():
 
 
 def test_rucio_did_numfiles():
-    spec = ServiceXSpec.parse_obj(
+    spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
@@ -124,7 +124,7 @@ def test_rucio_did_numfiles():
 
 def test_invalid_dataset_identifier():
     with pytest.raises(ValidationError):
-        ServiceXSpec.parse_obj(
+        ServiceXSpec.model_validate(
             basic_spec(
                 samples=[
                     {
@@ -139,7 +139,7 @@ def test_invalid_dataset_identifier():
         )
 
     with pytest.raises(ValidationError):
-        ServiceXSpec.parse_obj(
+        ServiceXSpec.model_validate(
             basic_spec(
                 samples=[
                     {
@@ -252,3 +252,78 @@ Sample:
         f1.flush()
         f2.flush()
         load_databinder_config(path2)
+def test_funcadl_query(transformed_result):
+    from servicex import deliver
+    from servicex.func_adl.func_adl_dataset import FuncADLQuery
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": FuncADLQuery().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Tree": "nominal"
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_python_query(transformed_result):
+    from servicex import deliver
+    string_function = """
+def run_query(input_filenames=None):
+    print("Greetings from your query")
+    return []
+"""
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Function": string_function
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_generic_query():
+    from servicex.servicex_client import ServiceXClient
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "testing4",
+            "Codegen": "uproot-raw",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]"
+            }
+        ]
+    })
+    sx = ServiceXClient(backend=spec.General.ServiceX, config_path='tests/example_config.yaml')
+    query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                             codegen=spec.General.Codegen, query=spec.Sample[0].Query)
+    assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+    query.query_string_generator = None
+    with pytest.raises(RuntimeError):
+        query.generate_selection_string()
+    with pytest.raises(ValueError):
+        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                 codegen=spec.General.Codegen, query=5)
+    with pytest.raises(NameError):
+        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                 codegen='nonsense', query=spec.Sample[0].Query)

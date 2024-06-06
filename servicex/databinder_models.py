@@ -34,7 +34,7 @@ from pydantic import (
 )
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
-from servicex.func_adl import func_adl_dataset
+from servicex.query import Query as SXQuery, QueryStringGenerator
 from servicex.models import ResultFormat
 
 
@@ -45,12 +45,11 @@ class Sample(BaseModel):
     XRootDFiles: Optional[Union[str, List[str]]] = None
     NFiles: Optional[int] = Field(default=None)
     Function: Optional[Union[str, Callable]] = Field(default=None)
-    Query: Optional[Union[str, func_adl_dataset.Query]] = Field(default=None)
+    Query: Optional[Union[str, SXQuery, QueryStringGenerator]] = Field(default=None)
     Tree: Optional[str] = Field(default=None)
     IgnoreLocalCache: bool = False
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = {"arbitrary_types_allowed": True}
 
     @property
     def dataset_identifier(self):
@@ -107,13 +106,24 @@ class General(BaseModel):
         default=DeliveryEnum.LocalCache, pattern="^(LocalCache|SignedURLs)$"
     )  # NOQA F722
 
-    OutputDirectory: Optional[str] = None
-    OutFilesetName: str = 'servicex_fileset'
 
-# class DefinitionList(List):
-#     # This can have basically arbitrary shape, we will not do anything here
-#     class Config:
-#         extra = "allow"  # Allow additional fields not defined in the model
+class DefinitionDict(BaseModel):
+    model_config = {"extra": "allow"}  # Allow additional fields not defined in the model
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_def_name(cls, values):
+        """
+        Ensure that the definition name is DEF_XXX format
+        :param values:
+        :return:
+        """
+        for field in values:
+            if not field.startswith("DEF_"):
+                raise ValueError(
+                    f"Definition key {field} does not meet the convention of DEF_XXX format"
+                )  # NOQA E501
+        return values
 
 
 class ServiceXSpec(BaseModel):

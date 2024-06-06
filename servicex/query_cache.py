@@ -67,12 +67,12 @@ class QueryCache:
             result_format=transform.result_format,
             log_url=completed_status.log_url
         )
-        self.db.insert(json.loads(record.json()))
+        self.db.insert(json.loads(record.model_dump_json()))
         return record
 
     def update_record(self, record: TransformedResults):
         transforms = Query()
-        self.db.update(json.loads(record.json()), transforms.hash == record.hash)
+        self.db.update(json.loads(record.model_dump_json()), transforms.hash == record.hash)
 
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         transforms = Query()
