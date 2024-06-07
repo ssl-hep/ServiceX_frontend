@@ -133,6 +133,8 @@ async def test_submit(mocker):
 
 @pytest.mark.asyncio
 async def test_submit_generic(mocker):
+    """ Uses Uproot-Raw classes which go through the generic query mechanism """
+    import json
     sx = AsyncMock()
     sx.submit_transform = AsyncMock()
     sx.submit_transform.return_value = {"request_id": '123-456-789"'}
@@ -162,6 +164,17 @@ async def test_submit_generic(mocker):
         datasource.result_format = ResultFormat.parquet
         _ = await datasource.submit_and_download(signed_urls_only=False,
                                                  expandable_progress=progress)
+    
+    # same thing but a list argument to UprootRawQuery (UprootRawQuery test...)
+    datasource = client.generic_query(
+        dataset_identifier=did,
+        query=UprootRawQuery({'treename': 'CollectionTree'})
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+    assert isinstance(json.loads(datasource.generate_selection_string()), list)
 
 
 def test_transform_request():

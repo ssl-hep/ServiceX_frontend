@@ -275,6 +275,58 @@ def test_funcadl_query(transformed_result, codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
+def test_query_with_codegen_override(transformed_result, codegen_list):
+    from servicex import deliver
+    from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
+    # first, with General override
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "servicex-uc-af",
+            "Codegen": "does-not-exist"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Tree": "nominal"
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        with pytest.raises(NameError) as excinfo:
+            deliver(spec, config_path='tests/example_config.yaml')
+        # if this has propagated correctly, the override worked
+        assert excinfo.value.args[0].startswith('does-not-exist')
+
+    # second, with sample-level override
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "servicex-uc-af"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Tree": "nominal",
+                "Codegen": "does-not-exist"
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        with pytest.raises(NameError) as excinfo:
+            deliver(spec, config_path='tests/example_config.yaml')
+        # if this has propagated correctly, the override worked
+        assert excinfo.value.args[0].startswith('does-not-exist')
+
+
 def test_databinder_load_dict():
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
     from servicex.databinder.databinder_configuration import load_databinder_config
@@ -389,3 +441,7 @@ def test_generic_query(codegen_list):
         with pytest.raises(NameError):
             query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                                      codegen='nonsense', query=spec.Sample[0].Query)
+        with pytest.raises(RuntimeError):
+            # no codegen specified by generic class
+            query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                     query=spec.Sample[0].Query)      
