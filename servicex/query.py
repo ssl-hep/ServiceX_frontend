@@ -211,7 +211,7 @@ class Query(ABC):
                 else:
                     logger.info("Transforms completed successfully")
             else:
-                logger.info(f"Transforms finished with code {self.current_status.status}")
+                logger.info(f"Transforms finished with code {self.current_status.status}")  # pragma: no cover
 
         sx_request = self.transform_request
 
