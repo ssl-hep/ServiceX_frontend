@@ -275,6 +275,24 @@ def test_funcadl_query(transformed_result, codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
+def test_databinder_load_dict():
+    from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
+    from servicex.databinder.databinder_configuration import load_databinder_config
+    load_databinder_config({
+        "General": {
+            "ServiceX": "servicex-uc-af",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Tree": "nominal"
+            }
+        ]
+    })
+
+
 def test_python_query(transformed_result, codegen_list):
     from servicex import deliver
     string_function = """
@@ -321,6 +339,24 @@ def test_uproot_raw_query(transformed_result, codegen_list):
          patch('servicex.servicex_client.ServiceXClient.get_code_generators',
                return_value=codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_fail_with_tree_on_non_funcadl_query():
+    from servicex.uproot_raw.uproot_raw import UprootRawQuery
+    with pytest.raises(ValueError):
+        ServiceXSpec.model_validate({
+            "General": {
+                "ServiceX": "servicex-uc-af",
+            },
+            "Sample": [
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Query": UprootRawQuery([{"treename": "nominal"}]),
+                    "Tree": "nominal"
+                }
+            ]
+        })
 
 
 def test_generic_query(codegen_list):

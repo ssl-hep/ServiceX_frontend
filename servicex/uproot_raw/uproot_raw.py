@@ -29,7 +29,7 @@
 # pydantic 2 API
 
 import pydantic
-from typing import List, Union, Mapping, Optional
+from typing import List, Union, Mapping, Optional, get_args
 from ..query import QueryStringGenerator
 
 
@@ -56,7 +56,8 @@ class UprootRawQuery(QueryStringGenerator):
 
     def generate_selection_string(self):
         import json
-        if isinstance(self.query, SubQuery):
+        final_query: List[SubQuery]
+        if isinstance(self.query, get_args(SubQuery)):  # from Python 3.10 we don't need "get_args"
             final_query = [self.query]
         else:
             final_query = self.query

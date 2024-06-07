@@ -63,7 +63,7 @@ class FuncADLQuery(Query, EventDataset[T], ABC):
     """
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
-    default_codegen = 'NotImplemented'
+    default_codegen = None
 
     async def execute_result_async(
         self, a: ast.AST, title: Optional[str] = None

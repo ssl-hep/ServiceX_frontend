@@ -277,8 +277,8 @@ class ServiceXClient:
     def generic_query(
         self,
         dataset_identifier: DID,
-        codegen: str,
         query: Union[str, QueryStringGenerator],
+        codegen: str = None,
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False
