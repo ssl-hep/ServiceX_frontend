@@ -14,7 +14,6 @@ config = {
     "General":
     {
         "ServiceX": "servicex-uc-af",
-        "Codegen": "python",
         "Delivery": "LocalCache"
     },
     "Sample":

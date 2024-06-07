@@ -107,11 +107,10 @@ class DataBinderRequests:
                 )
 
         def _servicex_dataset_query(sample):
-            print(sample.Query)
             sample.Query.set_result_format(_set_result_format())  # why like this???
             sample.Query.dataset_identifier = _get_input_source(sample)
             sample.Query.title = sample.Name
-            sample.Query.codegen = sample.Codegen
+            sample.Query.codegen = sample.Codegen if sample.Codegen else sample.Query.codegen
             sample.Query.cache = self._client.query_cache
             sample.Query.servicex = self._client.servicex
             sample.Query.configuration = self._client.config

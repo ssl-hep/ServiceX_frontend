@@ -93,7 +93,11 @@ develop = [
 ]
 
 [project.entry-points.'servicex.queries']
-FuncADL = "servicex.func_adl.func_adl_dataset:FuncADLQuery"
+FuncADL_Uproot = "servicex.func_adl.func_adl_dataset:FuncADLQuery_Uproot"
+FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
+FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
+FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
+FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
 Python = "servicex.python_dataset:PythonQuery"
 
 [tool.hatch.build.targets.sdist]

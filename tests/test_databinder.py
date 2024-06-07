@@ -152,11 +152,11 @@ def test_invalid_dataset_identifier():
         )
 
 
-def test_submit_mapping(transformed_result):
+def test_submit_mapping(transformed_result, codegen_list):
     from servicex import deliver
     spec = {
         "General": {
-            "ServiceX": "testing4",
+            "ServiceX": "servicex-uc-af",
             "Codegen": "uproot-raw",
         },
         "Sample": [
@@ -169,7 +169,9 @@ def test_submit_mapping(transformed_result):
         ]
     }
     with patch('servicex.dataset_group.DatasetGroup.as_files',
-               return_value=[transformed_result]):
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
@@ -180,7 +182,6 @@ def test_yaml(tmp_path):
         f.write("""
 General:
   ServiceX: "servicex-uc-af"
-  Codegen: python
   OutputFormat: root-file
   Delivery: LocalCache
 
@@ -193,21 +194,19 @@ Sample:
     Codegen: python
   - Name: ttH2
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
-    Query: !FuncADL |
+    Query: !FuncADL_Uproot |
                 Select(lambda e: {'lep_pt': e['lep_pt']})
-    Codegen: uproot
 """)
         f.flush()
         result = load_databinder_config(path)
         assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
-        assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery'
+        assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery_Uproot'
 
     # Python syntax error
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
   ServiceX: "servicex-uc-af"
-  Codegen: python
   OutputFormat: root-file
   Delivery: LocalCache
 
@@ -240,7 +239,6 @@ Definitions:
 
 General:
   ServiceX: *DEF_facility
-  Codegen: python
   OutputFormat: root-file
   Delivery: LocalCache
 
@@ -252,29 +250,32 @@ Sample:
         f1.flush()
         f2.flush()
         load_databinder_config(path2)
-def test_funcadl_query(transformed_result):
+
+
+def test_funcadl_query(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex.func_adl.func_adl_dataset import FuncADLQuery
+    from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
     spec = ServiceXSpec.model_validate({
         "General": {
-            "ServiceX": "testing4",
-            "Codegen": "uproot",
+            "ServiceX": "servicex-uc-af",
         },
         "Sample": [
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADLQuery().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
                 "Tree": "nominal"
             }
         ]
     })
     with patch('servicex.dataset_group.DatasetGroup.as_files',
-               return_value=[transformed_result]):
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
-def test_python_query(transformed_result):
+def test_python_query(transformed_result, codegen_list):
     from servicex import deliver
     string_function = """
 def run_query(input_filenames=None):
@@ -283,8 +284,7 @@ def run_query(input_filenames=None):
 """
     spec = ServiceXSpec.model_validate({
         "General": {
-            "ServiceX": "testing4",
-            "Codegen": "uproot-raw",
+            "ServiceX": "servicex-uc-af",
         },
         "Sample": [
             {
@@ -295,15 +295,39 @@ def run_query(input_filenames=None):
         ]
     })
     with patch('servicex.dataset_group.DatasetGroup.as_files',
-               return_value=[transformed_result]):
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
-def test_generic_query():
+def test_uproot_raw_query(transformed_result, codegen_list):
+    from servicex import deliver
+    from servicex.uproot_raw.uproot_raw import UprootRawQuery
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "ServiceX": "servicex-uc-af",
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": UprootRawQuery([{"treename": "nominal"}])
+            }
+        ]
+    })
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
+def test_generic_query(codegen_list):
     from servicex.servicex_client import ServiceXClient
     spec = ServiceXSpec.model_validate({
         "General": {
-            "ServiceX": "testing4",
+            "ServiceX": "servicex-uc-af",
             "Codegen": "uproot-raw",
         },
         "Sample": [
@@ -314,16 +338,18 @@ def test_generic_query():
             }
         ]
     })
-    sx = ServiceXClient(backend=spec.General.ServiceX, config_path='tests/example_config.yaml')
-    query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
-                             codegen=spec.General.Codegen, query=spec.Sample[0].Query)
-    assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
-    query.query_string_generator = None
-    with pytest.raises(RuntimeError):
-        query.generate_selection_string()
-    with pytest.raises(ValueError):
+    with patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        sx = ServiceXClient(backend=spec.General.ServiceX, config_path='tests/example_config.yaml')
         query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
-                                 codegen=spec.General.Codegen, query=5)
-    with pytest.raises(NameError):
-        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
-                                 codegen='nonsense', query=spec.Sample[0].Query)
+                                 codegen=spec.General.Codegen, query=spec.Sample[0].Query)
+        assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+        query.query_string_generator = None
+        with pytest.raises(RuntimeError):
+            query.generate_selection_string()
+        with pytest.raises(ValueError):
+            query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                     codegen=spec.General.Codegen, query=5)
+        with pytest.raises(NameError):
+            query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                     codegen='nonsense', query=spec.Sample[0].Query)

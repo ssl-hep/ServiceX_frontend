@@ -52,6 +52,7 @@ SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
 @pydantic.dataclasses.dataclass
 class UprootRawQuery(QueryStringGenerator):
     query: Union[List[SubQuery], SubQuery]
+    default_codegen: str = 'uproot-raw'
 
     def generate_selection_string(self):
         import json
@@ -59,4 +60,4 @@ class UprootRawQuery(QueryStringGenerator):
             final_query = [self.query]
         else:
             final_query = self.query
-        return json.dumps([json.loads(_.json()) for _ in final_query])
+        return json.dumps([json.loads(_.model_dump_json()) for _ in final_query])

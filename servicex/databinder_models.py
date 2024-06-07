@@ -97,7 +97,7 @@ class General(BaseModel):
         SignedURLs = "SignedURLs"
 
     ServiceX: str = Field(..., alias="ServiceX")
-    Codegen: str
+    Codegen: Optional[str] = None
     OutputFormat: ResultFormat = (
         Field(default=ResultFormat.root, pattern="^(parquet|root-file)$")
     )  # NOQA F722
@@ -106,24 +106,8 @@ class General(BaseModel):
         default=DeliveryEnum.LocalCache, pattern="^(LocalCache|SignedURLs)$"
     )  # NOQA F722
 
-
-class DefinitionDict(BaseModel):
-    model_config = {"extra": "allow"}  # Allow additional fields not defined in the model
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_def_name(cls, values):
-        """
-        Ensure that the definition name is DEF_XXX format
-        :param values:
-        :return:
-        """
-        for field in values:
-            if not field.startswith("DEF_"):
-                raise ValueError(
-                    f"Definition key {field} does not meet the convention of DEF_XXX format"
-                )  # NOQA E501
-        return values
+    OutputDirectory: Optional[str] = None
+    OutFilesetName: str = 'servicex_fileset'
 
 
 class ServiceXSpec(BaseModel):
@@ -133,49 +117,10 @@ class ServiceXSpec(BaseModel):
 
     @model_validator(mode="after")
     def check_tree_property(self):
-        if self.General and self.General.Codegen != "uproot":
-            for sample in self.Sample:
-                if sample.Tree is not None:
-                    raise ValueError(
-                        '"Tree" property is not allowed when codegen is not "uproot"'
-                    )
+        from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
+        for sample in self.Sample:
+            if sample.Tree is not None and not isinstance(sample.Query, FuncADLQuery_Uproot):
+                raise ValueError(
+                    '"Tree" property is not allowed outside of a FuncADLQuery_Uproot request'
+                )
         return self
-
-    # @model_validator(mode="after")
-    # def replace_definition(self):
-    #     """
-    #     Replace the definition name with the actual definition value looking
-    #     through the Samples and the General sections
-    #     :param values:
-    #     :return:
-    #     """
-
-    #     def replace_value_from_def(value, defs):
-    #         """
-    #         Replace the value with the actual definition value
-    #         :param value:
-    #         :param defs:
-    #         :return:
-    #         """
-    #         if isinstance(value, dict):
-    #             for field in value.keys():
-    #                 value[field] = replace_value_from_def(value[field], defs)
-    #         elif isinstance(value, str):
-    #             if value.startswith("DEF_"):
-    #                 if value in defs:
-    #                     value = defs[value]
-    #                 else:
-    #                     raise ValueError(f"Definition {value} not found")
-    #         return value
-
-    #     if self.Definition and self.Definition:
-    #         defs = self.Definition.dict()
-    #     else:
-    #         defs = {}
-
-    #     for sample_field in self.Sample:
-    #         replace_value_from_def(sample_field.__dict__, defs)
-
-    #     replace_value_from_def(self.General.__dict__, defs)
-
-    #     return self
