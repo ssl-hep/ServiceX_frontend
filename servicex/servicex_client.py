@@ -58,7 +58,6 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optiona
             return _sample.Query.default_codegen
         elif isinstance(_sample.Query, Query):
             return _sample.Query.codegen
-        return None
 
     sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
     datasets = []
