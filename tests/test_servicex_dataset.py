@@ -164,7 +164,7 @@ async def test_submit_generic(mocker):
         datasource.result_format = ResultFormat.parquet
         _ = await datasource.submit_and_download(signed_urls_only=False,
                                                  expandable_progress=progress)
-    
+
     # same thing but a list argument to UprootRawQuery (UprootRawQuery test...)
     datasource = client.generic_query(
         dataset_identifier=did,

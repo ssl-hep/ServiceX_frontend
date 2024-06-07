@@ -444,4 +444,4 @@ def test_generic_query(codegen_list):
         with pytest.raises(RuntimeError):
             # no codegen specified by generic class
             query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
-                                     query=spec.Sample[0].Query)      
+                                     query=spec.Sample[0].Query)
