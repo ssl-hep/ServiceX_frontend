@@ -63,6 +63,10 @@ ProgressIndicators = Union[Progress, ExpandableProgress]
 logger = logging.getLogger(__name__)
 
 
+class ServiceXException(Exception):
+    """ Something happened while trying to carry out a ServiceX request """
+
+
 class Query(ABC):
     def __init__(
         self,
@@ -197,13 +201,7 @@ class Query(ABC):
                         download_files_task.cancel("Transform failed")
                 raise task.exception()
 
-            if self.current_status.status == Status.canceled:
-                logger.warning(
-                    f"Request canceled: "
-                    f"{self.current_status.files_completed}/{self.current_status.files} "
-                    f"files completed"
-                )
-            elif self.current_status.status == Status.complete:
+            if self.current_status.status in (Status.complete, Status.canceled, Status.fatal):
                 if self.current_status.files_failed:
                     logger.warning(
                         f"Transforms completed with failures "
@@ -323,6 +321,8 @@ class Query(ABC):
                 "Aborted file downloads due to transform failure"
             )
 
+        _ = await monitor_task  # raise exception, if it is there
+
     async def transform_status_listener(
         self,
         progress: ExpandableProgress,
@@ -370,7 +370,17 @@ class Query(ABC):
             if self.current_status.status in (Status.complete, Status.canceled, Status.fatal):
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
-                return
+                if self.current_status.status == Status.complete:
+                    return
+                elif self.current_status.status == Status.canceled:
+                    logger.warning(
+                        f"Request canceled: "
+                        f"{self.current_status.files_completed}/{self.current_status.files} "
+                        f"files completed"
+                    )
+                    raise ServiceXException("Transformation was canceled")
+                else:
+                    raise ServiceXException("Fatal issue in ServiceX server")
 
             await asyncio.sleep(self.servicex_polling_interval)
 

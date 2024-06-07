@@ -39,6 +39,7 @@ from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
                              TransformRequest, TransformedResults)
 from servicex.query_cache import QueryCache
+from servicex.query import ServiceXException
 
 transform_status = TransformStatus(
     **{
@@ -252,7 +253,6 @@ async def test_submit_cancel(mocker):
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
-        transform_status2,
         transform_status4,
     ]
 
@@ -275,10 +275,9 @@ async def test_submit_cancel(mocker):
     )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        result = await datasource.submit_and_download(signed_urls_only=False,
-                                                      expandable_progress=progress)
-        print(mock_minio.download_file.call_args)
-    assert result.file_list == ['file1']
+        with pytest.raises(ServiceXException):
+            _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                     expandable_progress=progress)
 
 
 @pytest.mark.asyncio
@@ -289,7 +288,6 @@ async def test_submit_fatal(mocker):
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
-        transform_status2,
         transform_status5,
     ]
 
@@ -312,15 +310,9 @@ async def test_submit_fatal(mocker):
     )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
-
-    with ExpandableProgress(display_progress=False) as progress:
-        datasource.result_format = ResultFormat.parquet
-        result = await datasource.submit_and_download(signed_urls_only=False,
-                                                      expandable_progress=progress)
-        print(mock_minio.download_file.call_args)
-    assert result is None
+        with pytest.raises(ServiceXException):
+            _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                     expandable_progress=progress)
 
 
 def test_transform_request():
