@@ -27,12 +27,11 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from unittest.mock import patch, MagicMock
 
-from rich.progress import Progress
-
-from servicex.expandable_progress import ExpandableProgress
+from servicex.expandable_progress import ExpandableProgress, TranformStatusProgress
 
 
-@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
+@patch("servicex.expandable_progress.TranformStatusProgress",
+       return_value=MagicMock(TranformStatusProgress))
 def test_progress(mock_progress):
     with ExpandableProgress() as progress:
         assert progress.progress == mock_progress.return_value
@@ -41,7 +40,8 @@ def test_progress(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
-@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
+@patch("servicex.expandable_progress.TranformStatusProgress",
+       return_value=MagicMock(TranformStatusProgress))
 def test_overall_progress(mock_progress):
     with ExpandableProgress(overall_progress=True) as progress:
         assert progress.progress == mock_progress.return_value
@@ -50,7 +50,8 @@ def test_overall_progress(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
-@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
+@patch("servicex.expandable_progress.TranformStatusProgress",
+       return_value=MagicMock(TranformStatusProgress))
 def test_overall_progress_mock(mock_progress):
     with ExpandableProgress(overall_progress=True) as progress:
         assert progress.progress == mock_progress.return_value
@@ -60,7 +61,7 @@ def test_overall_progress_mock(mock_progress):
 
 
 def test_provided_progress(mocker):
-    class MockedProgress(Progress):
+    class MockedProgress(TranformStatusProgress):
         def __init__(self):
             self.start_call_count = 0
             self.stop_call_count = 0
@@ -82,7 +83,8 @@ def test_provided_progress(mocker):
     assert provided_progress.stop.call_count == 0
 
 
-@patch("servicex.expandable_progress.Progress", return_value=MagicMock(Progress))
+@patch("servicex.expandable_progress.TranformStatusProgress",
+       return_value=MagicMock(TranformStatusProgress))
 def test_no_progress(mock_progress):
     with ExpandableProgress(display_progress=False) as progress:
         assert not progress.progress
@@ -94,9 +96,19 @@ def test_no_progress(mock_progress):
 
 
 def test_nested_expandable_progress():
-    inner_progress = Progress()
+    inner_progress = TranformStatusProgress()
     with ExpandableProgress(provided_progress=inner_progress) as progress:
         with ExpandableProgress(provided_progress=progress) as progress2:
             assert progress2.progress == progress.progress
             assert progress2.display_progress
             assert progress2.progress == progress.progress
+
+
+@patch("servicex.expandable_progress.TranformStatusProgress.tasks",
+       return_value=["a", "b", "c"])
+@patch("servicex.expandable_progress.TranformStatusProgress.make_tasks_table")
+def test_progress_get_renderables(mock_task, mock_mask_tables):
+    progress = TranformStatusProgress()
+    progress.get_renderables()
+    for task in mock_task:
+        mock_mask_tables.assert_called_with(task)
