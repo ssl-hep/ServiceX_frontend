@@ -357,6 +357,16 @@ class Query(ABC):
             if self.current_status.status == Status.complete:
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
+                if self.files_failed:
+                    bar = 'failure'
+                else:
+                    bar = 'complete'
+                progress.update(
+                    progress_task,
+                    progress_bar_title,
+                    completed=self.current_status.files_completed,
+                    description="Files completed",
+                    bar=bar)
                 return
 
             await asyncio.sleep(self.servicex_polling_interval)
