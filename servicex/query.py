@@ -391,6 +391,16 @@ class Query(ABC):
                 titlestr = (f'"{self.current_status.title}" '
                             if self.current_status.title is not None else '')
                 if self.current_status.status == Status.complete:
+                    if self.files_failed:
+                        bar = 'failure'
+                    else:
+                        bar = 'complete'
+                    progress.update(
+                        progress_task,
+                        progress_bar_title,
+                        completed=self.current_status.files_completed,
+                        description="Files completed",
+                        bar=bar)
                     return
                 elif self.current_status.status == Status.canceled:
                     logger.warning(
