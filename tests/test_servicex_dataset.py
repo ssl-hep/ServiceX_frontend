@@ -68,6 +68,7 @@ transform_status = TransformStatus(
         "minio-secured": False,
         "minio-access-key": "miniouser",
         "minio-secret-key": "letmein",
+        "log-url": "https://dummy/()",
     }
 )
 
