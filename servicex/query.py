@@ -203,11 +203,15 @@ class Query(ABC):
 
             if self.current_status.status in (Status.complete, Status.canceled, Status.fatal):
                 if self.current_status.files_failed:
+                    titlestr = (f'"{self.current_status.title}" '
+                                if self.current_status.title is not None else '')
                     logger.warning(
-                        f"Transforms completed with failures "
-                        f"{self.current_status.files_failed} files failed out of "
-                        f"{self.current_status.files}"
+                        f"Transform {titlestr}completed with failures: "
+                        f"{self.current_status.files_failed}/"
+                        f"{self.current_status.files} files failed"
                     )
+                    if self.current_status.log_url is not None:
+                        logger.warning(f"More information at: {self.current_status.log_url}")
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -370,17 +374,25 @@ class Query(ABC):
             if self.current_status.status in (Status.complete, Status.canceled, Status.fatal):
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
+                titlestr = (f'"{self.current_status.title}" '
+                            if self.current_status.title is not None else '')
                 if self.current_status.status == Status.complete:
                     return
                 elif self.current_status.status == Status.canceled:
                     logger.warning(
-                        f"Request canceled: "
+                        f"Request {titlestr}canceled: "
                         f"{self.current_status.files_completed}/{self.current_status.files} "
                         f"files completed"
                     )
-                    raise ServiceXException("Transformation was canceled")
+                    err_str = f"Request {titlestr}was canceled"
+                    if self.current_status.log_url is not None:
+                        err_str += f"\nLogfiles at {self.current_status.log_url}"
+                    raise ServiceXException(err_str)
                 else:
-                    raise ServiceXException("Fatal issue in ServiceX server")
+                    err_str = f"Fatal issue in ServiceX server for request {titlestr}"
+                    if self.current_status.log_url is not None:
+                        err_str += f"\nMore logfiles at {self.current_status.log_url}"
+                    raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
 
