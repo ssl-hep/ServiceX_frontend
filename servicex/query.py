@@ -59,6 +59,7 @@ from servicex.servicex_adapter import ServiceXAdapter
 
 from make_it_sync import make_sync
 
+DONE_STATUS = (Status.complete, Status.canceled, Status.fatal)
 ProgressIndicators = Union[Progress, ExpandableProgress]
 logger = logging.getLogger(__name__)
 
@@ -201,7 +202,7 @@ class Query(ABC):
                         download_files_task.cancel("Transform failed")
                 raise task.exception()
 
-            if self.current_status.status in (Status.complete, Status.canceled, Status.fatal):
+            if self.current_status.status in DONE_STATUS:
                 if self.current_status.files_failed:
                     titlestr = (f'"{self.current_status.title}" '
                                 if self.current_status.title is not None else '')
@@ -371,7 +372,7 @@ class Query(ABC):
                     completed=self.current_status.files_completed,
                 )
 
-            if self.current_status.status in (Status.complete, Status.canceled, Status.fatal):
+            if self.current_status.status in DONE_STATUS:
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
                 titlestr = (f'"{self.current_status.title}" '
@@ -492,7 +493,7 @@ class Query(ABC):
             # signing urls for a previous transform then we know it is complete as well
             if cached_record or (
                 self.current_status
-                and self.current_status.status in (Status.complete, Status.canceled, Status.fatal)
+                and self.current_status.status in DONE_STATUS
             ):
                 break
 
