@@ -59,8 +59,13 @@ from servicex.servicex_adapter import ServiceXAdapter
 
 from make_it_sync import make_sync
 
+DONE_STATUS = (Status.complete, Status.canceled, Status.fatal)
 ProgressIndicators = Union[Progress, ExpandableProgress]
 logger = logging.getLogger(__name__)
+
+
+class ServiceXException(Exception):
+    """ Something happened while trying to carry out a ServiceX request """
 
 
 class Query(ABC):
@@ -190,17 +195,28 @@ class Query(ABC):
                     "ServiceX Exception", exc_info=task.exception()
                 )
                 if download_files_task:
-                    download_files_task.cancel("Transform failed")
+                    import sys
+                    if sys.version_info < (3, 9):
+                        download_files_task.cancel()
+                    else:
+                        download_files_task.cancel("Transform failed")
                 raise task.exception()
 
-            if self.current_status.files_failed:
-                logger.warning(
-                    f"Transforms completed with failures "
-                    f"{self.current_status.files_failed} files failed out of "
-                    f"{self.current_status.files}"
-                )
-            else:
-                logger.info("Transforms completed successfully")
+            if self.current_status.status in DONE_STATUS:
+                if self.current_status.files_failed:
+                    titlestr = (f'"{self.current_status.title}" '
+                                if self.current_status.title is not None else '')
+                    logger.warning(
+                        f"Transform {titlestr}completed with failures: "
+                        f"{self.current_status.files_failed}/"
+                        f"{self.current_status.files} files failed"
+                    )
+                    if self.current_status.log_url is not None:
+                        logger.warning(f"More information at: {self.current_status.log_url}")
+                else:
+                    logger.info("Transforms completed successfully")
+            else:  # pragma: no cover
+                logger.info(f"Transforms finished with code {self.current_status.status}")
 
         sx_request = self.transform_request
 
@@ -310,6 +326,8 @@ class Query(ABC):
                 "Aborted file downloads due to transform failure"
             )
 
+        _ = await monitor_task  # raise exception, if it is there
+
     async def transform_status_listener(
         self,
         progress: ExpandableProgress,
@@ -354,10 +372,28 @@ class Query(ABC):
                     completed=self.current_status.files_completed,
                 )
 
-            if self.current_status.status == Status.complete:
+            if self.current_status.status in DONE_STATUS:
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
-                return
+                titlestr = (f'"{self.current_status.title}" '
+                            if self.current_status.title is not None else '')
+                if self.current_status.status == Status.complete:
+                    return
+                elif self.current_status.status == Status.canceled:
+                    logger.warning(
+                        f"Request {titlestr}canceled: "
+                        f"{self.current_status.files_completed}/{self.current_status.files} "
+                        f"files completed"
+                    )
+                    err_str = f"Request {titlestr}was canceled"
+                    if self.current_status.log_url is not None:
+                        err_str += f"\nLogfiles at {self.current_status.log_url}"
+                    raise ServiceXException(err_str)
+                else:
+                    err_str = f"Fatal issue in ServiceX server for request {titlestr}"
+                    if self.current_status.log_url is not None:
+                        err_str += f"\nMore logfiles at {self.current_status.log_url}"
+                    raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
 
@@ -456,7 +492,8 @@ class Query(ABC):
             # are guaranteed to be in the bucket. Also, if we are just downloading or
             # signing urls for a previous transform then we know it is complete as well
             if cached_record or (
-                self.current_status and self.current_status.status == Status.complete
+                self.current_status
+                and self.current_status.status in DONE_STATUS
             ):
                 break
 
