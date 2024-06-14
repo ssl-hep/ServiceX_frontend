@@ -30,7 +30,7 @@ from hashlib import sha1
 from pathlib import Path
 from typing import List
 
-from miniopy_async import Minio
+from minio import Minio
 
 from servicex.models import ResultFile, TransformStatus
 
@@ -70,7 +70,7 @@ class MinioAdapter:
         )
 
     async def list_bucket(self) -> List[ResultFile]:
-        objects = await self.minio.list_objects(self.bucket)
+        objects = self.minio.list_objects(self.bucket)
         return [
             ResultFile(
                 filename=obj.object_name,
@@ -93,13 +93,13 @@ class MinioAdapter:
             )
         )
 
-        _ = await self.minio.fget_object(
+        _ = self.minio.fget_object(
             bucket_name=self.bucket, object_name=object_name, file_path=path.as_posix()
         )
         return path.resolve()
 
     async def get_signed_url(self, object_name: str) -> str:
-        return await self.minio.get_presigned_url(
+        return self.minio.get_presigned_url(
             bucket_name=self.bucket, object_name=object_name, method="GET"
         )
 
