@@ -1,9 +1,10 @@
 # flake8: noqa
 from servicex.databinder import DataBinder
+from servicex.python_dataset import PythonQuery
 
 
 def run_query(input_filenames=None):
-    import uproot
+    import uproot  # type: ignore
     with uproot.open({input_filenames:"mini"}) as o: 
         br = o.arrays("lep_pt")
     return br
@@ -12,8 +13,7 @@ def run_query(input_filenames=None):
 config = {
     "General":
     {
-        "ServiceX": "uc-af",
-        "Codegen": "python",
+        "ServiceX": "servicex-uc-af",
         "Delivery": "LocalCache"
     },
     "Sample":
@@ -21,7 +21,7 @@ config = {
         {
             "Name": "ttH",
             "XRootDFiles": "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root",
-            "Function": run_query
+            "Query": PythonQuery().with_uproot_function(run_query)
         }
     ]
 }

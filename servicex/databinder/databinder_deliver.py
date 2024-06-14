@@ -25,13 +25,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Any, Dict
 # from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
 #     TimeRemainingColumn
 from rich import print
 import asyncio
 import nest_asyncio
 
+from servicex import ServiceXSpec
 from servicex.databinder.databinder_requests import DataBinderRequests
 from servicex.databinder.databinder_outputs import OutputHandler
 from servicex.expandable_progress import ExpandableProgress
@@ -44,13 +44,13 @@ class DataBinderDeliver:
     a
     """
 
-    def __init__(self, updated_config: Dict[str, Any]) -> None:
+    def __init__(self, updated_config: ServiceXSpec) -> None:
         self._config = updated_config
 
         databinder_requests = DataBinderRequests(self._config)
         self._requests = databinder_requests.get_requests()
         self._endpoint = databinder_requests._client \
-            .endpoints[updated_config['General']['ServiceX']].endpoint
+            .endpoints[updated_config.General.ServiceX].endpoint
         self._output_handler = OutputHandler(self._config)
 
     async def deliver_and_copy(self, req, progress):

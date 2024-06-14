@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import inspect
-import typing
+from typing import Optional, Union, Callable
 from base64 import b64encode
 
 from servicex.configuration import Configuration
@@ -38,14 +38,15 @@ from servicex.types import DID
 
 
 class PythonQuery(Query):
+    yaml_tag = '!Python'
 
-    def __init__(self, dataset_identifier: DID,
-                 sx_adapter: ServiceXAdapter = None,
+    def __init__(self, dataset_identifier: DID = None,
+                 sx_adapter: Optional[ServiceXAdapter] = None,
                  title: str = "ServiceX Client",
-                 codegen: str = None,
-                 config: Configuration = None,
-                 query_cache: QueryCache = None,
-                 result_format: typing.Optional[ResultFormat] = None,
+                 codegen: str = 'python',
+                 config: Optional[Configuration] = None,
+                 query_cache: Optional[QueryCache] = None,
+                 result_format: Optional[ResultFormat] = None,
                  ignore_cache: bool = False
                  ):
         super().__init__(dataset_identifier=dataset_identifier,
@@ -59,7 +60,7 @@ class PythonQuery(Query):
 
         self.python_function = None
 
-    def with_uproot_function(self, f: typing.Union[str, typing.Callable]) -> Query:
+    def with_uproot_function(self, f: Union[str, Callable]) -> Query:
         self.python_function = f
         return self
 
@@ -73,3 +74,14 @@ class PythonQuery(Query):
             return b64encode(inspect.getsource(self.python_function)
                              .encode("utf-8"))\
                 .decode("utf-8")
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        code = node.value
+        try:
+            exec(code)
+        except SyntaxError as e:
+            raise SyntaxError(f"Syntax error {e} interpreting\n{code}")
+        q = PythonQuery()
+        q.with_uproot_function(code)
+        return q

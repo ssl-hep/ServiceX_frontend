@@ -43,9 +43,12 @@ dependencies = [
     "typer>=0.12.1",
     "PyYAML>=6.0",
     "types-PyYAML>=6.0",
+    "importlib_metadata; python_version <= '3.9'",
     "rich>=13.0.0",  # databinder
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
+    "ruamel.yaml>=0.18",
+    "ccorp-yaml-include-relative-path>=0.0.4",
 ]
 
 [project.scripts]
@@ -88,6 +91,14 @@ docs = [
 develop = [
     "servicex[databinder,pandas,test,docs]",
 ]
+
+[project.entry-points.'servicex.queries']
+FuncADL_Uproot = "servicex.func_adl.func_adl_dataset:FuncADLQuery_Uproot"
+FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
+FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
+FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
+FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
+Python = "servicex.python_dataset:PythonQuery"
 
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:

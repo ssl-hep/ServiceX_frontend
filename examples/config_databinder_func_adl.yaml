@@ -1,19 +1,17 @@
+Definition:
+  - &DEF_backend "servicex-uc-af" 
+  - &DEF_ttH_nominal_query !FuncADL_Uproot  |
+    Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
+  - &DEF_ggH_input "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
+                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
+
 General:
-  ServiceX: DEF_backend
-  Codegen: uproot
+  ServiceX: *DEF_backend
   OutputFormat: root-file
   Delivery: LocalCache
 
 Sample:
   - Name: ggH
-    XRootDFiles: DEF_ggH_input
+    XRootDFiles: *DEF_ggH_input
     NFiles: 5
-    Query: DEF_ttH_nominal_query
-
-Definition:
-  DEF_backend: "servicex-uc-af"
-  DEF_ttH_nominal_query: |
-    Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
-
-  DEF_ggH_input: "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
-                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
+    Query: *DEF_ttH_nominal_query

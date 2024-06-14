@@ -52,16 +52,18 @@ from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.types import DID
+from abc import ABC
 
 T = TypeVar("T")
 
 
-class FuncADLQuery(Query, EventDataset[T]):
+class FuncADLQuery(Query, EventDataset[T], ABC):
     r"""
     ServiceX Dataset class that uses func_adl query syntax.
     """
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
+    default_codegen = None
 
     async def execute_result_async(
         self, a: ast.AST, title: Optional[str] = None
@@ -76,7 +78,7 @@ class FuncADLQuery(Query, EventDataset[T]):
         dataset_identifier: DID = None,
         sx_adapter: ServiceXAdapter = None,
         title: str = "ServiceX Client",
-        codegen: str = None,
+        codegen: Optional[str] = None,
         config: Configuration = None,
         query_cache: QueryCache = None,
         result_format: Optional[ResultFormat] = None,
@@ -87,7 +89,7 @@ class FuncADLQuery(Query, EventDataset[T]):
             self,
             dataset_identifier=dataset_identifier,
             title=title,
-            codegen=codegen,
+            codegen=codegen if codegen is not None else self.default_codegen,
             sx_adapter=sx_adapter,
             config=config,
             query_cache=query_cache,
@@ -337,3 +339,39 @@ class FuncADLQuery(Query, EventDataset[T]):
             Qastle representation of the target's AST
         """
         return self.value()
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        import qastle
+        query_string = "EventDataset()." + node.value
+        qastle_query = qastle.python_ast_to_text_ast(
+            ast.parse(query_string)
+        )
+        query = cls()
+        query.set_provided_qastle(qastle_query)
+        return query
+
+
+class FuncADLQuery_Uproot(FuncADLQuery):
+    yaml_tag = '!FuncADL_Uproot'
+    default_codegen = 'uproot'
+
+
+class FuncADLQuery_ATLASr21(FuncADLQuery):
+    yaml_tag = '!FuncADL_ATLASr21'
+    default_codegen = 'atlasr21'
+
+
+class FuncADLQuery_ATLASr22(FuncADLQuery):
+    yaml_tag = '!FuncADL_ATLASr22'
+    default_codegen = 'atlasr22'
+
+
+class FuncADLQuery_ATLASxAOD(FuncADLQuery):
+    yaml_tag = '!FuncADL_ATLASxAOD'
+    default_codegen = 'atlasxaod'
+
+
+class FuncADLQuery_CMS(FuncADLQuery):
+    yaml_tag = '!FuncADL_CMS'
+    default_codegen = 'cms'

@@ -542,11 +542,15 @@ class QueryStringGenerator(ABC):
     def generate_selection_string(self) -> str:
         """ override with the selection string to send to ServiceX """
 
+    """ override with the codegen string you would like associated with this query class """
+    default_codegen: Optional[str] = None
+
 
 class GenericQueryStringGenerator(QueryStringGenerator):
     '''Return the string from the initializer'''
-    def __init__(self, query: str):
+    def __init__(self, query: str, codegen: str):
         self.query = query
+        self.default_codegen = codegen
 
     def generate_selection_string(self) -> str:
         return self.query
