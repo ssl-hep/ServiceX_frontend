@@ -26,14 +26,14 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type, Union
+from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
 
 from servicex.configuration import Configuration
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
-from servicex.query import GenericQuery, QueryStringGenerator, GenericQueryStringGenerator
+from servicex.query import GenericQuery, QueryStringGenerator, GenericQueryStringGenerator, Query
 from servicex.types import DID
 from servicex.python_dataset import PythonQuery
 from servicex.dataset_group import DatasetGroup
@@ -45,12 +45,19 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def deliver(config: ServiceXSpec, config_path=None):
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
+    if isinstance(config, Mapping):
+        config = ServiceXSpec(**config)
+
     def get_codegen(_sample: Sample, _general: General):
-        if _sample.Codegen:
+        if _sample.Codegen is not None:
             return _sample.Codegen
-        else:
+        elif _general.Codegen is not None:
             return _general.Codegen
+        elif isinstance(_sample.Query, QueryStringGenerator):
+            return _sample.Query.default_codegen
+        elif isinstance(_sample.Query, Query):
+            return _sample.Query.codegen
 
     sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
     datasets = []
@@ -93,7 +100,7 @@ def deliver(config: ServiceXSpec, config_path=None):
             dataset = sx.python_dataset(
                 sample.dataset_identifier,
                 sample.Name,
-                get_codegen(sample, config.General),
+                'python',
                 config.General.OutputFormat,
             )
             dataset.python_function = sample.Function
@@ -269,8 +276,8 @@ class ServiceXClient:
     def generic_query(
         self,
         dataset_identifier: DID,
-        codegen: str,
         query: Union[str, QueryStringGenerator],
+        codegen: str = None,
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False
@@ -289,21 +296,25 @@ class ServiceXClient:
 
         """
 
-        if codegen not in self.code_generators:
+        if isinstance(query, str):
+            query = GenericQueryStringGenerator(query, codegen)
+        if not isinstance(query, QueryStringGenerator):
+            raise ValueError("query argument must be string or QueryStringGenerator")
+
+        real_codegen = codegen if codegen is not None else query.default_codegen
+        if real_codegen is None:
+            raise RuntimeError("No codegen specified, either from query class or user input")
+
+        if real_codegen not in self.code_generators:
             raise NameError(
                 f"{codegen} code generator not supported by serviceX "
                 f"deployment at {self.servicex.url}"
             )
 
-        if isinstance(query, str):
-            query = GenericQueryStringGenerator(query)
-        if not isinstance(query, QueryStringGenerator):
-            raise ValueError("query argument must be string or QueryStringGenerator")
-
         qobj = GenericQuery(dataset_identifier=dataset_identifier,
                             sx_adapter=self.servicex,
                             title=title,
-                            codegen=codegen,
+                            codegen=real_codegen,
                             config=self.config,
                             query_cache=self.query_cache,
                             result_format=result_format,

@@ -1,5 +1,28 @@
+Definition:
+  - &DEF_backend "servicex-uc-af"
+
+  - &DEF_ggH_input "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
+                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
+
+  - &DEF_function1 !Python |
+    def run_query(input_filenames=None):
+        import uproot
+
+        with uproot.open({input_filenames:"nominal"}) as o:
+            br = o.arrays("mu_pt")
+        return br
+
+
+  - &DEF_function2 !Python |
+    def run_query(input_filenames=None):
+        import uproot
+      
+        with uproot.open({input_filenames:"mini"}) as o:
+            br = o.arrays("lep_pt")
+        return br
+
 General:
-  ServiceX: DEF_backend
+  ServiceX: *DEF_backend
   Codegen: python
   OutputFormat: root-file
   Delivery: LocalCache
@@ -8,36 +31,14 @@ Sample:
   - Name: ttH
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     NFiles: 5
-    Function: DEF_function1
+    Query: *DEF_function1
     # IgnoreLocalCache: False
 
   - Name: ttZ
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttZ.v11
     NFiles: 3
-    Function: DEF_function1
+    Query: *DEF_function1
 
   - Name: ggH
-    XRootDFiles: DEF_ggH_input
-    Function: DEF_function2
-
-Definition:
-  DEF_backend: "testing1"
-
-  DEF_ggH_input: "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
-                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
-
-  DEF_function1: |
-    def run_query(input_filenames=None):
-        import uproot
-  
-        with uproot.open({input_filenames:"nominal"}) as o:
-            br = o.arrays("mu_pt")
-        return br
-
-  DEF_function2: |
-    def run_query(input_filenames=None):
-        import uproot
-      
-        with uproot.open({input_filenames:"mini"}) as o:
-            br = o.arrays("lep_pt")
-        return br
+    XRootDFiles: *DEF_ggH_input
+    Query: *DEF_function2

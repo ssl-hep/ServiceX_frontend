@@ -40,6 +40,8 @@ from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
                              TransformRequest, TransformedResults)
 from servicex.query_cache import QueryCache
 from servicex.query import ServiceXException
+from servicex.servicex_client import ServiceXClient
+from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
 transform_status = TransformStatus(
     **{
@@ -314,6 +316,52 @@ async def test_submit_fatal(mocker):
         with pytest.raises(ServiceXException):
             _ = await datasource.submit_and_download(signed_urls_only=False,
                                                      expandable_progress=progress)
+
+
+@pytest.mark.asyncio
+async def test_submit_generic(mocker):
+    """ Uses Uproot-Raw classes which go through the generic query mechanism """
+    import json
+    sx = AsyncMock()
+    sx.submit_transform = AsyncMock()
+    sx.submit_transform.return_value = {"request_id": '123-456-789"'}
+    sx.get_transform_status = AsyncMock()
+    sx.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status3,
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
+    mock_minio.download_file = AsyncMock()
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+    client.servicex = sx
+    client.query_cache = mock_cache
+
+    datasource = client.generic_query(
+        dataset_identifier=did,
+        query=UprootRawQuery({'treename': 'CollectionTree'})
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+
+    # same thing but a list argument to UprootRawQuery (UprootRawQuery test...)
+    datasource = client.generic_query(
+        dataset_identifier=did,
+        query=UprootRawQuery({'treename': 'CollectionTree'})
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+    assert isinstance(json.loads(datasource.generate_selection_string()), list)
 
 
 def test_transform_request():

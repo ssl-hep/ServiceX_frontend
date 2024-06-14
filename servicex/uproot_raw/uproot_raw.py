@@ -26,20 +26,20 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# pydantic 1.10 API
+# pydantic 2 API
 
 import pydantic
-from typing import List, Union, Mapping, Optional
+from typing import List, Union, Mapping, Optional, get_args
 from ..query import QueryStringGenerator
 
 
 class TreeSubQuery(pydantic.BaseModel):
     treename: Union[Mapping[str, str], List[str], str]
-    expressions: Optional[Union[List[str], str]]
-    cut: Optional[str]
-    filter_name: Optional[Union[List[str], str]]
-    filter_typename: Optional[Union[List[str], str]]
-    aliases: Optional[Mapping[str, str]]
+    expressions: Optional[Union[List[str], str]] = None
+    cut: Optional[str] = None
+    filter_name: Optional[Union[List[str], str]] = None
+    filter_typename: Optional[Union[List[str], str]] = None
+    aliases: Optional[Mapping[str, str]] = None
 
 
 class CopyHistogramSubQuery(pydantic.BaseModel):
@@ -52,11 +52,13 @@ SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
 @pydantic.dataclasses.dataclass
 class UprootRawQuery(QueryStringGenerator):
     query: Union[List[SubQuery], SubQuery]
+    default_codegen: str = 'uproot-raw'
 
     def generate_selection_string(self):
         import json
-        if isinstance(self.query, SubQuery):
+        final_query: List[SubQuery]
+        if isinstance(self.query, get_args(SubQuery)):  # from Python 3.10 we don't need "get_args"
             final_query = [self.query]
         else:
             final_query = self.query
-        return json.dumps([json.loads(_.json()) for _ in final_query])
+        return json.dumps([json.loads(_.model_dump_json()) for _ in final_query])

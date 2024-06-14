@@ -28,11 +28,11 @@
 import asyncio
 
 from servicex import ServiceXSpec, General, Sample
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
+from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
 from servicex.servicex_client import deliver
 
 print(f"Is it running {asyncio.get_event_loop().is_running()}")
-query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
+query = FuncADLQuery_Uproot().Select(lambda e: {'el_pt': e['el_pt']})
 
 spec = ServiceXSpec(
     General=General(

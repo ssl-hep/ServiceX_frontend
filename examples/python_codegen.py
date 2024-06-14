@@ -42,7 +42,7 @@ def run_query(input_filenames=None):
 
 spec = ServiceXSpec(
     General=General(
-        ServiceX="testing1",
+        ServiceX="servicex-uc-af",
         Codegen="python",
         OutputFormat="parquet",
         Delivery="LocalCache"

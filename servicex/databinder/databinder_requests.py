@@ -26,13 +26,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # import pathlib
-from typing import Any, Dict, List
+from typing import List
 from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
     TimeRemainingColumn
 
 from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
-from servicex.servicex_client import ServiceXClient
-from servicex.models import ResultFormat
+from servicex.servicex_client import ServiceXClient, ServiceXSpec
+from ..databinder_models import Sample
 
 
 class DataBinderRequests:
@@ -40,7 +40,7 @@ class DataBinderRequests:
     Prepare ServiceX requests from DataBinder configuration
     """
 
-    def __init__(self, updated_config: Dict[str, Any]):
+    def __init__(self, updated_config: ServiceXSpec):
         self._config = updated_config
         self._client = self._get_client()
         self._progress = Progress(
@@ -51,83 +51,75 @@ class DataBinderRequests:
         )
 
     def _get_client(self):
-        if 'http' in self._config['General']['ServiceX']:
-            return ServiceXClient(backend=None, url=self._config['General']['ServiceX'])
+        if 'http' in self._config.General.ServiceX:
+            return ServiceXClient(backend=None, url=self._config.General.ServiceX)
         else:
-            return ServiceXClient(backend=self._config['General']['ServiceX'], url=None)
+            return ServiceXClient(backend=self._config.General.ServiceX, url=None)
 
     def get_requests(self) -> List:
         list_requests = []
-        for sample in self._config['Sample']:
+        for sample in self._config.Sample:
             list_requests.append(self._build_request(sample))
         # flatten nested lists for samples with more than two Rucio datasets
         flist_requests = [request for x in list_requests for request in x]
         return flist_requests
 
-    def _build_request(self, sample: Dict[str, Any]):
+    def _build_request(self, sample: Sample):
         """
         Return a list containing ServiceX request(s) of the given sample
         """
         requests_sample = []
 
         def _get_input_source(sample):
-            if 'RucioDID' in sample.keys():
+            if sample.RucioDID is not None:
                 nfiles = None
-                if 'NFiles' in sample.keys():
-                    nfiles = int(sample['NFiles'])
+                if sample.NFiles is not None:
+                    nfiles = int(sample.NFiles)
                 input_source = RucioDatasetIdentifier(
-                    str(sample['RucioDID']),
+                    str(sample.RucioDID),
                     num_files=nfiles or 0
                 )
-            elif 'XRootDFiles' in sample.keys():
+            elif sample.XRootDFiles is not None:
                 input_source = FileListDataset(
-                    [file.strip() for file in sample['XRootDFiles'].split(",")]
+                    [file.strip() for file in sample.XRootDFiles.split(",")]
                 )
             else:
                 raise TypeError(
-                    f"Unknown input source in Sample {sample['Name']}"
+                    f"Unknown input source in Sample {sample.Name}"
                 )
             return input_source
 
         def _set_result_format():
-            if self._config['General']['OutputFormat'].lower() == "root":
-                return ResultFormat.root
-            elif self._config['General']['OutputFormat'].lower() == "parquet":
-                return ResultFormat.parquet
-            else:
-                raise ValueError(
-                    f"Output format {self._config['General']['OutputFormat']} is not supported"
-                )
+            return self._config.General.OutputFormat
 
         def _get_servicex_dataset(sample):
-            if sample['Codegen'] == 'python':
+            if sample.Codegen == 'python':
                 return self._client.python_dataset(
                     dataset_identifier=_get_input_source(sample),
-                    title=sample['Name'],
+                    title=sample.Name,
                     codegen="python",
-                    ignore_cache=sample['IgnoreLocalCache'],
+                    ignore_cache=sample.IgnoreLocalCache,
                     result_format=_set_result_format()
                 )
             else:
                 raise TypeError(
-                    f"Unknown code-generator in Sample {sample['Name']}"
+                    f"Unknown code-generator in Sample {sample.Name}"
                 )
 
         def _servicex_dataset_query(sample):
-            if sample['Codegen'] == 'python':
-                query = sample['Function']
-                return _get_servicex_dataset(sample).with_uproot_function(
-                    query
-                )
-            else:
-                raise TypeError(
-                    f"Unknown code-generator in Sample {sample['Name']}"
-                )
+            sample.Query.set_result_format(_set_result_format())  # why like this???
+            sample.Query.dataset_identifier = _get_input_source(sample)
+            sample.Query.title = sample.Name
+            sample.Query.codegen = sample.Codegen if sample.Codegen else sample.Query.codegen
+            sample.Query.cache = self._client.query_cache
+            sample.Query.servicex = self._client.servicex
+            sample.Query.configuration = self._client.config
+            return sample.Query
 
         requests_sample.append(
             {
-                "sample_name": sample['Name'],
-                "delivery": self._config['General']['Delivery'].lower(),
+                "sample_name": sample.Name,
+                "delivery": self._config.General.Delivery.lower(),
                 "ds_query": _servicex_dataset_query(sample)
             }
         )

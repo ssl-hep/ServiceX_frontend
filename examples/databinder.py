@@ -27,10 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import sys
 
-import yaml
-
-from servicex import ServiceXSpec
-from servicex.servicex_client import deliver
+from servicex.databinder import DataBinder
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -41,13 +38,6 @@ if len(sys.argv) != 2:
     logger.fatal("Usage: python databinder.py <config_file>")
     sys.exit(1)
 
-try:
-    with open(sys.argv[1]) as f:
-        data = yaml.safe_load(f)
-except FileNotFoundError:
-    print(f"File {sys.argv[1]} not found")
-    sys.exit(1)
+sx = DataBinder(sys.argv[1])
 
-
-spec = ServiceXSpec.parse_obj(data)
-print(deliver(spec))
+print(sx.deliver())

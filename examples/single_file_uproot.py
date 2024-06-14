@@ -57,7 +57,7 @@ print(q2.generate_selection_string())
 print("From python", query.generate_selection_string())
 spec = ServiceXSpec(
     General=General(
-        ServiceX="testing1",
+        ServiceX="servicex-uc-af",
         Codegen="uproot",
         OutputFormat="parquet",
         Delivery="LocalCache"

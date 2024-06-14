@@ -9,6 +9,10 @@ api_endpoints:
     name: testing4
     token: notreallyatoken
 
+  - endpoint: https://servicex.af.uchicago.edu
+    name: servicex-uc-af
+    token: notreallyatoken
+
 # This is the path of the cache. The "/tmp" will be translated, platform appropriate, and
 # the env variable USER will be replaced.
 cache_path: /tmp/servicex_${USER}
