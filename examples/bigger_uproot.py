@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
+from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
 from servicex.servicex_client import deliver
 import logging
 
@@ -36,7 +36,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def bigger_uproot():
-    query = FuncADLQuery().Select(lambda e: {'el_pt': e['el_pt']})
+    query = FuncADLQuery_Uproot().Select(lambda e: {'el_pt': e['el_pt']})
 
     spec = {
         'General': {
