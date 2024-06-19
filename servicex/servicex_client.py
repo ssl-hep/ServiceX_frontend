@@ -27,6 +27,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
+from ccorp.ruamel.yaml.include import YAML
+import pathlib
 
 from servicex.configuration import Configuration
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
@@ -44,11 +46,39 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
+yaml = YAML()
 
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
+
+def _load_ServiceXSpec(config: Union[ServiceXSpec, Mapping[str, Any], str]) -> ServiceXSpec:
     if isinstance(config, Mapping):
+        logger.debug("Config from Dict")
         config = ServiceXSpec(**config)
+    elif isinstance(config, ServiceXSpec):
+        logger.debug("Config from ServiceXSpec")
+    elif isinstance(config, str):
+        logger.debug("Config from file")
 
+        file_path = pathlib.Path(config)
+
+        import sys
+        if sys.version_info < (3, 10):
+            from importlib_metadata import entry_points
+        else:
+            from importlib.metadata import entry_points
+
+        plugins = entry_points(group='servicex.queries')
+        for _ in plugins:
+            yaml.register_class(_.load())
+
+        conf = yaml.load(file_path)
+        config = ServiceXSpec(**conf)
+    else:
+        raise TypeError(f"Unknown config type: {type(config)}")
+
+    return config
+
+
+def _build_datasets(config, config_path):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -65,6 +95,7 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optiona
         if sample.Query:
             # if string or QueryStringGenerator, turn into a Query
             if isinstance(sample.Query, str) or isinstance(sample.Query, QueryStringGenerator):
+                logger.debug("sample.Query from string or QueryStringGenerator")
                 sample.Query = sx.generic_query(dataset_identifier=sample.dataset_identifier,
                                                 title=sample.Name,
                                                 codegen=get_codegen(sample, config.General),
@@ -73,7 +104,10 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optiona
                                                 query=sample.Query)
             # query._q_ast = sample.Query._q_ast
             # query._item_type = sample.Query._item_type
-            if isinstance(sample.Query, FuncADLQuery):
+            elif isinstance(sample.Query, FuncADLQuery):
+                logger.debug("sample.Query from FuncADLQuery")
+                # q = FuncADLQuery()
+                # logger.debug(f"sample.Query._q_ast: {q.generate_qastle(sample.Query._q_ast)}")
                 query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
                                             get_codegen(sample, config.General),
                                             config.General.OutputFormat)
@@ -82,7 +116,10 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optiona
                 if sample.Tree:
                     query = query.set_tree(sample.Tree)
                 sample.Query = query
-
+                # q2 = FuncADLQuery()
+                # logger.debug(f"sample.Query2._q_ast: {q2.generate_qastle(sample.Query._q_ast)}")
+            else:
+                logger.debug(f"Unknown Query type: {sample.Query}")
             sample.Query.ignore_cache = sample.IgnoreLocalCache
 
             datasets.append(sample.Query)
@@ -106,7 +143,14 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optiona
             dataset.python_function = sample.Function
             dataset.ignore_cache = sample.IgnoreLocalCache
             datasets.append(dataset)
+    return datasets
 
+
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
+    config = _load_ServiceXSpec(config)
+
+    datasets = _build_datasets(config, config_path)
+    # return datasets
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
