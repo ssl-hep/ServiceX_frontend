@@ -50,6 +50,7 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
+yaml = YAML()
 
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path]
@@ -183,6 +184,12 @@ def deliver(
 
     datasets = _build_datasets(config, config_path)
 
+
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
+    config = _load_ServiceXSpec(config)
+
+    datasets = _build_datasets(config, config_path)
+    # return datasets
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
