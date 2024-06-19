@@ -46,6 +46,7 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
+yaml = YAML()
 
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path]
@@ -72,7 +73,7 @@ def _load_ServiceXSpec(
         else:
             from importlib.metadata import entry_points
 
-        plugins = entry_points(group="servicex.queries")
+        plugins = entry_points(group="servicex.query")
         for _ in plugins:
             yaml.register_class(_.load())
 
