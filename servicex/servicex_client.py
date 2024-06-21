@@ -184,12 +184,6 @@ def deliver(
 
     datasets = _build_datasets(config, config_path)
 
-
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
-    config = _load_ServiceXSpec(config)
-
-    datasets = _build_datasets(config, config_path)
-    # return datasets
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
