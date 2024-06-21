@@ -28,11 +28,11 @@
 import logging
 from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
 from ccorp.ruamel.yaml.include import YAML
-import pathlib
+from pathlib import Path
 
 from servicex.configuration import Configuration
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
-from servicex.models import ResultFormat, TransformStatus
+from servicex.models import ResultFormat, TransformStatus, TransformedResults
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.query import GenericQuery, QueryStringGenerator, GenericQueryStringGenerator, Query
@@ -51,14 +51,14 @@ yaml = YAML()
 
 def _load_ServiceXSpec(config: Union[ServiceXSpec, Mapping[str, Any], str]) -> ServiceXSpec:
     if isinstance(config, Mapping):
-        logger.debug("Config from Dict")
+        logger.debug("Config from dictionary")
         config = ServiceXSpec(**config)
     elif isinstance(config, ServiceXSpec):
         logger.debug("Config from ServiceXSpec")
     elif isinstance(config, str):
         logger.debug("Config from file")
 
-        file_path = pathlib.Path(config)
+        file_path = Path(config)
 
         import sys
         if sys.version_info < (3, 10):
@@ -102,12 +102,9 @@ def _build_datasets(config, config_path):
                                                 result_format=config.General.OutputFormat,
                                                 ignore_cache=sample.IgnoreLocalCache,
                                                 query=sample.Query)
-            # query._q_ast = sample.Query._q_ast
-            # query._item_type = sample.Query._item_type
             elif isinstance(sample.Query, FuncADLQuery):
                 logger.debug("sample.Query from FuncADLQuery")
-                # q = FuncADLQuery()
-                # logger.debug(f"sample.Query._q_ast: {q.generate_qastle(sample.Query._q_ast)}")
+                logger.debug(f"qastle_query from ServiceXSpec: {sample.Query.generate_selection_string()}")
                 query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
                                             get_codegen(sample, config.General),
                                             config.General.OutputFormat)
@@ -116,8 +113,7 @@ def _build_datasets(config, config_path):
                 if sample.Tree:
                     query = query.set_tree(sample.Tree)
                 sample.Query = query
-                # q2 = FuncADLQuery()
-                # logger.debug(f"sample.Query2._q_ast: {q2.generate_qastle(sample.Query._q_ast)}")
+                logger.debug(f"final qastle_query: {sample.Query.generate_selection_string()}")
             else:
                 logger.debug(f"Unknown Query type: {sample.Query}")
             sample.Query.ignore_cache = sample.IgnoreLocalCache
@@ -146,20 +142,39 @@ def _build_datasets(config, config_path):
     return datasets
 
 
+def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
+    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
+        out_dict = {obj.title: obj.signed_url_list for obj in results}
+    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
+        out_dict = {obj.title: obj.file_list for obj in results}
+
+    if config.General.OutputDirectory:
+        import yaml as yl
+        out_dir = Path(config.General.OutputDirectory).absolute()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dict_path = Path(
+            out_dir, config.General.OutFilesetName + '.yaml'
+        )
+
+        with open(out_dict_path, 'w') as f:
+            yl.dump(out_dict, f, default_flow_style=False)
+
+    return out_dict
+
+
 def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
     config = _load_ServiceXSpec(config)
 
     datasets = _build_datasets(config, config_path)
-    # return datasets
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
         results = group.as_signed_urls()
-        return {obj.title: obj.signed_url_list for obj in results}
+        return _output_handler(config, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
         results = group.as_files()
-        return {obj.title: obj.file_list for obj in results}
+        return _output_handler(config, results)
 
 
 class ServiceXClient:
