@@ -13,5 +13,6 @@ General:
 Sample:
   - Name: ggH
     XRootDFiles: *DEF_ggH_input
-    NFiles: 5
+    NFiles: 1
     Query: *DEF_ttH_nominal_query
+    IgnoreLocalCache: True
