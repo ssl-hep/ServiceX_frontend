@@ -104,7 +104,8 @@ def _build_datasets(config, config_path):
                                                 query=sample.Query)
             elif isinstance(sample.Query, FuncADLQuery):
                 logger.debug("sample.Query from FuncADLQuery")
-                logger.debug(f"qastle_query from ServiceXSpec: {sample.Query.generate_selection_string()}")
+                logger.debug(f"qastle_query from ServiceXSpec: \
+                             {sample.Query.generate_selection_string()}")
                 query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
                                             get_codegen(sample, config.General),
                                             config.General.OutputFormat)
@@ -115,7 +116,7 @@ def _build_datasets(config, config_path):
                 sample.Query = query
                 logger.debug(f"final qastle_query: {sample.Query.generate_selection_string()}")
             elif isinstance(sample.Query, PythonQuery):
-                logger.debug("sample.Query from PythonQuery")                
+                logger.debug("sample.Query from PythonQuery")
                 query = sx.python_dataset(
                     dataset_identifier=sample.dataset_identifier,
                     title=sample.Name,
@@ -153,7 +154,8 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
     return out_dict
 
 
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any], str], config_path: Optional[str] = None):
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any], str],
+            config_path: Optional[str] = None):
     config = _load_ServiceXSpec(config)
 
     datasets = _build_datasets(config, config_path)
