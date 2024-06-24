@@ -114,31 +114,26 @@ def _build_datasets(config, config_path):
                     query = query.set_tree(sample.Tree)
                 sample.Query = query
                 logger.debug(f"final qastle_query: {sample.Query.generate_selection_string()}")
+            elif isinstance(sample.Query, PythonQuery):
+                logger.debug("sample.Query from PythonQuery")
+                logger.debug(f"codegen: {get_codegen(sample, config.General)}")
+                logger.debug(f"sample.Query: {sample.Query}")
+                logger.debug(f"type(sample.Query): {type(sample.Query)}")
+                logger.debug(f"sample.Query: {sample.Query.python_function}")
+                query = sx.python_dataset(
+                    dataset_identifier=sample.dataset_identifier,
+                    title=sample.Name,
+                    codegen=get_codegen(sample, config.General),
+                    result_format=config.General.OutputFormat,
+                    ignore_cache=sample.IgnoreLocalCache
+                )
+                query.python_function = sample.Query.python_function
+                sample.Query = query
             else:
                 logger.debug(f"Unknown Query type: {sample.Query}")
             sample.Query.ignore_cache = sample.IgnoreLocalCache
 
             datasets.append(sample.Query)
-        elif sample.Function:
-            # The function field can be a callable if this was all initialized
-            # in python, or it can be a string if it was initialized from a
-            # yaml file. If it comes from a string, let's validate the syntax
-            # now to avoid nasty surprises later.
-            if isinstance(sample.Function, str):
-                try:
-                    exec(sample.Function)
-                except SyntaxError as e:
-                    raise SyntaxError(f"Syntax error in {sample.Name}: {e}")
-
-            dataset = sx.python_dataset(
-                sample.dataset_identifier,
-                sample.Name,
-                'python',
-                config.General.OutputFormat,
-            )
-            dataset.python_function = sample.Function
-            dataset.ignore_cache = sample.IgnoreLocalCache
-            datasets.append(dataset)
     return datasets
 
 
@@ -162,10 +157,11 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
     return out_dict
 
 
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any], str], config_path: Optional[str] = None):
     config = _load_ServiceXSpec(config)
 
     datasets = _build_datasets(config, config_path)
+    # return datasets
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
