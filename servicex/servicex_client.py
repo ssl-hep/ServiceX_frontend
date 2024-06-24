@@ -115,11 +115,7 @@ def _build_datasets(config, config_path):
                 sample.Query = query
                 logger.debug(f"final qastle_query: {sample.Query.generate_selection_string()}")
             elif isinstance(sample.Query, PythonQuery):
-                logger.debug("sample.Query from PythonQuery")
-                logger.debug(f"codegen: {get_codegen(sample, config.General)}")
-                logger.debug(f"sample.Query: {sample.Query}")
-                logger.debug(f"type(sample.Query): {type(sample.Query)}")
-                logger.debug(f"sample.Query: {sample.Query.python_function}")
+                logger.debug("sample.Query from PythonQuery")                
                 query = sx.python_dataset(
                     dataset_identifier=sample.dataset_identifier,
                     title=sample.Name,
@@ -161,7 +157,7 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any], str], config_path: Op
     config = _load_ServiceXSpec(config)
 
     datasets = _build_datasets(config, config_path)
-    # return datasets
+
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
