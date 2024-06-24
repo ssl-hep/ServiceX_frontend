@@ -212,7 +212,15 @@ class Query(ABC):
                         f"{self.current_status.files} files failed"
                     )
                     if self.current_status.log_url is not None:
-                        logger.warning(f"More information at: {self.current_status.log_url}")
+                        from servicex.app.transforms import LogLevel, \
+                            create_kibana_link_parameters, LogLevel, TimeFrame
+                        logger.warning("More information at: "+ 
+                                        create_kibana_link_parameters(
+                                        self.current_status.log_url,
+                                        self.current_status.request_id,
+                                        LogLevel.error,
+                                        TimeFrame.day))
+                        # logger.warning(f"More information at: {self.current_status.log_url}")
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
