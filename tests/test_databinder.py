@@ -8,7 +8,7 @@ from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier, data
 def basic_spec(samples=None):
     return {
         "Sample": samples
-        or [{"Name": "sampleA", "XRootDFiles": "root://a.root", "Function": "a"}],
+        or [{"Name": "sampleA", "XRootDFiles": "root://a.root", "Query": "a"}],
     }
 
 
@@ -19,18 +19,16 @@ def test_load_config():
             "Delivery": "LocalCache",
         },
         "Sample": [
-            {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Function": "a"},
+            {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Query": "a"},
             {
                 "Name": "sampleB",
                 "XRootDFiles": "root://a.root",
-                "Columns": "el_pt",
-                "Codegen": "uproot",
-                "Function": "a",
+                "Query": "a",
             },
         ],
     }
     new_config = ServiceXSpec.model_validate(config)
-    assert new_config.Sample[0].Function == "a"
+    assert new_config.Sample[0].Query == "a"
 
 
 def test_single_root_file():
@@ -40,7 +38,7 @@ def test_single_root_file():
                 {
                     "Name": "sampleA",
                     "XRootDFiles": "root://eospublic.cern.ch//file1.root",
-                    "Function": "a",
+                    "Query": "a",
                 }
             ]
         )
@@ -80,7 +78,7 @@ def test_list_of_root_files():
                         "root://eospublic.cern.ch//file1.root",
                         "root://eospublic.cern.ch//file2.root",
                     ],
-                    "Function": "a",
+                    "Query": "a",
                 }
             ]
         )
@@ -121,7 +119,7 @@ def test_rucio_did():
                 {
                     "Name": "sampleA",
                     "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                    "Function": "a",
+                    "Query": "a",
                 }
             ]
         )
@@ -160,7 +158,7 @@ def test_rucio_did_numfiles():
                     "Name": "sampleA",
                     "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
                     "NFiles": 10,
-                    "Function": "a",
+                    "Query": "a",
                 }
             ]
         )
@@ -196,7 +194,7 @@ def test_invalid_dataset_identifier():
                         "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
                         "XRootDFiles": "root://eospublic.cern.ch//file1.root",
                         "NFiles": 10,
-                        "Function": "a",
+                        "Query": "a",
                     }
                 ]
             )
@@ -209,7 +207,7 @@ def test_invalid_dataset_identifier():
                     {
                         "Name": "sampleA",
                         "NFiles": 10,
-                        "Function": "a",
+                        "Query": "a",
                     }
                 ]
             )
@@ -239,7 +237,7 @@ def test_submit_mapping(transformed_result, codegen_list):
 
 
 def test_yaml(tmp_path):
-    from servicex.databinder.databinder_configuration import load_databinder_config
+    from servicex.servicex_client import _load_ServiceXSpec
     # Nominal paths
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
@@ -260,7 +258,7 @@ Sample:
                 Select(lambda e: {'lep_pt': e['lep_pt']})
 """)
         f.flush()
-        result = load_databinder_config(path)
+        result = _load_ServiceXSpec(path)
         assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
         assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery_Uproot'
 
@@ -280,11 +278,11 @@ Sample:
 """)
         f.flush()
         with pytest.raises(SyntaxError):
-            load_databinder_config(path)
+            _load_ServiceXSpec(path)
 
 
 def test_yaml_include(tmp_path):
-    from servicex.databinder.databinder_configuration import load_databinder_config
+    from servicex.servicex_client import _load_ServiceXSpec
     # Create two files, one has definitions for the other and is included by it
     with open(tmp_path / "definitions.yaml", "w") as f1, \
          open(path2 := (tmp_path / "parent.yaml"), "w") as f2:
@@ -308,7 +306,7 @@ Sample:
 """)
         f1.flush()
         f2.flush()
-        load_databinder_config(path2)
+        _load_ServiceXSpec(path2)
 
 
 def test_funcadl_query(transformed_result, codegen_list):
@@ -381,8 +379,11 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
 
 def test_databinder_load_dict():
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
-    from servicex.databinder.databinder_configuration import load_databinder_config
-    load_databinder_config({
+    from servicex.servicex_client import _load_ServiceXSpec
+    _load_ServiceXSpec({
+        "General": {
+            "ServiceX": "servicex-uc-af",
+        },
         "Sample": [
             {
                 "Name": "sampleA",
@@ -395,18 +396,20 @@ def test_databinder_load_dict():
 
 
 def test_python_query(transformed_result, codegen_list):
-    from servicex import deliver
-    string_function = """
-def run_query(input_filenames=None):
-    print("Greetings from your query")
-    return []
-"""
+    from servicex import PythonQuery, deliver
+
+    def run_query(input_filenames=None):
+        print("Greetings from your query")
+        return []
+
+    query = PythonQuery().with_uproot_function(run_query)
+
     spec = ServiceXSpec.model_validate({
         "Sample": [
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Function": string_function
+                "Query": query
             }
         ]
     })
