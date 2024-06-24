@@ -45,24 +45,6 @@ def test_single_root_file():
     )
 
     assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
-    assert spec.Sample[0].dataset_identifier.did is None
-    assert spec.Sample[0].dataset_identifier.files == [
-        "root://eospublic.cern.ch//file1.root"
-    ]
-
-    spec = ServiceXSpec.model_validate(
-        basic_spec(
-            samples=[
-                {
-                    "Name": "sampleA",
-                    "Dataset": dataset.FileList("root://eospublic.cern.ch//file1.root"),
-                    "Function": "a",
-                }
-            ]
-        )
-    )
-
-    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
     assert spec.Sample[0].dataset_identifier.files == [
         "root://eospublic.cern.ch//file1.root"
     ]
@@ -90,27 +72,6 @@ def test_list_of_root_files():
         "root://eospublic.cern.ch//file2.root",
     ]
 
-    spec = ServiceXSpec.model_validate(
-        basic_spec(
-            samples=[
-                {
-                    "Name": "sampleA",
-                    "Dataset": dataset.FileList([
-                        "root://eospublic.cern.ch//file1.root",
-                        "root://eospublic.cern.ch//file2.root",
-                    ]),
-                    "Function": "a",
-                }
-            ]
-        )
-    )
-
-    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
-    assert spec.Sample[0].dataset_identifier.files == [
-        "root://eospublic.cern.ch//file1.root",
-        "root://eospublic.cern.ch//file2.root",
-    ]
-
 
 def test_rucio_did():
     spec = ServiceXSpec.model_validate(
@@ -120,24 +81,6 @@ def test_rucio_did():
                     "Name": "sampleA",
                     "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
                     "Query": "a",
-                }
-            ]
-        )
-    )
-
-    assert isinstance(spec.Sample[0].dataset_identifier, RucioDatasetIdentifier)
-    assert (
-        spec.Sample[0].dataset_identifier.did
-        == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal"
-    )
-
-    spec = ServiceXSpec.model_validate(
-        basic_spec(
-            samples=[
-                {
-                    "Name": "sampleA",
-                    "Dataset": dataset.Rucio("user.ivukotic:user.ivukotic.single_top_tW__nominal"),
-                    "Function": "a",
                 }
             ]
         )
