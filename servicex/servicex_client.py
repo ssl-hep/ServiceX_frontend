@@ -49,16 +49,19 @@ logger = logging.getLogger(__name__)
 yaml = YAML()
 
 
-def _load_ServiceXSpec(config: Union[ServiceXSpec, Mapping[str, Any], str]) -> ServiceXSpec:
+def _load_ServiceXSpec(config: Union[ServiceXSpec, Mapping[str, Any], str, Path]) -> ServiceXSpec:
     if isinstance(config, Mapping):
         logger.debug("Config from dictionary")
         config = ServiceXSpec(**config)
     elif isinstance(config, ServiceXSpec):
         logger.debug("Config from ServiceXSpec")
-    elif isinstance(config, str):
+    elif isinstance(config, str) or isinstance(config, Path):
         logger.debug("Config from file")
 
-        file_path = Path(config)
+        if isinstance(config, str):
+            file_path = Path(config)
+        else:
+            file_path = config
 
         import sys
         if sys.version_info < (3, 10):
@@ -154,7 +157,7 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
     return out_dict
 
 
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any], str],
+def deliver(config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
             config_path: Optional[str] = None):
     config = _load_ServiceXSpec(config)
 
