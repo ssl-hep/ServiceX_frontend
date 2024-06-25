@@ -1,0 +1,8 @@
+General:
+  ServiceX: servicex-uc-af
+
+Sample:
+  - Name: Uproot_UprootRaw_YAML
+    RucioDID: user.mtost:user.mtost.singletop.p6026.Jun13
+    Query: !UprootRaw |
+      [{"treename":"reco", "filter_name": "el_pt_NOSYS"}]
