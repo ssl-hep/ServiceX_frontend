@@ -70,7 +70,13 @@ class UprootRawQuery(QueryStringGenerator):
         code = node.value
         import json
         queries = json.loads(code)
-        tmp = TreeSubQuery(treename="none")
-        uproot_raw_query = [tmp.parse_obj(_) for _ in queries]
+        tree_query = TreeSubQuery(treename="none")
+        hist_query = CopyHistogramSubQuery(copy_histograms="none")
+        uproot_raw_query = []
+        for _ in queries:
+            if "copy_histograms" in _.keys():
+                uproot_raw_query.append(hist_query.model_validate(_))
+            else:
+                uproot_raw_query.append(tree_query.model_validate(_))
         q = cls(uproot_raw_query)
         return q
