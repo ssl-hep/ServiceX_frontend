@@ -28,6 +28,7 @@
 from unittest.mock import patch, MagicMock
 
 from servicex.expandable_progress import ExpandableProgress, TranformStatusProgress
+from rich.progress import TextColumn, BarColumn, MofNCompleteColumn, TimeRemainingColumn
 
 
 @patch("servicex.expandable_progress.TranformStatusProgress",
@@ -104,11 +105,32 @@ def test_nested_expandable_progress():
             assert progress2.progress == progress.progress
 
 
-@patch("servicex.expandable_progress.TranformStatusProgress.tasks",
-       return_value=["a", "b", "c"])
 @patch("servicex.expandable_progress.TranformStatusProgress.make_tasks_table")
-def test_progress_get_renderables(mock_task, mock_mask_tables):
-    progress = TranformStatusProgress()
-    progress.get_renderables()
-    for task in mock_task:
-        mock_mask_tables.assert_called_with(task)
+def test_get_renderables_without_failure(mock_make_tasks_table):
+    progress = TranformStatusProgress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(complete_style="rgb(114,156,31)",
+                  finished_style="rgb(0,255,0)"),
+        MofNCompleteColumn(),
+        TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+    )
+    progress.add_task("test_without_failure")
+    list(progress.get_renderables())
+    mock_make_tasks_table.assert_called()
+    mock_make_tasks_table.assert_called_with(progress.tasks)
+    assert progress.columns[1].complete_style == 'rgb(114,156,31)'
+
+
+def test_get_renderables_with_failure():
+    progress = TranformStatusProgress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(complete_style="rgb(114,156,31)",
+                  finished_style="rgb(0,255,0)"),
+        MofNCompleteColumn(),
+        TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+    )
+    progress.add_task("test_with_failure", bar="failure")
+    list(progress.get_renderables())
+    assert len(progress.columns) == 4
+    assert isinstance(progress.columns[1], BarColumn)
+    assert progress.columns[1].complete_style == 'rgb(255,0,0)'
