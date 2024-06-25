@@ -186,7 +186,7 @@ General:
 Sample:
   - Name: ttH
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
-    Query: !Python |
+    Query: !PythonFunction |
         def run_query(input_filenames=None):
             return []
     Codegen: python
@@ -211,7 +211,7 @@ General:
 Sample:
   - Name: ttH
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
-    Query: !Python |
+    Query: !PythonFunction |
         def run_query(input_filenames=None):
             i ==== 18 # syntax error
 """)
@@ -227,7 +227,7 @@ def test_yaml_include(tmp_path):
          open(path2 := (tmp_path / "parent.yaml"), "w") as f2:
         f1.write("""
 - &DEF_facility servicex-uc-af
-- &DEF_query !Python |
+- &DEF_query !PythonFunction |
         def run_query(input_filenames=None):
             return []
 """)
@@ -252,7 +252,7 @@ Sample:
 
 def test_funcadl_query(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
+    from servicex import FuncADL_Uproot
     spec = ServiceXSpec.model_validate({
         "General": {
             "ServiceX": "servicex-uc-af",
@@ -261,7 +261,7 @@ def test_funcadl_query(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
                 "Tree": "nominal"
             }
         ]
@@ -275,7 +275,7 @@ def test_funcadl_query(transformed_result, codegen_list):
 
 def test_query_with_codegen_override(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
+    from servicex import FuncADL_Uproot
     # first, with General override
     spec = ServiceXSpec.model_validate({
         "General": {
@@ -286,7 +286,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
                 "Tree": "nominal"
             }
         ]
@@ -309,7 +309,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
                 "Tree": "nominal",
                 "Codegen": "does-not-exist"
             }
@@ -326,7 +326,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
 
 
 def test_databinder_load_dict():
-    from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
+    from servicex import FuncADL_Uproot
     from servicex.servicex_client import _load_ServiceXSpec
     _load_ServiceXSpec({
         "General": {
@@ -336,7 +336,7 @@ def test_databinder_load_dict():
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADLQuery_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
+                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
                 "Tree": "nominal"
             }
         ]
@@ -344,13 +344,13 @@ def test_databinder_load_dict():
 
 
 def test_python_query(transformed_result, codegen_list):
-    from servicex import PythonQuery, deliver
+    from servicex import PythonFunction, deliver
 
     def run_query(input_filenames=None):
         print("Greetings from your query")
         return []
 
-    query = PythonQuery().with_uproot_function(run_query)
+    query = PythonFunction().with_uproot_function(run_query)
 
     spec = ServiceXSpec.model_validate({
         "General": {
@@ -373,7 +373,7 @@ def test_python_query(transformed_result, codegen_list):
 
 def test_uproot_raw_query(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex.uproot_raw.uproot_raw import UprootRawQuery
+    from servicex import UprootRaw
     spec = ServiceXSpec.model_validate({
         "General": {
             "ServiceX": "servicex-uc-af",
@@ -382,7 +382,7 @@ def test_uproot_raw_query(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": UprootRawQuery([{"treename": "nominal"}])
+                "Query": UprootRaw([{"treename": "nominal"}])
             }
         ]
     })
@@ -394,7 +394,7 @@ def test_uproot_raw_query(transformed_result, codegen_list):
 
 
 def test_fail_with_tree_on_non_funcadl_query():
-    from servicex.uproot_raw.uproot_raw import UprootRawQuery
+    from servicex import UprootRaw
     with pytest.raises(ValueError):
         ServiceXSpec.model_validate({
             "General": {
@@ -404,7 +404,7 @@ def test_fail_with_tree_on_non_funcadl_query():
                 {
                     "Name": "sampleA",
                     "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                    "Query": UprootRawQuery([{"treename": "nominal"}]),
+                    "Query": UprootRaw([{"treename": "nominal"}]),
                     "Tree": "nominal"
                 }
             ]
