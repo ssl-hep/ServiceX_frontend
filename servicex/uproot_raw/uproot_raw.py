@@ -51,6 +51,8 @@ SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
 
 @pydantic.dataclasses.dataclass
 class UprootRawQuery(QueryStringGenerator):
+    yaml_tag = '!UprootRaw'
+
     query: Union[List[SubQuery], SubQuery]
     default_codegen: str = 'uproot-raw'
 
@@ -62,3 +64,13 @@ class UprootRawQuery(QueryStringGenerator):
         else:
             final_query = self.query
         return json.dumps([json.loads(_.model_dump_json()) for _ in final_query])
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        code = node.value
+        import json
+        queries = json.loads(code)
+        tmp = TreeSubQuery(treename="none")
+        uproot_raw_query = [tmp.parse_obj(_) for _ in queries]
+        q = cls(uproot_raw_query)
+        return q

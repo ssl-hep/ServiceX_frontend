@@ -31,6 +31,7 @@ from servicex import servicex_client
 from servicex import dataset_identifier
 from servicex.databinder_models import Sample, General, ServiceXSpec
 from servicex.func_adl.func_adl_dataset import FuncADLQuery, FuncADLQuery_Uproot
+from servicex.uproot_raw.uproot_raw import UprootRawQuery
 from servicex.python_dataset import PythonQuery
 from servicex.servicex_client import ServiceXClient, deliver
 from .query import Query
@@ -54,6 +55,7 @@ __all__ = [
     "FileListDataset",
     "FuncADLQuery",
     "FuncADLQuery_Uproot",
+    "UprootRawQuery",
     "PythonQuery",
     "Sample",
     "General",

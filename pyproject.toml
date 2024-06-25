@@ -99,6 +99,7 @@ FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
 FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
 Python = "servicex.python_dataset:PythonQuery"
+UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:
