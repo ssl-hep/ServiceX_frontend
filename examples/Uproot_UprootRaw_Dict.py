@@ -1,9 +1,9 @@
-from servicex import UprootRawQuery, deliver
+from servicex import UprootRaw, deliver
 
 
 def uproot_uproot_raw_dict():
 
-    query = UprootRawQuery([{"treename": "reco", "filter_name": "el_pt_NOSYS"}])
+    query = UprootRaw([{"treename": "reco", "filter_name": "el_pt_NOSYS"}])
 
     spec = {
         'General': {

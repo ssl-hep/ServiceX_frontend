@@ -1,4 +1,4 @@
-from servicex import PythonQuery, deliver
+from servicex import PythonFunction, deliver
 
 
 def uproot_pythonfunction_dict():
@@ -9,7 +9,7 @@ def uproot_pythonfunction_dict():
             br = o.arrays("el_pt_NOSYS")
         return br
 
-    query = PythonQuery().with_uproot_function(run_query)
+    query = PythonFunction().with_uproot_function(run_query)
 
     spec = {
         'General': {
