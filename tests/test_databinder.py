@@ -248,7 +248,7 @@ Sample:
 def test_funcadl_query(transformed_result, codegen_list):
     from servicex import deliver
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
-    spec = ServiceXSpec.model_validate({        
+    spec = ServiceXSpec.model_validate({
         "Sample": [
             {
                 "Name": "sampleA",
@@ -270,7 +270,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
     # first, with General override
     spec = ServiceXSpec.model_validate({
-        "General": {            
+        "General": {
             "Codegen": "does-not-exist"
         },
         "Sample": [
@@ -292,7 +292,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
         assert excinfo.value.args[0].startswith('does-not-exist')
 
     # second, with sample-level override
-    spec = ServiceXSpec.model_validate({        
+    spec = ServiceXSpec.model_validate({
         "Sample": [
             {
                 "Name": "sampleA",
@@ -335,7 +335,7 @@ def run_query(input_filenames=None):
     print("Greetings from your query")
     return []
 """
-    spec = ServiceXSpec.model_validate({        
+    spec = ServiceXSpec.model_validate({
         "Sample": [
             {
                 "Name": "sampleA",
@@ -354,7 +354,7 @@ def run_query(input_filenames=None):
 def test_uproot_raw_query(transformed_result, codegen_list):
     from servicex import deliver
     from servicex.uproot_raw.uproot_raw import UprootRawQuery
-    spec = ServiceXSpec.model_validate({        
+    spec = ServiceXSpec.model_validate({
         "Sample": [
             {
                 "Name": "sampleA",
@@ -373,7 +373,7 @@ def test_uproot_raw_query(transformed_result, codegen_list):
 def test_fail_with_tree_on_non_funcadl_query():
     from servicex.uproot_raw.uproot_raw import UprootRawQuery
     with pytest.raises(ValueError):
-        ServiceXSpec.model_validate({            
+        ServiceXSpec.model_validate({
             "Sample": [
                 {
                     "Name": "sampleA",
