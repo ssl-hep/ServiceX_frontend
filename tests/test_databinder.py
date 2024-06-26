@@ -8,7 +8,6 @@ from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier
 def basic_spec(samples=None):
     return {
         "General": {
-            "ServiceX": "servicex",
             "Codegen": "python",
         },
         "Sample": samples
@@ -19,7 +18,6 @@ def basic_spec(samples=None):
 def test_load_config():
     config = {
         "General": {
-            "ServiceX": "servicex",
             "Codegen": "python",
             "Delivery": "LocalCache",
         },
@@ -156,7 +154,6 @@ def test_submit_mapping(transformed_result, codegen_list):
     from servicex import deliver
     spec = {
         "General": {
-            "ServiceX": "servicex-uc-af",
             "Codegen": "uproot-raw",
         },
         "Sample": [
@@ -181,7 +178,6 @@ def test_yaml(tmp_path):
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
-  ServiceX: "servicex-uc-af"
   OutputFormat: root-file
   Delivery: LocalCache
 
@@ -206,7 +202,6 @@ Sample:
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
-  ServiceX: "servicex-uc-af"
   OutputFormat: root-file
   Delivery: LocalCache
 
@@ -228,7 +223,6 @@ def test_yaml_include(tmp_path):
     with open(tmp_path / "definitions.yaml", "w") as f1, \
          open(path2 := (tmp_path / "parent.yaml"), "w") as f2:
         f1.write("""
-- &DEF_facility servicex-uc-af
 - &DEF_query !Python |
         def run_query(input_filenames=None):
             return []
@@ -238,7 +232,6 @@ Definitions:
     !include definitions.yaml
 
 General:
-  ServiceX: *DEF_facility
   OutputFormat: root-file
   Delivery: LocalCache
 
@@ -255,10 +248,7 @@ Sample:
 def test_funcadl_query(transformed_result, codegen_list):
     from servicex import deliver
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
-    spec = ServiceXSpec.model_validate({
-        "General": {
-            "ServiceX": "servicex-uc-af",
-        },
+    spec = ServiceXSpec.model_validate({        
         "Sample": [
             {
                 "Name": "sampleA",
@@ -280,8 +270,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
     # first, with General override
     spec = ServiceXSpec.model_validate({
-        "General": {
-            "ServiceX": "servicex-uc-af",
+        "General": {            
             "Codegen": "does-not-exist"
         },
         "Sample": [
@@ -303,10 +292,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
         assert excinfo.value.args[0].startswith('does-not-exist')
 
     # second, with sample-level override
-    spec = ServiceXSpec.model_validate({
-        "General": {
-            "ServiceX": "servicex-uc-af"
-        },
+    spec = ServiceXSpec.model_validate({        
         "Sample": [
             {
                 "Name": "sampleA",
@@ -331,9 +317,6 @@ def test_databinder_load_dict():
     from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
     from servicex.databinder.databinder_configuration import load_databinder_config
     load_databinder_config({
-        "General": {
-            "ServiceX": "servicex-uc-af",
-        },
         "Sample": [
             {
                 "Name": "sampleA",
@@ -352,10 +335,7 @@ def run_query(input_filenames=None):
     print("Greetings from your query")
     return []
 """
-    spec = ServiceXSpec.model_validate({
-        "General": {
-            "ServiceX": "servicex-uc-af",
-        },
+    spec = ServiceXSpec.model_validate({        
         "Sample": [
             {
                 "Name": "sampleA",
@@ -374,10 +354,7 @@ def run_query(input_filenames=None):
 def test_uproot_raw_query(transformed_result, codegen_list):
     from servicex import deliver
     from servicex.uproot_raw.uproot_raw import UprootRawQuery
-    spec = ServiceXSpec.model_validate({
-        "General": {
-            "ServiceX": "servicex-uc-af",
-        },
+    spec = ServiceXSpec.model_validate({        
         "Sample": [
             {
                 "Name": "sampleA",
@@ -396,10 +373,7 @@ def test_uproot_raw_query(transformed_result, codegen_list):
 def test_fail_with_tree_on_non_funcadl_query():
     from servicex.uproot_raw.uproot_raw import UprootRawQuery
     with pytest.raises(ValueError):
-        ServiceXSpec.model_validate({
-            "General": {
-                "ServiceX": "servicex-uc-af",
-            },
+        ServiceXSpec.model_validate({            
             "Sample": [
                 {
                     "Name": "sampleA",
@@ -415,7 +389,6 @@ def test_generic_query(codegen_list):
     from servicex.servicex_client import ServiceXClient
     spec = ServiceXSpec.model_validate({
         "General": {
-            "ServiceX": "servicex-uc-af",
             "Codegen": "uproot-raw",
         },
         "Sample": [
@@ -428,7 +401,7 @@ def test_generic_query(codegen_list):
     })
     with patch('servicex.servicex_client.ServiceXClient.get_code_generators',
                return_value=codegen_list):
-        sx = ServiceXClient(backend=spec.General.ServiceX, config_path='tests/example_config.yaml')
+        sx = ServiceXClient(config_path='tests/example_config.yaml')
         query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                                  codegen=spec.General.Codegen, query=spec.Sample[0].Query)
         assert query.generate_selection_string() == "[{'treename': 'nominal'}]"

@@ -96,7 +96,6 @@ class General(BaseModel):
         LocalCache = "LocalCache"
         SignedURLs = "SignedURLs"
 
-    ServiceX: str = Field(default=None)
     Codegen: Optional[str] = None
     OutputFormat: ResultFormat = (
         Field(default=ResultFormat.root, pattern="^(parquet|root-file)$")
