@@ -141,7 +141,11 @@ class ServiceXClient:
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:
-            backend = self.config.default_endpoint
+            if self.config.default_endpoint:
+                backend = self.config.default_endpoint
+            else:
+                # Take the first endpoint from servicex.yaml if default_endpoint is not set
+                backend = self.config.api_endpoints[0].name
 
         if bool(url) == bool(backend):
             raise ValueError("Only specify backend or url... not both")

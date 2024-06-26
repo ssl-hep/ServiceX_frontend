@@ -96,7 +96,7 @@ class General(BaseModel):
         LocalCache = "LocalCache"
         SignedURLs = "SignedURLs"
 
-    ServiceX: str = Field(..., alias="ServiceX")
+    ServiceX: str = Field(default=None)
     Codegen: Optional[str] = None
     OutputFormat: ResultFormat = (
         Field(default=ResultFormat.root, pattern="^(parquet|root-file)$")
@@ -110,8 +110,11 @@ class General(BaseModel):
     OutFilesetName: str = 'servicex_fileset'
 
 
+_General = General
+
+
 class ServiceXSpec(BaseModel):
-    General: General
+    General: _General = General()
     Sample: List[Sample]
     Definition: Optional[List] = None
 
