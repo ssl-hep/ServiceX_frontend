@@ -109,14 +109,15 @@ def _build_datasets(config, config_path):
                 logger.debug("sample.Query from FuncADLQuery")
                 logger.debug(f"qastle_query from ServiceXSpec: \
                              {sample.Query.generate_selection_string()}")
-                query = sx.func_adl_dataset(sample.dataset_identifier, sample.Name,
-                                            get_codegen(sample, config.General),
-                                            config.General.OutputFormat)
-                query._q_ast = sample.Query._q_ast
-                query._item_type = sample.Query._item_type
+                sample.Query.dataset_identifier = sample.dataset_identifier
+                sample.Query.title = sample.Name
+                sample.Query.codegen = get_codegen(sample, config.General)
+                sample.Query.result_format = config.General.OutputFormat
+                sample.Query.ignore_cache = sample.IgnoreLocalCache
+
                 if sample.Tree:
-                    query = query.set_tree(sample.Tree)
-                sample.Query = query
+                    sample.Query = sample.Query.set_tree(sample.Tree)
+
                 logger.debug(f"final qastle_query: {sample.Query.generate_selection_string()}")
             elif isinstance(sample.Query, PythonQuery):
                 logger.debug("sample.Query from PythonQuery")
