@@ -4,6 +4,5 @@ General:
 Sample:
   - Name: Uproot_FuncADL_YAML
     RucioDID: user.mtost:user.mtost.singletop.p6026.Jun13
-    Tree: reco
     Query: !FuncADL_Uproot |
-            Select(lambda e: {'el_pt_NOSYS': e['el_pt_NOSYS']})
+            FromTree('reco').Select(lambda e: {'el_pt_NOSYS': e['el_pt_NOSYS']})
