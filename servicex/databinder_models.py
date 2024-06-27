@@ -109,6 +109,8 @@ class General(BaseModel):
     OutFilesetName: str = 'servicex_fileset'
 
 
+# TODO: ServiceXSpec class has a field name General and it clashes with the class name General
+# when it is called General() to initialize default values for General class
 _General = General
 
 
