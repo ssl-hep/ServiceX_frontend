@@ -340,21 +340,40 @@ class FuncADLQuery(Query, EventDataset[T], ABC):
         """
         return self.value()
 
-    @classmethod
-    def from_yaml(cls, _, node):
-        import qastle
-        query_string = "EventDataset()." + node.value
-        qastle_query = qastle.python_ast_to_text_ast(
-            ast.parse(query_string)
-        )
-        query = cls()
-        query.set_provided_qastle(qastle_query)
-        return query
+    # @classmethod
+    # def from_yaml(cls, _, node):
+    #     import qastle
+    #     query_string = "EventDataset('bogus.root', 'reco')." + node.value
+    #     qastle_query = qastle.python_ast_to_text_ast(
+    #         qastle.insert_linq_nodes(
+    #             ast.parse(query_string)
+    #         )
+    #     )
+    #     query = cls()
+    #     query.set_provided_qastle(qastle_query)
+    #     return query
 
 
 class FuncADLQuery_Uproot(FuncADLQuery):
     yaml_tag = '!FuncADL_Uproot'
     default_codegen = 'uproot'
+
+    def SetTree(self, tree_name):
+        return self.set_tree(tree_name=tree_name)
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        import qastle
+        print(node.value)
+        query_string = "EventDataset('bogus.root', 'reco')." + node.value
+        qastle_query = qastle.python_ast_to_text_ast(
+            qastle.insert_linq_nodes(
+                ast.parse(query_string)
+            )
+        )
+        query = cls()
+        query.set_provided_qastle(qastle_query)
+        return query
 
 
 class FuncADLQuery_ATLASr21(FuncADLQuery):

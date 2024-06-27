@@ -103,59 +103,54 @@ def _build_datasets(config, config_path):
     sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
     datasets = []
     for sample in config.Sample:
-        if sample.Query:
-            # if string or QueryStringGenerator, turn into a Query
-            if isinstance(sample.Query, str) or isinstance(
-                sample.Query, QueryStringGenerator
-            ):
-                logger.debug("sample.Query from string or QueryStringGenerator")
-                sample.Query = sx.generic_query(
-                    dataset_identifier=sample.dataset_identifier,
-                    title=sample.Name,
-                    codegen=get_codegen(sample, config.General),
-                    result_format=config.General.OutputFormat,
-                    ignore_cache=sample.IgnoreLocalCache,
-                    query=sample.Query,
-                )
-            elif isinstance(sample.Query, FuncADLQuery):
-                logger.debug("sample.Query from FuncADLQuery")
-                logger.debug(
-                    f"qastle_query from ServiceXSpec: \
-                             {sample.Query.generate_selection_string()}"
-                )
-                query = sx.func_adl_dataset(
-                    dataset_identifier=sample.dataset_identifier,
-                    title=sample.Name,
-                    codegen=get_codegen(sample, config.General),
-                    result_format=config.General.OutputFormat,
-                    ignore_cache=sample.IgnoreLocalCache,
-                )
-                query.clone_with_new_ast(sample.Query.query_ast, query._item_type)
+        # if string or QueryStringGenerator, turn into a Query
+        if isinstance(sample.Query, str) or isinstance(
+            sample.Query, QueryStringGenerator
+        ):
+            logger.debug("sample.Query from string or QueryStringGenerator")
+            sample.Query = sx.generic_query(
+                dataset_identifier=sample.dataset_identifier,
+                title=sample.Name,
+                codegen=get_codegen(sample, config.General),
+                result_format=config.General.OutputFormat,
+                ignore_cache=sample.IgnoreLocalCache,
+                query=sample.Query,
+            )
+        elif isinstance(sample.Query, FuncADLQuery):
+            logger.debug("sample.Query from FuncADLQuery")
+            logger.debug(
+                f"qastle_query from ServiceXSpec: {sample.Query.generate_selection_string()}"
+            )
+            query = sx.func_adl_dataset(
+                dataset_identifier=sample.dataset_identifier,
+                title=sample.Name,
+                codegen=get_codegen(sample, config.General),
+                result_format=config.General.OutputFormat,
+                ignore_cache=sample.IgnoreLocalCache,
+            )
+            query.set_provided_qastle(sample.Query.generate_selection_string())
 
-                if sample.Tree:
-                    query = query.set_tree(sample.Tree)
+            sample.Query = query
 
-                sample.Query = query
+            logger.debug(
+                f"final qastle_query: {sample.Query.generate_selection_string()}"
+            )
+        elif isinstance(sample.Query, PythonQuery):
+            logger.debug("sample.Query from PythonQuery")
+            query = sx.python_dataset(
+                dataset_identifier=sample.dataset_identifier,
+                title=sample.Name,
+                codegen=get_codegen(sample, config.General),
+                result_format=config.General.OutputFormat,
+                ignore_cache=sample.IgnoreLocalCache,
+            )
+            query.python_function = sample.Query.python_function
+            sample.Query = query
+        else:
+            logger.debug(f"Unknown Query type: {sample.Query}")
+        sample.Query.ignore_cache = sample.IgnoreLocalCache
 
-                logger.debug(
-                    f"final qastle_query: {sample.Query.generate_selection_string()}"
-                )
-            elif isinstance(sample.Query, PythonQuery):
-                logger.debug("sample.Query from PythonQuery")
-                query = sx.python_dataset(
-                    dataset_identifier=sample.dataset_identifier,
-                    title=sample.Name,
-                    codegen=get_codegen(sample, config.General),
-                    result_format=config.General.OutputFormat,
-                    ignore_cache=sample.IgnoreLocalCache,
-                )
-                query.python_function = sample.Query.python_function
-                sample.Query = query
-            else:
-                logger.debug(f"Unknown Query type: {sample.Query}")
-            sample.Query.ignore_cache = sample.IgnoreLocalCache
-
-            datasets.append(sample.Query)
+        datasets.append(sample.Query)
     return datasets
 
 
@@ -185,16 +180,16 @@ def deliver(
     config = _load_ServiceXSpec(config)
 
     datasets = _build_datasets(config, config_path)
+    return datasets
+    # group = DatasetGroup(datasets)
 
-    group = DatasetGroup(datasets)
+    # if config.General.Delivery == General.DeliveryEnum.SignedURLs:
+    #     results = group.as_signed_urls()
+    #     return _output_handler(config, results)
 
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        results = group.as_signed_urls()
-        return _output_handler(config, results)
-
-    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files()
-        return _output_handler(config, results)
+    # elif config.General.Delivery == General.DeliveryEnum.LocalCache:
+    #     results = group.as_files()
+    #     return _output_handler(config, results)
 
 
 class ServiceXClient:
