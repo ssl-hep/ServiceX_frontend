@@ -183,16 +183,16 @@ def deliver(
     config = _load_ServiceXSpec(config)
 
     datasets = _build_datasets(config, config_path)
+    return datasets
+    # group = DatasetGroup(datasets)
 
-    group = DatasetGroup(datasets)
+    # if config.General.Delivery == General.DeliveryEnum.SignedURLs:
+    #     results = group.as_signed_urls()
+    #     return _output_handler(config, results)
 
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        results = group.as_signed_urls()
-        return _output_handler(config, results)
-
-    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files()
-        return _output_handler(config, results)
+    # elif config.General.Delivery == General.DeliveryEnum.LocalCache:
+    #     results = group.as_files()
+    #     return _output_handler(config, results)
 
 
 class ServiceXClient:
