@@ -219,10 +219,10 @@ class Query(ABC):
                             More information at:
                             {
                             create_kibana_link_parameters(
-                                self.current_status.log_url,
-                                self.current_status.request_id,
-                                None,
-                                TimeFrame.month)
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            None,
+                            TimeFrame.month)
                             }
                             """
                         )
@@ -405,11 +405,11 @@ class Query(ABC):
                         err_str += f"""
                         \nLogfiles at {
                             create_kibana_link_parameters(
-                                self.current_status.log_url,
-                                self.current_status.request_id,
-                                None,
-                                TimeFrame.month)
-                                }
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            None,
+                            TimeFrame.month)
+                            }
                         """
                     raise ServiceXException(err_str)
                 else:
@@ -418,11 +418,11 @@ class Query(ABC):
                         err_str += f"""
                         \nMore logfiles at {
                             create_kibana_link_parameters(
-                                self.current_status.log_url,
-                                self.current_status.request_id,
-                                LogLevel.error,
-                                TimeFrame.month)
-                                }
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            LogLevel.error,
+                            TimeFrame.month)
+                            }
                         """
                     raise ServiceXException(err_str)
 
