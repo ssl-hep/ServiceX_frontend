@@ -45,7 +45,11 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optional[str] = None):
+def deliver(
+    config: Union[ServiceXSpec, Mapping[str, Any]],
+    config_path: Optional[str] = None,
+    servicex_name: Optional[str] = None
+):
     if isinstance(config, Mapping):
         config = ServiceXSpec(**config)
 
@@ -59,7 +63,7 @@ def deliver(config: Union[ServiceXSpec, Mapping[str, Any]], config_path: Optiona
         elif isinstance(_sample.Query, Query):
             return _sample.Query.codegen
 
-    sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
+    sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     datasets = []
     for sample in config.Sample:
         if sample.Query:
@@ -141,7 +145,11 @@ class ServiceXClient:
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:
-            backend = self.config.default_endpoint
+            if self.config.default_endpoint:
+                backend = self.config.default_endpoint
+            else:
+                # Take the first endpoint from servicex.yaml if default_endpoint is not set
+                backend = self.config.api_endpoints[0].name
 
         if bool(url) == bool(backend):
             raise ValueError("Only specify backend or url... not both")
