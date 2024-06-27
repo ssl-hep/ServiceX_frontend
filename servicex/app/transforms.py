@@ -192,7 +192,7 @@ def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, ti
         a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)},"\
                       f"{add_query('level', log_level.value.lower())}))"
     else:
-        a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)}"
+        a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)}))"
     g_parameter = f"&_g=({select_time(time_frame.value.lower())})"
     kibana_link = re.sub(r"\&\_g\=\(\)", g_parameter + a_parameter, log_url)
     return kibana_link
