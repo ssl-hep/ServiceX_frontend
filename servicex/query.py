@@ -185,7 +185,7 @@ class Query(ABC):
                  or the list of pre-signed urls
         """
         from servicex.app.transforms import \
-            create_kibana_link_parameters, TimeFrame
+            create_kibana_link_parameters, TimeFrame, LogLevel
         download_files_task = None
         loop = asyncio.get_running_loop()
 
@@ -221,7 +221,7 @@ class Query(ABC):
                         kibana_link = \
                             create_kibana_link_parameters(self.current_status.log_url,
                                                           self.current_status.request_id,
-                                                          None,
+                                                          LogLevel.error,
                                                           TimeFrame.month)
                         logger.warning(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
                 else:
@@ -403,7 +403,7 @@ class Query(ABC):
                         kibana_link = \
                             create_kibana_link_parameters(self.current_status.log_url,
                                                           self.current_status.request_id,
-                                                          None,
+                                                          LogLevel.error,
                                                           TimeFrame.month)
                         logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
                     raise ServiceXException(err_str)
