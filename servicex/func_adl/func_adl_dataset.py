@@ -365,10 +365,9 @@ class FuncADLQuery_Uproot(FuncADLQuery):
     def from_yaml(cls, _, node):
         import re
         import qastle
-
-        tree_part = re.findall(r'SetTree\([^()]*\)', node.value)
+        tree_part = re.findall(r'FromTree\([^()]*\)', node.value)
         tree_name = re.findall(r"['\"](.*?)['\"]", tree_part[0])[0]
-        func_adl_part = re.sub(r'SetTree\([^()]*\)', "", node.value).strip(".")        
+        func_adl_part = re.sub(r'FromTree\([^()]*\)', "", node.value).strip(".")
         query_string = f"EventDataset('bogus.root', '{tree_name}')." + func_adl_part
         qastle_query = qastle.python_ast_to_text_ast(
             qastle.insert_linq_nodes(
