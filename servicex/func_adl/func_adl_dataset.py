@@ -340,19 +340,6 @@ class FuncADLQuery(Query, EventDataset[T], ABC):
         """
         return self.value()
 
-    # @classmethod
-    # def from_yaml(cls, _, node):
-    #     import qastle
-    #     query_string = "EventDataset('bogus.root', 'reco')." + node.value
-    #     qastle_query = qastle.python_ast_to_text_ast(
-    #         qastle.insert_linq_nodes(
-    #             ast.parse(query_string)
-    #         )
-    #     )
-    #     query = cls()
-    #     query.set_provided_qastle(qastle_query)
-    #     return query
-
 
 class FuncADLQuery_Uproot(FuncADLQuery):
     yaml_tag = '!FuncADL_Uproot'
@@ -363,12 +350,21 @@ class FuncADLQuery_Uproot(FuncADLQuery):
 
     @classmethod
     def from_yaml(cls, _, node):
-        import re
         import qastle
-        tree_part = re.findall(r'FromTree\([^()]*\)', node.value)
-        tree_name = re.findall(r"['\"](.*?)['\"]", tree_part[0])[0]
-        func_adl_part = re.sub(r'FromTree\([^()]*\)', "", node.value).strip(".")
-        query_string = f"EventDataset('bogus.root', '{tree_name}')." + func_adl_part
+        import re
+
+        # We have modified the funcADL spec a bit here. For uproot queries
+        # we need to pick the optional tree specification up from the query
+        # string and add it to the EventDataset constructor.
+        from_tree_re = r'(?:FromTree\(["\']([^"\']+)["\']\)\.)?(.+)'
+        tree_match = re.match(from_tree_re, node.value)
+
+        if tree_match:
+            query_string = f"EventDataset('bogus.root', '{tree_match.group(1)}')." \
+                           + tree_match.group(2)
+        else:
+            query_string = "EventDataset('bogus.root', 'events')." + node.value
+
         qastle_query = qastle.python_ast_to_text_ast(
             qastle.insert_linq_nodes(
                 ast.parse(query_string)
