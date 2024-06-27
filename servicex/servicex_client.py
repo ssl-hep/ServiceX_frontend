@@ -89,7 +89,7 @@ def _load_ServiceXSpec(
     return config
 
 
-def _build_datasets(config, config_path):
+def _build_datasets(config, config_path, servicex_name):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -100,7 +100,7 @@ def _build_datasets(config, config_path):
         elif isinstance(_sample.Query, Query):
             return _sample.Query.codegen
 
-    sx = ServiceXClient(backend=config.General.ServiceX, config_path=config_path)
+    sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     datasets = []
     for sample in config.Sample:
         # if string or QueryStringGenerator, turn into a Query
@@ -176,10 +176,11 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
 def deliver(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
+    servicex_name: Optional[str] = None
 ):
     config = _load_ServiceXSpec(config)
 
-    datasets = _build_datasets(config, config_path)
+    datasets = _build_datasets(config, config_path, servicex_name)
 
     group = DatasetGroup(datasets)
 
@@ -215,7 +216,11 @@ class ServiceXClient:
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:
-            backend = self.config.default_endpoint
+            if self.config.default_endpoint:
+                backend = self.config.default_endpoint
+            else:
+                # Take the first endpoint from servicex.yaml if default_endpoint is not set
+                backend = self.config.api_endpoints[0].name
 
         if bool(url) == bool(backend):
             raise ValueError("Only specify backend or url... not both")

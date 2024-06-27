@@ -61,7 +61,7 @@ class Status(str, Enum):
     canceled = ("Canceled",)
     submitted = ("Submitted",)
     looking = ("Lookup",)
-    pending = "Pending lookup"
+    pending = "Pending Lookup"
     running = "Running"
 
 
