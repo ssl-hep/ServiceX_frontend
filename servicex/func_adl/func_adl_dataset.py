@@ -350,7 +350,6 @@ class FuncADLQuery_Uproot(FuncADLQuery):
 
     @classmethod
     def from_yaml(cls, _, node):
-        import re
         import qastle
         import re
 
