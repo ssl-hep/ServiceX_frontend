@@ -100,13 +100,3 @@ class ServiceXSpec(BaseModel):
     General: General
     Sample: List[Sample]
     Definition: Optional[List] = None
-
-    @model_validator(mode="after")
-    def check_tree_property(self):
-        from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
-        for sample in self.Sample:
-            if sample.Tree is not None and not isinstance(sample.Query, FuncADLQuery_Uproot):
-                raise ValueError(
-                    '"Tree" property is not allowed outside of a FuncADLQuery_Uproot request'
-                )
-        return self
