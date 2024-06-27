@@ -34,6 +34,8 @@ from asyncio import Task, CancelledError
 import logging
 from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
+from rich.logging import RichHandler
+
 
 try:
     import pandas as pd
@@ -62,6 +64,8 @@ from make_it_sync import make_sync
 DONE_STATUS = (Status.complete, Status.canceled, Status.fatal)
 ProgressIndicators = Union[Progress, ExpandableProgress]
 logger = logging.getLogger(__name__)
+shell_handler = RichHandler(markup=True)
+logger.addHandler(shell_handler)
 
 
 class ServiceXException(Exception):
@@ -219,7 +223,7 @@ class Query(ABC):
                                                           self.current_status.request_id,
                                                           None,
                                                           TimeFrame.month)
-                        logger.warning(f"More information at: {kibana_link}")
+                        logger.warning(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -401,8 +405,9 @@ class Query(ABC):
                                                           self.current_status.request_id,
                                                           None,
                                                           TimeFrame.month)
-                        err_str += f"\nLogfiles at {kibana_link}"
+                        logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
                     raise ServiceXException(err_str)
+
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
@@ -411,7 +416,7 @@ class Query(ABC):
                                                           self.current_status.request_id,
                                                           LogLevel.error,
                                                           TimeFrame.month)
-                        err_str += f"\nMore logfiles at {kibana_link}"
+                        logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
                     raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
