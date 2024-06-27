@@ -2,7 +2,7 @@ from servicex import FuncADL_Uproot, deliver
 
 
 def uproot_funcadl_dict():
-    query = FuncADL_Uproot(). \
+    query = FuncADL_Uproot().FromTree('reco'). \
         Select(lambda e: {'el_pt_NOSYS': e['el_pt_NOSYS']})  # type: ignore
 
     spec = {
@@ -12,7 +12,6 @@ def uproot_funcadl_dict():
         'Sample': [{
             'Name': "Uproot_FuncADL_Dict",
             'RucioDID': "user.mtost:user.mtost.singletop.p6026.Jun13",
-            'Tree': "reco",
             'Query': query
         }]
     }
