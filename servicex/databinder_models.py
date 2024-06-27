@@ -72,20 +72,6 @@ class Sample(BaseModel):
             raise ValueError("Must specify one of XRootDFiles or RucioDID.")
         return values
 
-    @model_validator(mode="before")
-    @classmethod
-    def validate_function_xor_query(cls, values):
-        """
-        Ensure that only one of Function or Query is specified.
-        :param values:
-        :return:
-        """
-        if "Function" in values and "Query" in values:
-            raise ValueError("Only specify one of Function or Query, not both.")
-        if "Function" not in values and "Query" not in values:
-            raise ValueError("Must specify one of Function or Query.")
-        return values
-
 
 class General(BaseModel):
     class OutputFormatEnum(str, Enum):
