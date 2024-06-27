@@ -180,6 +180,8 @@ class Query(ABC):
         :return: Transform results object which contains the list of files downloaded
                  or the list of pre-signed urls
         """
+        from servicex.app.transforms import \
+            create_kibana_link_parameters, TimeFrame
         download_files_task = None
         loop = asyncio.get_running_loop()
 
@@ -212,15 +214,18 @@ class Query(ABC):
                         f"{self.current_status.files} files failed"
                     )
                     if self.current_status.log_url is not None:
-                        from servicex.app.transforms import LogLevel, \
-                            create_kibana_link_parameters, LogLevel, TimeFrame
-                        logger.warning("More information at: "+ 
-                                        create_kibana_link_parameters(
-                                        self.current_status.log_url,
-                                        self.current_status.request_id,
-                                        LogLevel.error,
-                                        TimeFrame.day))
-                        # logger.warning(f"More information at: {self.current_status.log_url}")
+                        logger.warning(
+                            f"""
+                            More information at:
+                            {
+                            create_kibana_link_parameters(
+                                self.current_status.log_url,
+                                self.current_status.request_id,
+                                None,
+                                TimeFrame.month)
+                            }
+                            """
+                        )
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -349,6 +354,8 @@ class Query(ABC):
         of status. Once we know the number of files in the dataset, update the progress
         bars.
         """
+        from servicex.app.transforms import LogLevel, \
+            create_kibana_link_parameters, TimeFrame
 
         # Actual number of files in the dataset. We only know this once the DID
         # finder has completed its work. In the meantime transformers will already
@@ -395,12 +402,28 @@ class Query(ABC):
                     )
                     err_str = f"Request {titlestr}was canceled"
                     if self.current_status.log_url is not None:
-                        err_str += f"\nLogfiles at {self.current_status.log_url}"
+                        err_str += f"""
+                        \nLogfiles at {
+                            create_kibana_link_parameters(
+                                self.current_status.log_url,
+                                self.current_status.request_id,
+                                None,
+                                TimeFrame.month)
+                                }
+                        """
                     raise ServiceXException(err_str)
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
-                        err_str += f"\nMore logfiles at {self.current_status.log_url}"
+                        err_str += f"""
+                        \nMore logfiles at {
+                            create_kibana_link_parameters(
+                                self.current_status.log_url,
+                                self.current_status.request_id,
+                                LogLevel.error,
+                                TimeFrame.month)
+                                }
+                        """
                     raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
