@@ -214,18 +214,12 @@ class Query(ABC):
                         f"{self.current_status.files} files failed"
                     )
                     if self.current_status.log_url is not None:
-                        logger.warning(
-                            f"""
-                            More information at:
-                            {
-                            create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            None,
-                            TimeFrame.month)
-                            }
-                            """
-                        )
+                        kibana_link = \
+                            create_kibana_link_parameters(self.current_status.log_url,
+                                                          self.current_status.request_id,
+                                                          None,
+                                                          TimeFrame.month)
+                        logger.warning(f"More information at: {kibana_link}")
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -402,28 +396,22 @@ class Query(ABC):
                     )
                     err_str = f"Request {titlestr}was canceled"
                     if self.current_status.log_url is not None:
-                        err_str += f"""
-                        \nLogfiles at {
-                            create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            None,
-                            TimeFrame.month)
-                            }
-                        """
+                        kibana_link = \
+                            create_kibana_link_parameters(self.current_status.log_url,
+                                                          self.current_status.request_id,
+                                                          None,
+                                                          TimeFrame.month)
+                        err_str += f"\nLogfiles at {kibana_link}"
                     raise ServiceXException(err_str)
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
-                        err_str += f"""
-                        \nMore logfiles at {
-                            create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            LogLevel.error,
-                            TimeFrame.month)
-                            }
-                        """
+                        kibana_link = \
+                            create_kibana_link_parameters(self.current_status.log_url,
+                                                          self.current_status.request_id,
+                                                          LogLevel.error,
+                                                          TimeFrame.month)
+                        err_str += f"\nMore logfiles at {kibana_link}"
                     raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
