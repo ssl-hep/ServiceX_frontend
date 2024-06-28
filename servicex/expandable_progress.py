@@ -74,9 +74,10 @@ class ExpandableProgress:
         self.progress_counts = {}
         if display_progress:
             if self.overall_progress or not provided_progress:
-                self.progress = Progress(
+                self.progress = TranformStatusProgress(
                     TextColumn("[progress.description]{task.description}"),
-                    BarColumn(),
+                    BarColumn(complete_style="rgb(114,156,31)",
+                              finished_style="rgb(0,255,0)"),
                     MofNCompleteColumn(),
                     TimeRemainingColumn(compact=True, elapsed_when_finished=True)
                 )
@@ -128,7 +129,7 @@ class ExpandableProgress:
         if self.display_progress and not self.overall_progress:
             return self.progress.add_task(param, start=start, total=total)
 
-    def update(self, task_id, task_type, total=None, completed=None):
+    def update(self, task_id, task_type, total=None, completed=None, **fields):
 
         if self.display_progress and self.overall_progress:
             # Calculate and update
@@ -164,7 +165,7 @@ class ExpandableProgress:
                                             total=overall_total)
 
         if self.display_progress and not self.overall_progress:
-            return self.progress.update(task_id, completed=completed, total=total)
+            return self.progress.update(task_id, completed=completed, total=total, **fields)
 
     def start_task(self, task_id, task_type):
         if self.display_progress and self.overall_progress:
@@ -183,3 +184,16 @@ class ExpandableProgress:
                 self.progress.advance(task_id=self.overall_progress_download_task)
         elif self.display_progress and not self.overall_progress:
             self.progress.advance(task_id=task_id)
+
+
+class TranformStatusProgress(Progress):
+    def get_renderables(self):
+        for task in self.tasks:
+            if task.fields.get("bar") == "failure":
+                self.columns = [
+                    TextColumn("[progress.description]{task.description}"),
+                    BarColumn(complete_style="rgb(255,0,0)"),
+                    MofNCompleteColumn(),
+                    TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+                ]
+            yield self.make_tasks_table([task])
