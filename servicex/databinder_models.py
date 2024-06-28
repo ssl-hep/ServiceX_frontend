@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
-from typing import Union, Optional, Callable, List
+from typing import Union, Optional, List
 from pydantic import (
     BaseModel,
     Field,
