@@ -1,10 +1,8 @@
 Definition:
-  - &DEF_backend "servicex-uc-af"
-
   - &DEF_ggH_input "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
                   /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
 
-  - &DEF_function1 !Python |
+  - &DEF_function1 !PythonFunction |
     def run_query(input_filenames=None):
         import uproot
 
@@ -12,18 +10,10 @@ Definition:
             br = o.arrays("mu_pt")
         return br
 
-
-  - &DEF_function2 !Python |
-    def run_query(input_filenames=None):
-        import uproot
-      
-        with uproot.open({input_filenames:"mini"}) as o:
-            br = o.arrays("lep_pt")
-        return br
+  - &DEF_function2 !FuncADL_Uproot  |
+    FromTree('mini').Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
 
 General:
-  ServiceX: *DEF_backend
-  Codegen: python
   OutputFormat: root-file
   Delivery: LocalCache
 
