@@ -34,6 +34,8 @@ from asyncio import Task, CancelledError
 import logging
 from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
+from rich.logging import RichHandler
+
 
 try:
     import pandas as pd
@@ -62,6 +64,8 @@ from make_it_sync import make_sync
 DONE_STATUS = (Status.complete, Status.canceled, Status.fatal)
 ProgressIndicators = Union[Progress, ExpandableProgress]
 logger = logging.getLogger(__name__)
+shell_handler = RichHandler(markup=True)
+logger.addHandler(shell_handler)
 
 
 class ServiceXException(Exception):
@@ -180,6 +184,8 @@ class Query(ABC):
         :return: Transform results object which contains the list of files downloaded
                  or the list of pre-signed urls
         """
+        from servicex.app.transforms import \
+            create_kibana_link_parameters, TimeFrame, LogLevel
         download_files_task = None
         loop = asyncio.get_running_loop()
 
@@ -212,7 +218,12 @@ class Query(ABC):
                         f"{self.current_status.files} files failed"
                     )
                     if self.current_status.log_url is not None:
-                        logger.warning(f"More information at: {self.current_status.log_url}")
+                        kibana_link = \
+                            create_kibana_link_parameters(self.current_status.log_url,
+                                                          self.current_status.request_id,
+                                                          LogLevel.error,
+                                                          TimeFrame.month)
+                        logger.warning(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -341,6 +352,8 @@ class Query(ABC):
         of status. Once we know the number of files in the dataset, update the progress
         bars.
         """
+        from servicex.app.transforms import LogLevel, \
+            create_kibana_link_parameters, TimeFrame
 
         # Actual number of files in the dataset. We only know this once the DID
         # finder has completed its work. In the meantime transformers will already
@@ -387,12 +400,23 @@ class Query(ABC):
                     )
                     err_str = f"Request {titlestr}was canceled"
                     if self.current_status.log_url is not None:
-                        err_str += f"\nLogfiles at {self.current_status.log_url}"
+                        kibana_link = \
+                            create_kibana_link_parameters(self.current_status.log_url,
+                                                          self.current_status.request_id,
+                                                          LogLevel.error,
+                                                          TimeFrame.month)
+                        logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
                     raise ServiceXException(err_str)
+
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
-                        err_str += f"\nMore logfiles at {self.current_status.log_url}"
+                        kibana_link = \
+                            create_kibana_link_parameters(self.current_status.log_url,
+                                                          self.current_status.request_id,
+                                                          LogLevel.error,
+                                                          TimeFrame.month)
+                        logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
                     raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
