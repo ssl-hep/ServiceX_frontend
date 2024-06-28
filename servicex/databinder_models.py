@@ -44,9 +44,7 @@ class Sample(BaseModel):
     RucioDID: Optional[str] = None
     XRootDFiles: Optional[Union[str, List[str]]] = None
     NFiles: Optional[int] = Field(default=None)
-    Function: Optional[Union[str, Callable]] = Field(default=None)
     Query: Optional[Union[str, SXQuery, QueryStringGenerator]] = Field(default=None)
-    Tree: Optional[str] = Field(default=None)
     IgnoreLocalCache: bool = False
 
     model_config = {"arbitrary_types_allowed": True}
