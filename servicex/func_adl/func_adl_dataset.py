@@ -46,7 +46,7 @@ from qastle import python_ast_to_text_ast
 from func_adl import EventDataset, find_EventDataset
 from func_adl.object_stream import S
 from servicex.configuration import Configuration
-from servicex.query import Query
+from servicex.query_core import Query
 from servicex.func_adl.util import has_tuple
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache

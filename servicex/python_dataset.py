@@ -30,7 +30,7 @@ from typing import Optional, Union, Callable
 from base64 import b64encode
 
 from servicex.configuration import Configuration
-from servicex.query import Query
+from servicex.query_core import Query
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
