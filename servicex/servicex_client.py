@@ -34,7 +34,7 @@ from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus, TransformedResults
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
-from servicex.query import (
+from servicex.query_core import (
     GenericQuery,
     QueryStringGenerator,
     GenericQueryStringGenerator,
@@ -76,7 +76,7 @@ def _load_ServiceXSpec(
         else:
             from importlib.metadata import entry_points
 
-        plugins = entry_points(group="servicex.queries")
+        plugins = entry_points(group="servicex.query")
         for _ in plugins:
             yaml.register_class(_.load())
         plugins = entry_points(group="servicex.dataset")

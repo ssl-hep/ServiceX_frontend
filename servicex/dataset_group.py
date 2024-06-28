@@ -30,7 +30,7 @@ from typing import List, Optional, Union
 
 from rich.progress import Progress
 
-from servicex.query import Query
+from servicex.query_core import Query
 from servicex.expandable_progress import ExpandableProgress
 from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import TransformedResults, ResultFormat

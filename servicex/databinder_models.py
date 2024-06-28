@@ -35,7 +35,7 @@ from pydantic import (
 
 from servicex.dataset_identifier import (DataSetIdentifier, RucioDatasetIdentifier,
                                          FileListDataset)
-from servicex.query import Query as SXQuery, QueryStringGenerator
+from servicex.query_core import Query as SXQuery, QueryStringGenerator
 from servicex.models import ResultFormat
 
 
