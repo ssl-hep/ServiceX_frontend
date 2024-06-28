@@ -327,8 +327,8 @@ def test_funcadl_query(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
-                "Tree": "nominal"
+                "Query": FuncADL_Uproot().FromTree("nominal")
+                                         .Select(lambda e: {"lep_pt": e["lep_pt"]})
             }
         ]
     })
@@ -351,8 +351,8 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
-                "Tree": "nominal"
+                "Query": FuncADL_Uproot().FromTree("nominal")
+                                         .Select(lambda e: {"lep_pt": e["lep_pt"]})
             }
         ]
     })
@@ -371,8 +371,8 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
-                "Tree": "nominal",
+                "Query": FuncADL_Uproot().FromTree("nominal")
+                                         .Select(lambda e: {"lep_pt": e["lep_pt"]}),
                 "Codegen": "does-not-exist"
             }
         ]
@@ -398,8 +398,8 @@ def test_databinder_load_dict():
             {
                 "Name": "sampleA",
                 "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                "Query": FuncADL_Uproot().Select(lambda e: {"lep_pt": e["lep_pt"]}),
-                "Tree": "nominal"
+                "Query": FuncADL_Uproot().FromTree("nominal")
+                                         .Select(lambda e: {"lep_pt": e["lep_pt"]})
             }
         ]
     })
