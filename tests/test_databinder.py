@@ -190,11 +190,20 @@ Sample:
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     Query: !FuncADL_Uproot |
                 Select(lambda e: {'lep_pt': e['lep_pt']})
+  - Name: ttH3
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !UprootRaw |
+                [{"treename": "nominal"}]
 """)
         f.flush()
         result = _load_ServiceXSpec(path)
         assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
         assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery_Uproot'
+        assert type(result.Sample[2].Query).__name__ == 'UprootRawQuery'
+
+    # Path from string
+    result2 = _load_ServiceXSpec(str(path))
+    assert type(result2.Sample[0].Query).__name__ == 'PythonQuery'
 
     # Python syntax error
     with open(path := (tmp_path / "python.yaml"), "w") as f:
