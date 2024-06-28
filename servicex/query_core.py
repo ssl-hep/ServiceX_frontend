@@ -215,7 +215,7 @@ class Query(ABC):
                     logger.warning(
                         f"Transform {titlestr}completed with failures: "
                         f"{self.current_status.files_failed}/"
-                        f"{self.current_status.files} files failed"
+                        f"{self.current_status.files} files failed. Will not cache."
                     )
                     if self.current_status.log_url is not None:
                         kibana_link = \
@@ -318,17 +318,20 @@ class Query(ABC):
                 if cached_record:
                     cached_record.file_list = download_result
 
-            # Update the cache
+            # Update the cache (if no failed files)
             if not cached_record:
-                transform_report = self.cache.cache_transform(
+                transform_report = self.cache.transformed_results(
                     sx_request,
                     self.current_status,
                     self.download_path.as_posix(),
                     downloaded_files,
                     signed_urls,
                 )
+                if self.current_status.files_failed == 0:
+                    self.cache.cache_transform(transform_report)
             else:
-                self.cache.update_record(cached_record)
+                if self.current_status.files_failed == 0:
+                    self.cache.update_record(cached_record)
                 transform_report = cached_record
 
             return transform_report
