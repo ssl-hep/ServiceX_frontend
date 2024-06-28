@@ -2,14 +2,11 @@ import pytest
 from unittest.mock import patch
 from pydantic import ValidationError
 
-from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier
+from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier, dataset
 
 
 def basic_spec(samples=None):
     return {
-        "General": {
-            "Codegen": "python",
-        },
         "Sample": samples
         or [{"Name": "sampleA", "XRootDFiles": "root://a.root", "Function": "a"}],
     }
@@ -37,13 +34,29 @@ def test_load_config():
 
 
 def test_single_root_file():
-
     spec = ServiceXSpec.model_validate(
         basic_spec(
             samples=[
                 {
                     "Name": "sampleA",
                     "XRootDFiles": "root://eospublic.cern.ch//file1.root",
+                    "Function": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert spec.Sample[0].dataset_identifier.files == [
+        "root://eospublic.cern.ch//file1.root"
+    ]
+
+    spec = ServiceXSpec.model_validate(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "Dataset": dataset.FileList("root://eospublic.cern.ch//file1.root"),
                     "Function": "a",
                 }
             ]
@@ -78,6 +91,27 @@ def test_list_of_root_files():
         "root://eospublic.cern.ch//file2.root",
     ]
 
+    spec = ServiceXSpec.model_validate(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "Dataset": dataset.FileList([
+                        "root://eospublic.cern.ch//file1.root",
+                        "root://eospublic.cern.ch//file2.root",
+                    ]),
+                    "Function": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert spec.Sample[0].dataset_identifier.files == [
+        "root://eospublic.cern.ch//file1.root",
+        "root://eospublic.cern.ch//file2.root",
+    ]
+
 
 def test_rucio_did():
     spec = ServiceXSpec.model_validate(
@@ -86,6 +120,24 @@ def test_rucio_did():
                 {
                     "Name": "sampleA",
                     "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Function": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, RucioDatasetIdentifier)
+    assert (
+        spec.Sample[0].dataset_identifier.did
+        == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal"
+    )
+
+    spec = ServiceXSpec.model_validate(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "Dataset": dataset.Rucio("user.ivukotic:user.ivukotic.single_top_tW__nominal"),
                     "Function": "a",
                 }
             ]
@@ -118,6 +170,19 @@ def test_rucio_did_numfiles():
         spec.Sample[0].dataset_identifier.did
         == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal?files=10"
     )
+
+
+def test_cernopendata():
+    spec = ServiceXSpec.model_validate({
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "Dataset": dataset.CERNOpenData(1507),
+                "Function": "a"
+            }
+        ]
+    })
+    assert spec.Sample[0].dataset_identifier.did == "cernopendata://1507"
 
 
 def test_invalid_dataset_identifier():

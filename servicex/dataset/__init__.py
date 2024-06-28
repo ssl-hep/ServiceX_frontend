@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,37 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from servicex import dataset_group
-from servicex import models
-from servicex import servicex_client
-from servicex import dataset_identifier
-from servicex.databinder_models import Sample, General, ServiceXSpec
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
-from servicex.servicex_client import ServiceXClient, deliver
-from .query import Query
-from .models import ResultFormat, ResultDestination
-from .dataset_group import DatasetGroup
-from .dataset_identifier import RucioDatasetIdentifier, FileListDataset
-import servicex.dataset as dataset
+
+from ..dataset_identifier import (RucioDatasetIdentifier as Rucio,  # noqa: F401
+                                  FileListDataset as FileList,
+                                  CERNOpenDataDatasetIdentifier as CERNOpenData,
+                                  DataSetIdentifier as GenericDataSet)
 
 
-__all__ = [
-    "ServiceXClient",
-    "Query",
-    "DatasetGroup",
-    "ResultFormat",
-    "ResultDestination",
-    "servicex_client",
-    "dataset_group",
-    "models",
-    "dataset_identifier",
-    "RucioDatasetIdentifier",
-    "FileListDataset",
-    "FuncADLQuery",
-    "Sample",
-    "General",
-    "DefinitionList",
-    "ServiceXSpec",
-    "deliver",
-    "dataset"
-]
+__any__ = ['Rucio', 'FileList', 'CERNOpenData', 'GenericDataSet']
