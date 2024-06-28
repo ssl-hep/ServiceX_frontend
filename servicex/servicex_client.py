@@ -27,7 +27,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
-from ccorp.ruamel.yaml.include import YAML
 from pathlib import Path
 
 from servicex.configuration import Configuration
@@ -51,8 +50,6 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
-yaml = YAML()
-
 
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path]
@@ -71,6 +68,8 @@ def _load_ServiceXSpec(
             file_path = config
 
         import sys
+        from ccorp.ruamel.yaml.include import YAML
+        yaml = YAML()
 
         if sys.version_info < (3, 10):
             from importlib_metadata import entry_points
