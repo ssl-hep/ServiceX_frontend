@@ -287,7 +287,7 @@ async def test_use_of_cache(mocker):
             config=config,
         )
         datasource.result_format = ResultFormat.parquet
-        upd = mocker.patch.object(cache, 'update_record')
+        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
         with ExpandableProgress(display_progress=False) as progress:
             result1 = await datasource.submit_and_download(signed_urls_only=True,
                                                            expandable_progress=progress)
