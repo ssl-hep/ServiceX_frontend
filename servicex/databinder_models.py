@@ -61,7 +61,7 @@ class Sample(BaseModel):
             return RucioDatasetIdentifier(self.RucioDID, num_files=self.NFiles)
         elif self.XRootDFiles:
             return FileListDataset(self.XRootDFiles)
-        else:
+        else:  # pragma: no cover
             raise RuntimeError("No valid dataset found, somehow validation failed")
 
     @model_validator(mode="before")

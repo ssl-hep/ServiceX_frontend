@@ -82,6 +82,7 @@ class FileListDataset(DataSetIdentifier):
         transform_request.file_list = self.files
         transform_request.did = None
 
+    @property
     def did(self):
         return None
 

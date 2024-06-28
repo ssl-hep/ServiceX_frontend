@@ -47,6 +47,7 @@ def test_single_root_file():
     )
 
     assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert spec.Sample[0].dataset_identifier.did is None
     assert spec.Sample[0].dataset_identifier.files == [
         "root://eospublic.cern.ch//file1.root"
     ]
