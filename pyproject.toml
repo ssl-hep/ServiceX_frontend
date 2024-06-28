@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "servicex"
-version = "3.0.0-alpha.2"
+version = "3.0.0-alpha.100"
 description = "Python SDK and CLI Client for ServiceX"
 readme = "README.md"
 license = { text = "BSD-3-Clause" }  # SPDX short identifier
@@ -98,7 +98,8 @@ FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
 FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
 FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
-Python = "servicex.python_dataset:PythonQuery"
+PythonFunction = "servicex.python_dataset:PythonQuery"
+UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:

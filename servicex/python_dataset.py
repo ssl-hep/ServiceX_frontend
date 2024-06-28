@@ -38,7 +38,7 @@ from servicex.types import DID
 
 
 class PythonQuery(Query):
-    yaml_tag = '!Python'
+    yaml_tag = '!PythonFunction'
 
     def __init__(self, dataset_identifier: DID = None,
                  sx_adapter: Optional[ServiceXAdapter] = None,

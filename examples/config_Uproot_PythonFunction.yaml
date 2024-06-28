@@ -1,0 +1,13 @@
+General:
+  ServiceX: servicex-uc-af
+
+Sample:
+  - Name: Uproot_PythonFunction_YAML
+    RucioDID: user.mtost:user.mtost.singletop.p6026.Jun13
+    Query: !PythonFunction |
+      def run_query(input_filenames=None):
+          import uproot
+
+          with uproot.open({input_filenames:"reco"}) as o:
+          br = o.arrays("el_pt_NOSYS")
+          return br

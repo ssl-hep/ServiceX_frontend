@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
-from typing import Union, Optional, Callable, List
+from typing import Union, Optional, List
 from pydantic import (
     BaseModel,
     Field,
@@ -44,9 +44,7 @@ class Sample(BaseModel):
     RucioDID: Optional[str] = None
     XRootDFiles: Optional[Union[str, List[str]]] = None
     NFiles: Optional[int] = Field(default=None)
-    Function: Optional[Union[str, Callable]] = Field(default=None)
     Query: Optional[Union[str, SXQuery, QueryStringGenerator]] = Field(default=None)
-    Tree: Optional[str] = Field(default=None)
     IgnoreLocalCache: bool = False
 
     model_config = {"arbitrary_types_allowed": True}
@@ -70,20 +68,6 @@ class Sample(BaseModel):
             raise ValueError("Only specify one of XRootDFiles or RucioDID, not both.")
         if "XRootDFiles" not in values and "RucioDID" not in values:
             raise ValueError("Must specify one of XRootDFiles or RucioDID.")
-        return values
-
-    @model_validator(mode="before")
-    @classmethod
-    def validate_function_xor_query(cls, values):
-        """
-        Ensure that only one of Function or Query is specified.
-        :param values:
-        :return:
-        """
-        if "Function" in values and "Query" in values:
-            raise ValueError("Only specify one of Function or Query, not both.")
-        if "Function" not in values and "Query" not in values:
-            raise ValueError("Must specify one of Function or Query.")
         return values
 
 
@@ -118,13 +102,3 @@ class ServiceXSpec(BaseModel):
     General: _General = General()
     Sample: List[Sample]
     Definition: Optional[List] = None
-
-    @model_validator(mode="after")
-    def check_tree_property(self):
-        from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
-        for sample in self.Sample:
-            if sample.Tree is not None and not isinstance(sample.Query, FuncADLQuery_Uproot):
-                raise ValueError(
-                    '"Tree" property is not allowed outside of a FuncADLQuery_Uproot request'
-                )
-        return self
