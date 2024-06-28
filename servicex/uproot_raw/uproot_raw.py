@@ -69,6 +69,6 @@ class UprootRawQuery(QueryStringGenerator):
     def from_yaml(cls, _, node):
         code = node.value
         import json
-        queries = json.loads(code)        
+        queries = json.loads(code)
         q = cls(queries)
         return q
