@@ -64,6 +64,12 @@ class RucioDatasetIdentifier(DataSetIdentifier):
         """
         super().__init__("rucio", dataset, num_files=num_files)
 
+    yaml_tag = '!Rucio'
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        return cls(node.value)
+
 
 class FileListDataset(DataSetIdentifier):
     def __init__(self, files: Union[List[str], str]):
@@ -86,6 +92,12 @@ class FileListDataset(DataSetIdentifier):
     def did(self):
         return None
 
+    yaml_tag = '!FileList'
+
+    @classmethod
+    def from_yaml(cls, constructor, node):
+        return cls(constructor.construct_sequence(node))
+
 
 class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
     def __init__(self, dataset: int, num_files: Optional[int] = None):
@@ -99,3 +111,9 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
 
         """
         super().__init__("cernopendata", f'{dataset}', num_files=num_files)
+
+    yaml_tag = '!CERNOpenData'
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        return cls(int(node.value))

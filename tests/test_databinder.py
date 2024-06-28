@@ -238,6 +238,7 @@ def test_submit_mapping(transformed_result, codegen_list):
 
 def test_yaml(tmp_path):
     from servicex.servicex_client import _load_ServiceXSpec
+    from servicex.dataset import FileList, Rucio, CERNOpenData
     # Nominal paths
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
@@ -260,12 +261,29 @@ Sample:
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     Query: !UprootRaw |
                 [{"treename": "nominal"}]
+  - Name: ttH4
+    Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH5
+    Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH6
+    Dataset: !CERNOpenData 1507
+    Query: !UprootRaw '[{"treename": "nominal"}]'
 """)
         f.flush()
         result = _load_ServiceXSpec(path)
         assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
         assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery_Uproot'
         assert type(result.Sample[2].Query).__name__ == 'UprootRawQuery'
+        assert isinstance(result.Sample[3].dataset_identifier, Rucio)
+        assert (result.Sample[3].dataset_identifier.did
+                == 'rucio://user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11')
+        assert isinstance(result.Sample[4].dataset_identifier, FileList)
+        assert (result.Sample[4].dataset_identifier.files
+                == ["/path/to/file1.root", "/path/to/file2.root"])
+        assert isinstance(result.Sample[5].dataset_identifier, CERNOpenData)
+        assert result.Sample[5].dataset_identifier.did == 'cernopendata://1507'
 
     # Path from string
     result2 = _load_ServiceXSpec(str(path))

@@ -79,6 +79,9 @@ def _load_ServiceXSpec(
         plugins = entry_points(group="servicex.queries")
         for _ in plugins:
             yaml.register_class(_.load())
+        plugins = entry_points(group="servicex.dataset")
+        for _ in plugins:
+            yaml.register_class(_.load())
 
         conf = yaml.load(file_path)
         config = ServiceXSpec(**conf)
