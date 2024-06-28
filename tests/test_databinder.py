@@ -416,4 +416,4 @@ def test_generic_query(codegen_list):
 
 def test_entrypoint_import():
     """ This will check that we have at least the Python transformer defined in servicex.query """
-    from servicex.query import Python  # noqa
+    from servicex.query import PythonFunction  # noqa
