@@ -69,14 +69,6 @@ class UprootRawQuery(QueryStringGenerator):
     def from_yaml(cls, _, node):
         code = node.value
         import json
-        queries = json.loads(code)
-        tree_query = TreeSubQuery(treename="none")
-        hist_query = CopyHistogramSubQuery(copy_histograms="none")
-        uproot_raw_query = []
-        for _ in queries:
-            if "copy_histograms" in _.keys():
-                uproot_raw_query.append(hist_query.model_validate(_))
-            else:
-                uproot_raw_query.append(tree_query.model_validate(_))
-        q = cls(uproot_raw_query)
+        queries = json.loads(code)        
+        q = cls(queries)
         return q
