@@ -48,6 +48,7 @@ def test_single_root_file():
     assert spec.Sample[0].dataset_identifier.files == [
         "root://eospublic.cern.ch//file1.root"
     ]
+    assert spec.Sample[0].dataset_identifier.did is None
 
 
 def test_list_of_root_files():
