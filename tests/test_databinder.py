@@ -412,3 +412,8 @@ def test_generic_query(codegen_list):
             # no codegen specified by generic class
             query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                                      query=spec.Sample[0].Query)
+
+
+def test_entrypoint_import():
+    """ This will check that we have at least the Python transformer defined in servicex.query """
+    from servicex.query import Python  # noqa
