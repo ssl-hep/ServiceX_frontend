@@ -34,12 +34,7 @@ from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus, TransformedResults
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
-from servicex.query import (
-    GenericQuery,
-    QueryStringGenerator,
-    GenericQueryStringGenerator,
-    Query,
-)
+from servicex.query_core import GenericQuery, QueryStringGenerator, GenericQueryStringGenerator, Query
 from servicex.types import DID
 from servicex.python_dataset import PythonQuery
 from servicex.dataset_group import DatasetGroup

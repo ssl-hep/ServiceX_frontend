@@ -39,7 +39,7 @@ from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
                              TransformRequest, TransformedResults)
 from servicex.query_cache import QueryCache
-from servicex.query import ServiceXException
+from servicex.query_core import ServiceXException
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
