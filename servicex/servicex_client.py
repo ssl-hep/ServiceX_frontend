@@ -50,7 +50,6 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
-yaml = YAML()
 
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path]
