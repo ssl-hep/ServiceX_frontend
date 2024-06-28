@@ -91,7 +91,7 @@ def _load_ServiceXSpec(
     return config
 
 
-def _build_datasets(config, config_path):
+def _build_datasets(config, config_path, servicex_name):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -178,10 +178,11 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
 def deliver(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
+    servicex_name: Optional[str] = None
 ):
     config = _load_ServiceXSpec(config)
 
-    datasets = _build_datasets(config, config_path)
+    datasets = _build_datasets(config, config_path, servicex_name)
 
     group = DatasetGroup(datasets)
 

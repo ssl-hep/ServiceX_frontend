@@ -257,7 +257,6 @@ def test_yaml_include(tmp_path):
     with open(tmp_path / "definitions.yaml", "w") as f1, \
          open(path2 := (tmp_path / "parent.yaml"), "w") as f2:
         f1.write("""
-- &DEF_facility servicex-uc-af
 - &DEF_query !PythonFunction |
         def run_query(input_filenames=None):
             return []
@@ -352,9 +351,6 @@ def test_databinder_load_dict():
     from servicex import FuncADL_Uproot
     from servicex.servicex_client import _load_ServiceXSpec
     _load_ServiceXSpec({
-        "General": {
-            "ServiceX": "servicex-uc-af",
-        },
         "Sample": [
             {
                 "Name": "sampleA",
