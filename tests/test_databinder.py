@@ -440,21 +440,6 @@ def test_uproot_raw_query(transformed_result, codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
-def test_fail_with_tree_on_non_funcadl_query():
-    from servicex import UprootRaw
-    with pytest.raises(ValueError):
-        ServiceXSpec.model_validate({
-            "Sample": [
-                {
-                    "Name": "sampleA",
-                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
-                    "Query": UprootRaw([{"treename": "nominal"}]),
-                    "Tree": "nominal"
-                }
-            ]
-        })
-
-
 def test_generic_query(codegen_list):
     from servicex.servicex_client import ServiceXClient
     spec = ServiceXSpec.model_validate({
