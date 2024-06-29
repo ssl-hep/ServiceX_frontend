@@ -101,6 +101,11 @@ FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
 PythonFunction = "servicex.python_dataset:PythonQuery"
 UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 
+[project.entry-points.'servicex.dataset']
+Rucio = "servicex.dataset_identifier:RucioDatasetIdentifier"
+FileList = "servicex.dataset_identifier:FileListDataset"
+CERNOpenData = "servicex.dataset_identifier:CERNOpenDataDatasetIdentifier"
+
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:
 # pyproject.toml, .gitignore, any README, any LICENSE, AUTHORS
