@@ -25,42 +25,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from servicex import dataset_group
-from servicex import models
-from servicex import servicex_client
-from servicex import dataset_identifier
-from servicex.databinder_models import Sample, General, ServiceXSpec
-from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot as FuncADL_Uproot
-from servicex.uproot_raw.uproot_raw import UprootRawQuery as UprootRaw
-from servicex.python_dataset import PythonQuery as PythonFunction
-from servicex.servicex_client import ServiceXClient, deliver
-from .query_core import Query
-from .models import ResultFormat, ResultDestination
-from .dataset_group import DatasetGroup
-from .dataset_identifier import RucioDatasetIdentifier, FileListDataset
-import servicex.dataset as dataset
-import servicex.query as query
 
-__all__ = [
-    "ServiceXClient",
-    "Query",
-    "DatasetGroup",
-    "ResultFormat",
-    "ResultDestination",
-    "servicex_client",
-    "dataset_group",
-    "models",
-    "dataset_identifier",
-    "RucioDatasetIdentifier",
-    "FileListDataset",
-    "FuncADL_Uproot",
-    "UprootRaw",
-    "PythonFunction",
-    "Sample",
-    "General",
-    "DefinitionList",
-    "ServiceXSpec",
-    "deliver",
-    "dataset",
-    "query"
-]
+import sys
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
+plugins = entry_points(group='servicex.query')
+for _ in plugins:
+    globals()[_.name] = _.load()

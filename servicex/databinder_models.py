@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -33,8 +33,9 @@ from pydantic import (
     model_validator,
 )
 
-from servicex.dataset_identifier import RucioDatasetIdentifier, FileListDataset
-from servicex.query import Query as SXQuery, QueryStringGenerator
+from servicex.dataset_identifier import (DataSetIdentifier, RucioDatasetIdentifier,
+                                         FileListDataset)
+from servicex.query_core import Query as SXQuery, QueryStringGenerator
 from servicex.models import ResultFormat
 
 
@@ -43,6 +44,7 @@ class Sample(BaseModel):
     Codegen: Optional[str] = None
     RucioDID: Optional[str] = None
     XRootDFiles: Optional[Union[str, List[str]]] = None
+    Dataset: Optional[DataSetIdentifier] = None
     NFiles: Optional[int] = Field(default=None)
     Query: Optional[Union[str, SXQuery, QueryStringGenerator]] = Field(default=None)
     IgnoreLocalCache: bool = False
@@ -50,24 +52,29 @@ class Sample(BaseModel):
     model_config = {"arbitrary_types_allowed": True}
 
     @property
-    def dataset_identifier(self):
-        if self.RucioDID:
-            return RucioDatasetIdentifier(self.RucioDID, num_files=self.NFiles or 0)
+    def dataset_identifier(self) -> DataSetIdentifier:
+        if self.Dataset:
+            return self.Dataset
+        elif self.RucioDID:
+            return RucioDatasetIdentifier(self.RucioDID, num_files=self.NFiles)
         elif self.XRootDFiles:
             return FileListDataset(self.XRootDFiles)
+        else:  # pragma: no cover
+            raise RuntimeError("No valid dataset found, somehow validation failed")
 
     @model_validator(mode="before")
     @classmethod
     def validate_did_xor_file(cls, values):
         """
-        Ensure that only one of RootFile or RucioDID is specified.
+        Ensure that only one of Dataset, RootFile, or RucioDID is specified.
         :param values:
         :return:
         """
-        if "XRootDFiles" in values and "RucioDID" in values:
-            raise ValueError("Only specify one of XRootDFiles or RucioDID, not both.")
-        if "XRootDFiles" not in values and "RucioDID" not in values:
-            raise ValueError("Must specify one of XRootDFiles or RucioDID.")
+        count = sum(["RucioDID" in values, "XRootDFiles" in values, "Dataset" in values])
+        if count > 1:
+            raise ValueError("Only specify one of Dataset, XRootDFiles, or RucioDID.")
+        if count == 0:
+            raise ValueError("Must specify one of Dataset, XRootDFiles, or RucioDID.")
         return values
 
 

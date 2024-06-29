@@ -92,7 +92,7 @@ develop = [
     "servicex[databinder,pandas,test,docs]",
 ]
 
-[project.entry-points.'servicex.queries']
+[project.entry-points.'servicex.query']
 FuncADL_Uproot = "servicex.func_adl.func_adl_dataset:FuncADLQuery_Uproot"
 FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
 FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
@@ -100,6 +100,11 @@ FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
 PythonFunction = "servicex.python_dataset:PythonQuery"
 UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
+
+[project.entry-points.'servicex.dataset']
+Rucio = "servicex.dataset_identifier:RucioDatasetIdentifier"
+FileList = "servicex.dataset_identifier:FileListDataset"
+CERNOpenData = "servicex.dataset_identifier:CERNOpenDataDatasetIdentifier"
 
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:

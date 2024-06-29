@@ -30,7 +30,7 @@
 
 import pydantic
 from typing import List, Union, Mapping, Optional, get_args
-from ..query import QueryStringGenerator
+from ..query_core import QueryStringGenerator
 
 
 class TreeSubQuery(pydantic.BaseModel):
