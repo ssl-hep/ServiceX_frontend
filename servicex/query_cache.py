@@ -49,12 +49,11 @@ class QueryCache:
     def close(self):
         self.db.close()
 
-    def cache_transform(self, transform: TransformRequest,
-                        completed_status: TransformStatus, data_dir: str,
-                        file_list: List[str],
-                        signed_urls) -> TransformedResults:
-
-        record = TransformedResults(
+    def transformed_results(self, transform: TransformRequest,
+                            completed_status: TransformStatus, data_dir: str,
+                            file_list: List[str],
+                            signed_urls) -> TransformedResults:
+        return TransformedResults(
             hash=transform.compute_hash(),
             title=transform.title,
             codegen=transform.codegen,
@@ -67,8 +66,9 @@ class QueryCache:
             result_format=transform.result_format,
             log_url=completed_status.log_url
         )
+
+    def cache_transform(self, record: TransformedResults):
         self.db.insert(json.loads(record.model_dump_json()))
-        return record
 
     def update_record(self, record: TransformedResults):
         transforms = Query()
