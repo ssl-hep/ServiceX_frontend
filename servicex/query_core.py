@@ -391,6 +391,16 @@ class Query(ABC):
                 titlestr = (f'"{self.current_status.title}" '
                             if self.current_status.title is not None else '')
                 if self.current_status.status == Status.complete:
+                    if self.files_failed:
+                        bar = 'failure'
+                    else:
+                        bar = 'complete'
+                    progress.update(
+                        progress_task,
+                        progress_bar_title,
+                        completed=self.current_status.files_completed,
+                        description="Files completed",
+                        bar=bar)
                     return
                 elif self.current_status.status == Status.canceled:
                     logger.warning(
@@ -406,8 +416,7 @@ class Query(ABC):
                                                           LogLevel.error,
                                                           TimeFrame.month)
                         logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
-                    raise ServiceXException(err_str)
-
+                    return
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
