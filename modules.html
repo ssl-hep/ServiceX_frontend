@@ -1,0 +1,751 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="servicex package" href="servicex.html" /><link rel="prev" title="About Page" href="about.html" />
+
+    <!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
+        <title>ServiceX_frontend - ServiceX Client 3.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=387cc868" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=36a5483c" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" /
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">ServiceX Client 3.0.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  
+  <span class="sidebar-brand-text">ServiceX Client 3.0.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a></li>
+<li class="toctree-l1 current has-children current-page"><a class="current reference internal" href="#">ServiceX_frontend</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of ServiceX_frontend</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="servicex.html">servicex package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of servicex package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/modules.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="servicex-frontend">
+<h1>ServiceX_frontend<a class="headerlink" href="#servicex-frontend" title="Link to this heading">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="servicex.html">servicex package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#subpackages">Subpackages</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#module-servicex.app.cache">servicex.app.cache module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#module-servicex.app.cli_options">servicex.app.cli_options module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#module-servicex.app.codegen">servicex.app.codegen module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#module-servicex.app.main">servicex.app.main module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#module-servicex.app.transforms">servicex.app.transforms module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.app.html#module-servicex.app">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#servicex-databinder-databinder-module">servicex.databinder.databinder module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#servicex-databinder-databinder-configuration-module">servicex.databinder.databinder_configuration module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#servicex-databinder-databinder-deliver-module">servicex.databinder.databinder_deliver module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#servicex-databinder-databinder-outputs-module">servicex.databinder.databinder_outputs module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#servicex-databinder-databinder-requests-module">servicex.databinder.databinder_requests module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.databinder.html#module-contents">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.func_adl.html#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.func_adl.html#module-servicex.func_adl.func_adl_dataset">servicex.func_adl.func_adl_dataset module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.func_adl.html#module-servicex.func_adl.func_adl_dataset_group">servicex.func_adl.func_adl_dataset_group module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.func_adl.html#module-servicex.func_adl.util">servicex.func_adl.util module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.func_adl.html#module-servicex.func_adl">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.configuration">servicex.configuration module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.api_endpoints"><code class="docutils literal notranslate"><span class="pre">Configuration.api_endpoints</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.cache_path"><code class="docutils literal notranslate"><span class="pre">Configuration.cache_path</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.default_endpoint"><code class="docutils literal notranslate"><span class="pre">Configuration.default_endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.endpoint_dict"><code class="docutils literal notranslate"><span class="pre">Configuration.endpoint_dict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.expand_cache_path"><code class="docutils literal notranslate"><span class="pre">Configuration.expand_cache_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">Configuration.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.model_config"><code class="docutils literal notranslate"><span class="pre">Configuration.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.model_fields"><code class="docutils literal notranslate"><span class="pre">Configuration.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.read"><code class="docutils literal notranslate"><span class="pre">Configuration.read()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Configuration.shortened_downloaded_filename"><code class="docutils literal notranslate"><span class="pre">Configuration.shortened_downloaded_filename</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint"><code class="docutils literal notranslate"><span class="pre">Endpoint</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint.endpoint"><code class="docutils literal notranslate"><span class="pre">Endpoint.endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">Endpoint.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint.model_config"><code class="docutils literal notranslate"><span class="pre">Endpoint.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint.model_fields"><code class="docutils literal notranslate"><span class="pre">Endpoint.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint.name"><code class="docutils literal notranslate"><span class="pre">Endpoint.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint.token"><code class="docutils literal notranslate"><span class="pre">Endpoint.token</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.databinder_models">servicex.databinder_models module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.databinder_models.General"><code class="docutils literal notranslate"><span class="pre">General</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.Codegen"><code class="docutils literal notranslate"><span class="pre">General.Codegen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.Delivery"><code class="docutils literal notranslate"><span class="pre">General.Delivery</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.DeliveryEnum"><code class="docutils literal notranslate"><span class="pre">General.DeliveryEnum</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.OutFilesetName"><code class="docutils literal notranslate"><span class="pre">General.OutFilesetName</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.OutputDirectory"><code class="docutils literal notranslate"><span class="pre">General.OutputDirectory</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.OutputFormat"><code class="docutils literal notranslate"><span class="pre">General.OutputFormat</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.OutputFormatEnum"><code class="docutils literal notranslate"><span class="pre">General.OutputFormatEnum</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">General.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.model_config"><code class="docutils literal notranslate"><span class="pre">General.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.General.model_fields"><code class="docutils literal notranslate"><span class="pre">General.model_fields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample"><code class="docutils literal notranslate"><span class="pre">Sample</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.Codegen"><code class="docutils literal notranslate"><span class="pre">Sample.Codegen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.Dataset"><code class="docutils literal notranslate"><span class="pre">Sample.Dataset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.IgnoreLocalCache"><code class="docutils literal notranslate"><span class="pre">Sample.IgnoreLocalCache</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.NFiles"><code class="docutils literal notranslate"><span class="pre">Sample.NFiles</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.Name"><code class="docutils literal notranslate"><span class="pre">Sample.Name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.Query"><code class="docutils literal notranslate"><span class="pre">Sample.Query</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.RucioDID"><code class="docutils literal notranslate"><span class="pre">Sample.RucioDID</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.XRootDFiles"><code class="docutils literal notranslate"><span class="pre">Sample.XRootDFiles</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.dataset_identifier"><code class="docutils literal notranslate"><span class="pre">Sample.dataset_identifier</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">Sample.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.model_config"><code class="docutils literal notranslate"><span class="pre">Sample.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.model_fields"><code class="docutils literal notranslate"><span class="pre">Sample.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.Sample.validate_did_xor_file"><code class="docutils literal notranslate"><span class="pre">Sample.validate_did_xor_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec.Definition"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.Definition</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec.General"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.General</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec.Sample"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.Sample</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec.model_config"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.databinder_models.ServiceXSpec.model_fields"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.model_fields</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.dataset_group">servicex.dataset_group module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.dataset_group.DatasetGroup"><code class="docutils literal notranslate"><span class="pre">DatasetGroup</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_group.DatasetGroup.as_files"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_group.DatasetGroup.as_files_async"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_files_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_group.DatasetGroup.as_signed_urls"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_signed_urls()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_group.DatasetGroup.as_signed_urls_async"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_signed_urls_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_group.DatasetGroup.set_result_format"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.set_result_format()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.dataset_identifier">servicex.dataset_identifier module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.CERNOpenDataDatasetIdentifier"><code class="docutils literal notranslate"><span class="pre">CERNOpenDataDatasetIdentifier</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.CERNOpenDataDatasetIdentifier.from_yaml"><code class="docutils literal notranslate"><span class="pre">CERNOpenDataDatasetIdentifier.from_yaml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.CERNOpenDataDatasetIdentifier.yaml_tag"><code class="docutils literal notranslate"><span class="pre">CERNOpenDataDatasetIdentifier.yaml_tag</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.DataSetIdentifier"><code class="docutils literal notranslate"><span class="pre">DataSetIdentifier</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.DataSetIdentifier.did"><code class="docutils literal notranslate"><span class="pre">DataSetIdentifier.did</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.DataSetIdentifier.populate_transform_request"><code class="docutils literal notranslate"><span class="pre">DataSetIdentifier.populate_transform_request()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.FileListDataset"><code class="docutils literal notranslate"><span class="pre">FileListDataset</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.FileListDataset.did"><code class="docutils literal notranslate"><span class="pre">FileListDataset.did</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.FileListDataset.files"><code class="docutils literal notranslate"><span class="pre">FileListDataset.files</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.FileListDataset.from_yaml"><code class="docutils literal notranslate"><span class="pre">FileListDataset.from_yaml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.FileListDataset.populate_transform_request"><code class="docutils literal notranslate"><span class="pre">FileListDataset.populate_transform_request()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.FileListDataset.yaml_tag"><code class="docutils literal notranslate"><span class="pre">FileListDataset.yaml_tag</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.RucioDatasetIdentifier"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.RucioDatasetIdentifier.from_yaml"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier.from_yaml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.dataset_identifier.RucioDatasetIdentifier.yaml_tag"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier.yaml_tag</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.expandable_progress">servicex.expandable_progress module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.expandable_progress.ExpandableProgress"><code class="docutils literal notranslate"><span class="pre">ExpandableProgress</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.expandable_progress.ExpandableProgress.add_task"><code class="docutils literal notranslate"><span class="pre">ExpandableProgress.add_task()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.expandable_progress.ExpandableProgress.advance"><code class="docutils literal notranslate"><span class="pre">ExpandableProgress.advance()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.expandable_progress.ExpandableProgress.start_task"><code class="docutils literal notranslate"><span class="pre">ExpandableProgress.start_task()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.expandable_progress.ExpandableProgress.update"><code class="docutils literal notranslate"><span class="pre">ExpandableProgress.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.expandable_progress.ProgressCounts"><code class="docutils literal notranslate"><span class="pre">ProgressCounts</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.minio_adapter">servicex.minio_adapter module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter"><code class="docutils literal notranslate"><span class="pre">MinioAdapter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter.MAX_PATH_LEN"><code class="docutils literal notranslate"><span class="pre">MinioAdapter.MAX_PATH_LEN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter.download_file"><code class="docutils literal notranslate"><span class="pre">MinioAdapter.download_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter.for_transform"><code class="docutils literal notranslate"><span class="pre">MinioAdapter.for_transform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter.get_signed_url"><code class="docutils literal notranslate"><span class="pre">MinioAdapter.get_signed_url()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter.hash_path"><code class="docutils literal notranslate"><span class="pre">MinioAdapter.hash_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.minio_adapter.MinioAdapter.list_bucket"><code class="docutils literal notranslate"><span class="pre">MinioAdapter.list_bucket()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.models">servicex.models module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.ResultDestination"><code class="docutils literal notranslate"><span class="pre">ResultDestination</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultDestination.object_store"><code class="docutils literal notranslate"><span class="pre">ResultDestination.object_store</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultDestination.volume"><code class="docutils literal notranslate"><span class="pre">ResultDestination.volume</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.ResultFile"><code class="docutils literal notranslate"><span class="pre">ResultFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFile.extension"><code class="docutils literal notranslate"><span class="pre">ResultFile.extension</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFile.filename"><code class="docutils literal notranslate"><span class="pre">ResultFile.filename</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFile.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">ResultFile.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFile.model_config"><code class="docutils literal notranslate"><span class="pre">ResultFile.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFile.model_fields"><code class="docutils literal notranslate"><span class="pre">ResultFile.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFile.size"><code class="docutils literal notranslate"><span class="pre">ResultFile.size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat"><code class="docutils literal notranslate"><span class="pre">ResultFormat</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat.parquet"><code class="docutils literal notranslate"><span class="pre">ResultFormat.parquet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat.root"><code class="docutils literal notranslate"><span class="pre">ResultFormat.root</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.Status"><code class="docutils literal notranslate"><span class="pre">Status</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.canceled"><code class="docutils literal notranslate"><span class="pre">Status.canceled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.complete"><code class="docutils literal notranslate"><span class="pre">Status.complete</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.fatal"><code class="docutils literal notranslate"><span class="pre">Status.fatal</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.looking"><code class="docutils literal notranslate"><span class="pre">Status.looking</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.pending"><code class="docutils literal notranslate"><span class="pre">Status.pending</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.running"><code class="docutils literal notranslate"><span class="pre">Status.running</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.Status.submitted"><code class="docutils literal notranslate"><span class="pre">Status.submitted</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest"><code class="docutils literal notranslate"><span class="pre">TransformRequest</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.codegen"><code class="docutils literal notranslate"><span class="pre">TransformRequest.codegen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.compute_hash"><code class="docutils literal notranslate"><span class="pre">TransformRequest.compute_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.did"><code class="docutils literal notranslate"><span class="pre">TransformRequest.did</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.file_list"><code class="docutils literal notranslate"><span class="pre">TransformRequest.file_list</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.image"><code class="docutils literal notranslate"><span class="pre">TransformRequest.image</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">TransformRequest.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.model_config"><code class="docutils literal notranslate"><span class="pre">TransformRequest.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.model_fields"><code class="docutils literal notranslate"><span class="pre">TransformRequest.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.result_destination"><code class="docutils literal notranslate"><span class="pre">TransformRequest.result_destination</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.result_format"><code class="docutils literal notranslate"><span class="pre">TransformRequest.result_format</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.selection"><code class="docutils literal notranslate"><span class="pre">TransformRequest.selection</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.title"><code class="docutils literal notranslate"><span class="pre">TransformRequest.title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformRequest.tree_name"><code class="docutils literal notranslate"><span class="pre">TransformRequest.tree_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus"><code class="docutils literal notranslate"><span class="pre">TransformStatus</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.app_version"><code class="docutils literal notranslate"><span class="pre">TransformStatus.app_version</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.did"><code class="docutils literal notranslate"><span class="pre">TransformStatus.did</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.files"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.files_completed"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files_completed</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.files_failed"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files_failed</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.files_remaining"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files_remaining</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.finish_time"><code class="docutils literal notranslate"><span class="pre">TransformStatus.finish_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.generated_code_cm"><code class="docutils literal notranslate"><span class="pre">TransformStatus.generated_code_cm</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.image"><code class="docutils literal notranslate"><span class="pre">TransformStatus.image</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.log_url"><code class="docutils literal notranslate"><span class="pre">TransformStatus.log_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.minio_access_key"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_access_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.minio_endpoint"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.minio_secret_key"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_secret_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.minio_secured"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_secured</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">TransformStatus.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.model_config"><code class="docutils literal notranslate"><span class="pre">TransformStatus.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.model_fields"><code class="docutils literal notranslate"><span class="pre">TransformStatus.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.parse_finish_time"><code class="docutils literal notranslate"><span class="pre">TransformStatus.parse_finish_time()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.request_id"><code class="docutils literal notranslate"><span class="pre">TransformStatus.request_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.result_destination"><code class="docutils literal notranslate"><span class="pre">TransformStatus.result_destination</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.result_format"><code class="docutils literal notranslate"><span class="pre">TransformStatus.result_format</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.selection"><code class="docutils literal notranslate"><span class="pre">TransformStatus.selection</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.status"><code class="docutils literal notranslate"><span class="pre">TransformStatus.status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.submit_time"><code class="docutils literal notranslate"><span class="pre">TransformStatus.submit_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.title"><code class="docutils literal notranslate"><span class="pre">TransformStatus.title</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformStatus.tree_name"><code class="docutils literal notranslate"><span class="pre">TransformStatus.tree_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults"><code class="docutils literal notranslate"><span class="pre">TransformedResults</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.codegen"><code class="docutils literal notranslate"><span class="pre">TransformedResults.codegen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.data_dir"><code class="docutils literal notranslate"><span class="pre">TransformedResults.data_dir</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.file_list"><code class="docutils literal notranslate"><span class="pre">TransformedResults.file_list</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.files"><code class="docutils literal notranslate"><span class="pre">TransformedResults.files</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.hash"><code class="docutils literal notranslate"><span class="pre">TransformedResults.hash</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.log_url"><code class="docutils literal notranslate"><span class="pre">TransformedResults.log_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">TransformedResults.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.model_config"><code class="docutils literal notranslate"><span class="pre">TransformedResults.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.model_fields"><code class="docutils literal notranslate"><span class="pre">TransformedResults.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.request_id"><code class="docutils literal notranslate"><span class="pre">TransformedResults.request_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.result_format"><code class="docutils literal notranslate"><span class="pre">TransformedResults.result_format</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.signed_url_list"><code class="docutils literal notranslate"><span class="pre">TransformedResults.signed_url_list</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.submit_time"><code class="docutils literal notranslate"><span class="pre">TransformedResults.submit_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.models.TransformedResults.title"><code class="docutils literal notranslate"><span class="pre">TransformedResults.title</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.python_dataset">servicex.python_dataset module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.python_dataset.PythonQuery"><code class="docutils literal notranslate"><span class="pre">PythonQuery</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.python_dataset.PythonQuery.from_yaml"><code class="docutils literal notranslate"><span class="pre">PythonQuery.from_yaml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.python_dataset.PythonQuery.generate_selection_string"><code class="docutils literal notranslate"><span class="pre">PythonQuery.generate_selection_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.python_dataset.PythonQuery.with_uproot_function"><code class="docutils literal notranslate"><span class="pre">PythonQuery.with_uproot_function()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.python_dataset.PythonQuery.yaml_tag"><code class="docutils literal notranslate"><span class="pre">PythonQuery.yaml_tag</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.query">servicex.query module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.query_cache">servicex.query_cache module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.query_cache.CacheException"><code class="docutils literal notranslate"><span class="pre">CacheException</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache"><code class="docutils literal notranslate"><span class="pre">QueryCache</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.cache_path_for_transform"><code class="docutils literal notranslate"><span class="pre">QueryCache.cache_path_for_transform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.cache_transform"><code class="docutils literal notranslate"><span class="pre">QueryCache.cache_transform()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.cached_queries"><code class="docutils literal notranslate"><span class="pre">QueryCache.cached_queries()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.close"><code class="docutils literal notranslate"><span class="pre">QueryCache.close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.delete_codegen_by_backend"><code class="docutils literal notranslate"><span class="pre">QueryCache.delete_codegen_by_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.delete_record_by_request_id"><code class="docutils literal notranslate"><span class="pre">QueryCache.delete_record_by_request_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.get_codegen_by_backend"><code class="docutils literal notranslate"><span class="pre">QueryCache.get_codegen_by_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.get_transform_by_hash"><code class="docutils literal notranslate"><span class="pre">QueryCache.get_transform_by_hash()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.get_transform_by_request_id"><code class="docutils literal notranslate"><span class="pre">QueryCache.get_transform_by_request_id()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.update_codegen_by_backend"><code class="docutils literal notranslate"><span class="pre">QueryCache.update_codegen_by_backend()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.query_cache.QueryCache.update_record"><code class="docutils literal notranslate"><span class="pre">QueryCache.update_record()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.servicex_adapter">servicex.servicex_adapter module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.servicex_adapter.AuthorizationError"><code class="docutils literal notranslate"><span class="pre">AuthorizationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.servicex_adapter.ServiceXAdapter"><code class="docutils literal notranslate"><span class="pre">ServiceXAdapter</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_adapter.ServiceXAdapter.get_code_generators"><code class="docutils literal notranslate"><span class="pre">ServiceXAdapter.get_code_generators()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_adapter.ServiceXAdapter.get_transform_status"><code class="docutils literal notranslate"><span class="pre">ServiceXAdapter.get_transform_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_adapter.ServiceXAdapter.get_transforms"><code class="docutils literal notranslate"><span class="pre">ServiceXAdapter.get_transforms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_adapter.ServiceXAdapter.submit_transform"><code class="docutils literal notranslate"><span class="pre">ServiceXAdapter.submit_transform()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.servicex_client">servicex.servicex_client module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient"><code class="docutils literal notranslate"><span class="pre">ServiceXClient</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.func_adl_dataset"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.func_adl_dataset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.generic_query"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.generic_query()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.get_code_generators"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_code_generators()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.get_transform_status"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transform_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.get_transform_status_async"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transform_status_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.get_transforms"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transforms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.get_transforms_async"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transforms_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.servicex_client.ServiceXClient.python_dataset"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.python_dataset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.servicex_client.deliver"><code class="docutils literal notranslate"><span class="pre">deliver()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex.types">servicex.types module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html#module-servicex">Module contents</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.DatasetGroup"><code class="docutils literal notranslate"><span class="pre">DatasetGroup</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.DatasetGroup.as_files"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.DatasetGroup.as_files_async"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_files_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.DatasetGroup.as_signed_urls"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_signed_urls()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.DatasetGroup.as_signed_urls_async"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_signed_urls_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.DatasetGroup.set_result_format"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.set_result_format()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.FileListDataset"><code class="docutils literal notranslate"><span class="pre">FileListDataset</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.FileListDataset.did"><code class="docutils literal notranslate"><span class="pre">FileListDataset.did</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.FileListDataset.files"><code class="docutils literal notranslate"><span class="pre">FileListDataset.files</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.FileListDataset.from_yaml"><code class="docutils literal notranslate"><span class="pre">FileListDataset.from_yaml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.FileListDataset.populate_transform_request"><code class="docutils literal notranslate"><span class="pre">FileListDataset.populate_transform_request()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.FileListDataset.yaml_tag"><code class="docutils literal notranslate"><span class="pre">FileListDataset.yaml_tag</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.FuncADL_Uproot"><code class="docutils literal notranslate"><span class="pre">FuncADL_Uproot</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.General"><code class="docutils literal notranslate"><span class="pre">General</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.Codegen"><code class="docutils literal notranslate"><span class="pre">General.Codegen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.Delivery"><code class="docutils literal notranslate"><span class="pre">General.Delivery</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.DeliveryEnum"><code class="docutils literal notranslate"><span class="pre">General.DeliveryEnum</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.OutFilesetName"><code class="docutils literal notranslate"><span class="pre">General.OutFilesetName</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.OutputDirectory"><code class="docutils literal notranslate"><span class="pre">General.OutputDirectory</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.OutputFormat"><code class="docutils literal notranslate"><span class="pre">General.OutputFormat</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.OutputFormatEnum"><code class="docutils literal notranslate"><span class="pre">General.OutputFormatEnum</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">General.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.model_config"><code class="docutils literal notranslate"><span class="pre">General.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.General.model_fields"><code class="docutils literal notranslate"><span class="pre">General.model_fields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.PythonFunction"><code class="docutils literal notranslate"><span class="pre">PythonFunction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.Query"><code class="docutils literal notranslate"><span class="pre">Query</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.as_files"><code class="docutils literal notranslate"><span class="pre">Query.as_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.as_files_async"><code class="docutils literal notranslate"><span class="pre">Query.as_files_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.as_pandas"><code class="docutils literal notranslate"><span class="pre">Query.as_pandas()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.as_pandas_async"><code class="docutils literal notranslate"><span class="pre">Query.as_pandas_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.as_signed_urls"><code class="docutils literal notranslate"><span class="pre">Query.as_signed_urls()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.as_signed_urls_async"><code class="docutils literal notranslate"><span class="pre">Query.as_signed_urls_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.download_files"><code class="docutils literal notranslate"><span class="pre">Query.download_files()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.generate_selection_string"><code class="docutils literal notranslate"><span class="pre">Query.generate_selection_string()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.retrieve_current_transform_status"><code class="docutils literal notranslate"><span class="pre">Query.retrieve_current_transform_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.set_result_format"><code class="docutils literal notranslate"><span class="pre">Query.set_result_format()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.set_title"><code class="docutils literal notranslate"><span class="pre">Query.set_title()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.submit_and_download"><code class="docutils literal notranslate"><span class="pre">Query.submit_and_download()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.transform_request"><code class="docutils literal notranslate"><span class="pre">Query.transform_request</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Query.transform_status_listener"><code class="docutils literal notranslate"><span class="pre">Query.transform_status_listener()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.ResultDestination"><code class="docutils literal notranslate"><span class="pre">ResultDestination</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ResultDestination.object_store"><code class="docutils literal notranslate"><span class="pre">ResultDestination.object_store</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ResultDestination.volume"><code class="docutils literal notranslate"><span class="pre">ResultDestination.volume</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.ResultFormat"><code class="docutils literal notranslate"><span class="pre">ResultFormat</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ResultFormat.parquet"><code class="docutils literal notranslate"><span class="pre">ResultFormat.parquet</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ResultFormat.root"><code class="docutils literal notranslate"><span class="pre">ResultFormat.root</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.RucioDatasetIdentifier"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.RucioDatasetIdentifier.from_yaml"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier.from_yaml()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.RucioDatasetIdentifier.yaml_tag"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier.yaml_tag</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.Sample"><code class="docutils literal notranslate"><span class="pre">Sample</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.Codegen"><code class="docutils literal notranslate"><span class="pre">Sample.Codegen</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.Dataset"><code class="docutils literal notranslate"><span class="pre">Sample.Dataset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.IgnoreLocalCache"><code class="docutils literal notranslate"><span class="pre">Sample.IgnoreLocalCache</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.NFiles"><code class="docutils literal notranslate"><span class="pre">Sample.NFiles</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.Name"><code class="docutils literal notranslate"><span class="pre">Sample.Name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.Query"><code class="docutils literal notranslate"><span class="pre">Sample.Query</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.RucioDID"><code class="docutils literal notranslate"><span class="pre">Sample.RucioDID</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.XRootDFiles"><code class="docutils literal notranslate"><span class="pre">Sample.XRootDFiles</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.dataset_identifier"><code class="docutils literal notranslate"><span class="pre">Sample.dataset_identifier</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">Sample.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.model_config"><code class="docutils literal notranslate"><span class="pre">Sample.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.model_fields"><code class="docutils literal notranslate"><span class="pre">Sample.model_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.Sample.validate_did_xor_file"><code class="docutils literal notranslate"><span class="pre">Sample.validate_did_xor_file()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.ServiceXClient"><code class="docutils literal notranslate"><span class="pre">ServiceXClient</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.func_adl_dataset"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.func_adl_dataset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.generic_query"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.generic_query()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.get_code_generators"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_code_generators()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.get_transform_status"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transform_status()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.get_transform_status_async"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transform_status_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.get_transforms"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transforms()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.get_transforms_async"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.get_transforms_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXClient.python_dataset"><code class="docutils literal notranslate"><span class="pre">ServiceXClient.python_dataset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec.Definition"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.Definition</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec.General"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.General</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec.Sample"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.Sample</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.model_computed_fields</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec.model_config"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.model_config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="servicex.html#servicex.ServiceXSpec.model_fields"><code class="docutils literal notranslate"><span class="pre">ServiceXSpec.model_fields</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.UprootRaw"><code class="docutils literal notranslate"><span class="pre">UprootRaw</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.html#servicex.deliver"><code class="docutils literal notranslate"><span class="pre">deliver()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="servicex.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">servicex package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="about.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">About Page</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Ben Galewsky, Gordon Watts
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=acc74ff5"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/scripts/furo.js?v=4e2eecee"></script>
+    </body>
+</html>

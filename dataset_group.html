@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Models" href="models.html" /><link rel="prev" title="Dataset Class" href="dataset.html" />
+<link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>DatasetGroup - ServiceX Client 3.0.0 documentation</title>
@@ -191,7 +191,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -212,14 +212,25 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="servicex_client.html">ServiceXClient</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_identifier.html">DatasetIdentifier Module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset Class</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">DatasetGroup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">ServiceX_frontend</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of ServiceX_frontend</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="servicex.html">servicex package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of servicex package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 </div>
@@ -254,7 +265,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -262,6 +273,51 @@
         <article role="main" id="furo-main-content">
           <section id="datasetgroup">
 <h1>DatasetGroup<a class="headerlink" href="#datasetgroup" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.dataset_group.DatasetGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.dataset_group.</span></span><span class="sig-name descname"><span class="pre">DatasetGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">datasets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.Query" title="servicex.query_core.Query"><span class="pre">Query</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="servicex.func_adl.html#servicex.func_adl.func_adl_dataset.FuncADLQuery" title="servicex.func_adl.func_adl_dataset.FuncADLQuery"><span class="pre">FuncADLQuery</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/dataset_group.html#DatasetGroup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_group.DatasetGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A group of datasets that are to be transformed together. This is a convenience
+class to allow you to submit multiple datasets to a ServiceX instance and
+then wait for all of them to complete.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>datasets</strong> – List of transform request as dataset instances</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_group.DatasetGroup.as_files">
+<span class="sig-name descname"><span class="pre">as_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provided_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Progress</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.models.TransformedResults" title="servicex.models.TransformedResults"><span class="pre">TransformedResults</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#servicex.dataset_group.DatasetGroup.as_files" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_group.DatasetGroup.as_files_async">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">as_files_async</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provided_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Progress</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.models.TransformedResults" title="servicex.models.TransformedResults"><span class="pre">TransformedResults</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/servicex/dataset_group.html#DatasetGroup.as_files_async"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_group.DatasetGroup.as_files_async" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_group.DatasetGroup.as_signed_urls">
+<span class="sig-name descname"><span class="pre">as_signed_urls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provided_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Progress</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.models.TransformedResults" title="servicex.models.TransformedResults"><span class="pre">TransformedResults</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#servicex.dataset_group.DatasetGroup.as_signed_urls" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_group.DatasetGroup.as_signed_urls_async">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">as_signed_urls_async</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">display_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provided_progress</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Progress</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.models.TransformedResults" title="servicex.models.TransformedResults"><span class="pre">TransformedResults</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/servicex/dataset_group.html#DatasetGroup.as_signed_urls_async"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_group.DatasetGroup.as_signed_urls_async" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_group.DatasetGroup.set_result_format">
+<span class="sig-name descname"><span class="pre">set_result_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result_format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/dataset_group.html#DatasetGroup.set_result_format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_group.DatasetGroup.set_result_format" title="Link to this definition">¶</a></dt>
+<dd><p>Set the result format for all the datasets in the group.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>result_format</strong> – ResultFormat instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -269,26 +325,8 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="models.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Models</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="dataset.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Dataset Class</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -307,8 +345,34 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">DatasetGroup</a><ul>
+<li><a class="reference internal" href="#servicex.dataset_group.DatasetGroup"><code class="docutils literal notranslate"><span class="pre">DatasetGroup</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.dataset_group.DatasetGroup.as_files"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_files()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_group.DatasetGroup.as_files_async"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_files_async()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_group.DatasetGroup.as_signed_urls"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_signed_urls()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_group.DatasetGroup.as_signed_urls_async"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.as_signed_urls_async()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_group.DatasetGroup.set_result_format"><code class="docutils literal notranslate"><span class="pre">DatasetGroup.set_result_format()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

@@ -71,3 +71,11 @@ returns an awkward array
 
     sx3 = ds.with_uproot_function(run_query).as_pandas()
     print(sx3)
+    
+
+Bigger Uproot
+---------------------
+.. code-include :: :func:`examples.bigger_uproot.bigger_uproot`
+
+
+

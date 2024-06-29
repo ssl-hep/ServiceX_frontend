@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Configuration" href="configuration.html" /><link rel="prev" title="DatasetGroup" href="dataset_group.html" />
+<link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>Models - ServiceX Client 3.0.0 documentation</title>
@@ -191,7 +191,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -212,14 +212,25 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="servicex_client.html">ServiceXClient</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_identifier.html">DatasetIdentifier Module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_group.html">DatasetGroup</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">ServiceX_frontend</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of ServiceX_frontend</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="servicex.html">servicex package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of servicex package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 </div>
@@ -254,14 +265,452 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="models">
-<h1>Models<a class="headerlink" href="#models" title="Link to this heading">¶</a></h1>
+          <section id="module-servicex.models">
+<span id="models"></span><h1>Models<a class="headerlink" href="#module-servicex.models" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.ResultDestination">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">ResultDestination</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#ResultDestination"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.ResultDestination" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Direct the output to object store or posix volume</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultDestination.object_store">
+<span class="sig-name descname"><span class="pre">object_store</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'object-store'</span></em><a class="headerlink" href="#servicex.models.ResultDestination.object_store" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultDestination.volume">
+<span class="sig-name descname"><span class="pre">volume</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'volume'</span></em><a class="headerlink" href="#servicex.models.ResultDestination.volume" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.ResultFile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">ResultFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extension</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#ResultFile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.ResultFile" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Record reporting the properties of a transformed file result</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<cite>ValidationError</cite>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><cite>self</cite> is explicitly positional-only to allow <cite>self</cite> as a field name.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFile.extension">
+<span class="sig-name descname"><span class="pre">extension</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.ResultFile.extension" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFile.filename">
+<span class="sig-name descname"><span class="pre">filename</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.ResultFile.filename" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFile.model_computed_fields">
+<span class="sig-name descname"><span class="pre">model_computed_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ComputedFieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.ResultFile.model_computed_fields" title="Link to this definition">¶</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding <cite>ComputedFieldInfo</cite> objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFile.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.ResultFile.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFile.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'extension':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'filename':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'size':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#servicex.models.ResultFile.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFile.size">
+<span class="sig-name descname"><span class="pre">size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#servicex.models.ResultFile.size" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.ResultFormat">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">ResultFormat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#ResultFormat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.ResultFormat" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Specify the file format for the generated output</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFormat.parquet">
+<span class="sig-name descname"><span class="pre">parquet</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'parquet'</span></em><a class="headerlink" href="#servicex.models.ResultFormat.parquet" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.ResultFormat.root">
+<span class="sig-name descname"><span class="pre">root</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'root-file'</span></em><a class="headerlink" href="#servicex.models.ResultFormat.root" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.Status">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">Status</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#Status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.Status" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Status of a submitted transform</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.canceled">
+<span class="sig-name descname"><span class="pre">canceled</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Canceled'</span></em><a class="headerlink" href="#servicex.models.Status.canceled" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.complete">
+<span class="sig-name descname"><span class="pre">complete</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Complete'</span></em><a class="headerlink" href="#servicex.models.Status.complete" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.fatal">
+<span class="sig-name descname"><span class="pre">fatal</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Fatal'</span></em><a class="headerlink" href="#servicex.models.Status.fatal" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.looking">
+<span class="sig-name descname"><span class="pre">looking</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Lookup'</span></em><a class="headerlink" href="#servicex.models.Status.looking" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.pending">
+<span class="sig-name descname"><span class="pre">pending</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Pending</span> <span class="pre">Lookup'</span></em><a class="headerlink" href="#servicex.models.Status.pending" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.running">
+<span class="sig-name descname"><span class="pre">running</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Running'</span></em><a class="headerlink" href="#servicex.models.Status.running" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.Status.submitted">
+<span class="sig-name descname"><span class="pre">submitted</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Submitted'</span></em><a class="headerlink" href="#servicex.models.Status.submitted" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">TransformRequest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codegen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_destination</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.ResultDestination" title="servicex.models.ResultDestination"><span class="pre">ResultDestination</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#TransformRequest"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.TransformRequest" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Transform request sent to ServiceX</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<cite>ValidationError</cite>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><cite>self</cite> is explicitly positional-only to allow <cite>self</cite> as a field name.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.codegen">
+<span class="sig-name descname"><span class="pre">codegen</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformRequest.codegen" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.compute_hash">
+<span class="sig-name descname"><span class="pre">compute_hash</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#TransformRequest.compute_hash"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.TransformRequest.compute_hash" title="Link to this definition">¶</a></dt>
+<dd><p>Compute a hash for this submission. Only include properties that impact the result
+so we have maximal ability to reuse transforms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>SHA256 hash of request</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.did">
+<span class="sig-name descname"><span class="pre">did</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformRequest.did" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.file_list">
+<span class="sig-name descname"><span class="pre">file_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformRequest.file_list" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.image">
+<span class="sig-name descname"><span class="pre">image</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformRequest.image" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.model_computed_fields">
+<span class="sig-name descname"><span class="pre">model_computed_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ComputedFieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.TransformRequest.model_computed_fields" title="Link to this definition">¶</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding <cite>ComputedFieldInfo</cite> objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'populate_by_name':</span> <span class="pre">True}</span></em><a class="headerlink" href="#servicex.models.TransformRequest.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'codegen':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'did':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None),</span> <span class="pre">'file_list':</span> <span class="pre">FieldInfo(annotation=Union[List[str],</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias='file-list',</span> <span class="pre">alias_priority=2),</span> <span class="pre">'image':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None),</span> <span class="pre">'result_destination':</span> <span class="pre">FieldInfo(annotation=ResultDestination,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">serialization_alias='result-destination'),</span> <span class="pre">'result_format':</span> <span class="pre">FieldInfo(annotation=ResultFormat,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">serialization_alias='result-format'),</span> <span class="pre">'selection':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'title':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None),</span> <span class="pre">'tree_name':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias='tree-name',</span> <span class="pre">alias_priority=2)}</span></em><a class="headerlink" href="#servicex.models.TransformRequest.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.result_destination">
+<span class="sig-name descname"><span class="pre">result_destination</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.models.ResultDestination" title="servicex.models.ResultDestination"><span class="pre">ResultDestination</span></a></em><a class="headerlink" href="#servicex.models.TransformRequest.result_destination" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.result_format">
+<span class="sig-name descname"><span class="pre">result_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></em><a class="headerlink" href="#servicex.models.TransformRequest.result_format" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.selection">
+<span class="sig-name descname"><span class="pre">selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformRequest.selection" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.title">
+<span class="sig-name descname"><span class="pre">title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformRequest.title" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformRequest.tree_name">
+<span class="sig-name descname"><span class="pre">tree_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformRequest.tree_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">TransformStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">did</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">selection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tree_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_destination</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.ResultDestination" title="servicex.models.ResultDestination"><span class="pre">ResultDestination</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">generated_code_cm</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.Status" title="servicex.models.Status"><span class="pre">Status</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">app_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files_completed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files_failed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files_remaining</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">finish_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minio_endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minio_secured</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minio_access_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minio_secret_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#TransformStatus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.TransformStatus" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Status object returned by servicex</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<cite>ValidationError</cite>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><cite>self</cite> is explicitly positional-only to allow <cite>self</cite> as a field name.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.app_version">
+<span class="sig-name descname"><span class="pre">app_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformStatus.app_version" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.did">
+<span class="sig-name descname"><span class="pre">did</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformStatus.did" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.files">
+<span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#servicex.models.TransformStatus.files" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.files_completed">
+<span class="sig-name descname"><span class="pre">files_completed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#servicex.models.TransformStatus.files_completed" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.files_failed">
+<span class="sig-name descname"><span class="pre">files_failed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#servicex.models.TransformStatus.files_failed" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.files_remaining">
+<span class="sig-name descname"><span class="pre">files_remaining</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.files_remaining" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.finish_time">
+<span class="sig-name descname"><span class="pre">finish_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.finish_time" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.generated_code_cm">
+<span class="sig-name descname"><span class="pre">generated_code_cm</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformStatus.generated_code_cm" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.image">
+<span class="sig-name descname"><span class="pre">image</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformStatus.image" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.log_url">
+<span class="sig-name descname"><span class="pre">log_url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.log_url" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.minio_access_key">
+<span class="sig-name descname"><span class="pre">minio_access_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.minio_access_key" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.minio_endpoint">
+<span class="sig-name descname"><span class="pre">minio_endpoint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.minio_endpoint" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.minio_secret_key">
+<span class="sig-name descname"><span class="pre">minio_secret_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.minio_secret_key" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.minio_secured">
+<span class="sig-name descname"><span class="pre">minio_secured</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.minio_secured" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.model_computed_fields">
+<span class="sig-name descname"><span class="pre">model_computed_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ComputedFieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.TransformStatus.model_computed_fields" title="Link to this definition">¶</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding <cite>ComputedFieldInfo</cite> objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.TransformStatus.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'app_version':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='app-version'),</span> <span class="pre">'did':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'files':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=True),</span> <span class="pre">'files_completed':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='files-completed'),</span> <span class="pre">'files_failed':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='files-failed'),</span> <span class="pre">'files_remaining':</span> <span class="pre">FieldInfo(annotation=Union[int,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=0,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='files-remaining'),</span> <span class="pre">'finish_time':</span> <span class="pre">FieldInfo(annotation=Union[datetime,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='finish-time'),</span> <span class="pre">'generated_code_cm':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='generated-code-cm'),</span> <span class="pre">'image':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'log_url':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='log-url'),</span> <span class="pre">'minio_access_key':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='minio-access-key'),</span> <span class="pre">'minio_endpoint':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='minio-endpoint'),</span> <span class="pre">'minio_secret_key':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='minio-secret-key'),</span> <span class="pre">'minio_secured':</span> <span class="pre">FieldInfo(annotation=Union[bool,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='minio-secured'),</span> <span class="pre">'request_id':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'result_destination':</span> <span class="pre">FieldInfo(annotation=ResultDestination,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='result-destination'),</span> <span class="pre">'result_format':</span> <span class="pre">FieldInfo(annotation=ResultFormat,</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='result-format'),</span> <span class="pre">'selection':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'status':</span> <span class="pre">FieldInfo(annotation=Status,</span> <span class="pre">required=True),</span> <span class="pre">'submit_time':</span> <span class="pre">FieldInfo(annotation=datetime,</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='submit-time'),</span> <span class="pre">'title':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None),</span> <span class="pre">'tree_name':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=True,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias='tree-name')}</span></em><a class="headerlink" href="#servicex.models.TransformStatus.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.request_id">
+<span class="sig-name descname"><span class="pre">request_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformStatus.request_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.result_destination">
+<span class="sig-name descname"><span class="pre">result_destination</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.models.ResultDestination" title="servicex.models.ResultDestination"><span class="pre">ResultDestination</span></a></em><a class="headerlink" href="#servicex.models.TransformStatus.result_destination" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.result_format">
+<span class="sig-name descname"><span class="pre">result_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></em><a class="headerlink" href="#servicex.models.TransformStatus.result_format" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.selection">
+<span class="sig-name descname"><span class="pre">selection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformStatus.selection" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.status">
+<span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.models.Status" title="servicex.models.Status"><span class="pre">Status</span></a></em><a class="headerlink" href="#servicex.models.TransformStatus.status" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.submit_time">
+<span class="sig-name descname"><span class="pre">submit_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#servicex.models.TransformStatus.submit_time" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.title">
+<span class="sig-name descname"><span class="pre">title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.title" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformStatus.tree_name">
+<span class="sig-name descname"><span class="pre">tree_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformStatus.tree_name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.models.</span></span><span class="sig-name descname"><span class="pre">TransformedResults</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hash</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">codegen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">request_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submit_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signed_url_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result_format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">log_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/models.html#TransformedResults"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.models.TransformedResults" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Returned for a submission. Gives you everything you need to know about a completed
+transform.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<cite>ValidationError</cite>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><cite>self</cite> is explicitly positional-only to allow <cite>self</cite> as a field name.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.codegen">
+<span class="sig-name descname"><span class="pre">codegen</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformedResults.codegen" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.data_dir">
+<span class="sig-name descname"><span class="pre">data_dir</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformedResults.data_dir" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.file_list">
+<span class="sig-name descname"><span class="pre">file_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#servicex.models.TransformedResults.file_list" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.files">
+<span class="sig-name descname"><span class="pre">files</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#servicex.models.TransformedResults.files" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.hash">
+<span class="sig-name descname"><span class="pre">hash</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformedResults.hash" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.log_url">
+<span class="sig-name descname"><span class="pre">log_url</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.models.TransformedResults.log_url" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.model_computed_fields">
+<span class="sig-name descname"><span class="pre">model_computed_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ComputedFieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.TransformedResults.model_computed_fields" title="Link to this definition">¶</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding <cite>ComputedFieldInfo</cite> objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.models.TransformedResults.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'codegen':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'data_dir':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'file_list':</span> <span class="pre">FieldInfo(annotation=List[str],</span> <span class="pre">required=True),</span> <span class="pre">'files':</span> <span class="pre">FieldInfo(annotation=int,</span> <span class="pre">required=True),</span> <span class="pre">'hash':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'log_url':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None),</span> <span class="pre">'request_id':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'result_format':</span> <span class="pre">FieldInfo(annotation=ResultFormat,</span> <span class="pre">required=True),</span> <span class="pre">'signed_url_list':</span> <span class="pre">FieldInfo(annotation=List[str],</span> <span class="pre">required=True),</span> <span class="pre">'submit_time':</span> <span class="pre">FieldInfo(annotation=datetime,</span> <span class="pre">required=True),</span> <span class="pre">'title':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True)}</span></em><a class="headerlink" href="#servicex.models.TransformedResults.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.request_id">
+<span class="sig-name descname"><span class="pre">request_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformedResults.request_id" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.result_format">
+<span class="sig-name descname"><span class="pre">result_format</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.models.ResultFormat" title="servicex.models.ResultFormat"><span class="pre">ResultFormat</span></a></em><a class="headerlink" href="#servicex.models.TransformedResults.result_format" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.signed_url_list">
+<span class="sig-name descname"><span class="pre">signed_url_list</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#servicex.models.TransformedResults.signed_url_list" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.submit_time">
+<span class="sig-name descname"><span class="pre">submit_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span></em><a class="headerlink" href="#servicex.models.TransformedResults.submit_time" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.models.TransformedResults.title">
+<span class="sig-name descname"><span class="pre">title</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.models.TransformedResults.title" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -269,26 +718,8 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="configuration.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Configuration</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="dataset_group.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">DatasetGroup</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -307,8 +738,116 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Models</a><ul>
+<li><a class="reference internal" href="#servicex.models.ResultDestination"><code class="docutils literal notranslate"><span class="pre">ResultDestination</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.ResultDestination.object_store"><code class="docutils literal notranslate"><span class="pre">ResultDestination.object_store</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultDestination.volume"><code class="docutils literal notranslate"><span class="pre">ResultDestination.volume</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.models.ResultFile"><code class="docutils literal notranslate"><span class="pre">ResultFile</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.ResultFile.extension"><code class="docutils literal notranslate"><span class="pre">ResultFile.extension</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultFile.filename"><code class="docutils literal notranslate"><span class="pre">ResultFile.filename</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultFile.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">ResultFile.model_computed_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultFile.model_config"><code class="docutils literal notranslate"><span class="pre">ResultFile.model_config</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultFile.model_fields"><code class="docutils literal notranslate"><span class="pre">ResultFile.model_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultFile.size"><code class="docutils literal notranslate"><span class="pre">ResultFile.size</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.models.ResultFormat"><code class="docutils literal notranslate"><span class="pre">ResultFormat</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.ResultFormat.parquet"><code class="docutils literal notranslate"><span class="pre">ResultFormat.parquet</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.ResultFormat.root"><code class="docutils literal notranslate"><span class="pre">ResultFormat.root</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.models.Status"><code class="docutils literal notranslate"><span class="pre">Status</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.Status.canceled"><code class="docutils literal notranslate"><span class="pre">Status.canceled</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.Status.complete"><code class="docutils literal notranslate"><span class="pre">Status.complete</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.Status.fatal"><code class="docutils literal notranslate"><span class="pre">Status.fatal</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.Status.looking"><code class="docutils literal notranslate"><span class="pre">Status.looking</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.Status.pending"><code class="docutils literal notranslate"><span class="pre">Status.pending</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.Status.running"><code class="docutils literal notranslate"><span class="pre">Status.running</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.Status.submitted"><code class="docutils literal notranslate"><span class="pre">Status.submitted</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest"><code class="docutils literal notranslate"><span class="pre">TransformRequest</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.codegen"><code class="docutils literal notranslate"><span class="pre">TransformRequest.codegen</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.compute_hash"><code class="docutils literal notranslate"><span class="pre">TransformRequest.compute_hash()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.did"><code class="docutils literal notranslate"><span class="pre">TransformRequest.did</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.file_list"><code class="docutils literal notranslate"><span class="pre">TransformRequest.file_list</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.image"><code class="docutils literal notranslate"><span class="pre">TransformRequest.image</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">TransformRequest.model_computed_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.model_config"><code class="docutils literal notranslate"><span class="pre">TransformRequest.model_config</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.model_fields"><code class="docutils literal notranslate"><span class="pre">TransformRequest.model_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.result_destination"><code class="docutils literal notranslate"><span class="pre">TransformRequest.result_destination</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.result_format"><code class="docutils literal notranslate"><span class="pre">TransformRequest.result_format</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.selection"><code class="docutils literal notranslate"><span class="pre">TransformRequest.selection</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.title"><code class="docutils literal notranslate"><span class="pre">TransformRequest.title</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformRequest.tree_name"><code class="docutils literal notranslate"><span class="pre">TransformRequest.tree_name</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus"><code class="docutils literal notranslate"><span class="pre">TransformStatus</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.app_version"><code class="docutils literal notranslate"><span class="pre">TransformStatus.app_version</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.did"><code class="docutils literal notranslate"><span class="pre">TransformStatus.did</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.files"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.files_completed"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files_completed</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.files_failed"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files_failed</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.files_remaining"><code class="docutils literal notranslate"><span class="pre">TransformStatus.files_remaining</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.finish_time"><code class="docutils literal notranslate"><span class="pre">TransformStatus.finish_time</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.generated_code_cm"><code class="docutils literal notranslate"><span class="pre">TransformStatus.generated_code_cm</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.image"><code class="docutils literal notranslate"><span class="pre">TransformStatus.image</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.log_url"><code class="docutils literal notranslate"><span class="pre">TransformStatus.log_url</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.minio_access_key"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_access_key</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.minio_endpoint"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_endpoint</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.minio_secret_key"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_secret_key</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.minio_secured"><code class="docutils literal notranslate"><span class="pre">TransformStatus.minio_secured</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">TransformStatus.model_computed_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.model_config"><code class="docutils literal notranslate"><span class="pre">TransformStatus.model_config</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.model_fields"><code class="docutils literal notranslate"><span class="pre">TransformStatus.model_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.request_id"><code class="docutils literal notranslate"><span class="pre">TransformStatus.request_id</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.result_destination"><code class="docutils literal notranslate"><span class="pre">TransformStatus.result_destination</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.result_format"><code class="docutils literal notranslate"><span class="pre">TransformStatus.result_format</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.selection"><code class="docutils literal notranslate"><span class="pre">TransformStatus.selection</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.status"><code class="docutils literal notranslate"><span class="pre">TransformStatus.status</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.submit_time"><code class="docutils literal notranslate"><span class="pre">TransformStatus.submit_time</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.title"><code class="docutils literal notranslate"><span class="pre">TransformStatus.title</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformStatus.tree_name"><code class="docutils literal notranslate"><span class="pre">TransformStatus.tree_name</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults"><code class="docutils literal notranslate"><span class="pre">TransformedResults</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.codegen"><code class="docutils literal notranslate"><span class="pre">TransformedResults.codegen</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.data_dir"><code class="docutils literal notranslate"><span class="pre">TransformedResults.data_dir</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.file_list"><code class="docutils literal notranslate"><span class="pre">TransformedResults.file_list</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.files"><code class="docutils literal notranslate"><span class="pre">TransformedResults.files</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.hash"><code class="docutils literal notranslate"><span class="pre">TransformedResults.hash</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.log_url"><code class="docutils literal notranslate"><span class="pre">TransformedResults.log_url</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">TransformedResults.model_computed_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.model_config"><code class="docutils literal notranslate"><span class="pre">TransformedResults.model_config</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.model_fields"><code class="docutils literal notranslate"><span class="pre">TransformedResults.model_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.request_id"><code class="docutils literal notranslate"><span class="pre">TransformedResults.request_id</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.result_format"><code class="docutils literal notranslate"><span class="pre">TransformedResults.result_format</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.signed_url_list"><code class="docutils literal notranslate"><span class="pre">TransformedResults.signed_url_list</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.submit_time"><code class="docutils literal notranslate"><span class="pre">TransformedResults.submit_time</span></code></a></li>
+<li><a class="reference internal" href="#servicex.models.TransformedResults.title"><code class="docutils literal notranslate"><span class="pre">TransformedResults.title</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

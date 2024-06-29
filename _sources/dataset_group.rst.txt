@@ -1,6 +1,6 @@
 DatasetGroup
 ============
-.. autoclass:: servicex_client.dataset_group.DatasetGroup
+.. autoclass:: servicex.dataset_group.DatasetGroup
     :members:
     :undoc-members:
     :show-inheritance:

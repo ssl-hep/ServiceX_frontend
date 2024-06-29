@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Dataset Class" href="dataset.html" /><link rel="prev" title="ServiceXClient" href="servicex_client.html" />
+<link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>DatasetIdentifier Module - ServiceX Client 3.0.0 documentation</title>
@@ -191,7 +191,7 @@
           <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
         </button>
       </div>
-      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
         <div class="visually-hidden">Toggle table of contents sidebar</div>
         <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
       </label>
@@ -212,14 +212,25 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="servicex_client.html">ServiceXClient</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">DatasetIdentifier Module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_group.html">DatasetGroup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">ServiceX_frontend</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of ServiceX_frontend</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="servicex.html">servicex package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of servicex package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 </div>
@@ -254,7 +265,7 @@
               <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
             </button>
           </div>
-          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
             <div class="visually-hidden">Toggle table of contents sidebar</div>
             <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
           </label>
@@ -262,6 +273,61 @@
         <article role="main" id="furo-main-content">
           <section id="datasetidentifier-module">
 <h1>DatasetIdentifier Module<a class="headerlink" href="#datasetidentifier-module" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.RucioDatasetIdentifier">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.dataset_identifier.</span></span><span class="sig-name descname"><span class="pre">RucioDatasetIdentifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/dataset_identifier.html#RucioDatasetIdentifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_identifier.RucioDatasetIdentifier" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="servicex.html#servicex.dataset_identifier.DataSetIdentifier" title="servicex.dataset_identifier.DataSetIdentifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSetIdentifier</span></code></a></p>
+<p>Rucio Dataset - this will be looked up using the Rucio data management
+service.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> – The rucio DID - this can be a dataset or a container of datasets.</p></li>
+<li><p><strong>num_files</strong> – Maximum number of files to return. This is useful during development
+to perform quick runs. ServiceX is careful to make sure it always
+returns the same subset of files.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.RucioDatasetIdentifier.from_yaml">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/dataset_identifier.html#RucioDatasetIdentifier.from_yaml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_identifier.RucioDatasetIdentifier.from_yaml" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.RucioDatasetIdentifier.yaml_tag">
+<span class="sig-name descname"><span class="pre">yaml_tag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'!Rucio'</span></em><a class="headerlink" href="#servicex.dataset_identifier.RucioDatasetIdentifier.yaml_tag" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.FileListDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.dataset_identifier.</span></span><span class="sig-name descname"><span class="pre">FileListDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/dataset_identifier.html#FileListDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_identifier.FileListDataset" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="servicex.html#servicex.dataset_identifier.DataSetIdentifier" title="servicex.dataset_identifier.DataSetIdentifier"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataSetIdentifier</span></code></a></p>
+<p>Dataset specified as a list of XRootD URIs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>files</strong> – Either a list of URIs or a single URI string</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.FileListDataset.did">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">did</span></span><a class="headerlink" href="#servicex.dataset_identifier.FileListDataset.did" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.FileListDataset.from_yaml">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_yaml</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">constructor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/dataset_identifier.html#FileListDataset.from_yaml"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.dataset_identifier.FileListDataset.from_yaml" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.dataset_identifier.FileListDataset.yaml_tag">
+<span class="sig-name descname"><span class="pre">yaml_tag</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'!FileList'</span></em><a class="headerlink" href="#servicex.dataset_identifier.FileListDataset.yaml_tag" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 
         </article>
@@ -269,26 +335,8 @@
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="dataset.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">Dataset Class</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="servicex_client.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">ServiceXClient</div>
-                
-              </div>
-            </a>
+          
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -307,8 +355,37 @@
         
       </footer>
     </div>
-    <aside class="toc-drawer no-toc">
+    <aside class="toc-drawer">
       
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">DatasetIdentifier Module</a><ul>
+<li><a class="reference internal" href="#servicex.dataset_identifier.RucioDatasetIdentifier"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.dataset_identifier.RucioDatasetIdentifier.from_yaml"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier.from_yaml()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_identifier.RucioDatasetIdentifier.yaml_tag"><code class="docutils literal notranslate"><span class="pre">RucioDatasetIdentifier.yaml_tag</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#servicex.dataset_identifier.FileListDataset"><code class="docutils literal notranslate"><span class="pre">FileListDataset</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.dataset_identifier.FileListDataset.did"><code class="docutils literal notranslate"><span class="pre">FileListDataset.did</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_identifier.FileListDataset.from_yaml"><code class="docutils literal notranslate"><span class="pre">FileListDataset.from_yaml()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.dataset_identifier.FileListDataset.yaml_tag"><code class="docutils literal notranslate"><span class="pre">FileListDataset.yaml_tag</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
       
       
     </aside>

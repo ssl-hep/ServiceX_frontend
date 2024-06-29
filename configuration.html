@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="prev" title="Models" href="models.html" />
+<link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>Configuration - ServiceX Client 3.0.0 documentation</title>
@@ -212,14 +212,25 @@
 </form>
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="servicex_client.html">ServiceXClient</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_identifier.html">DatasetIdentifier Module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_group.html">DatasetGroup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">ServiceX_frontend</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of ServiceX_frontend</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="servicex.html">servicex package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of servicex package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 </div>
@@ -262,8 +273,133 @@
         <article role="main" id="furo-main-content">
           <section id="configuration">
 <h1>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.configuration.</span></span><span class="sig-name descname"><span class="pre">Configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_endpoints</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint" title="servicex.configuration.Endpoint"><span class="pre">Endpoint</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shortened_downloaded_filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/configuration.html#Configuration"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.configuration.Configuration" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<cite>ValidationError</cite>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><cite>self</cite> is explicitly positional-only to allow <cite>self</cite> as a field name.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.api_endpoints">
+<span class="sig-name descname"><span class="pre">api_endpoints</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint" title="servicex.configuration.Endpoint"><span class="pre">Endpoint</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#servicex.configuration.Configuration.api_endpoints" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.cache_path">
+<span class="sig-name descname"><span class="pre">cache_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.configuration.Configuration.cache_path" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.default_endpoint">
+<span class="sig-name descname"><span class="pre">default_endpoint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.configuration.Configuration.default_endpoint" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.endpoint_dict">
+<span class="sig-name descname"><span class="pre">endpoint_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="servicex.html#servicex.configuration.Endpoint" title="servicex.configuration.Endpoint"><span class="pre">Endpoint</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/servicex/configuration.html#Configuration.endpoint_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.configuration.Configuration.endpoint_dict" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.expand_cache_path">
+<span class="sig-name descname"><span class="pre">expand_cache_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/configuration.html#Configuration.expand_cache_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.configuration.Configuration.expand_cache_path" title="Link to this definition">¶</a></dt>
+<dd><p>Expand the cache path to a full path, and create it if it doesn’t exist.
+Expand ${USER} to be the user name on the system. Works for windows, too.
+:param v:
+:return:</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.model_computed_fields">
+<span class="sig-name descname"><span class="pre">model_computed_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ComputedFieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.configuration.Configuration.model_computed_fields" title="Link to this definition">¶</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding <cite>ComputedFieldInfo</cite> objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'populate_by_name':</span> <span class="pre">True}</span></em><a class="headerlink" href="#servicex.configuration.Configuration.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'api_endpoints':</span> <span class="pre">FieldInfo(annotation=List[Endpoint],</span> <span class="pre">required=True),</span> <span class="pre">'cache_path':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias_priority=2,</span> <span class="pre">validation_alias=AliasChoices(choices=['cache-path',</span> <span class="pre">'cache_path'])),</span> <span class="pre">'default_endpoint':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=None,</span> <span class="pre">alias='default-endpoint',</span> <span class="pre">alias_priority=2),</span> <span class="pre">'shortened_downloaded_filename':</span> <span class="pre">FieldInfo(annotation=Union[bool,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default=False)}</span></em><a class="headerlink" href="#servicex.configuration.Configuration.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.read">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/configuration.html#Configuration.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.configuration.Configuration.read" title="Link to this definition">¶</a></dt>
+<dd><p>Read configuration from .servicex or servicex.yaml file.
+:param config_path: If provided, use this as the path to the .servicex file.</p>
+<blockquote>
+<div><p>Otherwise, search, starting from the current working directory
+and look in enclosing directories</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Populated configuration object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Configuration.shortened_downloaded_filename">
+<span class="sig-name descname"><span class="pre">shortened_downloaded_filename</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.configuration.Configuration.shortened_downloaded_filename" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 <section id="endpoint">
 <h2>Endpoint<a class="headerlink" href="#endpoint" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">servicex.configuration.</span></span><span class="sig-name descname"><span class="pre">Endpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/servicex/configuration.html#Endpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#servicex.configuration.Endpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<cite>ValidationError</cite>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><cite>self</cite> is explicitly positional-only to allow <cite>self</cite> as a field name.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint.endpoint">
+<span class="sig-name descname"><span class="pre">endpoint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.configuration.Endpoint.endpoint" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint.model_computed_fields">
+<span class="sig-name descname"><span class="pre">model_computed_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ComputedFieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.configuration.Endpoint.model_computed_fields" title="Link to this definition">¶</a></dt>
+<dd><p>A dictionary of computed field names and their corresponding <cite>ComputedFieldInfo</cite> objects.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#servicex.configuration.Endpoint.model_config" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint.model_fields">
+<span class="sig-name descname"><span class="pre">model_fields</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">FieldInfo</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'endpoint':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'name':</span> <span class="pre">FieldInfo(annotation=str,</span> <span class="pre">required=True),</span> <span class="pre">'token':</span> <span class="pre">FieldInfo(annotation=Union[str,</span> <span class="pre">NoneType],</span> <span class="pre">required=False,</span> <span class="pre">default='')}</span></em><a class="headerlink" href="#servicex.configuration.Endpoint.model_fields" title="Link to this definition">¶</a></dt>
+<dd><p>Metadata about the fields defined on the model,
+mapping of field names to [<cite>FieldInfo</cite>][pydantic.fields.FieldInfo].</p>
+<p>This replaces <cite>Model.__fields__</cite> from Pydantic V1.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#servicex.configuration.Endpoint.name" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="servicex.configuration.Endpoint.token">
+<span class="sig-name descname"><span class="pre">token</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#servicex.configuration.Endpoint.token" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 
@@ -273,17 +409,7 @@
         
         <div class="related-pages">
           
-          <a class="prev-page" href="models.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">Models</div>
-                
-              </div>
-            </a>
+          
         </div>
         <div class="bottom-of-page">
           <div class="left-details">
@@ -315,7 +441,31 @@
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">Configuration</a><ul>
-<li><a class="reference internal" href="#endpoint">Endpoint</a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration"><code class="docutils literal notranslate"><span class="pre">Configuration</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.api_endpoints"><code class="docutils literal notranslate"><span class="pre">Configuration.api_endpoints</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.cache_path"><code class="docutils literal notranslate"><span class="pre">Configuration.cache_path</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.default_endpoint"><code class="docutils literal notranslate"><span class="pre">Configuration.default_endpoint</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.endpoint_dict"><code class="docutils literal notranslate"><span class="pre">Configuration.endpoint_dict()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.expand_cache_path"><code class="docutils literal notranslate"><span class="pre">Configuration.expand_cache_path()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">Configuration.model_computed_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.model_config"><code class="docutils literal notranslate"><span class="pre">Configuration.model_config</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.model_fields"><code class="docutils literal notranslate"><span class="pre">Configuration.model_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.read"><code class="docutils literal notranslate"><span class="pre">Configuration.read()</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Configuration.shortened_downloaded_filename"><code class="docutils literal notranslate"><span class="pre">Configuration.shortened_downloaded_filename</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#endpoint">Endpoint</a><ul>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint"><code class="docutils literal notranslate"><span class="pre">Endpoint</span></code></a><ul>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint.endpoint"><code class="docutils literal notranslate"><span class="pre">Endpoint.endpoint</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint.model_computed_fields"><code class="docutils literal notranslate"><span class="pre">Endpoint.model_computed_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint.model_config"><code class="docutils literal notranslate"><span class="pre">Endpoint.model_config</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint.model_fields"><code class="docutils literal notranslate"><span class="pre">Endpoint.model_fields</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint.name"><code class="docutils literal notranslate"><span class="pre">Endpoint.name</span></code></a></li>
+<li><a class="reference internal" href="#servicex.configuration.Endpoint.token"><code class="docutils literal notranslate"><span class="pre">Endpoint.token</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>

@@ -3,7 +3,7 @@
   <head><meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Examples" href="examples.html" />
+<link rel="author" title="About these documents" href="about.html" /><link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="Introduction" href="introduction.html" />
 
     <!-- Generated with Sphinx 7.3.7 and Furo 2024.05.06 -->
         <title>ServiceX Client 3.0.0 documentation</title>
@@ -213,13 +213,24 @@
 <div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
   <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a></li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="servicex_client.html">ServiceXClient</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_identifier.html">DatasetIdentifier Module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_group.html">DatasetGroup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">ServiceX_frontend</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of ServiceX_frontend</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="servicex.html">servicex package</a><input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><div class="visually-hidden">Toggle navigation of servicex package</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="servicex.app.html">servicex.app package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.databinder.html">servicex.databinder package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="servicex.func_adl.html">servicex.func_adl package</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
 </div>
@@ -263,6 +274,10 @@
           <section id="servicex-client">
 <h1>ServiceX Client<a class="headerlink" href="#servicex-client" title="Link to this heading">¶</a></h1>
 <p>Python SDK and CLI Client for ServiceX</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">¶</a></h2>
+<p>Why do</p>
+</section>
 <section id="configuration">
 <h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
 <p>The client relies on a YAML file to obtain the URLs of different
@@ -415,19 +430,57 @@ also come with synchronous versions to make it easy to do easy things.</p>
 <div class="toctree-wrapper compound">
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#columnar-data-delivery">Columnar data delivery</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#id1">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#selecting-an-endpoint">Selecting an endpoint</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#first-request">First request</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#next-steps">Next steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="transformer_matrix.html">Tranformer Matrix</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="transformer_matrix.html#supported-combinations">Supported combinations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transformer_matrix.html#a-brief-introduction-to-the-query-languages">A brief introduction to the query languages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="databinder.html">DataBinder</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#simple-func-adl-example">Simple Func_ADL Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#func-adl-example-with-rucio-dataset">Func_ADL Example With Rucio Dataset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="examples.html#python-code-generator">Python Code Generator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples.html#bigger-uproot">Bigger Uproot</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="servicex_client.html">ServiceXClient</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_identifier.html">DatasetIdentifier Module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset.html">Dataset Class</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dataset_group.html">DatasetGroup</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html">Models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html#endpoint">Endpoint</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribute.html">ServiceX Contributor Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#branching-strategy">Branching Strategy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#development-workflow">Development Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#issues">Issues</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#join-us-on-slack">Join us on Slack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#running-the-full-servicex-chart-locally">Running the Full ServiceX Chart Locally</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#running-the-chart">Running the chart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#making-changes">Making Changes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#debugging-tips">Debugging Tips</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#notes-for-maintainers">Notes for Maintainers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribute.html#hotfixes">Hotfixes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshoot.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About Page</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="about.html#report">Report</a></li>
+<li class="toctree-l2"><a class="reference internal" href="about.html#outreach">Outreach</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">ServiceX_frontend</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="servicex.html">servicex package</a></li>
 </ul>
 </li>
 </ul>
@@ -449,12 +502,12 @@ also come with synchronous versions to make it easy to do easy things.</p>
       <footer>
         
         <div class="related-pages">
-          <a class="next-page" href="examples.html">
+          <a class="next-page" href="introduction.html">
               <div class="page-info">
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">Examples</div>
+                <div class="title">Introduction</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -490,6 +543,7 @@ also come with synchronous versions to make it easy to do easy things.</p>
           <div class="toc-tree">
             <ul>
 <li><a class="reference internal" href="#">ServiceX Client</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
 <li><a class="reference internal" href="#configuration">Configuration</a></li>
 <li><a class="reference internal" href="#command-line-interface">Command Line Interface</a><ul>
 <li><a class="reference internal" href="#codegens">codegens</a></li>
