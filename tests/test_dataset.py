@@ -3,7 +3,7 @@ import pandas as pd
 import tempfile
 import os
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 from servicex.dataset_identifier import FileListDataset
 from servicex.configuration import Configuration
 from servicex.minio_adapter import MinioAdapter
@@ -161,6 +161,23 @@ async def test_transform_status_listener_happy(python_dataset):
     # progress.update.assert_called_with(progress_task, completed=5)
     assert python_dataset.files_completed == 5
     assert python_dataset.files_failed == 1
+
+
+@pytest.mark.asyncio
+async def test_transform_status_listener_cancelled(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(files=10, files_completed=5, files_failed=1, status=Status.canceled)
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+    with patch("servicex.app.transforms.create_kibana_link_parameters") as mock_link:
+        await python_dataset.transform_status_listener(progress, progress_task, "mock_title",
+                                                       download_task, "mock_title")
+        mock_link.assert_called_once()
+        python_dataset.retrieve_current_transform_status.assert_awaited_once()
+        assert python_dataset.files_completed == 5
+        assert python_dataset.files_failed == 1
 
 
 @pytest.mark.asyncio
