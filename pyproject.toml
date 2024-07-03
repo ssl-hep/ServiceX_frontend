@@ -116,3 +116,6 @@ include = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["servicex"]
+
+[tool.coverage.run]
+dynamic_context = "test_function"
