@@ -26,11 +26,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
+from typing import Optional, List, TypeVar, Any, Mapping, Union
 from pathlib import Path
 
 from servicex.configuration import Configuration
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus, TransformedResults
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
@@ -41,7 +40,6 @@ from servicex.query_core import (
     Query,
 )
 from servicex.types import DID
-from servicex.python_dataset import PythonFunction
 from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
@@ -245,85 +243,6 @@ class ServiceXClient:
             code_generators = self.servicex.get_code_generators()
             self.query_cache.update_codegen_by_backend(backend, code_generators)
             return code_generators
-
-    def func_adl_dataset(
-        self,
-        dataset_identifier: DID,
-        title: str = "ServiceX Client",
-        codegen: str = "uproot",
-        result_format: Optional[ResultFormat] = None,
-        item_type: Type[T] = Any,
-        ignore_cache: bool = False,
-    ) -> FuncADLQuery[T]:
-        r"""
-        Generate a dataset that can use func_adl query language
-
-        :param dataset_identifier:  The dataset identifier or filelist to be the source of files
-        :param title: Title to be applied to the transform. This is also useful for
-                      relating transform results.
-        :param codegen: Name of the code generator to use with this transform
-        :param result_format:  Do you want Paqrquet or Root? This can be set later with
-                               the set_result_format method
-        :param item_type: The type of the items that will be returned from the query
-        :param ignore_cache: Ignore the query cache and always run the query
-        :return: A func_adl dataset ready to accept query statements.
-        """
-        if codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
-            )
-
-        return FuncADLQuery(
-            dataset_identifier,
-            sx_adapter=self.servicex,
-            title=title,
-            codegen=codegen,
-            config=self.config,
-            query_cache=self.query_cache,
-            result_format=result_format,
-            item_type=item_type,
-            ignore_cache=ignore_cache,
-        )
-
-    def python_dataset(
-        self,
-        dataset_identifier: DID,
-        title: str = "ServiceX Client",
-        codegen: str = "uproot",
-        result_format: Optional[ResultFormat] = None,
-        ignore_cache: bool = False,
-    ) -> PythonFunction:
-        r"""
-        Generate a dataset that can use accept a python function for the  query
-
-        :param dataset_identifier:  The dataset identifier or filelist to be the source of files
-        :param title: Title to be applied to the transform. This is also useful for
-                      relating transform results.
-        :param codegen: Name of the code generator to use with this transform
-        :param result_format:  Do you want Paqrquet or Root? This can be set later with
-                               the set_result_format method
-        :param ignore_cache: Ignore the query cache and always run the query
-        :return: A func_adl dataset ready to accept a python function statements.
-
-        """
-
-        if codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
-            )
-
-        return PythonFunction(
-            dataset_identifier,
-            sx_adapter=self.servicex,
-            title=title,
-            codegen=codegen,
-            config=self.config,
-            query_cache=self.query_cache,
-            result_format=result_format,
-            ignore_cache=ignore_cache,
-        )
 
     def generic_query(
         self,
