@@ -32,7 +32,7 @@ from servicex import dataset_identifier
 from servicex.databinder_models import Sample, General, ServiceXSpec
 from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot as FuncADL_Uproot
 from servicex.uproot_raw.uproot_raw import UprootRawQuery as UprootRaw
-from servicex.python_dataset import PythonQuery as PythonFunction
+from servicex.python_dataset import PythonFunction
 from servicex.servicex_client import ServiceXClient, deliver
 from .query_core import Query
 from .models import ResultFormat, ResultDestination

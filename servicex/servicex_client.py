@@ -41,7 +41,7 @@ from servicex.query_core import (
     Query,
 )
 from servicex.types import DID
-from servicex.python_dataset import PythonQuery
+from servicex.python_dataset import PythonFunction
 from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
@@ -118,38 +118,9 @@ def _build_datasets(config, config_path, servicex_name):
                 ignore_cache=sample.IgnoreLocalCache,
                 query=sample.Query,
             )
-        elif isinstance(sample.Query, FuncADLQuery):
-            logger.debug("sample.Query from FuncADLQuery")
-            logger.debug(
-                f"qastle_query from ServiceXSpec: {sample.Query.generate_selection_string()}"
-            )
-            query = sx.func_adl_dataset(
-                dataset_identifier=sample.dataset_identifier,
-                title=sample.Name,
-                codegen=get_codegen(sample, config.General),
-                result_format=config.General.OutputFormat,
-                ignore_cache=sample.IgnoreLocalCache,
-            )
-            query.set_provided_qastle(sample.Query.generate_selection_string())
-
-            sample.Query = query
-
-            logger.debug(
-                f"final qastle_query: {sample.Query.generate_selection_string()}"
-            )
-        elif isinstance(sample.Query, PythonQuery):
-            logger.debug("sample.Query from PythonQuery")
-            query = sx.python_dataset(
-                dataset_identifier=sample.dataset_identifier,
-                title=sample.Name,
-                codegen=get_codegen(sample, config.General),
-                result_format=config.General.OutputFormat,
-                ignore_cache=sample.IgnoreLocalCache,
-            )
-            query.python_function = sample.Query.python_function
-            sample.Query = query
-        else:
-            logger.debug(f"Unknown Query type: {sample.Query}")
+            logger.debug(f"Query string: {sample.Query.generate_selection_string()}")
+        else:  # pragma: no cover
+            raise ValueError(f"Unknown Query type: {sample.Query}")
         sample.Query.ignore_cache = sample.IgnoreLocalCache
 
         datasets.append(sample.Query)
@@ -322,7 +293,7 @@ class ServiceXClient:
         codegen: str = "uproot",
         result_format: Optional[ResultFormat] = None,
         ignore_cache: bool = False,
-    ) -> PythonQuery:
+    ) -> PythonFunction:
         r"""
         Generate a dataset that can use accept a python function for the  query
 
@@ -343,7 +314,7 @@ class ServiceXClient:
                 f"deployment at {self.servicex.url}"
             )
 
-        return PythonQuery(
+        return PythonFunction(
             dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
@@ -358,7 +329,7 @@ class ServiceXClient:
         self,
         dataset_identifier: DID,
         query: Union[str, QueryStringGenerator],
-        codegen: str = None,
+        codegen: Optional[str] = None,
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,

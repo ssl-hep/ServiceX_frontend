@@ -35,11 +35,11 @@ import pytest
 from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
+from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot, FuncADLQuery
 from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
                              TransformRequest, TransformedResults)
 from servicex.query_cache import QueryCache
-from servicex.query_core import ServiceXException
+from servicex.query_core import ServiceXException, GenericQuery
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
@@ -196,13 +196,15 @@ async def test_submit(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = FuncADLQuery(
+    datasource = GenericQuery(
         dataset_identifier=did,
+        title="ServiceX Client",
         codegen="uproot",
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
+    datasource.query_string_generator = FuncADLQuery_Uproot()
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         result = await datasource.submit_and_download(signed_urls_only=False,
@@ -233,13 +235,15 @@ async def test_submit_partial_success(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = FuncADLQuery(
+    datasource = GenericQuery(
         dataset_identifier=did,
+        title="ServiceX Client",
         codegen="uproot",
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
+    datasource.query_string_generator = FuncADLQuery_Uproot()
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         result = await datasource.submit_and_download(signed_urls_only=False,
@@ -269,13 +273,15 @@ async def test_submit_cancel(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = FuncADLQuery(
+    datasource = GenericQuery(
         dataset_identifier=did,
+        title="ServiceX Client",
         codegen="uproot",
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
+    datasource.query_string_generator = FuncADLQuery_Uproot()
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         with pytest.raises(ServiceXException):
@@ -304,13 +310,15 @@ async def test_submit_fatal(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = FuncADLQuery(
+    datasource = GenericQuery(
         dataset_identifier=did,
+        title="ServiceX Client",
         codegen="uproot",
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
+    datasource.query_string_generator = FuncADLQuery_Uproot()
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         with pytest.raises(ServiceXException):
@@ -370,20 +378,25 @@ def test_transform_request():
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        datasource = FuncADLQuery(
+        datasource = GenericQuery(
             dataset_identifier=did,
+            title="ServiceX Client",
             codegen="uproot",
             sx_adapter=servicex,
-            config=config,
-            query_cache=cache,
+            query_cache=None,
+            config=Configuration(api_endpoints=[]),
         )
+        datasource.query_string_generator = (FuncADLQuery_Uproot()
+                                             .FromTree("nominal")
+                                             .Select(lambda e: {"lep_pt": e["lep_pt"]}))
 
         q = (
-            datasource.Select(lambda e: {"lep_pt": e["lep_pt"]})
-            .set_result_format(ResultFormat.parquet)
+            datasource.set_result_format(ResultFormat.parquet)
             .transform_request
         )
-        print("Qastle is ", q)
+        assert q.selection == "(call Select (call EventDataset 'bogus.root' 'nominal') " \
+                              "(lambda (list e) (dict (list 'lep_pt') " \
+                              "(list (subscript e 'lep_pt')))))"
         cache.close()
 
 
@@ -396,9 +409,8 @@ def test_type():
         def fork_it_over(self) -> int:
             ...
 
-    did = FileListDataset("/foo/bar/baz.root")
     datasource = FuncADLQuery[my_type_info](
-        dataset_identifier=did, codegen="uproot", item_type=my_type_info
+        item_type=my_type_info
     )
 
     assert datasource.item_type == my_type_info
@@ -406,6 +418,5 @@ def test_type():
 
 def test_type_any():
     "Test the type is any if no type is given"
-    did = FileListDataset("/foo/bar/baz.root")
-    datasource = FuncADLQuery(dataset_identifier=did, codegen="uproot")
+    datasource = FuncADLQuery()
     assert datasource.item_type == Any

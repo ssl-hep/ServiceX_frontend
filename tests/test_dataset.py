@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, Mock
 from servicex.dataset_identifier import FileListDataset
 from servicex.configuration import Configuration
 from servicex.minio_adapter import MinioAdapter
-from servicex.python_dataset import PythonQuery
+from servicex.query_core import GenericQuery
 from servicex.query_cache import QueryCache
 from servicex.expandable_progress import ExpandableProgress
 
@@ -23,8 +23,9 @@ from rich.progress import Progress
 async def test_as_signed_urls_happy(transformed_result):
     # Test when display_progress is True and provided_progress is None
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = PythonQuery(dataset_identifier=did, codegen="uproot",
-                          sx_adapter=None, query_cache=None)
+    dataset = GenericQuery(dataset_identifier=did, codegen="uproot",
+                           title="", config=None,
+                           sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -36,8 +37,9 @@ async def test_as_signed_urls_happy(transformed_result):
 async def test_as_signed_urls_happy_dataset_group(transformed_result):
     # Test when display_progress is True and provided_progress is None
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = PythonQuery(dataset_identifier=did, codegen="uproot",
-                          sx_adapter=None, query_cache=None)
+    dataset = GenericQuery(dataset_identifier=did, codegen="uproot",
+                           title="", config=None,
+                           sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -49,8 +51,9 @@ async def test_as_signed_urls_happy_dataset_group(transformed_result):
 @pytest.mark.asyncio
 async def test_as_files_happy(transformed_result):
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = PythonQuery(dataset_identifier=did, codegen="uproot",
-                          sx_adapter=None, query_cache=None)
+    dataset = GenericQuery(dataset_identifier=did, codegen="uproot",
+                           title="", config=None,
+                           sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -65,8 +68,9 @@ async def test_as_pandas_happy(transformed_result):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        dataset = PythonQuery(dataset_identifier=did, codegen="uproot", sx_adapter=servicex,
-                              query_cache=cache)
+        dataset = GenericQuery(dataset_identifier=did, codegen="uproot", sx_adapter=servicex,
+                               title="", config=None,
+                               query_cache=cache)
         dataset.submit_and_download = AsyncMock()
         dataset.submit_and_download.return_value = transformed_result
         result = dataset.as_pandas(display_progress=False)

@@ -98,7 +98,7 @@ FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
 FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
 FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
-PythonFunction = "servicex.python_dataset:PythonQuery"
+PythonFunction = "servicex.python_dataset:PythonFunction"
 UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 
 [project.entry-points.'servicex.dataset']

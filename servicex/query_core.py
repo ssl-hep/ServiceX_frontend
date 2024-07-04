@@ -80,7 +80,7 @@ class Query(ABC):
         codegen: str,
         sx_adapter: ServiceXAdapter,
         config: Configuration,
-        query_cache: QueryCache,
+        query_cache: Optional[QueryCache],
         servicex_polling_interval: int = 5,
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
