@@ -45,13 +45,9 @@ from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset, find_EventDataset
 from func_adl.object_stream import S
-from servicex.configuration import Configuration
 from servicex.query_core import QueryStringGenerator
 from servicex.func_adl.util import has_tuple
-from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache
-from servicex.servicex_adapter import ServiceXAdapter
-from servicex.types import DID
 from abc import ABC
 
 T = TypeVar("T")

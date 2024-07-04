@@ -29,12 +29,10 @@ from base64 import b64decode
 
 import pytest
 
-from servicex.dataset_identifier import FileListDataset
 from servicex.python_dataset import PythonFunction
 
 
 def test_no_provided_function():
-    did = FileListDataset("/foo/bar/baz.root")
     datasource = PythonFunction()
 
     with pytest.raises(ValueError):
@@ -42,7 +40,6 @@ def test_no_provided_function():
 
 
 def test_generate_transform():
-    did = FileListDataset("/foo/bar/baz.root")
     datasource = PythonFunction()
 
     def run_query(input_filenames=None):
@@ -56,7 +53,6 @@ def test_generate_transform():
 
 
 def test_function_as_string():
-    did = FileListDataset("/foo/bar/baz.root")
     datasource = PythonFunction()
 
     string_function = """
