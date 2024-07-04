@@ -30,7 +30,7 @@ from typing import Optional, Union, Callable
 from base64 import b64encode
 from servicex.query_core import QueryStringGenerator
 import sys
-if sys.version_info < (3, 10):
+if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
     from typing import Self
