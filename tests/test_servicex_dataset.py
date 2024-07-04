@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import tempfile
-from typing import Any, List
+from typing import List
 from unittest.mock import AsyncMock
 from pathlib import PurePath
 
@@ -35,11 +35,11 @@ import pytest
 from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
-from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot, FuncADLQuery
+from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
 from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
                              TransformRequest, TransformedResults)
 from servicex.query_cache import QueryCache
-from servicex.query_core import ServiceXException, GenericQuery
+from servicex.query_core import ServiceXException, Query
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
@@ -196,7 +196,7 @@ async def test_submit(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = GenericQuery(
+    datasource = Query(
         dataset_identifier=did,
         title="ServiceX Client",
         codegen="uproot",
@@ -235,7 +235,7 @@ async def test_submit_partial_success(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = GenericQuery(
+    datasource = Query(
         dataset_identifier=did,
         title="ServiceX Client",
         codegen="uproot",
@@ -273,7 +273,7 @@ async def test_submit_cancel(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = GenericQuery(
+    datasource = Query(
         dataset_identifier=did,
         title="ServiceX Client",
         codegen="uproot",
@@ -310,7 +310,7 @@ async def test_submit_fatal(mocker):
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    datasource = GenericQuery(
+    datasource = Query(
         dataset_identifier=did,
         title="ServiceX Client",
         codegen="uproot",
@@ -378,7 +378,7 @@ def test_transform_request():
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        datasource = GenericQuery(
+        datasource = Query(
             dataset_identifier=did,
             title="ServiceX Client",
             codegen="uproot",
@@ -398,25 +398,3 @@ def test_transform_request():
                               "(lambda (list e) (dict (list 'lep_pt') " \
                               "(list (subscript e 'lep_pt')))))"
         cache.close()
-
-
-def test_type():
-    "Test that the item type for a dataset is correctly propagated"
-
-    class my_type_info:
-        "typespec for possible event type"
-
-        def fork_it_over(self) -> int:
-            ...
-
-    datasource = FuncADLQuery[my_type_info](
-        item_type=my_type_info
-    )
-
-    assert datasource.item_type == my_type_info
-
-
-def test_type_any():
-    "Test the type is any if no type is given"
-    datasource = FuncADLQuery()
-    assert datasource.item_type == Any

@@ -34,7 +34,7 @@ from servicex.models import ResultFormat, TransformStatus, TransformedResults
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.query_core import (
-    GenericQuery,
+    Query,
     QueryStringGenerator,
     GenericQueryStringGenerator,
     Query,
@@ -103,25 +103,18 @@ def _build_datasets(config, config_path, servicex_name):
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     datasets = []
     for sample in config.Sample:
-        # if string or QueryStringGenerator, turn into a Query
-        if isinstance(sample.Query, str) or isinstance(
-            sample.Query, QueryStringGenerator
-        ):
-            logger.debug("sample.Query from string or QueryStringGenerator")
-            sample.Query = sx.generic_query(
-                dataset_identifier=sample.dataset_identifier,
-                title=sample.Name,
-                codegen=get_codegen(sample, config.General),
-                result_format=config.General.OutputFormat,
-                ignore_cache=sample.IgnoreLocalCache,
-                query=sample.Query,
-            )
-            logger.debug(f"Query string: {sample.Query.generate_selection_string()}")
-        else:  # pragma: no cover
-            raise ValueError(f"Unknown Query type: {sample.Query}")
-        sample.Query.ignore_cache = sample.IgnoreLocalCache
+        query = sx.generic_query(
+            dataset_identifier=sample.dataset_identifier,
+            title=sample.Name,
+            codegen=get_codegen(sample, config.General),
+            result_format=config.General.OutputFormat,
+            ignore_cache=sample.IgnoreLocalCache,
+            query=sample.Query,
+        )
+        logger.debug(f"Query string: {query.generate_selection_string()}")
+        query.ignore_cache = sample.IgnoreLocalCache
 
-        datasets.append(sample.Query)
+        datasets.append(query)
     return datasets
 
 
@@ -252,7 +245,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
-    ) -> GenericQuery:
+    ) -> Query:
         r"""
         Generate a Query object for a generic codegen specification
 
@@ -268,6 +261,8 @@ class ServiceXClient:
         """
 
         if isinstance(query, str):
+            if codegen is None:
+                raise RuntimeError("A pure string query requires a codegen argument as well")
             query = GenericQueryStringGenerator(query, codegen)
         if not isinstance(query, QueryStringGenerator):
             raise ValueError("query argument must be string or QueryStringGenerator")
@@ -284,7 +279,7 @@ class ServiceXClient:
                 f"deployment at {self.servicex.url}"
             )
 
-        qobj = GenericQuery(
+        qobj = Query(
             dataset_identifier=dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
@@ -293,6 +288,6 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
+            query_string_generator=query
         )
-        qobj.query_string_generator = query
         return qobj

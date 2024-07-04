@@ -35,7 +35,7 @@ from pydantic import (
 
 from servicex.dataset_identifier import (DataSetIdentifier, RucioDatasetIdentifier,
                                          FileListDataset)
-from servicex.query_core import Query as SXQuery, QueryStringGenerator
+from servicex.query_core import QueryStringGenerator
 from servicex.models import ResultFormat
 
 
@@ -46,7 +46,7 @@ class Sample(BaseModel):
     XRootDFiles: Optional[Union[str, List[str]]] = None
     Dataset: Optional[DataSetIdentifier] = None
     NFiles: Optional[int] = Field(default=None)
-    Query: Optional[Union[str, SXQuery, QueryStringGenerator]] = Field(default=None)
+    Query: Optional[Union[str, QueryStringGenerator]] = Field(default=None)
     IgnoreLocalCache: bool = False
 
     model_config = {"arbitrary_types_allowed": True}
