@@ -47,7 +47,6 @@ from func_adl import EventDataset, find_EventDataset
 from func_adl.object_stream import S
 from servicex.query_core import QueryStringGenerator
 from servicex.func_adl.util import has_tuple
-from servicex.query_cache import QueryCache
 from abc import ABC
 
 T = TypeVar("T")
@@ -78,26 +77,6 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
 
     def set_provided_qastle(self, qastle: str):
         self.provided_qastle = qastle
-
-    def __deepcopy__(self, memo):
-        """
-        Customize deepcopy behavior for this class.
-        We need to be careful because the query cache is a tinyDB database that holds an
-        open file pointer. We are not allowed to clone an open file handle, so for this
-        property we will copy by reference and share it between the clones
-        """
-        cls = self.__class__
-        obj = cls.__new__(cls)
-
-        memo[id(self)] = obj
-
-        for attr, value in vars(self).items():
-            if type(value) is QueryCache:
-                setattr(obj, attr, value)
-            else:
-                setattr(obj, attr, copy.deepcopy(value, memo))
-
-        return obj
 
     def SelectMany(
         self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
