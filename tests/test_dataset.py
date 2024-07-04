@@ -96,8 +96,8 @@ async def test_as_pandas_happy(transformed_result):
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         dataset = Query(dataset_identifier=did, codegen="uproot", sx_adapter=servicex,
-                               title="", config=None,
-                               query_cache=cache)
+                        title="", config=None,
+                        query_cache=cache)
         dataset.submit_and_download = AsyncMock()
         dataset.submit_and_download.return_value = transformed_result
         result = dataset.as_pandas(display_progress=False)

@@ -37,7 +37,6 @@ from servicex.query_core import (
     Query,
     QueryStringGenerator,
     GenericQueryStringGenerator,
-    Query,
 )
 from servicex.types import DID
 from servicex.dataset_group import DatasetGroup
