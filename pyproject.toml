@@ -44,6 +44,7 @@ dependencies = [
     "PyYAML>=6.0",
     "types-PyYAML>=6.0",
     "importlib_metadata; python_version <= '3.9'",
+    "typing_extensions; python_version <= '3.10'", # compatible versions controlled through pydantic
     "rich>=13.0.0",  # databinder
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
