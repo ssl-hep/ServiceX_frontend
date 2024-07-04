@@ -18,5 +18,5 @@ def uproot_funcadl_dict():
     return deliver(spec)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     uproot_funcadl_dict()
