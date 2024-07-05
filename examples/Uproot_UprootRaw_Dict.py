@@ -8,7 +8,7 @@ def uproot_uproot_raw_dict():
 
     spec = {
         'Sample': [{
-            'Name': "Uproot_PythonFunction_Dict",
+            'Name': "Uproot_UprootRaw_Dict",
             'RucioDID': "user.mtost:user.mtost.singletop.p6026.Jun13",
             'Query': query
         }]
@@ -18,4 +18,4 @@ def uproot_uproot_raw_dict():
 
 if __name__ == "__main__":
     files = uproot_uproot_raw_dict()
-    sys.exit(0 if len(files['Uproot_PythonFunction_Dict']) == 27 else 1)
+    assert len(files['Uproot_UprootRaw_Dict']) == 27
