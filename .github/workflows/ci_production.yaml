@@ -33,4 +33,6 @@ jobs:
           uv pip list --system
 
       - name: Run example
-        run: python3 examples/Uproot_UprootRaw_Dict.py
+        working-directory: examples
+        run: python3 Uproot_UprootRaw_Dict.py
+
