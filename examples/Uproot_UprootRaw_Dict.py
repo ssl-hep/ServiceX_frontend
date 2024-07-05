@@ -1,5 +1,4 @@
 from servicex import UprootRaw, deliver
-import sys
 
 
 def uproot_uproot_raw_dict():
