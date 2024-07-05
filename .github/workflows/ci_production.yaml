@@ -1,8 +1,9 @@
 name: Production Service Testing
 
 on:
+  push:
   schedule:
-    - cron: '9 */6 * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
