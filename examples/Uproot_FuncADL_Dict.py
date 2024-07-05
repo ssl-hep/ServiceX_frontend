@@ -18,5 +18,6 @@ def uproot_funcadl_dict():
     return deliver(spec)
 
 
-if __name__ == "main":
-    uproot_funcadl_dict()
+if __name__ == "__main__":
+    files = uproot_funcadl_dict()
+    assert len(files['Uproot_FuncADL_Dict']) == 27

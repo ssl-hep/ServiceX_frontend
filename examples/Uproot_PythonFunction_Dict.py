@@ -24,5 +24,6 @@ def uproot_pythonfunction_dict():
     return deliver(spec)
 
 
-if __name__ == "main":
-    uproot_pythonfunction_dict()
+if __name__ == "__main__":
+    files = uproot_pythonfunction_dict()
+    assert len(files['Uproot_PythonFunction_Dict']) == 27
