@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: production-server
+    environment: production-service
 
     steps:
       - uses: actions/checkout@v3
