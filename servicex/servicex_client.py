@@ -54,8 +54,9 @@ logger = logging.getLogger(__name__)
 
 class GuardList(Sequence):
     def __init__(self, data: Union[Sequence, Exception]):
+        import copy
         super().__init__()
-        self._data = data
+        self._data = copy.copy(data)
 
     def valid(self) -> bool:
         return not isinstance(self._data, Exception)
