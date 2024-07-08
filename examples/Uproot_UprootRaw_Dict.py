@@ -1,9 +1,9 @@
-from servicex import UprootRaw, deliver
+from servicex import query as q, deliver
 
 
 def uproot_uproot_raw_dict():
 
-    query = UprootRaw([{"treename": "reco", "filter_name": "el_pt_NOSYS"}])
+    query = q.UprootRaw([{"treename": "reco", "filter_name": "el_pt_NOSYS"}])
 
     spec = {
         'Sample': [{
@@ -15,5 +15,5 @@ def uproot_uproot_raw_dict():
     return deliver(spec)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     uproot_uproot_raw_dict()
