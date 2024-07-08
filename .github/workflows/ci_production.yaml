@@ -9,6 +9,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     environment: production-service
+    strategy:
+      matrix:
+        example: [Uproot_UprootRaw_Dict.py, Uproot_PythonFunction_Dict.py, Uproot_FuncADL_Dict.py]
 
     steps:
       - uses: actions/checkout@v3
@@ -33,7 +36,6 @@ jobs:
           uv pip install --system --upgrade '.[databinder,pandas,test]'
           uv pip list --system
 
-      - name: Run example
+      - name: Run examples
         working-directory: examples
-        run: python3 Uproot_UprootRaw_Dict.py
-
+        run: python3 ${{ matrix.example }}
