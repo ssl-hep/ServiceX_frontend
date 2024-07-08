@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
+from typing import Optional, List, TypeVar, Any, Type, Mapping, Union, cast
 from pathlib import Path
 
 from servicex.configuration import Configuration
@@ -46,9 +46,41 @@ from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
+from collections.abc import Sequence
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
+
+
+class GuardList(Sequence[T]):
+    def __init__(self, data: Union[Sequence[T], Exception]):
+        super().__init__()
+        self._data = data
+
+    def valid(self) -> bool:
+        return not isinstance(self._data, Exception)
+
+    def __getitem__(self, index) -> T:
+        if not self.valid():
+            data = cast(Exception, self._data)
+            raise data
+        else:
+            data = cast(Sequence[T], self._data)
+            return data[index]
+
+    def __len__(self):
+        if not self.valid():
+            data = cast(Exception, self._data)
+            raise data
+        else:
+            data = cast(Sequence, self._data)
+            return len(data)
+
+    def __repr__(self):
+        if self.valid():
+            return repr(self._data)
+        else:
+            return f'Invalid GuardList: {repr(self._data)}'
 
 
 def _load_ServiceXSpec(
@@ -156,11 +188,19 @@ def _build_datasets(config, config_path, servicex_name):
     return datasets
 
 
-def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
+def _output_handler(config: ServiceXSpec, requests: List[Query],
+                    results: List[TransformedResults]):
+    matched_results = zip(requests, results)
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        out_dict = {obj.title: obj.signed_url_list for obj in results}
+        out_dict = {obj[0].title: GuardList(obj[1].signed_url_list
+                                            if not isinstance(obj[1], Exception)
+                                            else obj[1])
+                    for obj in matched_results}
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        out_dict = {obj.title: obj.file_list for obj in results}
+        out_dict = {obj[0].title: GuardList(obj[1].file_list
+                                            if not isinstance(obj[1], Exception)
+                                            else obj[1])
+                    for obj in matched_results}
 
     if config.General.OutputDirectory:
         import yaml as yl
@@ -178,7 +218,8 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
 def deliver(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
-    servicex_name: Optional[str] = None
+    servicex_name: Optional[str] = None,
+    return_exceptions: bool = True
 ):
     config = _load_ServiceXSpec(config)
 
@@ -187,12 +228,12 @@ def deliver(
     group = DatasetGroup(datasets)
 
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        results = group.as_signed_urls()
-        return _output_handler(config, results)
+        results = group.as_signed_urls(return_exceptions=return_exceptions)
+        return _output_handler(config, datasets, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files()
-        return _output_handler(config, results)
+        results = group.as_files(return_exceptions=return_exceptions)
+        return _output_handler(config, datasets, results)
 
 
 class ServiceXClient:
