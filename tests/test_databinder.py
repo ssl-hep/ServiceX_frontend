@@ -2,7 +2,8 @@ import pytest
 from unittest.mock import patch
 from pydantic import ValidationError
 
-from servicex import ServiceXSpec, FileListDataset, RucioDatasetIdentifier, dataset
+from servicex import ServiceXSpec, dataset
+from servicex.dataset import FileList, Rucio
 
 
 def basic_spec(samples=None):
@@ -44,7 +45,7 @@ def test_single_root_file():
         )
     )
 
-    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert isinstance(spec.Sample[0].dataset_identifier, FileList)
     assert spec.Sample[0].dataset_identifier.files == [
         "root://eospublic.cern.ch//file1.root"
     ]
@@ -67,7 +68,7 @@ def test_list_of_root_files():
         )
     )
 
-    assert isinstance(spec.Sample[0].dataset_identifier, FileListDataset)
+    assert isinstance(spec.Sample[0].dataset_identifier, FileList)
     assert spec.Sample[0].dataset_identifier.files == [
         "root://eospublic.cern.ch//file1.root",
         "root://eospublic.cern.ch//file2.root",
@@ -87,7 +88,7 @@ def test_rucio_did():
         )
     )
 
-    assert isinstance(spec.Sample[0].dataset_identifier, RucioDatasetIdentifier)
+    assert isinstance(spec.Sample[0].dataset_identifier, Rucio)
     assert (
         spec.Sample[0].dataset_identifier.did
         == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal"
@@ -108,7 +109,7 @@ def test_rucio_did_numfiles():
         )
     )
 
-    assert isinstance(spec.Sample[0].dataset_identifier, RucioDatasetIdentifier)
+    assert isinstance(spec.Sample[0].dataset_identifier, Rucio)
     assert (
         spec.Sample[0].dataset_identifier.did
         == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal?files=10"
@@ -282,7 +283,7 @@ Sample:
 
 def test_funcadl_query(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex import FuncADL_Uproot
+    from servicex.query import FuncADL_Uproot  # type: ignore
     spec = ServiceXSpec.model_validate({
         "Sample": [
             {
@@ -302,7 +303,7 @@ def test_funcadl_query(transformed_result, codegen_list):
 
 def test_query_with_codegen_override(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex import FuncADL_Uproot
+    from servicex.query import FuncADL_Uproot  # type: ignore
     # first, with General override
     spec = ServiceXSpec.model_validate({
         "General": {
@@ -349,7 +350,7 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
 
 
 def test_databinder_load_dict():
-    from servicex import FuncADL_Uproot
+    from servicex.query import FuncADL_Uproot  # type: ignore
     from servicex.servicex_client import _load_ServiceXSpec
     _load_ServiceXSpec({
         "Sample": [
@@ -364,7 +365,8 @@ def test_databinder_load_dict():
 
 
 def test_python_query(transformed_result, codegen_list):
-    from servicex import PythonFunction, deliver
+    from servicex import deliver
+    from servicex.query import PythonFunction  # type: ignore
 
     def run_query(input_filenames=None):
         print("Greetings from your query")
@@ -390,7 +392,7 @@ def test_python_query(transformed_result, codegen_list):
 
 def test_uproot_raw_query(transformed_result, codegen_list):
     from servicex import deliver
-    from servicex import UprootRaw
+    from servicex.query import UprootRaw  # type: ignore
     spec = ServiceXSpec.model_validate({
         "Sample": [
             {
@@ -444,4 +446,4 @@ def test_generic_query(codegen_list):
 
 def test_entrypoint_import():
     """ This will check that we have at least the Python transformer defined in servicex.query """
-    from servicex.query import PythonFunction  # noqa
+    from servicex.query import PythonFunction  # type: ignore # noqa: F401
