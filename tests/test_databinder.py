@@ -178,7 +178,32 @@ def test_submit_mapping(transformed_result, codegen_list):
                return_value=[transformed_result]), \
          patch('servicex.servicex_client.ServiceXClient.get_code_generators',
                return_value=codegen_list):
-        deliver(spec, config_path='tests/example_config.yaml')
+        results = deliver(spec, config_path='tests/example_config.yaml')
+        assert list(results['sampleA']) == ['1.parquet']
+
+
+def test_submit_mapping_signed_urls(transformed_result_signed_url, codegen_list):
+    from servicex import deliver
+    spec = {
+        "General": {
+            "Delivery": "SignedURLs"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]",
+                "Codegen": "uproot-raw"
+            }
+        ]
+    }
+    with patch('servicex.dataset_group.DatasetGroup.as_signed_urls',
+               return_value=[transformed_result_signed_url]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        results = deliver(spec, config_path='tests/example_config.yaml')
+        assert list(results['sampleA']) == ['https://dummy.junk.io/1.parquet',
+                                            'https://dummy.junk.io/2.parquet']
 
 
 def test_submit_mapping_failure(transformed_result, codegen_list):
@@ -198,6 +223,30 @@ def test_submit_mapping_failure(transformed_result, codegen_list):
          patch('servicex.servicex_client.ServiceXClient.get_code_generators',
                return_value=codegen_list):
         results = deliver(spec, config_path='tests/example_config.yaml')
+        assert len(results) == 1
+        with pytest.raises(ServiceXException):  # should expect an exception to be thrown on access
+            for _ in results['sampleA']:
+                pass
+
+
+def test_submit_mapping_failure_signed_urls(codegen_list):
+    from servicex import deliver
+    spec = {
+        "General": {"Delivery": "SignedURLs"},
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]",
+                "Codegen": "uproot-raw"
+            }
+        ]
+    }
+    with patch('servicex.dataset_group.DatasetGroup.as_signed_urls',
+               return_value=[ServiceXException("dummy")]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        results = deliver(spec, config_path='tests/example_config.yaml', return_exceptions=False)
         assert len(results) == 1
         with pytest.raises(ServiceXException):  # should expect an exception to be thrown on access
             for _ in results['sampleA']:
