@@ -52,23 +52,23 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-class GuardList(Sequence[T]):
-    def __init__(self, data: Union[Sequence[T], Exception]):
+class GuardList(Sequence):
+    def __init__(self, data: Union[Sequence, Exception]):
         super().__init__()
         self._data = data
 
     def valid(self) -> bool:
         return not isinstance(self._data, Exception)
 
-    def __getitem__(self, index) -> T:
+    def __getitem__(self, index) -> Any:
         if not self.valid():
             data = cast(Exception, self._data)
             raise data
         else:
-            data = cast(Sequence[T], self._data)
+            data = cast(Sequence, self._data)
             return data[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
         if not self.valid():
             data = cast(Exception, self._data)
             raise data
