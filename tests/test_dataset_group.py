@@ -61,6 +61,23 @@ async def test_as_signed_urls(mocker, transformed_result):
 
 
 @pytest.mark.asyncio
+async def test_as_files(mocker, transformed_result):
+    ds1 = mocker.Mock()
+    ds1.as_files_async = AsyncMock(return_value=transformed_result)
+
+    ds2 = mocker.Mock()
+    ds2.as_files_async = AsyncMock(return_value=transformed_result.model_copy(
+        update={"request_id": "98-765-432"}))
+
+    group = DatasetGroup([ds1, ds2])
+    results = await group.as_files_async()
+
+    assert len(results) == 2
+    assert results[0].request_id == "123-45-6789"
+    assert results[1].request_id == "98-765-432"
+
+
+@pytest.mark.asyncio
 async def test_failure(mocker, transformed_result):
     ds1 = mocker.Mock()
     ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
