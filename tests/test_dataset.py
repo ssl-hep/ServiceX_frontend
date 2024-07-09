@@ -10,6 +10,7 @@ from servicex.minio_adapter import MinioAdapter
 from servicex.python_dataset import PythonQuery
 from servicex.query_cache import QueryCache
 from servicex.expandable_progress import ExpandableProgress
+from servicex.query_core import ServiceXException
 
 from pathlib import Path
 from servicex.models import (
@@ -171,13 +172,14 @@ async def test_transform_status_listener_cancelled(python_dataset):
     status = Mock(files=10, files_completed=5, files_failed=1, status=Status.canceled)
     python_dataset.current_status = status
     python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
-    with patch("servicex.app.transforms.create_kibana_link_parameters") as mock_link:
-        await python_dataset.transform_status_listener(progress, progress_task, "mock_title",
-                                                       download_task, "mock_title")
-        mock_link.assert_called_once()
-        python_dataset.retrieve_current_transform_status.assert_awaited_once()
-        assert python_dataset.files_completed == 5
-        assert python_dataset.files_failed == 1
+    with pytest.raises(ServiceXException, match=r"Request .*was canceled"):
+        with patch("servicex.app.transforms.create_kibana_link_parameters") as mock_link:
+            await python_dataset.transform_status_listener(progress, progress_task, "mock_title",
+                                                           download_task, "mock_title")
+            mock_link.assert_called_once()
+            python_dataset.retrieve_current_transform_status.assert_awaited_once()
+            assert python_dataset.files_completed == 5
+            assert python_dataset.files_failed == 1
 
 
 @pytest.mark.asyncio
