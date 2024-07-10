@@ -429,6 +429,40 @@ async def test_submit_generic(mocker):
     assert isinstance(json.loads(datasource.generate_selection_string()), list)
 
 
+@pytest.mark.asyncio
+async def test_submit_cancelled(mocker):
+    """ Uses Uproot-Raw classes which go through the query cancelled mechanism """
+    import json
+    sx = AsyncMock()
+    sx.submit_transform = AsyncMock()
+    sx.submit_transform.return_value = {"request_id": '123-456-789"'}
+    sx.get_transform_status = AsyncMock()
+    sx.get_transform_status.side_effect = [
+        transform_status4
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
+    mock_minio.download_file = AsyncMock()
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+    client.servicex = sx
+    client.query_cache = mock_cache
+
+    datasource = client.generic_query(
+        dataset_identifier=did,
+        query=UprootRawQuery({'treename': 'CollectionTree'})
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+    assert isinstance(json.loads(datasource.generate_selection_string()), list)
+
+
 def test_transform_request():
     servicex = AsyncMock()
     did = FileListDataset("/foo/bar/baz.root")
