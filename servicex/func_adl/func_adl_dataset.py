@@ -36,10 +36,6 @@ from typing import (
     TypeVar,
     cast,
     List,
-    Union,
-    Callable,
-    Iterable,
-    Dict,
 )
 from qastle import python_ast_to_text_ast
 
@@ -63,10 +59,10 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
     async def execute_result_async(
         self, a: ast.AST, title: Optional[str] = None
     ) -> Any:
-        pass
+        "Required override of EventDataset"
 
     def check_data_format_request(self, f_name: str):
-        pass
+        "Required override of EventDataset"
 
     def __init__(
         self,
@@ -78,98 +74,11 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
     def set_provided_qastle(self, qastle: str):
         self.provided_qastle = qastle
 
-    def SelectMany(
-        self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
-    ) -> FuncADLQuery[S]:
-        r"""
-        Given the current stream's object type is an array or other iterable, return
-        the items in this objects type, one-by-one. This has the effect of flattening a
-        nested array.
-
-        Arguments:
-
-            func:   The function that should be applied to this stream's objects to return
-                    an iterable. Each item of the iterable is now the stream of objects.
-
-        Returns:
-            The Dataset with the SelectMany operator applied
-
-        Notes:
-            - The function can be a `lambda`, the name of a one-line function, a string that
-              contains a lambda definition, or a python `ast` of type `ast.Lambda`.
-        """
-        return super().SelectMany(func)
-
-    def Select(self, f: Union[str, ast.Lambda, Callable[[T], S]]) -> FuncADLQuery[S]:
-        r"""
-        Apply a transformation function to each object in the stream, yielding a new type of
-        object. There is a one-to-one correspondence between the input objects and output objects.
-
-        Arguments:
-            f:      selection function (lambda)
-
-        Returns:
-            The Dataset with the Select operator applied
-
-        Notes:
-            - The function can be a `lambda`, the name of a one-line function, a string that
-              contains a lambda definition, or a python `ast` of type `ast.Lambda`.
-        """
-
-        return super().Select(f)
-
     def generate_selection_string(self) -> str:
         if self.provided_qastle:
             return self.provided_qastle
         else:
             return self.generate_qastle(self.query_ast)
-
-    def Where(
-        self, filter: Union[str, ast.Lambda, Callable[[T], bool]]
-    ) -> FuncADLQuery[T]:
-        r"""
-        Filter the object stream, allowing only items for which `filter` evaluates as true through.
-
-        Arguments:
-
-            filter      A filter lambda that returns True/False.
-
-        Returns:
-
-            The Dataset with the Where operator applied
-
-        Notes:
-            - The function can be a `lambda`, the name of a one-line function, a string that
-              contains a lambda definition, or a python `ast` of type `ast.Lambda`.
-        """
-
-        return super().Where(filter)
-
-    def MetaData(self, metadata: Dict[str, Any]) -> FuncADLQuery[T]:
-        r"""Add metadata to the current object stream. The metadata is an arbitrary set of string
-        key-value pairs. The backend must be able to properly interpret the metadata.
-
-        Returns:
-            The Dataset with the MetaData operator applied
-        """
-
-        return super().MetaData(metadata)
-
-    def QMetaData(self, metadata: Dict[str, Any]) -> FuncADLQuery[T]:
-        r"""Add query metadata to the current object stream.
-
-        - Metadata is never transmitted to any back end
-        - Metadata is per-query, not per sample.
-
-        Warnings are issued if metadata is overwriting metadata.
-
-        Args:
-            metadata (Dict[str, Any]): Metadata to be used later
-
-        Returns:
-            The Dataset with the QMetaData operator applied
-        """
-        return super().QMetaData(metadata)
 
     def set_tree(self, tree_name: str) -> FuncADLQuery[T]:
         r"""Set the tree name for the query.
