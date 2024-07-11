@@ -283,13 +283,15 @@ async def test_use_of_cache(mocker):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        datasource = FuncADLQuery(
+        datasource = Query(
             dataset_identifier=did,
+            title="ServiceX Client",
             codegen="uproot",
             sx_adapter=servicex,
             query_cache=cache,
             config=config,
         )
+        datasource.query_string_generator = FuncADLQuery_Uproot()
         datasource.result_format = ResultFormat.parquet
         upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
         with ExpandableProgress(display_progress=False) as progress:
