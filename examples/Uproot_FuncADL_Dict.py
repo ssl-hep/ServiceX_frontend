@@ -1,8 +1,8 @@
-from servicex import FuncADL_Uproot, deliver
+from servicex import query as q, deliver
 
 
 def uproot_funcadl_dict():
-    query = FuncADL_Uproot().FromTree('reco'). \
+    query = q.FuncADL_Uproot().FromTree('reco'). \
         Select(lambda e: {'el_pt_NOSYS': e['el_pt_NOSYS']})  # type: ignore
 
     spec = {
