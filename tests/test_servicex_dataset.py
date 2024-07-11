@@ -155,10 +155,10 @@ file1 = ResultFile(filename="file1", size=100, extension="parquet")
 file2 = ResultFile(filename="file2", size=100, extension="parquet")
 
 
-def cache_transform(transform: TransformRequest,
-                    completed_status: TransformStatus, data_dir: str,
-                    file_list: List[str],
-                    signed_urls) -> TransformedResults:
+def transformed_results(transform: TransformRequest,
+                        completed_status: TransformStatus, data_dir: str,
+                        file_list: List[str],
+                        signed_urls) -> TransformedResults:
     return TransformedResults(
         hash=transform.compute_hash(),
         title=transform.title,
@@ -172,6 +172,10 @@ def cache_transform(transform: TransformRequest,
         result_format=transform.result_format,
         log_url=completed_status.log_url
     )
+
+
+def cache_transform(record: TransformedResults):
+    return
 
 
 @pytest.mark.asyncio
@@ -192,6 +196,7 @@ async def test_submit(mocker):
 
     mock_cache = mocker.MagicMock(QueryCache)
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
@@ -211,6 +216,7 @@ async def test_submit(mocker):
                                                       expandable_progress=progress)
         print(mock_minio.download_file.call_args)
     assert result.file_list == ['file1', 'file2']
+    mock_cache.cache_transform.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -231,6 +237,7 @@ async def test_submit_partial_success(mocker):
 
     mock_cache = mocker.MagicMock(QueryCache)
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
@@ -250,6 +257,62 @@ async def test_submit_partial_success(mocker):
                                                       expandable_progress=progress)
         print(mock_minio.download_file.call_args)
     assert result.file_list == ['file1']
+    mock_cache.cache_transform.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_use_of_cache(mocker):
+    """ Do we pick up the cache on the second request for the same transform? """
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status3,
+    ]
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
+    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+    mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
+
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+
+    did = FileListDataset("/foo/bar/baz.root")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        datasource = FuncADLQuery(
+            dataset_identifier=did,
+            codegen="uproot",
+            sx_adapter=servicex,
+            query_cache=cache,
+            config=config,
+        )
+        datasource.result_format = ResultFormat.parquet
+        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            result1 = await datasource.submit_and_download(signed_urls_only=True,
+                                                           expandable_progress=progress)
+        upd.assert_not_called()
+        upd.reset_mock()
+        # second round, should hit the cache (and not call update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            result2 = await datasource.submit_and_download(signed_urls_only=True,
+                                                           expandable_progress=progress)
+        upd.assert_not_called()
+        assert result1 == result2
+        upd.reset_mock()
+        servicex.get_transform_status.reset_mock(side_effect=True)
+        servicex.get_transform_status.return_value = transform_status3
+        mock_minio.list_bucket.reset_mock(side_effect=True)
+        # third round, should hit the cache (and call update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+        upd.assert_called_once()
+        cache.close()
 
 
 @pytest.mark.asyncio
@@ -287,6 +350,7 @@ async def test_submit_cancel(mocker):
         with pytest.raises(ServiceXException):
             _ = await datasource.submit_and_download(signed_urls_only=False,
                                                      expandable_progress=progress)
+    mock_cache.cache_transform.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -324,6 +388,7 @@ async def test_submit_fatal(mocker):
         with pytest.raises(ServiceXException):
             _ = await datasource.submit_and_download(signed_urls_only=False,
                                                      expandable_progress=progress)
+    mock_cache.cache_transform.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -361,6 +426,40 @@ async def test_submit_generic(mocker):
                                                  expandable_progress=progress)
 
     # same thing but a list argument to UprootRawQuery (UprootRawQuery test...)
+    datasource = client.generic_query(
+        dataset_identifier=did,
+        query=UprootRawQuery({'treename': 'CollectionTree'})
+    )
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        _ = await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+    assert isinstance(json.loads(datasource.generate_selection_string()), list)
+
+
+@pytest.mark.asyncio
+async def test_submit_cancelled(mocker):
+    """ Uses Uproot-Raw classes which go through the query cancelled mechanism """
+    import json
+    sx = AsyncMock()
+    sx.submit_transform = AsyncMock()
+    sx.submit_transform.return_value = {"request_id": '123-456-789"'}
+    sx.get_transform_status = AsyncMock()
+    sx.get_transform_status.side_effect = [
+        transform_status4
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
+    mock_minio.download_file = AsyncMock()
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+    client.servicex = sx
+    client.query_cache = mock_cache
+
     datasource = client.generic_query(
         dataset_identifier=did,
         query=UprootRawQuery({'treename': 'CollectionTree'})
