@@ -40,7 +40,6 @@ from typing import (
 from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset, find_EventDataset
-from func_adl.object_stream import S
 from servicex.query_core import QueryStringGenerator
 from servicex.func_adl.util import has_tuple
 from abc import ABC
