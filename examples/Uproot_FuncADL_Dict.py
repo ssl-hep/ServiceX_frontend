@@ -19,4 +19,5 @@ def uproot_funcadl_dict():
 
 
 if __name__ == "__main__":
-    uproot_funcadl_dict()
+    files = uproot_funcadl_dict()
+    assert len(files['Uproot_FuncADL_Dict']) == 27
