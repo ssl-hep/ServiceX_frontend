@@ -28,6 +28,7 @@
 import inspect
 from typing import Optional, Union, Callable
 from base64 import b64encode
+from textwrap import dedent
 
 from servicex.configuration import Configuration
 from servicex.query_core import Query
@@ -69,9 +70,9 @@ class PythonQuery(Query):
             raise ValueError("You must provide a python function using with_uproot_function")
 
         if isinstance(self.python_function, str):
-            return b64encode(self.python_function.encode("utf-8")).decode("utf-8")
+            return b64encode(dedent(self.python_function).encode("utf-8")).decode("utf-8")
         else:
-            return b64encode(inspect.getsource(self.python_function)
+            return b64encode(dedent(inspect.getsource(self.python_function))
                              .encode("utf-8"))\
                 .decode("utf-8")
 
