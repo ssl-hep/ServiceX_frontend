@@ -402,7 +402,6 @@ class Query(ABC):
                         progress_task,
                         progress_bar_title,
                         completed=self.current_status.files_completed,
-                        description="Files completed",
                         bar=bar)
                     return
                 elif self.current_status.status == Status.canceled:
