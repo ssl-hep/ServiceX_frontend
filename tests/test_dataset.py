@@ -1,3 +1,30 @@
+# Copyright (c) 2024, IRIS-HEP
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 import pandas as pd
 import tempfile
@@ -7,7 +34,7 @@ from unittest.mock import AsyncMock, Mock, patch
 from servicex.dataset_identifier import FileListDataset
 from servicex.configuration import Configuration
 from servicex.minio_adapter import MinioAdapter
-from servicex.python_dataset import PythonQuery
+from servicex.query_core import Query
 from servicex.query_cache import QueryCache
 from servicex.expandable_progress import ExpandableProgress
 from servicex.query_core import ServiceXException
@@ -24,8 +51,9 @@ from rich.progress import Progress
 async def test_as_signed_urls_happy(transformed_result):
     # Test when display_progress is True and provided_progress is None
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = PythonQuery(dataset_identifier=did, codegen="uproot",
-                          sx_adapter=None, query_cache=None)
+    dataset = Query(dataset_identifier=did, codegen="uproot",
+                    title="", config=None,
+                    sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -37,8 +65,9 @@ async def test_as_signed_urls_happy(transformed_result):
 async def test_as_signed_urls_happy_dataset_group(transformed_result):
     # Test when display_progress is True and provided_progress is None
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = PythonQuery(dataset_identifier=did, codegen="uproot",
-                          sx_adapter=None, query_cache=None)
+    dataset = Query(dataset_identifier=did, codegen="uproot",
+                    title="", config=None,
+                    sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -50,8 +79,9 @@ async def test_as_signed_urls_happy_dataset_group(transformed_result):
 @pytest.mark.asyncio
 async def test_as_files_happy(transformed_result):
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = PythonQuery(dataset_identifier=did, codegen="uproot",
-                          sx_adapter=None, query_cache=None)
+    dataset = Query(dataset_identifier=did, codegen="uproot",
+                    title="", config=None,
+                    sx_adapter=None, query_cache=None)
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -66,8 +96,9 @@ async def test_as_pandas_happy(transformed_result):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        dataset = PythonQuery(dataset_identifier=did, codegen="uproot", sx_adapter=servicex,
-                              query_cache=cache)
+        dataset = Query(dataset_identifier=did, codegen="uproot", sx_adapter=servicex,
+                        title="", config=None,
+                        query_cache=cache)
         dataset.submit_and_download = AsyncMock()
         dataset.submit_and_download.return_value = transformed_result
         result = dataset.as_pandas(display_progress=False)

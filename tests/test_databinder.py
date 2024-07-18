@@ -218,7 +218,7 @@ Sample:
 """)
         f.flush()
         result = _load_ServiceXSpec(path)
-        assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
+        assert type(result.Sample[0].Query).__name__ == 'PythonFunction'
         assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery_Uproot'
         assert type(result.Sample[2].Query).__name__ == 'UprootRawQuery'
         assert isinstance(result.Sample[3].dataset_identifier, Rucio)
@@ -232,7 +232,7 @@ Sample:
 
     # Path from string
     result2 = _load_ServiceXSpec(str(path))
-    assert type(result2.Sample[0].Query).__name__ == 'PythonQuery'
+    assert type(result2.Sample[0].Query).__name__ == 'PythonFunction'
 
     # Python syntax error
     with open(path := (tmp_path / "python.yaml"), "w") as f:

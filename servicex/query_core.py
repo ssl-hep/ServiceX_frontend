@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -72,7 +72,7 @@ class ServiceXException(Exception):
     """ Something happened while trying to carry out a ServiceX request """
 
 
-class Query(ABC):
+class Query:
     def __init__(
         self,
         dataset_identifier: DID,
@@ -80,11 +80,12 @@ class Query(ABC):
         codegen: str,
         sx_adapter: ServiceXAdapter,
         config: Configuration,
-        query_cache: QueryCache,
+        query_cache: Optional[QueryCache],
         servicex_polling_interval: int = 5,
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
+        query_string_generator: Optional[QueryStringGenerator] = None,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -103,7 +104,6 @@ class Query(ABC):
         :param result_format:
         :param ignore_cache:  If true, ignore the cache and always submit a new transform
         """
-        super(Query, self).__init__()
         self.servicex = sx_adapter
         self.configuration = config
         self.cache = query_cache
@@ -123,14 +123,16 @@ class Query(ABC):
 
         self.request_id = None
         self.ignore_cache = ignore_cache
+        self.query_string_generator = query_string_generator
 
         # Number of seconds in between ServiceX status polls
         self.servicex_polling_interval = servicex_polling_interval
         self.minio_polling_interval = minio_polling_interval
 
-    @abc.abstractmethod
     def generate_selection_string(self) -> str:
-        pass
+        if self.query_string_generator is None:
+            raise RuntimeError('query string generator not set')
+        return self.query_string_generator.generate_selection_string()
 
     @property
     def transform_request(self):
@@ -627,16 +629,3 @@ class GenericQueryStringGenerator(QueryStringGenerator):
 
     def generate_selection_string(self) -> str:
         return self.query
-
-
-class GenericQuery(Query):
-    '''
-    This class gives a "generic" Query object which doesn't require
-    overloading the constructor
-    '''
-    query_string_generator: Optional[QueryStringGenerator] = None
-
-    def generate_selection_string(self) -> str:
-        if self.query_string_generator is None:
-            raise RuntimeError('query string generator not set')
-        return self.query_string_generator.generate_selection_string()

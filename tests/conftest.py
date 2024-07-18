@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,8 @@
 from datetime import datetime
 
 from pytest_asyncio import fixture
-from servicex.python_dataset import PythonQuery
+from servicex.python_dataset import PythonFunction
+from servicex.query_core import Query
 from servicex.models import (
     TransformRequest,
     ResultDestination,
@@ -64,17 +65,20 @@ def minio_adapter() -> MinioAdapter:
 @fixture
 def python_dataset(dummy_parquet_file):
     did = FileListDataset(dummy_parquet_file)
-    dataset = PythonQuery(
+    dataset = Query(
         title="Test submission",
         dataset_identifier=did,
         codegen="uproot",
-        result_format=ResultFormat.parquet,  # type: ignore
+        result_format=ResultFormat.parquet,
+        sx_adapter=None,  # type: ignore
+        config=None,  # type: ignore
+        query_cache=None  # type: ignore
     )  # type: ignore
 
     def foo():
         return
 
-    dataset.with_uproot_function(foo)
+    dataset.query_string_generator = PythonFunction(foo)
     return dataset
 
 

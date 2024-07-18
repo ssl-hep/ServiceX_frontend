@@ -45,19 +45,14 @@ from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset, find_EventDataset
 from func_adl.object_stream import S
-from servicex.configuration import Configuration
-from servicex.query_core import Query
+from servicex.query_core import QueryStringGenerator
 from servicex.func_adl.util import has_tuple
-from servicex.models import ResultFormat
-from servicex.query_cache import QueryCache
-from servicex.servicex_adapter import ServiceXAdapter
-from servicex.types import DID
 from abc import ABC
 
 T = TypeVar("T")
 
 
-class FuncADLQuery(Query, EventDataset[T], ABC):
+class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
     r"""
     ServiceX Dataset class that uses func_adl query syntax.
     """
@@ -75,52 +70,13 @@ class FuncADLQuery(Query, EventDataset[T], ABC):
 
     def __init__(
         self,
-        dataset_identifier: DID = None,
-        sx_adapter: ServiceXAdapter = None,
-        title: str = "ServiceX Client",
-        codegen: Optional[str] = None,
-        config: Configuration = None,
-        query_cache: QueryCache = None,
-        result_format: Optional[ResultFormat] = None,
         item_type: Type = Any,
-        ignore_cache: bool = False,
     ):
-        Query.__init__(
-            self,
-            dataset_identifier=dataset_identifier,
-            title=title,
-            codegen=codegen if codegen is not None else self.default_codegen,
-            sx_adapter=sx_adapter,
-            config=config,
-            query_cache=query_cache,
-            result_format=result_format,
-            ignore_cache=ignore_cache,
-        )
         EventDataset.__init__(self, item_type=item_type)
         self.provided_qastle = None
 
     def set_provided_qastle(self, qastle: str):
         self.provided_qastle = qastle
-
-    def __deepcopy__(self, memo):
-        """
-        Customize deepcopy behavior for this class.
-        We need to be careful because the query cache is a tinyDB database that holds an
-        open file pointer. We are not allowed to clone an open file handle, so for this
-        property we will copy by reference and share it between the clones
-        """
-        cls = self.__class__
-        obj = cls.__new__(cls)
-
-        memo[id(self)] = obj
-
-        for attr, value in vars(self).items():
-            if type(value) is QueryCache:
-                setattr(obj, attr, value)
-            else:
-                setattr(obj, attr, copy.deepcopy(value, memo))
-
-        return obj
 
     def SelectMany(
         self, func: Union[str, ast.Lambda, Callable[[T], Iterable[S]]]
