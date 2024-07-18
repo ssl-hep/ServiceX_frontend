@@ -6,6 +6,11 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+# import os, sys
+
+# sys.path.insert(0, os.path.abspath(".."))
+
+
 project = 'ServiceX Client'
 copyright = '2023, Ben Galewsky, Gordon Watts'
 author = 'Ben Galewsky, Gordon Watts'
