@@ -214,10 +214,13 @@ class Query:
                 if self.current_status.files_failed:
                     titlestr = (f'"{self.current_status.title}" '
                                 if self.current_status.title is not None else '')
-                    logger.warning(
+                    logger.error(
                         f"Transform {titlestr}completed with failures: "
                         f"{self.current_status.files_failed}/"
                         f"{self.current_status.files} files failed. Will not cache."
+                    )
+                    logger.error(
+                        f"Transform Request id: {self.current_status.request_id}"
                     )
                     if self.current_status.log_url is not None:
                         kibana_link = \
@@ -225,7 +228,7 @@ class Query:
                                                           self.current_status.request_id,
                                                           LogLevel.error,
                                                           TimeFrame.month)
-                        logger.warning(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
+                        logger.error(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
