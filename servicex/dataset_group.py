@@ -26,18 +26,16 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
-from typing import List, Optional, Union
-
+from typing import List, Optional
 from rich.progress import Progress
 
 from servicex.query_core import Query
 from servicex.expandable_progress import ExpandableProgress
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
 
-DatasetGroupMember = Union[Query, FuncADLQuery]
+DatasetGroupMember = Query
 
 
 class DatasetGroup:

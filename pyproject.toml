@@ -44,6 +44,7 @@ dependencies = [
     "PyYAML>=6.0",
     "types-PyYAML>=6.0",
     "importlib_metadata; python_version <= '3.9'",
+    "typing_extensions; python_version <= '3.10'", # compatible versions controlled through pydantic
     "rich>=13.0.0",  # databinder
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
@@ -98,7 +99,7 @@ FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
 FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
 FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
-PythonFunction = "servicex.python_dataset:PythonQuery"
+PythonFunction = "servicex.python_dataset:PythonFunction"
 UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 
 [project.entry-points.'servicex.dataset']
