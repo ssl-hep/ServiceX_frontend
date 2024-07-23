@@ -1,0 +1,21 @@
+name: "Sphinx: Render docs"
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build doctest
+      run: |
+        ls 
+        cd docs 
+        ls
+        make doctest
+    - name: Build HTML
+      run: |
+        make clean
+        make html
