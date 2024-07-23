@@ -179,6 +179,22 @@ def transformed_result(dummy_parquet_file) -> TransformedResults:
 
 
 @fixture
+def transformed_result_signed_url() -> TransformedResults:
+    return TransformedResults(
+        hash="123-4455",
+        title="Test",
+        codegen="uproot",
+        request_id="123-45-6789",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=[],
+        signed_url_list=['https://dummy.junk.io/1.parquet', 'https://dummy.junk.io/2.parquet'],
+        files=2,
+        result_format=ResultFormat.root,
+    )
+
+
+@fixture
 def dummy_parquet_file():
     data = {'column1': [1, 2, 3, 4],
             'column2': ['A', 'B', 'C', 'D']}
