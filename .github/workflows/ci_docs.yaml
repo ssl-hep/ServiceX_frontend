@@ -11,7 +11,8 @@ jobs:
     - uses: actions/checkout@v4
     - name: Build doctest
       run: |
-        cd docs && make doctest
+        cd docs 
+        make doctest
     - name: Build HTML
       run: |
         make clean
