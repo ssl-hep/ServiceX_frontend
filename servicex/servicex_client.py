@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type, Mapping, Union, cast
+from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
 from servicex.configuration import Configuration
