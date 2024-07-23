@@ -63,3 +63,8 @@ jobs:
           env_vars: OS,PYTHON
           files: ./coverage.xml
           flags: unittests
+
+      - name: Build Doctest
+        run: |
+          cd docs
+          make doctest
