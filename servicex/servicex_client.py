@@ -151,7 +151,7 @@ def _build_datasets(config, config_path, servicex_name):
 
 
 def _output_handler(config: ServiceXSpec, requests: List[Query],
-                    results: List[TransformedResults]):
+                    results: List[Union[TransformedResults, Exception]]):
     matched_results = zip(requests, results)
     if config.General.Delivery == General.DeliveryEnum.SignedURLs:
         out_dict = {obj[0].title: GuardList(obj[1].signed_url_list
@@ -195,6 +195,7 @@ def deliver(
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
         results = group.as_files(return_exceptions=return_exceptions)
+        print(results)
         return _output_handler(config, datasets, results)
 
 
