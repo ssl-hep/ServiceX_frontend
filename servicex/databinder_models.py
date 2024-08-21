@@ -54,8 +54,9 @@ class Sample(BaseModel):
     @property
     def dataset_identifier(self) -> DataSetIdentifier:
         if self.Dataset:
-            if issubclass(RucioDatasetIdentifier, type(self.Dataset)):
-                return RucioDatasetIdentifier(self.Dataset.dataset, num_files=self.NFiles)
+            if self.NFiles:
+                self.Dataset.num_files = self.NFiles
+                return self.Dataset
             else:
                 return self.Dataset
         elif self.RucioDID:
