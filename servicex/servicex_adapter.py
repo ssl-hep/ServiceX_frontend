@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry
@@ -84,6 +84,18 @@ class ServiceXAdapter:
                     float(jwt.decode(self.token, verify=False)["exp"]) - now < 0:
                 await self._get_token()
             return {"Authorization": f"Bearer {self.token}"}
+
+    async def get_transforms(self) -> List[TransformStatus]:
+        headers = await self._get_authorization()
+        retry_options = ExponentialRetry(attempts=3)
+        async with RetryClient(retry_options=retry_options) as client:
+            async with client.get(url=f"{self.url}/servicex/transformation",
+                                  headers=headers) as r:
+                if r.status == 401:
+                    raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
+                o = await r.json()
+                statuses = [TransformStatus(**status) for status in o['requests']]
+            return statuses
 
     def get_code_generators(self):
         with httpx.Client() as client:
