@@ -117,6 +117,27 @@ def test_rucio_did_numfiles():
     )
 
 
+def test_dataset_rucio_did_numfiles():
+    spec = ServiceXSpec.model_validate(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "Dataset": dataset.Rucio("user.ivukotic:user.ivukotic.single_top_tW__nominal"),
+                    "NFiles": 12,
+                    "Query": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, Rucio)
+    assert (
+        spec.Sample[0].dataset_identifier.did
+        == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal?files=12"
+    )
+
+
 def test_cernopendata():
     spec = ServiceXSpec.model_validate({
         "Sample": [
