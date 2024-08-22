@@ -119,7 +119,7 @@ class ServiceXAdapter:
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3)
+        retry_options = ExponentialRetry(attempts=5)
         async with RetryClient(retry_options=retry_options) as client:
             async with client.get(url=f"{self.url}/servicex/transformation/{request_id}",
                                   headers=headers,
