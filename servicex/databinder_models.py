@@ -56,9 +56,7 @@ class Sample(BaseModel):
         if self.Dataset:
             if self.NFiles:
                 self.Dataset.num_files = self.NFiles
-                return self.Dataset
-            else:
-                return self.Dataset
+            return self.Dataset
         elif self.RucioDID:
             return RucioDatasetIdentifier(self.RucioDID, num_files=self.NFiles)
         elif self.XRootDFiles:
