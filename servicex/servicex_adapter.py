@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from datetime import datetime
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 
 import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry
@@ -96,7 +96,7 @@ class ServiceXAdapter:
 
     async def submit_transform(self, transform_request: TransformRequest):
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3)        
+        retry_options = ExponentialRetry(attempts=3)
         async with RetryClient(retry_options=retry_options) as client:
             async with client.post(url=f"{self.url}/servicex/transformation",
                                    headers=headers,
