@@ -30,6 +30,7 @@ from datetime import datetime
 from typing import Optional, Dict, List
 
 import httpx
+from aiohttp_retry import RetryClient, ExponentialRetry
 from google.auth import jwt
 
 from servicex.models import TransformRequest, TransformStatus
@@ -45,16 +46,18 @@ class ServiceXAdapter:
         self.refresh_token = refresh_token
         self.token = None
 
-    async def _get_token(self, client: httpx.AsyncClient):
+    async def _get_token(self):
         url = f"{self.url}/token/refresh"
         headers = {"Authorization": f"Bearer {self.refresh_token}"}
-        r = await client.post(url, headers=headers, json=None)
-        if r.status_code == 200:
-            self.token = r.json()['access_token']
-        else:
-            raise AuthorizationError(
-                f"ServiceX access token request rejected: {r.status_code}"
-            )
+        async with RetryClient() as client:
+            async with client.post(url, headers=headers, json=None) as r:
+                if r.status == 200:
+                    o = await r.json()
+                    self.token = o['access_token']
+                else:
+                    raise AuthorizationError(
+                        f"ServiceX access token request rejected: {r.status}"
+                    )
 
     @staticmethod
     def _get_bearer_token_file():
@@ -65,30 +68,22 @@ class ServiceXAdapter:
                 bearer_token = f.read().strip()
         return bearer_token
 
-    async def _get_authorization(self, client: httpx.AsyncClient) -> Dict[str, str]:
-        bearer_token = self._get_bearer_token_file()
+    async def _get_authorization(self) -> Dict[str, str]:
+        if self.token:
+            return {"Authorization": f"Bearer {self.token}"}
+        else:
+            bearer_token = self._get_bearer_token_file()
 
-        if bearer_token:
-            self.token = bearer_token
-        if not bearer_token and not self.refresh_token:
-            return {}
+            if bearer_token:
+                self.token = bearer_token
+            if not bearer_token and not self.refresh_token:
+                return {}
 
-        now = datetime.utcnow().timestamp()
-        if not self.token or \
-                float(jwt.decode(self.token, verify=False)["exp"]) - now < 0:
-            await self._get_token(client)
-        return {"Authorization": f"Bearer {self.token}"}
-
-    async def get_transforms(self) -> List[TransformStatus]:
-        async with httpx.AsyncClient() as client:
-            headers = await self._get_authorization(client)
-            r = await client.get(url=f"{self.url}/servicex/transformation",
-                                 headers=headers)
-            if r.status_code == 401:
-                raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
-
-            statuses = [TransformStatus(**status) for status in r.json()['requests']]
-        return statuses
+            now = datetime.utcnow().timestamp()
+            if not self.token or \
+                    float(jwt.decode(self.token, verify=False)["exp"]) - now < 0:
+                await self._get_token()
+            return {"Authorization": f"Bearer {self.token}"}
 
     def get_code_generators(self):
         with httpx.Client() as client:
@@ -100,34 +95,38 @@ class ServiceXAdapter:
         return r.json()
 
     async def submit_transform(self, transform_request: TransformRequest):
-        async with httpx.AsyncClient() as client:
-            headers = await self._get_authorization(client)
-            r = await client.post(url=f"{self.url}/servicex/transformation",
-                                  headers=headers,
-                                  json=transform_request.model_dump(by_alias=True,
-                                                                    exclude_none=True),
-                                  timeout=60)
-            if r.status_code == 401:
-                raise AuthorizationError(
-                    f"Not authorized to access serviceX at {self.url}")
-            elif r.status_code == 400:
-                raise ValueError(f"Invalid transform request: {r.json()['message']}")
-            elif r.status_code > 400:
-                error_message = r.json().get('message', str(r))
-                raise RuntimeError("ServiceX WebAPI Error during transformation "
-                                   f"submission: {r.status_code} - {error_message}")
-        return r.json()['request_id']
+        headers = await self._get_authorization()
+        retry_options = ExponentialRetry(attempts=3)        
+        async with RetryClient(retry_options=retry_options) as client:
+            async with client.post(url=f"{self.url}/servicex/transformation",
+                                   headers=headers,
+                                   json=transform_request.model_dump(by_alias=True,
+                                                                     exclude_none=True),
+                                   timeout=30) as r:
+                if r.status == 401:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}")
+                elif r.status == 400:
+                    raise ValueError(f"Invalid transform request: {r.json()['message']}")
+                elif r.status > 400:
+                    o = await r.json()
+                    error_message = o.get('message', str(r))
+                    raise RuntimeError("ServiceX WebAPI Error during transformation "
+                                       f"submission: {r.status} - {error_message}")
+                else:
+                    o = await r.json()
+                    return o['request_id']
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
-        async with httpx.AsyncClient() as client:
-            headers = await self._get_authorization(client)
-            r = await client.get(url=f"{self.url}/servicex/transformation/{request_id}",
-                                 headers=headers,
-                                 timeout=10)
-            if r.status_code == 401:
-                raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
-            if r.status_code == 404:
-                raise ValueError(f"Transform ID {request_id} not found")
-
-            status = TransformStatus(**r.json())
-            return status
+        headers = await self._get_authorization()
+        retry_options = ExponentialRetry(attempts=3)
+        async with RetryClient(retry_options=retry_options) as client:
+            async with client.get(url=f"{self.url}/servicex/transformation/{request_id}",
+                                  headers=headers,
+                                  timeout=10) as r:
+                if r.status == 401:
+                    raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
+                if r.status == 404:
+                    raise ValueError(f"Transform ID {request_id} not found")
+                o = await r.json()
+                return TransformStatus(**o)
