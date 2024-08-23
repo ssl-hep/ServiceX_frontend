@@ -195,7 +195,6 @@ def deliver(
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
         results = group.as_files(return_exceptions=return_exceptions)
-        print(results)
         return _output_handler(config, datasets, results)
 
 
