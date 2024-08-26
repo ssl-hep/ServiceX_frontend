@@ -14,6 +14,22 @@ def basic_spec(samples=None):
     }
 
 
+def test_long_sample_name():
+    config = {
+        "Sample": [
+            {
+                "Name": "long_sample_name_long_sample_name_long_sample_name_\
+                         long_sample_name_long_sample_name_long_sample_name_\
+                         long_sample_name_long_sampl",
+                "XRootDFiles": "root://a.root",
+                "Query": "a",
+            },
+        ],
+    }
+    with pytest.raises(ValidationError):
+        ServiceXSpec.model_validate(config)
+
+
 def test_load_config():
     config = {
         "General": {
