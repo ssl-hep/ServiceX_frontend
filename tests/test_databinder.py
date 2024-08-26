@@ -20,14 +20,14 @@ def test_long_sample_name():
             {
                 "Name": "long_sample_name_long_sample_name_long_sample_name_\
                          long_sample_name_long_sample_name_long_sample_name_\
-                         long_sample_name_long_sampl",
+                         long_sample_name_long_sample_name_long_sample_name",
                 "XRootDFiles": "root://a.root",
                 "Query": "a",
             },
         ],
     }
-    with pytest.raises(ValidationError):
-        ServiceXSpec.model_validate(config)
+    new_config = ServiceXSpec.model_validate(config)
+    assert len(new_config.Sample[0].Name) == 128
 
 
 def test_load_config():
