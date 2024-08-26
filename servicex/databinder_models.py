@@ -40,7 +40,7 @@ from servicex.models import ResultFormat
 
 
 class Sample(BaseModel):
-    Name: str
+    Name: str = Field(max_length=128)
     Codegen: Optional[str] = None
     RucioDID: Optional[str] = None
     XRootDFiles: Optional[Union[str, List[str]]] = None
