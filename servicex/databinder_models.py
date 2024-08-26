@@ -90,7 +90,7 @@ class Sample(BaseModel):
         Print warning message
         """
         if len(values["Name"]) > 128:
-            print(logger.warning(f"Truncating Sample name to 128 characters for {values['Name']}"))
+            logger.warning(f"Truncating Sample name to 128 characters for {values['Name']}")
             values["Name"] = values["Name"][0:128]
         return values
 
