@@ -32,15 +32,18 @@ from pydantic import (
     Field,
     model_validator,
 )
+import logging
 
 from servicex.dataset_identifier import (DataSetIdentifier, RucioDatasetIdentifier,
                                          FileListDataset)
 from servicex.query_core import QueryStringGenerator
 from servicex.models import ResultFormat
 
+logger = logging.getLogger(__name__)
+
 
 class Sample(BaseModel):
-    Name: str = Field(max_length=128)
+    Name: str
     Codegen: Optional[str] = None
     RucioDID: Optional[str] = None
     XRootDFiles: Optional[Union[str, List[str]]] = None
@@ -77,6 +80,18 @@ class Sample(BaseModel):
             raise ValueError("Only specify one of Dataset, XRootDFiles, or RucioDID.")
         if count == 0:
             raise ValueError("Must specify one of Dataset, XRootDFiles, or RucioDID.")
+        return values
+
+    @model_validator(mode="before")
+    @classmethod
+    def truncate_long_sample_name(cls, values):
+        """
+        Truncate sample name to 128 characters if exceed
+        Print warning message
+        """
+        if len(values["Name"]) > 128:
+            print(logger.warning(f"Truncating Sample name to 128 characters for {values['Name']}"))
+            values["Name"] = values["Name"][0:128]
         return values
 
 
