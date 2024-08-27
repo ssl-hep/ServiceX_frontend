@@ -1,20 +1,23 @@
 services:
-  science:
-    image: sslhep/servicex_func_adl_uproot_transformer:uproot5
+
+  codegen:
+    image: $CODEGEN 
+    env_file: .env
     pull_policy: missing
-    environment:
-      - BASH_ENV='/servicex/.bashrc'
-      - LOG_LEVEL=DEBUG
-    # command: >
-    #   bash -c
-    #   "PYTHONPATH=/generated &&
-    #   python /generated/transform_single_file.py \
-    #   root://xrootd.aglt2.org:1094//pnfs/aglt2.org/atlasdatadisk/rucio/mc20_13TeV/d4/32/DAOD_PHYS.37620644._000804.pool.root.1 /generated/out.parquet  root-file; tail -F anything"
+    ports:
+      - "8000:5000"
+
+  science:
+    image: $SCIENCE 
+    pull_policy: missing
+    env_file: .env
     volumes:
       - sidecar-volume:/servicex/output
       - /tmp:/tmp/grid-security/
-      - ./temp1:/generated
+      - $LOCAL_FOLDER:/generated
     tty: true
+    depends_on:
+      - codegen
 
 volumes:
   sidecar-volume:
