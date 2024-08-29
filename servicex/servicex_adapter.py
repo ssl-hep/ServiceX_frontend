@@ -119,7 +119,8 @@ class ServiceXAdapter:
                     raise AuthorizationError(
                         f"Not authorized to access serviceX at {self.url}")
                 elif r.status == 400:
-                    raise ValueError(f"Invalid transform request: {r.json()['message']}")
+                    o = await r.json()
+                    raise ValueError(f"Invalid transform request: {o.get('message')}")
                 elif r.status > 400:
                     o = await r.json()
                     error_message = o.get('message', str(r))
