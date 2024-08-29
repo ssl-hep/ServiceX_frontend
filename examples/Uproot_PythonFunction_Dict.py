@@ -18,7 +18,7 @@ def uproot_pythonfunction_dict():
             'Query': query
         }]
     }
-    return deliver(spec, servicex_name="servicex-uc-af"))
+    return deliver(spec, servicex_name="servicex-uc-af")
 
 
 if __name__ == "__main__":
