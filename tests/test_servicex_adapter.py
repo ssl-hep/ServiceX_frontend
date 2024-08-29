@@ -65,15 +65,16 @@ async def test_get_transforms(mock_get, servicex, transform_status_response):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.RetryClient.get")
 async def test_get_transforms_auth_error(mock_get, servicex):
-    with pytest.raises(AuthorizationError):
+    with pytest.raises(AuthorizationError) as err:
         mock_get.return_value.__aenter__.return_value.status = 401
         await servicex.get_transforms()
+        assert "Not authorized to access serviceX at" in str(err.value)
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.httpx.AsyncClient.post')
 @patch('servicex.servicex_adapter.jwt.decode')
-async def test_get_transforms_wlcg_bearer_token(decode, post, servicex,
+async def test_get_transforms_wlcg_bearer_token(decode,
+                                                servicex,
                                                 transform_status_response):
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
     token_file.write("luckycharms")
@@ -82,9 +83,10 @@ async def test_get_transforms_wlcg_bearer_token(decode, post, servicex,
     os.environ['BEARER_TOKEN_FILE'] = token_file.name
 
     # Try with an expired token
-    with pytest.raises(AuthorizationError):
+    with pytest.raises(AuthorizationError) as err:
         decode.return_value = {'exp': 0.0}
         await servicex.get_transforms()
+        assert "ServiceX access token request rejected:" in str(err.value)
 
     os.remove(token_file.name)
     del os.environ['BEARER_TOKEN_FILE']
@@ -148,18 +150,22 @@ async def test_submit_errors(post, servicex):
         result_destination=ResultDestination.object_store,
         result_format=ResultFormat.parquet
     )
-    with pytest.raises(AuthorizationError):
+    with pytest.raises(AuthorizationError) as err:
         await servicex.submit_transform(request)
+        assert "Not authorized to access serviceX at" in str(err.value)
 
     post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
     post.return_value.__aenter__.return_value.status = 400
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as err:
         await servicex.submit_transform(request)
+        assert "Invalid transform request: error_message" == str(err.value)
 
     post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
     post.return_value.__aenter__.return_value.status = 410
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError) as err:
         await servicex.submit_transform(request)
+        assert "ServiceX WebAPI Error during transformation submission: 410 - error_message" \
+               == str(err.value)
 
 
 @pytest.mark.asyncio
@@ -174,6 +180,7 @@ async def test_get_transform_status(get, servicex, transform_status_response):
 @pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.get')
 async def test_get_transform_status_auth_error(get, servicex):
-    with pytest.raises(AuthorizationError):
+    with pytest.raises(AuthorizationError) as err:
         get.return_value.__aenter__.return_value.status = 401
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
+        assert "Not authorized to access serviceX at " in str(err.value)
