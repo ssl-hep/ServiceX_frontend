@@ -11,6 +11,7 @@ def uproot_uproot_raw_dict():
             'RucioDID': "user.mtost:user.mtost.singletop.p6026.Jun13",
             'Query': query
         }]
+    }
     return deliver(spec, servicex_name="servicex-uc-af")
 
 
