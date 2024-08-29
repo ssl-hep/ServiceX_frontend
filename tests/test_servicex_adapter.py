@@ -121,6 +121,14 @@ def test_get_codegens(get, servicex):
     assert c["uproot"] == "http://uproot-codegen"
 
 
+@patch('servicex.servicex_adapter.httpx.Client.get')
+def test_get_codegens_error(get, servicex):
+    get.return_value = httpx.Response(403)
+    with pytest.raises(AuthorizationError) as err:
+        servicex.get_code_generators()
+        assert "Not authorized to access serviceX at" in str(err.value)
+
+
 @pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
