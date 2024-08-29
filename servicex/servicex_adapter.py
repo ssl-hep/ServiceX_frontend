@@ -29,6 +29,7 @@ import os
 from datetime import datetime
 from typing import Optional, Dict, List
 
+import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry
 from google.auth import jwt
 
@@ -96,15 +97,14 @@ class ServiceXAdapter:
                 statuses = [TransformStatus(**status) for status in o['requests']]
             return statuses
 
-    async def get_code_generators(self):
-        retry_options = ExponentialRetry(attempts=3)
-        async with RetryClient(retry_options=retry_options) as client:
+    def get_code_generators(self):
+        with httpx.Client() as client:
             r = client.get(url=f"{self.url}/multiple-codegen-list")
 
-            if r.status == 403:
+            if r.status_code == 403:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}")
-            return await r.json()
+            return r.json()
 
     async def submit_transform(self, transform_request: TransformRequest):
         headers = await self._get_authorization()
