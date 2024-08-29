@@ -184,3 +184,15 @@ async def test_get_transform_status_auth_error(get, servicex):
         get.return_value.__aenter__.return_value.status = 401
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
         assert "Not authorized to access serviceX at " in str(err.value)
+
+    with pytest.raises(ValueError) as err:
+        get.return_value.__aenter__.return_value.status = 404
+        await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
+        assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(err.value)
+
+
+@pytest.mark.asyncio
+async def test_get_authorization(servicex):
+    servicex.token = "token"
+    r = await servicex._get_authorization()
+    assert r.get("Authorization") == "Bearer token"
