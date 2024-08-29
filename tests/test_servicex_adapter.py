@@ -137,6 +137,32 @@ async def test_submit(post, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.RetryClient.post')
+async def test_submit_errors(post, servicex):
+    post.return_value.__aenter__.return_value.status = 401
+    request = TransformRequest(
+        title="Test submission",
+        did="rucio://foo.bar",
+        selection="(call EventDataset)",
+        codegen="uproot",
+        result_destination=ResultDestination.object_store,
+        result_format=ResultFormat.parquet
+    )
+    with pytest.raises(AuthorizationError):
+        await servicex.submit_transform(request)
+
+    post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
+    post.return_value.__aenter__.return_value.status = 400
+    with pytest.raises(ValueError):
+        await servicex.submit_transform(request)
+
+    post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
+    post.return_value.__aenter__.return_value.status = 410
+    with pytest.raises(RuntimeError):
+        await servicex.submit_transform(request)
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.get')
 async def test_get_transform_status(get, servicex, transform_status_response):
     get.return_value.__aenter__.return_value.json.return_value = transform_status_response['requests'][0]  # NOQA: E501
