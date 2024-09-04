@@ -53,10 +53,12 @@ logger = logging.getLogger(__name__)
 class ReturnValueException(Exception):
     """ An exception occurred at some point while obtaining this result from ServiceX """
     def __init__(self, exc):
+        import copy
         message = ('Exception occurred while making ServiceX request.\n'
                    + (''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
                    )
         super().__init__(message)
+        self._exc = copy.copy(exc)
 
 
 class GuardList(Sequence):
@@ -91,7 +93,8 @@ class GuardList(Sequence):
         if self.valid():
             return repr(self._data)
         else:
-            return f'Invalid GuardList: {repr(self._data)}'
+            data = cast(ReturnValueException, self._data)
+            return f'Invalid GuardList: {repr(data._exc)}'
 
 
 def _load_ServiceXSpec(

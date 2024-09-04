@@ -1,4 +1,4 @@
-from servicex.servicex_client import GuardList
+from servicex.servicex_client import GuardList, ReturnValueException
 import pytest
 
 
@@ -8,7 +8,7 @@ def test_guardlist():
     assert gl1[0] == 1
     gl2 = GuardList(ValueError())
     assert str(gl2) == 'Invalid GuardList: ValueError()'
-    with pytest.raises(ValueError):
+    with pytest.raises(ReturnValueException):
         gl2[0]
-    with pytest.raises(ValueError):
+    with pytest.raises(ReturnValueException):
         len(gl2)
