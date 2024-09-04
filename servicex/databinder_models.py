@@ -98,19 +98,27 @@ class Sample(BaseModel):
 class General(BaseModel):
     class OutputFormatEnum(str, Enum):
         parquet = "parquet"
-        root = "root-file"
+        root_ttree = "root-ttree"
+
+        def to_ResultFormat(self) -> ResultFormat:
+            if self == self.parquet:
+                return ResultFormat.parquet
+            elif self == self.root_ttree:
+                return ResultFormat.root_ttree
+            else:
+                raise RuntimeError(f"Bad OutputFormatEnum {self}")
 
     class DeliveryEnum(str, Enum):
         LocalCache = "LocalCache"
-        SignedURLs = "SignedURLs"
+        URLs = "URLs"
 
     Codegen: Optional[str] = None
-    OutputFormat: ResultFormat = (
-        Field(default=ResultFormat.root, pattern="^(parquet|root-file)$")
+    OutputFormat: OutputFormatEnum = (
+        Field(default=OutputFormatEnum.root_ttree, pattern="^(parquet|root-ttree)$")
     )  # NOQA F722
 
     Delivery: DeliveryEnum = Field(
-        default=DeliveryEnum.LocalCache, pattern="^(LocalCache|SignedURLs)$"
+        default=DeliveryEnum.LocalCache, pattern="^(LocalCache|URLs)$"
     )  # NOQA F722
 
     OutputDirectory: Optional[str] = None

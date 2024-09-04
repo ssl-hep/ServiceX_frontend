@@ -139,7 +139,7 @@ def _build_datasets(config, config_path, servicex_name):
             dataset_identifier=sample.dataset_identifier,
             title=sample.Name,
             codegen=get_codegen(sample, config.General),
-            result_format=config.General.OutputFormat,
+            result_format=config.General.OutputFormat.to_ResultFormat(),
             ignore_cache=sample.IgnoreLocalCache,
             query=sample.Query,
         )
@@ -153,7 +153,7 @@ def _build_datasets(config, config_path, servicex_name):
 def _output_handler(config: ServiceXSpec, requests: List[Query],
                     results: List[Union[TransformedResults, Exception]]):
     matched_results = zip(requests, results)
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
+    if config.General.Delivery == General.DeliveryEnum.URLs:
         out_dict = {obj[0].title: GuardList(obj[1].signed_url_list
                                             if not isinstance(obj[1], Exception)
                                             else obj[1])
@@ -189,7 +189,7 @@ def deliver(
 
     group = DatasetGroup(datasets)
 
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
+    if config.General.Delivery == General.DeliveryEnum.URLs:
         results = group.as_signed_urls(return_exceptions=return_exceptions)
         return _output_handler(config, datasets, results)
 

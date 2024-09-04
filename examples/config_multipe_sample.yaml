@@ -14,7 +14,7 @@ Definition:
     FromTree('mini').Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
 
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:

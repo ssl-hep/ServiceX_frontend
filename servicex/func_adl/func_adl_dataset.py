@@ -111,7 +111,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         source = a
         if top_function in self._execute_locally:
             # Request the default type here
-            default_format = self._ds.first_supported_datatype(["parquet", "root-file"])
+            default_format = self._ds.first_supported_datatype(["parquet", "root-ttree"])
             assert default_format is not None, "Unsupported ServiceX returned format"
             method_to_call = self._format_map[default_format]
 

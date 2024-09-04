@@ -1,5 +1,5 @@
 Definition:
-  - &DEF_output_format root-file
+  - &DEF_output_format root-ttree
   - &DEF_ttH_nominal_query !FuncADL_Uproot  |
     FromTree('mini').Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
   - &DEF_ggH_input "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\

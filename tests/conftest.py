@@ -174,7 +174,7 @@ def transformed_result(dummy_parquet_file) -> TransformedResults:
         file_list=[dummy_parquet_file],
         signed_url_list=[],
         files=2,
-        result_format=ResultFormat.root,
+        result_format=ResultFormat.root_ttree,
     )
 
 
@@ -190,7 +190,7 @@ def transformed_result_signed_url() -> TransformedResults:
         file_list=[],
         signed_url_list=['https://dummy.junk.io/1.parquet', 'https://dummy.junk.io/2.parquet'],
         files=2,
-        result_format=ResultFormat.root,
+        result_format=ResultFormat.root_ttree,
     )
 
 
