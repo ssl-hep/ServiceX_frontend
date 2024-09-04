@@ -28,7 +28,7 @@ jobs:
         run: |
           python -m pip install --upgrade uv
           uv pip install --system --upgrade pip setuptools wheel
-          uv pip install --system --upgrade '.[databinder,pandas,test]'
+          uv pip install --system --upgrade '.[test]'
           uv pip list --system
 
       - name: Run example

@@ -26,7 +26,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
-import pandas as pd
 import tempfile
 import os
 
@@ -87,25 +86,6 @@ async def test_as_files_happy(transformed_result):
 
     result = dataset.as_files(display_progress=True, provided_progress=None)
     assert result == transformed_result
-
-
-@pytest.mark.asyncio
-async def test_as_pandas_happy(transformed_result):
-    did = FileListDataset("/foo/bar/baz.root")
-    servicex = AsyncMock()
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])
-        cache = QueryCache(config)
-        dataset = Query(dataset_identifier=did, codegen="uproot", sx_adapter=servicex,
-                        title="", config=None,
-                        query_cache=cache)
-        dataset.submit_and_download = AsyncMock()
-        dataset.submit_and_download.return_value = transformed_result
-        result = dataset.as_pandas(display_progress=False)
-        assert isinstance(result, pd.DataFrame)
-        assert not result.empty  # Check if the DataFrame is not empty
-        assert dataset.result_format == ResultFormat.parquet
-        cache.close()
 
 
 @pytest.mark.asyncio
