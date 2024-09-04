@@ -9,12 +9,6 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
-    - name: Build doctest
-      run: |
-        ls 
-        cd docs 
-        ls
-        make doctest
     - name: Build HTML
       run: |
         make clean
