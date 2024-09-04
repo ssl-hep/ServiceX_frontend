@@ -87,7 +87,7 @@ class ServiceXAdapter:
 
     async def get_transforms(self) -> List[TransformStatus]:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3)
+        retry_options = ExponentialRetry(attempts=3, start_timeout=10)
         async with RetryClient(retry_options=retry_options) as client:
             async with client.get(url=f"{self.url}/servicex/transformation",
                                   headers=headers) as r:
@@ -108,13 +108,12 @@ class ServiceXAdapter:
 
     async def submit_transform(self, transform_request: TransformRequest):
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3)
+        retry_options = ExponentialRetry(attempts=3, start_timeout=30)
         async with RetryClient(retry_options=retry_options) as client:
             async with client.post(url=f"{self.url}/servicex/transformation",
                                    headers=headers,
                                    json=transform_request.model_dump(by_alias=True,
-                                                                     exclude_none=True),
-                                   timeout=30) as r:
+                                                                     exclude_none=True)) as r:
                 if r.status == 401:
                     raise AuthorizationError(
                         f"Not authorized to access serviceX at {self.url}")
@@ -132,11 +131,10 @@ class ServiceXAdapter:
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=5)
+        retry_options = ExponentialRetry(attempts=5, start_timeout=10)
         async with RetryClient(retry_options=retry_options) as client:
             async with client.get(url=f"{self.url}/servicex/transformation/{request_id}",
-                                  headers=headers,
-                                  timeout=10) as r:
+                                  headers=headers) as r:
                 if r.status == 401:
                     raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
                 if r.status == 404:
