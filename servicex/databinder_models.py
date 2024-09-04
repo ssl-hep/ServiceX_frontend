@@ -117,14 +117,8 @@ class General(BaseModel):
         URLs = "URLs"
 
     Codegen: Optional[str] = None
-    OutputFormat: OutputFormatEnum = (
-        Field(default=OutputFormatEnum.root_ttree, pattern="^(parquet|root-ttree)$")
-    )  # NOQA F722
-
-    Delivery: DeliveryEnum = Field(
-        default=DeliveryEnum.LocalCache, pattern="^(LocalCache|URLs)$"
-    )  # NOQA F722
-
+    OutputFormat: OutputFormatEnum = Field(default=OutputFormatEnum.root_ttree)
+    Delivery: DeliveryEnum = Field(default=DeliveryEnum.LocalCache)
     OutputDirectory: Optional[str] = None
     OutFilesetName: str = 'servicex_fileset'
 

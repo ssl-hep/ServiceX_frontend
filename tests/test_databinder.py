@@ -519,6 +519,29 @@ def test_uproot_raw_query(transformed_result, codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
+def test_uproot_raw_query_parquet(transformed_result, codegen_list):
+    from servicex import deliver
+    from servicex.query import UprootRaw  # type: ignore
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "OutputFormat": "parquet"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": UprootRaw([{"treename": "nominal"}])
+            }
+        ]
+    })
+    print(spec)
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
 def test_generic_query(codegen_list):
     from servicex.servicex_client import ServiceXClient
     spec = ServiceXSpec.model_validate({
