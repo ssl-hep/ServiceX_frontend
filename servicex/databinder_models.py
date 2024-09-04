@@ -98,21 +98,27 @@ class Sample(BaseModel):
 class General(BaseModel):
     class OutputFormatEnum(str, Enum):
         parquet = "parquet"
-        root = "root-file"
+        root_ttree = "root-ttree"
+
+        def to_ResultFormat(self) -> ResultFormat:
+            """ This method is used to convert the OutputFormatEnum enum to the ResultFormat enum,
+                which is what is actually used for the TransformRequest. This allows us to use
+                different string values in the two enum classes to maintain backend compatibility
+            """
+            if self == self.parquet:
+                return ResultFormat.parquet
+            elif self == self.root_ttree:
+                return ResultFormat.root_ttree
+            else:  # pragma: no cover
+                raise RuntimeError(f"Bad OutputFormatEnum {self}")
 
     class DeliveryEnum(str, Enum):
         LocalCache = "LocalCache"
-        SignedURLs = "SignedURLs"
+        URLs = "URLs"
 
     Codegen: Optional[str] = None
-    OutputFormat: ResultFormat = (
-        Field(default=ResultFormat.root, pattern="^(parquet|root-file)$")
-    )  # NOQA F722
-
-    Delivery: DeliveryEnum = Field(
-        default=DeliveryEnum.LocalCache, pattern="^(LocalCache|SignedURLs)$"
-    )  # NOQA F722
-
+    OutputFormat: OutputFormatEnum = Field(default=OutputFormatEnum.root_ttree)
+    Delivery: DeliveryEnum = Field(default=DeliveryEnum.LocalCache)
     OutputDirectory: Optional[str] = None
     OutFilesetName: str = 'servicex_fileset'
 

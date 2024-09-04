@@ -224,7 +224,7 @@ def test_submit_mapping_signed_urls(transformed_result_signed_url, codegen_list)
     from servicex import deliver
     spec = {
         "General": {
-            "Delivery": "SignedURLs"
+            "Delivery": "URLs"
         },
         "Sample": [
             {
@@ -270,7 +270,7 @@ def test_submit_mapping_failure(transformed_result, codegen_list):
 def test_submit_mapping_failure_signed_urls(codegen_list):
     from servicex import deliver
     spec = {
-        "General": {"Delivery": "SignedURLs"},
+        "General": {"Delivery": "URLs"},
         "Sample": [
             {
                 "Name": "sampleA",
@@ -298,7 +298,7 @@ def test_yaml(tmp_path):
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:
@@ -348,7 +348,7 @@ Sample:
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:
@@ -378,7 +378,7 @@ Definitions:
     !include definitions.yaml
 
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:
@@ -519,6 +519,29 @@ def test_uproot_raw_query(transformed_result, codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
+def test_uproot_raw_query_parquet(transformed_result, codegen_list):
+    from servicex import deliver
+    from servicex.query import UprootRaw  # type: ignore
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "OutputFormat": "parquet"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": UprootRaw([{"treename": "nominal"}])
+            }
+        ]
+    })
+    print(spec)
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
 def test_generic_query(codegen_list):
     from servicex.servicex_client import ServiceXClient
     spec = ServiceXSpec.model_validate({
@@ -539,6 +562,10 @@ def test_generic_query(codegen_list):
         query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                                  codegen=spec.General.Codegen, query=spec.Sample[0].Query)
         assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                 result_format=spec.General.OutputFormat.to_ResultFormat(),
+                                 codegen=spec.General.Codegen, query=spec.Sample[0].Query)
+        assert query.result_format == 'root-file'
         query.query_string_generator = None
         with pytest.raises(RuntimeError):
             query.generate_selection_string()

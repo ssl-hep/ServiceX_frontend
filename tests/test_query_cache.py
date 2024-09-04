@@ -59,7 +59,7 @@ def test_hash(transform_request):
 
     # Changing result_format does
     request2 = request1.model_copy()
-    request2.result_format = ResultFormat.root
+    request2.result_format = ResultFormat.root_ttree
     assert request1.compute_hash() != request2.compute_hash()
 
 

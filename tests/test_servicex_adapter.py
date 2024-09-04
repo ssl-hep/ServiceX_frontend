@@ -48,7 +48,7 @@ def test_result_formats():
     servicex.resources.transformation.submit.SubmitTransformationRequest.make_api
     """
     assert ResultFormat.parquet == "parquet"
-    assert ResultFormat.root == "root-file"
+    assert ResultFormat.root_ttree == "root-file"
 
 
 @pytest.mark.asyncio

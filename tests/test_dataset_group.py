@@ -38,9 +38,9 @@ def test_set_result_format(mocker):
     ds1 = mocker.Mock()
     ds2 = mocker.Mock()
     group = DatasetGroup([ds1, ds2])
-    group.set_result_format(ResultFormat.root)
-    ds1.set_result_format.assert_called_once_with(ResultFormat.root)
-    ds2.set_result_format.assert_called_once_with(ResultFormat.root)
+    group.set_result_format(ResultFormat.root_ttree)
+    ds1.set_result_format.assert_called_once_with(ResultFormat.root_ttree)
+    ds2.set_result_format.assert_called_once_with(ResultFormat.root_ttree)
 
 
 @pytest.mark.asyncio
