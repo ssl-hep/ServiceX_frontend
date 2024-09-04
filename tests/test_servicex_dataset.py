@@ -269,11 +269,10 @@ async def test_use_of_cache(mocker):
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
-        transform_status2,
         transform_status3,
     ]
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
+    mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
     mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
     mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
 
@@ -299,10 +298,27 @@ async def test_use_of_cache(mocker):
                                                            expandable_progress=progress)
         upd.assert_not_called()
         upd.reset_mock()
-        # second round, should hit the cache (and not call update_record)
+        assert mock_minio.get_signed_url.await_count == 2
+        # second round, should hit the cache (and not call the sx_adapter, minio, or update_record)
         with ExpandableProgress(display_progress=False) as progress:
-            result2 = await datasource.submit_and_download(signed_urls_only=True,
-                                                           expandable_progress=progress)
+            servicex2 = AsyncMock()
+            mock_minio.list_bucket.reset_mock()
+            mock_minio.get_signed_url.reset_mock()
+            datasource2 = Query(
+                dataset_identifier=did,
+                title="ServiceX Client",
+                codegen="uproot",
+                sx_adapter=servicex2,
+                query_cache=cache,
+                config=config,
+            )
+            datasource2.query_string_generator = FuncADLQuery_Uproot()
+            datasource2.result_format = ResultFormat.parquet
+            result2 = await datasource2.submit_and_download(signed_urls_only=True,
+                                                            expandable_progress=progress)
+            servicex2.assert_not_awaited()
+            mock_minio.list_bucket.assert_not_awaited()
+            mock_minio.get_signed_url.assert_not_awaited()
         upd.assert_not_called()
         assert result1 == result2
         upd.reset_mock()
@@ -313,6 +329,18 @@ async def test_use_of_cache(mocker):
         with ExpandableProgress(display_progress=False) as progress:
             await datasource.submit_and_download(signed_urls_only=False,
                                                  expandable_progress=progress)
+        servicex.assert_not_awaited()
+        assert mock_minio.download_file.await_count == 2
+        upd.assert_called_once()
+        # fourth round, should hit the cache (and nothing else)
+        mock_minio.list_bucket.reset_mock()
+        mock_minio.download_file.reset_mock()
+        with ExpandableProgress(display_progress=False) as progress:
+            await datasource.submit_and_download(signed_urls_only=False,
+                                                 expandable_progress=progress)
+        servicex.assert_not_awaited()
+        mock_minio.list_bucket.assert_not_awaited()
+        mock_minio.download_file.assert_not_awaited()
         upd.assert_called_once()
         cache.close()
 
