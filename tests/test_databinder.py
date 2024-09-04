@@ -263,7 +263,8 @@ def test_submit_mapping_failure(transformed_result, codegen_list):
                return_value=codegen_list):
         results = deliver(spec, config_path='tests/example_config.yaml')
         assert len(results) == 1
-        with pytest.raises(ReturnValueException):  # should expect an exception to be thrown on access
+        with pytest.raises(ReturnValueException):
+            # should expect an exception to be thrown on access
             for _ in results['sampleA']:
                 pass
 
@@ -287,7 +288,8 @@ def test_submit_mapping_failure_signed_urls(codegen_list):
                return_value=codegen_list):
         results = deliver(spec, config_path='tests/example_config.yaml', return_exceptions=False)
         assert len(results) == 1
-        with pytest.raises(ReturnValueException):  # should expect an exception to be thrown on access
+        with pytest.raises(ReturnValueException):
+            # should expect an exception to be thrown on access
             for _ in results['sampleA']:
                 pass
 
