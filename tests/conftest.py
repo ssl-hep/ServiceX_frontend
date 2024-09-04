@@ -173,8 +173,8 @@ def transformed_result(dummy_parquet_file) -> TransformedResults:
         data_dir="/foo/bar",
         file_list=[dummy_parquet_file],
         signed_url_list=[],
-        files=2,
-        result_format=ResultFormat.root_ttree,
+        files=1,
+        result_format=ResultFormat.parquet,
     )
 
 
