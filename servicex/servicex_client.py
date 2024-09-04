@@ -44,16 +44,29 @@ from servicex.dataset_group import DatasetGroup
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
 from collections.abc import Sequence
+import traceback
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
+
+
+class ReturnValueException(Exception):
+    """ An exception occurred at some point while obtaining this result from ServiceX """
+    def __init__(self, exc):
+        message = ('Exception occurred while making ServiceX request.\n'
+                   + (''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+                   )
+        super().__init__(message)
 
 
 class GuardList(Sequence):
     def __init__(self, data: Union[Sequence, Exception]):
         import copy
         super().__init__()
-        self._data = copy.copy(data)
+        if isinstance(data, Exception):
+            self._data = ReturnValueException(data)
+        else:
+            self._data = copy.copy(data)
 
     def valid(self) -> bool:
         return not isinstance(self._data, Exception)
