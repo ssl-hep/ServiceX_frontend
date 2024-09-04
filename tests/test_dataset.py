@@ -40,7 +40,6 @@ from servicex.query_core import ServiceXException
 
 from pathlib import Path
 from servicex.models import (
-    ResultFormat,
     Status,
 )
 from rich.progress import Progress
