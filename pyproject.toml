@@ -66,14 +66,6 @@ Homepage = "https://github.com/ssl-hep/ServiceX_frontend"
 
 [project.optional-dependencies]
 
-databinder = [
-    "nest-asyncio>=1.5.7",  # databinder # FIXME: nest-asyncio deprecated
-]
-pandas = [
-    "pandas>=2.0.2",
-    "pyarrow>=12.0.0",
-    "fastparquet>=2023.4.0",
-]
 # Developer extras
 test = [
     "pytest>=7.2.0",
@@ -83,6 +75,8 @@ test = [
     "mypy>=0.981",
     "pytest-asyncio>=0.21.0",
     "asyncmock>=0.4.2",
+    "pandas>=2.0.2",
+    "pyarrow>=12.0.0",
 ]
 docs = [
     "sphinx>=7.0.1",
@@ -91,7 +85,7 @@ docs = [
     "myst-parser>=3.0.1",
 ]
 develop = [
-    "servicex[databinder,pandas,test,docs]",
+    "servicex[test,docs]",
 ]
 
 [project.entry-points.'servicex.query']

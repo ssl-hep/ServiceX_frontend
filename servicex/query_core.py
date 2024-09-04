@@ -36,13 +36,6 @@ from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
 
-
-try:
-    import pandas as pd
-except ModuleNotFoundError:
-    pass
-
-
 from servicex.types import DID
 
 from rich.progress import Progress, TaskID
@@ -557,32 +550,6 @@ class Query:
             )
 
     as_files = make_sync(as_files_async)
-
-    try:
-
-        async def as_pandas_async(
-            self,
-            display_progress: bool = True,
-            provided_progress: Optional[ProgressIndicators] = None,
-        ) -> pd.DataFrame:
-            r"""
-            Return a pandas dataframe containing the results. This only works if you've
-            installed pandas extra
-
-            :return: Pandas Dataframe
-            """
-            self.result_format = ResultFormat.parquet
-            transformed_result = await self.as_files_async(
-                display_progress=display_progress, provided_progress=provided_progress
-            )
-            dataframes = pd.concat(
-                [pd.read_parquet(p) for p in transformed_result.file_list]
-            )
-            return dataframes
-
-        as_pandas = make_sync(as_pandas_async)
-    except NameError:
-        pass
 
     async def as_signed_urls_async(
         self,
