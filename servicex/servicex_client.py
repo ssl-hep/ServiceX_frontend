@@ -26,29 +26,75 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Type, Mapping, Union
+from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
 from servicex.configuration import Configuration
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import ResultFormat, TransformStatus, TransformedResults
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.query_core import (
-    GenericQuery,
+    Query,
     QueryStringGenerator,
     GenericQueryStringGenerator,
-    Query,
 )
 from servicex.types import DID
-from servicex.python_dataset import PythonQuery
 from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
+from collections.abc import Sequence
+import traceback
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
+
+
+class ReturnValueException(Exception):
+    """ An exception occurred at some point while obtaining this result from ServiceX """
+    def __init__(self, exc):
+        import copy
+        message = ('Exception occurred while making ServiceX request.\n'
+                   + (''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+                   )
+        super().__init__(message)
+        self._exc = copy.copy(exc)
+
+
+class GuardList(Sequence):
+    def __init__(self, data: Union[Sequence, Exception]):
+        import copy
+        super().__init__()
+        if isinstance(data, Exception):
+            self._data = ReturnValueException(data)
+        else:
+            self._data = copy.copy(data)
+
+    def valid(self) -> bool:
+        return not isinstance(self._data, Exception)
+
+    def __getitem__(self, index) -> Any:
+        if not self.valid():
+            data = cast(Exception, self._data)
+            raise data
+        else:
+            data = cast(Sequence, self._data)
+            return data[index]
+
+    def __len__(self) -> int:
+        if not self.valid():
+            data = cast(Exception, self._data)
+            raise data
+        else:
+            data = cast(Sequence, self._data)
+            return len(data)
+
+    def __repr__(self):
+        if self.valid():
+            return repr(self._data)
+        else:
+            data = cast(ReturnValueException, self._data)
+            return f'Invalid GuardList: {repr(data._exc)}'
 
 
 def _load_ServiceXSpec(
@@ -105,62 +151,34 @@ def _build_datasets(config, config_path, servicex_name):
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     datasets = []
     for sample in config.Sample:
-        # if string or QueryStringGenerator, turn into a Query
-        if isinstance(sample.Query, str) or isinstance(
-            sample.Query, QueryStringGenerator
-        ):
-            logger.debug("sample.Query from string or QueryStringGenerator")
-            sample.Query = sx.generic_query(
-                dataset_identifier=sample.dataset_identifier,
-                title=sample.Name,
-                codegen=get_codegen(sample, config.General),
-                result_format=config.General.OutputFormat,
-                ignore_cache=sample.IgnoreLocalCache,
-                query=sample.Query,
-            )
-        elif isinstance(sample.Query, FuncADLQuery):
-            logger.debug("sample.Query from FuncADLQuery")
-            logger.debug(
-                f"qastle_query from ServiceXSpec: {sample.Query.generate_selection_string()}"
-            )
-            query = sx.func_adl_dataset(
-                dataset_identifier=sample.dataset_identifier,
-                title=sample.Name,
-                codegen=get_codegen(sample, config.General),
-                result_format=config.General.OutputFormat,
-                ignore_cache=sample.IgnoreLocalCache,
-            )
-            query.set_provided_qastle(sample.Query.generate_selection_string())
+        query = sx.generic_query(
+            dataset_identifier=sample.dataset_identifier,
+            title=sample.Name,
+            codegen=get_codegen(sample, config.General),
+            result_format=config.General.OutputFormat.to_ResultFormat(),
+            ignore_cache=sample.IgnoreLocalCache,
+            query=sample.Query,
+        )
+        logger.debug(f"Query string: {query.generate_selection_string()}")
+        query.ignore_cache = sample.IgnoreLocalCache
 
-            sample.Query = query
-
-            logger.debug(
-                f"final qastle_query: {sample.Query.generate_selection_string()}"
-            )
-        elif isinstance(sample.Query, PythonQuery):
-            logger.debug("sample.Query from PythonQuery")
-            query = sx.python_dataset(
-                dataset_identifier=sample.dataset_identifier,
-                title=sample.Name,
-                codegen=get_codegen(sample, config.General),
-                result_format=config.General.OutputFormat,
-                ignore_cache=sample.IgnoreLocalCache,
-            )
-            query.python_function = sample.Query.python_function
-            sample.Query = query
-        else:
-            logger.debug(f"Unknown Query type: {sample.Query}")
-        sample.Query.ignore_cache = sample.IgnoreLocalCache
-
-        datasets.append(sample.Query)
+        datasets.append(query)
     return datasets
 
 
-def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        out_dict = {obj.title: obj.signed_url_list for obj in results}
+def _output_handler(config: ServiceXSpec, requests: List[Query],
+                    results: List[Union[TransformedResults, Exception]]):
+    matched_results = zip(requests, results)
+    if config.General.Delivery == General.DeliveryEnum.URLs:
+        out_dict = {obj[0].title: GuardList(obj[1].signed_url_list
+                                            if not isinstance(obj[1], Exception)
+                                            else obj[1])
+                    for obj in matched_results}
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        out_dict = {obj.title: obj.file_list for obj in results}
+        out_dict = {obj[0].title: GuardList(obj[1].file_list
+                                            if not isinstance(obj[1], Exception)
+                                            else obj[1])
+                    for obj in matched_results}
 
     if config.General.OutputDirectory:
         import yaml as yl
@@ -178,7 +196,8 @@ def _output_handler(config: ServiceXSpec, results: List[TransformedResults]):
 def deliver(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
-    servicex_name: Optional[str] = None
+    servicex_name: Optional[str] = None,
+    return_exceptions: bool = True
 ):
     config = _load_ServiceXSpec(config)
 
@@ -186,13 +205,13 @@ def deliver(
 
     group = DatasetGroup(datasets)
 
-    if config.General.Delivery == General.DeliveryEnum.SignedURLs:
-        results = group.as_signed_urls()
-        return _output_handler(config, results)
+    if config.General.Delivery == General.DeliveryEnum.URLs:
+        results = group.as_signed_urls(return_exceptions=return_exceptions)
+        return _output_handler(config, datasets, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files()
-        return _output_handler(config, results)
+        results = group.as_files(return_exceptions=return_exceptions)
+        return _output_handler(config, datasets, results)
 
 
 class ServiceXClient:
@@ -275,94 +294,15 @@ class ServiceXClient:
             self.query_cache.update_codegen_by_backend(backend, code_generators)
             return code_generators
 
-    def func_adl_dataset(
-        self,
-        dataset_identifier: DID,
-        title: str = "ServiceX Client",
-        codegen: str = "uproot",
-        result_format: Optional[ResultFormat] = None,
-        item_type: Type[T] = Any,
-        ignore_cache: bool = False,
-    ) -> FuncADLQuery[T]:
-        r"""
-        Generate a dataset that can use func_adl query language
-
-        :param dataset_identifier:  The dataset identifier or filelist to be the source of files
-        :param title: Title to be applied to the transform. This is also useful for
-                      relating transform results.
-        :param codegen: Name of the code generator to use with this transform
-        :param result_format:  Do you want Paqrquet or Root? This can be set later with
-                               the set_result_format method
-        :param item_type: The type of the items that will be returned from the query
-        :param ignore_cache: Ignore the query cache and always run the query
-        :return: A func_adl dataset ready to accept query statements.
-        """
-        if codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
-            )
-
-        return FuncADLQuery(
-            dataset_identifier,
-            sx_adapter=self.servicex,
-            title=title,
-            codegen=codegen,
-            config=self.config,
-            query_cache=self.query_cache,
-            result_format=result_format,
-            item_type=item_type,
-            ignore_cache=ignore_cache,
-        )
-
-    def python_dataset(
-        self,
-        dataset_identifier: DID,
-        title: str = "ServiceX Client",
-        codegen: str = "uproot",
-        result_format: Optional[ResultFormat] = None,
-        ignore_cache: bool = False,
-    ) -> PythonQuery:
-        r"""
-        Generate a dataset that can use accept a python function for the  query
-
-        :param dataset_identifier:  The dataset identifier or filelist to be the source of files
-        :param title: Title to be applied to the transform. This is also useful for
-                      relating transform results.
-        :param codegen: Name of the code generator to use with this transform
-        :param result_format:  Do you want Paqrquet or Root? This can be set later with
-                               the set_result_format method
-        :param ignore_cache: Ignore the query cache and always run the query
-        :return: A func_adl dataset ready to accept a python function statements.
-
-        """
-
-        if codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
-            )
-
-        return PythonQuery(
-            dataset_identifier,
-            sx_adapter=self.servicex,
-            title=title,
-            codegen=codegen,
-            config=self.config,
-            query_cache=self.query_cache,
-            result_format=result_format,
-            ignore_cache=ignore_cache,
-        )
-
     def generic_query(
         self,
         dataset_identifier: DID,
         query: Union[str, QueryStringGenerator],
-        codegen: str = None,
+        codegen: Optional[str] = None,
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
-    ) -> GenericQuery:
+    ) -> Query:
         r"""
         Generate a Query object for a generic codegen specification
 
@@ -378,6 +318,8 @@ class ServiceXClient:
         """
 
         if isinstance(query, str):
+            if codegen is None:
+                raise RuntimeError("A pure string query requires a codegen argument as well")
             query = GenericQueryStringGenerator(query, codegen)
         if not isinstance(query, QueryStringGenerator):
             raise ValueError("query argument must be string or QueryStringGenerator")
@@ -394,7 +336,7 @@ class ServiceXClient:
                 f"deployment at {self.servicex.url}"
             )
 
-        qobj = GenericQuery(
+        qobj = Query(
             dataset_identifier=dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
@@ -403,6 +345,6 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
+            query_string_generator=query
         )
-        qobj.query_string_generator = query
         return qobj

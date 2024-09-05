@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -36,13 +36,6 @@ from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
 
-
-try:
-    import pandas as pd
-except ModuleNotFoundError:
-    pass
-
-
 from servicex.types import DID
 
 from rich.progress import Progress, TaskID
@@ -72,7 +65,7 @@ class ServiceXException(Exception):
     """ Something happened while trying to carry out a ServiceX request """
 
 
-class Query(ABC):
+class Query:
     def __init__(
         self,
         dataset_identifier: DID,
@@ -80,11 +73,12 @@ class Query(ABC):
         codegen: str,
         sx_adapter: ServiceXAdapter,
         config: Configuration,
-        query_cache: QueryCache,
+        query_cache: Optional[QueryCache],
         servicex_polling_interval: int = 5,
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
+        query_string_generator: Optional[QueryStringGenerator] = None,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -103,7 +97,6 @@ class Query(ABC):
         :param result_format:
         :param ignore_cache:  If true, ignore the cache and always submit a new transform
         """
-        super(Query, self).__init__()
         self.servicex = sx_adapter
         self.configuration = config
         self.cache = query_cache
@@ -123,14 +116,16 @@ class Query(ABC):
 
         self.request_id = None
         self.ignore_cache = ignore_cache
+        self.query_string_generator = query_string_generator
 
         # Number of seconds in between ServiceX status polls
         self.servicex_polling_interval = servicex_polling_interval
         self.minio_polling_interval = minio_polling_interval
 
-    @abc.abstractmethod
     def generate_selection_string(self) -> str:
-        pass
+        if self.query_string_generator is None:
+            raise RuntimeError('query string generator not set')
+        return self.query_string_generator.generate_selection_string()
 
     @property
     def transform_request(self):
@@ -212,10 +207,13 @@ class Query(ABC):
                 if self.current_status.files_failed:
                     titlestr = (f'"{self.current_status.title}" '
                                 if self.current_status.title is not None else '')
-                    logger.warning(
+                    logger.error(
                         f"Transform {titlestr}completed with failures: "
                         f"{self.current_status.files_failed}/"
                         f"{self.current_status.files} files failed. Will not cache."
+                    )
+                    logger.error(
+                        f"Transform Request id: {self.current_status.request_id}"
                     )
                     if self.current_status.log_url is not None:
                         kibana_link = \
@@ -223,7 +221,7 @@ class Query(ABC):
                                                           self.current_status.request_id,
                                                           LogLevel.error,
                                                           TimeFrame.month)
-                        logger.warning(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
+                        logger.error(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -402,7 +400,6 @@ class Query(ABC):
                         progress_task,
                         progress_bar_title,
                         completed=self.current_status.files_completed,
-                        description="Files completed",
                         bar=bar)
                     return
                 elif self.current_status.status == Status.canceled:
@@ -554,32 +551,6 @@ class Query(ABC):
 
     as_files = make_sync(as_files_async)
 
-    try:
-
-        async def as_pandas_async(
-            self,
-            display_progress: bool = True,
-            provided_progress: Optional[ProgressIndicators] = None,
-        ) -> pd.DataFrame:
-            r"""
-            Return a pandas dataframe containing the results. This only works if you've
-            installed pandas extra
-
-            :return: Pandas Dataframe
-            """
-            self.result_format = ResultFormat.parquet
-            transformed_result = await self.as_files_async(
-                display_progress=display_progress, provided_progress=provided_progress
-            )
-            dataframes = pd.concat(
-                [pd.read_parquet(p) for p in transformed_result.file_list]
-            )
-            return dataframes
-
-        as_pandas = make_sync(as_pandas_async)
-    except NameError:
-        pass
-
     async def as_signed_urls_async(
         self,
         display_progress: bool = True,
@@ -628,16 +599,3 @@ class GenericQueryStringGenerator(QueryStringGenerator):
 
     def generate_selection_string(self) -> str:
         return self.query
-
-
-class GenericQuery(Query):
-    '''
-    This class gives a "generic" Query object which doesn't require
-    overloading the constructor
-    '''
-    query_string_generator: Optional[QueryStringGenerator] = None
-
-    def generate_selection_string(self) -> str:
-        if self.query_string_generator is None:
-            raise RuntimeError('query string generator not set')
-        return self.query_string_generator.generate_selection_string()

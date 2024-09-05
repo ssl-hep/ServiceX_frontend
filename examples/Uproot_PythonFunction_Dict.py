@@ -12,16 +12,13 @@ def uproot_pythonfunction_dict():
     query = q.PythonFunction().with_uproot_function(run_query)
 
     spec = {
-        'General': {
-            'ServiceX': "servicex-uc-af"
-        },
         'Sample': [{
             'Name': "Uproot_PythonFunction_Dict",
             'RucioDID': "user.mtost:user.mtost.singletop.p6026.Jun13",
             'Query': query
         }]
     }
-    return deliver(spec)
+    return deliver(spec, servicex_name="servicex-uc-af")
 
 
 if __name__ == "__main__":

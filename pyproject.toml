@@ -36,6 +36,7 @@ dependencies = [
     "func_adl>=3.2.6",
     "requests>=2.31",
     "pydantic>=2.6.0",
+    "aiohttp-retry>=2.8.3",
     "httpx>=0.24",
     "miniopy-async>=1.20.1",
     "tinydb>=4.7",
@@ -44,6 +45,7 @@ dependencies = [
     "PyYAML>=6.0",
     "types-PyYAML>=6.0",
     "importlib_metadata; python_version <= '3.9'",
+    "typing_extensions; python_version <= '3.10'", # compatible versions controlled through pydantic
     "rich>=13.0.0",  # databinder
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
@@ -64,14 +66,6 @@ Homepage = "https://github.com/ssl-hep/ServiceX_frontend"
 
 [project.optional-dependencies]
 
-databinder = [
-    "nest-asyncio>=1.5.7",  # databinder # FIXME: nest-asyncio deprecated
-]
-pandas = [
-    "pandas>=2.0.2",
-    "pyarrow>=12.0.0",
-    "fastparquet>=2023.4.0",
-]
 # Developer extras
 test = [
     "pytest>=7.2.0",
@@ -81,6 +75,8 @@ test = [
     "mypy>=0.981",
     "pytest-asyncio>=0.21.0",
     "asyncmock>=0.4.2",
+    "pandas>=2.0.2",
+    "pyarrow>=12.0.0",
 ]
 docs = [
     "sphinx>=7.0.1",
@@ -89,7 +85,7 @@ docs = [
     "myst-parser>=3.0.1",
 ]
 develop = [
-    "servicex[databinder,pandas,test,docs]",
+    "servicex[test,docs]",
 ]
 
 [project.entry-points.'servicex.query']
@@ -98,7 +94,7 @@ FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
 FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
 FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
-PythonFunction = "servicex.python_dataset:PythonQuery"
+PythonFunction = "servicex.python_dataset:PythonFunction"
 UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 
 [project.entry-points.'servicex.dataset']

@@ -28,39 +28,23 @@
 import inspect
 from typing import Optional, Union, Callable
 from base64 import b64encode
+from textwrap import dedent
+from servicex.query_core import QueryStringGenerator
+import sys
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
-from servicex.configuration import Configuration
-from servicex.query_core import Query
-from servicex.models import ResultFormat
-from servicex.query_cache import QueryCache
-from servicex.servicex_adapter import ServiceXAdapter
-from servicex.types import DID
 
-
-class PythonQuery(Query):
+class PythonFunction(QueryStringGenerator):
     yaml_tag = '!PythonFunction'
+    default_codegen = 'python'
 
-    def __init__(self, dataset_identifier: DID = None,
-                 sx_adapter: Optional[ServiceXAdapter] = None,
-                 title: str = "ServiceX Client",
-                 codegen: str = 'python',
-                 config: Optional[Configuration] = None,
-                 query_cache: Optional[QueryCache] = None,
-                 result_format: Optional[ResultFormat] = None,
-                 ignore_cache: bool = False
-                 ):
-        super().__init__(dataset_identifier=dataset_identifier,
-                         title=title,
-                         codegen=codegen,
-                         sx_adapter=sx_adapter,
-                         config=config,
-                         query_cache=query_cache,
-                         result_format=result_format,
-                         ignore_cache=ignore_cache)
+    def __init__(self, python_function: Optional[Union[str, Callable]] = None):
+        self.python_function: Optional[Union[str, Callable]] = python_function
 
-        self.python_function = None
-
-    def with_uproot_function(self, f: Union[str, Callable]) -> Query:
+    def with_uproot_function(self, f: Union[str, Callable]) -> Self:
         self.python_function = f
         return self
 
@@ -69,9 +53,9 @@ class PythonQuery(Query):
             raise ValueError("You must provide a python function using with_uproot_function")
 
         if isinstance(self.python_function, str):
-            return b64encode(self.python_function.encode("utf-8")).decode("utf-8")
+            return b64encode(dedent(self.python_function).encode("utf-8")).decode("utf-8")
         else:
-            return b64encode(inspect.getsource(self.python_function)
+            return b64encode(dedent(inspect.getsource(self.python_function))
                              .encode("utf-8"))\
                 .decode("utf-8")
 
@@ -82,6 +66,5 @@ class PythonQuery(Query):
             exec(code)
         except SyntaxError as e:
             raise SyntaxError(f"Syntax error {e} interpreting\n{code}")
-        q = PythonQuery()
-        q.with_uproot_function(code)
+        q = PythonFunction(code)
         return q

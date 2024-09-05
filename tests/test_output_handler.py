@@ -17,5 +17,5 @@ def test_output_directory(tmp_path):
     }
     config = ServiceXSpec(**config)
 
-    _output_handler(config, [])
+    _output_handler(config, [], [])
     assert Path(tmp_path, "servicex_fileset.yaml").exists()

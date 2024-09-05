@@ -3,6 +3,8 @@ from unittest.mock import patch
 from pydantic import ValidationError
 
 from servicex import ServiceXSpec, dataset
+from servicex.query_core import ServiceXException
+from servicex.servicex_client import ReturnValueException
 from servicex.dataset import FileList, Rucio
 
 
@@ -11,6 +13,22 @@ def basic_spec(samples=None):
         "Sample": samples
         or [{"Name": "sampleA", "XRootDFiles": "root://a.root", "Query": "a"}],
     }
+
+
+def test_long_sample_name():
+    config = {
+        "Sample": [
+            {
+                "Name": "long_sample_name_long_sample_name_long_sample_name_\
+                         long_sample_name_long_sample_name_long_sample_name_\
+                         long_sample_name_long_sample_name_long_sample_name",
+                "XRootDFiles": "root://a.root",
+                "Query": "a",
+            },
+        ],
+    }
+    new_config = ServiceXSpec.model_validate(config)
+    assert len(new_config.Sample[0].Name) == 128
 
 
 def test_load_config():
@@ -116,6 +134,27 @@ def test_rucio_did_numfiles():
     )
 
 
+def test_dataset_rucio_did_numfiles():
+    spec = ServiceXSpec.model_validate(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "Dataset": dataset.Rucio("user.ivukotic:user.ivukotic.single_top_tW__nominal"),
+                    "NFiles": 12,
+                    "Query": "a",
+                }
+            ]
+        )
+    )
+
+    assert isinstance(spec.Sample[0].dataset_identifier, Rucio)
+    assert (
+        spec.Sample[0].dataset_identifier.did
+        == "rucio://user.ivukotic:user.ivukotic.single_top_tW__nominal?files=12"
+    )
+
+
 def test_cernopendata():
     spec = ServiceXSpec.model_validate({
         "Sample": [
@@ -178,7 +217,81 @@ def test_submit_mapping(transformed_result, codegen_list):
                return_value=[transformed_result]), \
          patch('servicex.servicex_client.ServiceXClient.get_code_generators',
                return_value=codegen_list):
-        deliver(spec, config_path='tests/example_config.yaml')
+        results = deliver(spec, config_path='tests/example_config.yaml')
+        assert list(results['sampleA']) == ['1.parquet']
+
+
+def test_submit_mapping_signed_urls(transformed_result_signed_url, codegen_list):
+    from servicex import deliver
+    spec = {
+        "General": {
+            "Delivery": "URLs"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]",
+                "Codegen": "uproot-raw"
+            }
+        ]
+    }
+    with patch('servicex.dataset_group.DatasetGroup.as_signed_urls',
+               return_value=[transformed_result_signed_url]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        results = deliver(spec, config_path='tests/example_config.yaml')
+        assert list(results['sampleA']) == ['https://dummy.junk.io/1.parquet',
+                                            'https://dummy.junk.io/2.parquet']
+
+
+def test_submit_mapping_failure(transformed_result, codegen_list):
+    from servicex import deliver
+    spec = {
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]",
+                "Codegen": "uproot-raw"
+            }
+        ]
+    }
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[ServiceXException("dummy")]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        results = deliver(spec, config_path='tests/example_config.yaml')
+        assert len(results) == 1
+        with pytest.raises(ReturnValueException):
+            # should expect an exception to be thrown on access
+            for _ in results['sampleA']:
+                pass
+
+
+def test_submit_mapping_failure_signed_urls(codegen_list):
+    from servicex import deliver
+    spec = {
+        "General": {"Delivery": "URLs"},
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": "[{'treename': 'nominal'}]",
+                "Codegen": "uproot-raw"
+            }
+        ]
+    }
+    with patch('servicex.dataset_group.DatasetGroup.as_signed_urls',
+               return_value=[ServiceXException("dummy")]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        results = deliver(spec, config_path='tests/example_config.yaml', return_exceptions=False)
+        assert len(results) == 1
+        with pytest.raises(ReturnValueException):
+            # should expect an exception to be thrown on access
+            for _ in results['sampleA']:
+                pass
 
 
 def test_yaml(tmp_path):
@@ -188,7 +301,7 @@ def test_yaml(tmp_path):
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:
@@ -218,7 +331,7 @@ Sample:
 """)
         f.flush()
         result = _load_ServiceXSpec(path)
-        assert type(result.Sample[0].Query).__name__ == 'PythonQuery'
+        assert type(result.Sample[0].Query).__name__ == 'PythonFunction'
         assert type(result.Sample[1].Query).__name__ == 'FuncADLQuery_Uproot'
         assert type(result.Sample[2].Query).__name__ == 'UprootRawQuery'
         assert isinstance(result.Sample[3].dataset_identifier, Rucio)
@@ -232,13 +345,13 @@ Sample:
 
     # Path from string
     result2 = _load_ServiceXSpec(str(path))
-    assert type(result2.Sample[0].Query).__name__ == 'PythonQuery'
+    assert type(result2.Sample[0].Query).__name__ == 'PythonFunction'
 
     # Python syntax error
     with open(path := (tmp_path / "python.yaml"), "w") as f:
         f.write("""
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:
@@ -268,7 +381,7 @@ Definitions:
     !include definitions.yaml
 
 General:
-  OutputFormat: root-file
+  OutputFormat: root-ttree
   Delivery: LocalCache
 
 Sample:
@@ -409,6 +522,29 @@ def test_uproot_raw_query(transformed_result, codegen_list):
         deliver(spec, config_path='tests/example_config.yaml')
 
 
+def test_uproot_raw_query_parquet(transformed_result, codegen_list):
+    from servicex import deliver
+    from servicex.query import UprootRaw  # type: ignore
+    spec = ServiceXSpec.model_validate({
+        "General": {
+            "OutputFormat": "parquet"
+        },
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                "Query": UprootRaw([{"treename": "nominal"}])
+            }
+        ]
+    })
+    print(spec)
+    with patch('servicex.dataset_group.DatasetGroup.as_files',
+               return_value=[transformed_result]), \
+         patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        deliver(spec, config_path='tests/example_config.yaml')
+
+
 def test_generic_query(codegen_list):
     from servicex.servicex_client import ServiceXClient
     spec = ServiceXSpec.model_validate({
@@ -429,6 +565,10 @@ def test_generic_query(codegen_list):
         query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
                                  codegen=spec.General.Codegen, query=spec.Sample[0].Query)
         assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+        query = sx.generic_query(dataset_identifier=spec.Sample[0].RucioDID,
+                                 result_format=spec.General.OutputFormat.to_ResultFormat(),
+                                 codegen=spec.General.Codegen, query=spec.Sample[0].Query)
+        assert query.result_format == 'root-file'
         query.query_string_generator = None
         with pytest.raises(RuntimeError):
             query.generate_selection_string()

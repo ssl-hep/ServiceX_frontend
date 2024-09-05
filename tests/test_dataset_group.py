@@ -31,15 +31,16 @@ import pytest
 
 from servicex import ResultFormat
 from servicex.dataset_group import DatasetGroup
+from servicex.query_core import ServiceXException
 
 
 def test_set_result_format(mocker):
     ds1 = mocker.Mock()
     ds2 = mocker.Mock()
     group = DatasetGroup([ds1, ds2])
-    group.set_result_format(ResultFormat.root)
-    ds1.set_result_format.assert_called_once_with(ResultFormat.root)
-    ds2.set_result_format.assert_called_once_with(ResultFormat.root)
+    group.set_result_format(ResultFormat.root_ttree)
+    ds1.set_result_format.assert_called_once_with(ResultFormat.root_ttree)
+    ds2.set_result_format.assert_called_once_with(ResultFormat.root_ttree)
 
 
 @pytest.mark.asyncio
@@ -57,3 +58,39 @@ async def test_as_signed_urls(mocker, transformed_result):
     assert len(results) == 2
     assert results[0].request_id == "123-45-6789"
     assert results[1].request_id == "98-765-432"
+
+
+@pytest.mark.asyncio
+async def test_as_files(mocker, transformed_result):
+    ds1 = mocker.Mock()
+    ds1.as_files_async = AsyncMock(return_value=transformed_result)
+
+    ds2 = mocker.Mock()
+    ds2.as_files_async = AsyncMock(return_value=transformed_result.model_copy(
+        update={"request_id": "98-765-432"}))
+
+    group = DatasetGroup([ds1, ds2])
+    results = await group.as_files_async()
+
+    assert len(results) == 2
+    assert results[0].request_id == "123-45-6789"
+    assert results[1].request_id == "98-765-432"
+
+
+@pytest.mark.asyncio
+async def test_failure(mocker, transformed_result):
+    ds1 = mocker.Mock()
+    ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
+
+    ds2 = mocker.Mock()
+    ds2.as_signed_urls_async = AsyncMock(side_effect=ServiceXException("dummy"))
+
+    group = DatasetGroup([ds1, ds2])
+    with pytest.raises(ServiceXException):
+        await group.as_signed_urls_async()
+
+    results = await group.as_signed_urls_async(return_exceptions=True)
+
+    assert len(results) == 2
+    assert results[0].request_id == "123-45-6789"
+    assert isinstance(results[1], ServiceXException)

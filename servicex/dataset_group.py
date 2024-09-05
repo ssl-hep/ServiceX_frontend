@@ -27,17 +27,15 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
 from typing import List, Optional, Union
-
 from rich.progress import Progress
 
 from servicex.query_core import Query
 from servicex.expandable_progress import ExpandableProgress
-from servicex.func_adl.func_adl_dataset import FuncADLQuery
 from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
 
-DatasetGroupMember = Union[Query, FuncADLQuery]
+DatasetGroupMember = Query
 
 
 class DatasetGroup:
@@ -66,25 +64,27 @@ class DatasetGroup:
         self,
         display_progress: bool = True,
         provided_progress: Optional[Progress] = None,
-    ) -> List[TransformedResults]:
+        return_exceptions: bool = False,
+    ) -> List[Union[TransformedResults, BaseException]]:
         with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
                 d.as_signed_urls_async(provided_progress=progress)
                 for d in self.datasets
             ]
-            return await asyncio.gather(*self.tasks)
+            return await asyncio.gather(*self.tasks, return_exceptions=return_exceptions)
 
     as_signed_urls = make_sync(as_signed_urls_async)
 
     async def as_files_async(self,
                              display_progress: bool = True,
-                             provided_progress: Optional[Progress] = None
-                             ) -> List[TransformedResults]:
+                             provided_progress: Optional[Progress] = None,
+                             return_exceptions: bool = False,
+                             ) -> List[Union[TransformedResults, BaseException]]:
         with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
                 d.as_files_async(provided_progress=progress)
                 for d in self.datasets
             ]
-            return await asyncio.gather(*self.tasks)
+            return await asyncio.gather(*self.tasks, return_exceptions=return_exceptions)
 
     as_files = make_sync(as_files_async)

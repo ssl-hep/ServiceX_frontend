@@ -12,7 +12,7 @@ def uproot_uproot_raw_dict():
             'Query': query
         }]
     }
-    return deliver(spec)
+    return deliver(spec, servicex_name="servicex-uc-af")
 
 
 if __name__ == "__main__":

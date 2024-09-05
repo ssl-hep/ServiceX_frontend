@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,8 @@
 from datetime import datetime
 
 from pytest_asyncio import fixture
-from servicex.python_dataset import PythonQuery
+from servicex.python_dataset import PythonFunction
+from servicex.query_core import Query
 from servicex.models import (
     TransformRequest,
     ResultDestination,
@@ -64,17 +65,20 @@ def minio_adapter() -> MinioAdapter:
 @fixture
 def python_dataset(dummy_parquet_file):
     did = FileListDataset(dummy_parquet_file)
-    dataset = PythonQuery(
+    dataset = Query(
         title="Test submission",
         dataset_identifier=did,
         codegen="uproot",
-        result_format=ResultFormat.parquet,  # type: ignore
+        result_format=ResultFormat.parquet,
+        sx_adapter=None,  # type: ignore
+        config=None,  # type: ignore
+        query_cache=None  # type: ignore
     )  # type: ignore
 
     def foo():
         return
 
-    dataset.with_uproot_function(foo)
+    dataset.query_string_generator = PythonFunction(foo)
     return dataset
 
 
@@ -170,7 +174,23 @@ def transformed_result(dummy_parquet_file) -> TransformedResults:
         file_list=[dummy_parquet_file],
         signed_url_list=[],
         files=2,
-        result_format=ResultFormat.root,
+        result_format=ResultFormat.root_ttree,
+    )
+
+
+@fixture
+def transformed_result_signed_url() -> TransformedResults:
+    return TransformedResults(
+        hash="123-4455",
+        title="Test",
+        codegen="uproot",
+        request_id="123-45-6789",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=[],
+        signed_url_list=['https://dummy.junk.io/1.parquet', 'https://dummy.junk.io/2.parquet'],
+        files=2,
+        result_format=ResultFormat.root_ttree,
     )
 
 
