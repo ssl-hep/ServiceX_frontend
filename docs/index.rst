@@ -187,11 +187,12 @@ also come with synchronous versions to make it easy to do easy things.
    getting_started
    transformer_matrix
    databinder
-   examples
+   examples1
    contribute
    troubleshoot
    about
    modules
+   examples/code_try
 
 Indices and tables
 ==================
