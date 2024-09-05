@@ -58,7 +58,7 @@ dependencies = [
 servicex = "servicex.app.main:app"
 
 [project.urls]
-Documentation = "https://github.com/ssl-hep/ServiceX_frontend"
+Documentation = "https://servicex.readthedocs.io/"
 Homepage = "https://github.com/ssl-hep/ServiceX_frontend"
 "Issue Tracker" = "https://github.com/ssl-hep/ServiceX_frontend/issues"
 "Release Notes" = "https://github.com/ssl-hep/ServiceX_frontend/releases"
