@@ -241,10 +241,8 @@ class Query:
         # (Downloaded, or obtained pre-signed URLs)
         if cached_record:
             if (
-                signed_urls_only
-                and cached_record.signed_url_list
-                or not signed_urls_only
-                and cached_record.file_list
+                (signed_urls_only and cached_record.signed_url_list)
+                or (not signed_urls_only and cached_record.file_list)
             ):
                 logger.info("Returning results from cache")
                 return cached_record
@@ -493,10 +491,6 @@ class Query:
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
-            if cached_record:
-                if ((cached_record.signed_url_list and signed_urls_only)
-                        or (cached_record.file_list and not signed_urls_only)):
-                    break
             if self.minio:
                 files = await self.minio.list_bucket()
                 for file in files:
