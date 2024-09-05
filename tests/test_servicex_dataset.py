@@ -325,7 +325,7 @@ async def test_use_of_cache(mocker):
         servicex.get_transform_status.reset_mock(side_effect=True)
         servicex.get_transform_status.return_value = transform_status3
         mock_minio.list_bucket.reset_mock(side_effect=True)
-        # third round, should hit the cache (and call update_record)
+        # third round, should hit the cache and download files (and call update_record)
         with ExpandableProgress(display_progress=False) as progress:
             await datasource.submit_and_download(signed_urls_only=False,
                                                  expandable_progress=progress)
