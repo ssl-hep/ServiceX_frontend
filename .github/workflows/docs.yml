@@ -40,18 +40,18 @@ jobs:
     - name: Test and build docs
       run: |
         pushd docs
-        sphinx-build -b html . _build
+        make html
 
     - name: Fix permissions if needed
       run: |
-        chmod -c -R +rX "docs/_build/" | while read line; do
+        chmod -c -R +rX "docs/_build/html/" | while read line; do
           echo "::warning title=Invalid file permissions automatically fixed::$line"
         done
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: 'docs/_build'
+        path: 'docs/_build/html'
 
   deploy:
     name: Deploy docs to GitHub Pages
