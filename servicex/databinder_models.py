@@ -43,6 +43,27 @@ logger = logging.getLogger(__name__)
 
 
 class Sample(BaseModel):
+    """
+    Represents a single transform request within a larger submission.
+
+    Attributes:
+        Name (str): The name of the sample. This makes it easier to identify the sample
+            in the output.
+        Codegen (Optional[str]): Code generator name, if applicable. Generally users don't need
+            to specify this. It is implied by the query class
+        RucioDID (Optional[str]): Rucio Data Identifier, if applicable.
+        XRootDFiles (Optional[Union[str, List[str]]]): XRootD file(s) associated with the sample.
+            Can be a single string or a list of strings.
+        Dataset (Optional[DataSetIdentifier]): Dataset identifier for the sample.
+        NFiles (Optional[int]): Limit the Number of files to be used in the sample. The DID Finder
+            will guarantee the same files will be returned between each invocation.
+        Query (Optional[Union[str, QueryStringGenerator]]): Query string or query generator for the sample.
+        IgnoreLocalCache (bool): Flag to ignore local cache. Defaults to False.
+
+    Config:
+        arbitrary_types_allowed (bool): Allows arbitrary types in the model. Set to True.
+    """
+
     Name: str
     Codegen: Optional[str] = None
     RucioDID: Optional[str] = None
