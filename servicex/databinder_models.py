@@ -57,9 +57,11 @@ class Sample(BaseModel):
             XRootD file(s) associated with the sample.
             Can be a single string or a list of strings.
         Dataset (Optional[DataSetIdentifier]): Dataset identifier for the sample.
-        NFiles (Optional[int]): Limit the Number of files to be used in the sample. The DID Finder
-            will guarantee the same files will be returned between each invocation.
-        Query (Optional[Union[str, QueryStringGenerator]]): Query string or query generator for the sample.
+        NFiles (Optional[int]): Limit the Number of files to be used in the sample.
+            The DID Finder will guarantee the same files will be returned
+            between each invocation.
+        Query (Optional[Union[str, QueryStringGenerator]]): Query string or query generator
+            for the sample.
         IgnoreLocalCache (bool): Flag to ignore local cache. Defaults to False.
 
     Config:
