@@ -55,7 +55,7 @@ jobs:
 
   deploy:
     name: Deploy docs to GitHub Pages
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/3.0_develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/3.0_develop' || github.ref == 'refs/heads/doc_week')
     needs: build
     # Set permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
     permissions:
