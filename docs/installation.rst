@@ -4,7 +4,7 @@ Installation
 Prerequisites
 -------------
 
-Python 3.6, 3.7, or 3.8
+Python 3.8, or above
 
 Member of the ATLAS or CMS collaborations
 
@@ -14,9 +14,9 @@ Installation
 
 .. code-block:: bash
     
-    pip install servicex-clients
+    pip install servicex
 
-This is an umbrella package which includes all of the frontend client libraries used to communicate with a ServiceX backend. There are multiple ways to specify a request, but we will use func-ADL in this tutorial.
+This installs the servicex command line tool and the servicex Python package.
 
 Selecting an endpoint
 ----------------------
@@ -28,21 +28,21 @@ You can use one of the centrally-managed instances of ServiceX running on the
 University of Chicago's Analysis Facility cluster:
 
 .. list-table::
-    :widths: 40 20 10 20
+    :widths: 20 40 40
     :header-rows: 1
 
-    *   - Endpoint
-        - Collaboration
-        - Type
-        - Input
-    *   - `<https://xaod.servicex.af.uchicago.edu/>`_
-        - ATLAS
-        - xaod
-        - xAOD files
-    *   - `<https://uproot-atlas.servicex.af.uchicago.edu/>`_
-        - ATLAS
-        - uproot
-        - Flat ntuples
+    *   - Collaboration
+        - Name
+        - URL
+    *   - ATLAS
+        - Chicago Analysis Facility
+        - `<https://servicex.af.uchicago.edu/>`_
+    *   - CMS
+        - Coffea-Casa Nebraska
+        - `<https://coffea.casa/hub>`_
+    *   - CMS
+        - FNAL Elastic Analysis Facility
+        - `<https://servicex.apps.okddev.fnal.gov>`_
 
 
 You can view the status of these production servers along with our current
