@@ -227,6 +227,7 @@ also come with synchronous versions to make it easy to do easy things.
 
    installation
    getting_started
+   query_types
    command_line
    transformer_matrix
    databinder
