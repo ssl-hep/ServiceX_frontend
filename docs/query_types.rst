@@ -96,3 +96,4 @@ in a string or as typed python objects. Depending on the source file format, the
 into C++ `EventLoop <https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisTools/el_intro/>_`
 code, or uproot python code.
 
+Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
