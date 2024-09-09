@@ -51,8 +51,10 @@ class Sample(BaseModel):
             in the output.
         Codegen (Optional[str]): Code generator name, if applicable. Generally users don't need
             to specify this. It is implied by the query class
-        RucioDID (Optional[str]): Rucio Data Identifier, if applicable.
-        XRootDFiles (Optional[Union[str, List[str]]]): XRootD file(s) associated with the sample.
+        RucioDID (Optional[str]): Deprecated: Use 'Dataset' instead.
+            Rucio Data Identifier, if applicable.
+        XRootDFiles (Optional[Union[str, List[str]]]): Deprecated: Use 'Dataset' instead.
+            XRootD file(s) associated with the sample.
             Can be a single string or a list of strings.
         Dataset (Optional[DataSetIdentifier]): Dataset identifier for the sample.
         NFiles (Optional[int]): Limit the Number of files to be used in the sample. The DID Finder
@@ -66,8 +68,8 @@ class Sample(BaseModel):
 
     Name: str
     Codegen: Optional[str] = None
-    RucioDID: Optional[str] = None
-    XRootDFiles: Optional[Union[str, List[str]]] = None
+    RucioDID: Optional[str] = Field(default=None, deprecated=True)
+    XRootDFiles: Optional[Union[str, List[str]]] = Field(default=None, deprecated=True)
     Dataset: Optional[DataSetIdentifier] = None
     NFiles: Optional[int] = Field(default=None)
     Query: Optional[Union[str, QueryStringGenerator]] = Field(default=None)
