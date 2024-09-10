@@ -1,4 +1,4 @@
-Examples1
+Examples
 ========
 
 Simple Func_ADL Example
@@ -75,24 +75,15 @@ returns an awkward array
 
 Bigger Uproot
 ---------------------
-.. .. code-include :: :func:`examples.Submit_from_YAML.submit_from_yaml`
 
+.. tabs::
 
+   .. tab:: *yaml*
 
-.. ..     automethod:: submit_from_yaml
-.. .. literalinclude:: ../examples/Submit_from_YAML.py
-.. testsetup::
+        .. literalinclude:: ../examples/config_Uproot_FuncADL.yaml
+            :language: yaml
 
-    from servicex import deliver
-
-.. testcode::
-
-    servicex_yaml = "../examples/config_Uproot_FuncADL.yaml"
-    print(deliver(servicex_yaml))
-    
-.. testoutput::
-    :hide:
-    :options: +IGNORE_EXCEPTION_DETAIL  
-
-    ...
-
+   .. tab:: *dict*
+        
+        .. literalinclude:: ../examples/Uproot_FuncADL_Dict.py
+            :language: python
