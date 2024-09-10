@@ -77,7 +77,7 @@ class Sample(BaseModel):
 
     Codegen: Optional[str] = None
     """
-    Code generator name, if applicable. Generally users don't need to specify this. It is 
+    Code generator name, if applicable. Generally users don't need to specify this. It is
     implied by the query class
     """
 
@@ -149,13 +149,13 @@ class General(BaseModel):
         """
         parquet = "parquet"
         """
-        Save the output as 
+        Save the output as
         a parquet file https://parquet.apache.org/
         """
 
         root_ttree = "root-ttree"
         """
-        Save the output as 
+        Save the output as
         a ROOT TTree https://root.cern.ch/doc/master/classTTree.html
         """
 
@@ -174,7 +174,7 @@ class General(BaseModel):
     class DeliveryEnum(str, Enum):
         LocalCache = "LocalCache"
         """
-        Download the files to the local computer and store them in the cache. 
+        Download the files to the local computer and store them in the cache.
         Transform requests will return paths to these files in the cache
         """
 
@@ -185,7 +185,7 @@ class General(BaseModel):
 
     Codegen: Optional[str] = None
     """
-    Code generator name to be applied across all of the samples, if applicable. 
+    Code generator name to be applied across all of the samples, if applicable.
     Generally users don't need to specify this. It is implied by the query class
     """
     OutputFormat: OutputFormatEnum = Field(default=OutputFormatEnum.root_ttree)
