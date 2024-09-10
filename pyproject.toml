@@ -84,7 +84,8 @@ docs = [
     "furo>=2023.5.20",
     "sphinx-code-include>=1.4.0",
     "myst-parser>=3.0.1",
-    "autodoc-pydantic==2.2.0"
+    "autodoc-pydantic==2.2.0",
+    "sphinx-tabs>=3.4.5"
 ]
 develop = [
     "servicex[test,docs]",
