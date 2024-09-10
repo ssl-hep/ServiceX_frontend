@@ -25,7 +25,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
     'code_include.extension',
-    'myst_parser'
+    'myst_parser',
+    'sphinxcontrib.autodoc_pydantic'
 ]
 
 templates_path = ['_templates']
@@ -33,7 +34,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'examples']
 
 autoclass_content = 'both'
 
-autodoc_pydantic_model_show_json = True
+autodoc_pydantic_model_show_json = False
 autodoc_pydantic_field_list_validators = True
 autodoc_pydantic_config_members = False
 autodoc_pydantic_model_show_config_summary = False
