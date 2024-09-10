@@ -12,6 +12,47 @@ Other datasets require the experiment's C++ framework to make sense of the data.
 xAOD, and CMS MiniAOD. For these datasets, ServiceX converts the query into C++ script that is acutally
 executed by the experiment framework.
 
+This table sumarizes the query types supported by ServiceX and the data formats they can be used with.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 20 20
+
+   * -
+     - FuncADL
+     - Uproot-Raw
+     - Python*
+   * - Flat ROOT TTrees
+     - ✅
+     - ✅
+     - ✅
+   * - CMS NanoAOD
+     - ✅
+     - ✅
+     - ✅
+   * - ATLAS PHYSLITE
+     - ✅
+     - ✅†
+     - ✅†
+   * - ATLAS PHYS
+     - ✅
+     - ❌
+     - ❌
+   * - Parquet
+     - ❌
+     - ❌
+     - ✅
+
+.. note::
+
+   \*  Python queries may not be available on all ServiceX deployments.
+
+   † The subset of the PHYSLITE data format readable (and _writable_) by `uproot` is supported.
+
+.. warning::
+
+   Note that although ServiceX supports multiple output formats, not all features of the query languages may be supported by all output formats. See the cautions in the detailed discussions of the query languages.
+
 
 
 A brief introduction to the query languages
