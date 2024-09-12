@@ -172,12 +172,12 @@ and then start looking in parent directories until a file is found.
    :caption: Contents:
 
    installation
-   getting_started
    query_types
-   command_line
-   transformer_matrix
+   examples
    databinder
-   examples1
+   command_line
+   getting_started
+   transformer_matrix
    contribute
    troubleshoot
    about
