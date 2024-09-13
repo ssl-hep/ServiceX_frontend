@@ -27,83 +27,49 @@ you can use the following code:
 
 Raw Uproot Example
 ------------------
-This example uses the raw uproot query type to extract the `el_pt_NOSYS` branch from the `reco` tree
-in `user.mtost:user.mtost.singletop.p6026.Jun13` Dataset.
+This example uses the raw uproot query type to extract the `AnalysisElectronsAuxDyn.pt` branch from the `CollectionTree` tree
+in ATLAS PHYSLITE OpenData Dataset.
 
 .. tabs::
 
-   .. tab:: *yaml*
+    .. tab:: *YAML*
 
-        .. literalinclude:: ../examples/config_Uproot_UprootRaw.yaml
+        .. literalinclude:: ../examples/config_UprootRaw.yaml
             :language: yaml
 
-   .. tab:: *dict*
+    .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/Uproot_UprootRaw_Dict.py
+        .. literalinclude:: ../examples/UprootRaw_Dict.py
+            :language: python
+    
+    .. tab:: *Python Typed Object*
+
+        .. literalinclude:: ../examples/UprootRaw_Typed.py
             :language: python
 
 
 Python Function Example
 -----------------------
-This example uses an uproot python function to extract the `el_pt_NOSYS` branch from the `reco` tree
-in `user.mtost:user.mtost.singletop.p6026.Jun13` Dataset. Note that you can specify a python function
+This example uses an uproot python function to extract the `AnalysisElectronsAuxDyn.pt` branch from the `CollectionTree` tree
+in ATLAS PHYSLITE OpenData Dataset. Note that you can specify a python function
 even in a yaml file.
 
 .. tabs::
 
-   .. tab:: *yaml*
+    .. tab:: *YAML*
 
-        .. literalinclude:: ../examples/config_Uproot_PythonFunction.yaml
+        .. literalinclude:: ../examples/config_PythonFunction.yaml
             :language: yaml
 
-   .. tab:: *dict*
+    .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/Uproot_PythonFunction_Dict.py
+        .. literalinclude:: ../examples/PythonFunction_Dict.py
+            :language: python
+
+    .. tab:: *Python Typed Object*
+
+        .. literalinclude:: ../examples/PythonFunction_Typed.py
             :language: python
 
 
-Simple Func_ADL Example
------------------------
-This simple example reads a single root file form the CERN Opendata repo
-
-.. code:: python
-
-    from servicex_client.dataset_identifier import FileListDataset
-    from servicex_client.models import ResultFormat
-    from servicex_client.servicex_client import ServiceXClient
-
-    sx = ServiceXClient(backend="localhost")
-    dataset_id = FileListDataset("root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets/2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root")  # NOQA 501
-
-    ds = sx.func_adl_dataset(dataset_id, codegen="uproot",
-                             title="Root",
-                             result_format=ResultFormat.parquet)
-
-    sx3 = ds.Select(lambda e: {'lep_pt': e['lep_pt']}). \
-        Where(lambda e: e['lep_pt'] > 1000). \
-        as_pandas()
-    print(sx3)
-
-Func_ADL Example With Rucio Dataset
------------------------------------
-This example uses the Rucio Dataset Identifier and returns a list of downloaded
-parquet files
-
-.. code:: python
-
-    from servicex_client.dataset_identifier import RucioDatasetIdentifier
-    from servicex_client.models import ResultFormat
-    from servicex_client.servicex_client import ServiceXClient
-
-    sx = ServiceXClient(backend="testing4")
-
-    dataset_id = RucioDatasetIdentifier("user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v8")
-
-    ds = sx.func_adl_dataset(dataset_id)
-
-    sx2 = ds.Select(lambda e: {'el_pt': e['el_pt']})\
-        .set_result_format(ResultFormat.parquet)\
-        .as_files()
-
-    print(sx2)
 
