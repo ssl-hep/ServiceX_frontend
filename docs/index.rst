@@ -182,6 +182,7 @@ and then start looking in parent directories until a file is found.
    troubleshoot
    about
    modules
+   Github <https://github.com/ssl-hep/ServiceX_frontend/tree/3.0_develop>
 
 Indices and tables
 ==================
