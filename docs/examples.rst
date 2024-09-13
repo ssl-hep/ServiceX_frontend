@@ -7,16 +7,16 @@ as a typed Python object.
 
 Examples For Each Query Type
 ------------------
-Examples for each query type (Uproot-Raw, Func_ADL Uproot, Python Function) 
-and three different representations (Python Dictionary, Python Typed Object, and YAML).
-Note that all examples extract the same branch of the same tree (`ROOT TTree`) from 
+Examples for each query type (`Uproot-Raw`, `Func_ADL Uproot`, `Python Function`) 
+and three different representations (`Python Dictionary`, `Python Typed Object`, and `YAML`).
+Note that all examples extract the same branch of the same tree (``ROOT TTree``) from 
 the same :ref:`dataset <label_dataset>`.
 
 
 Uproot-Raw Query Example
 ~~~~~~~~~~~~~~~~~~~~
-This example uses the raw uproot query type to extract the `AnalysisElectronsAuxDyn.pt` branch 
-from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset.
+This example uses the raw uproot query type to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
+from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset.
 
 .. tabs::
     
@@ -38,8 +38,8 @@ from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset.
 
 Func_ADL Uproot Query Example
 ~~~~~~~~~~~~~~~~~~~~
-This example uses an Func_ADL to extract the `AnalysisElectronsAuxDyn.pt` branch 
-from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset. 
+This example uses an Func_ADL to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
+from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset. 
 
 .. tabs::
 
@@ -61,8 +61,8 @@ from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset.
 
 Python Function Query Example
 ~~~~~~~~~~~~~~~~~~~~
-This example uses an uproot python function to extract the `AnalysisElectronsAuxDyn.pt` branch 
-from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset. 
+This example uses an uproot python function to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
+from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset. 
 Note that you can specify a python function even in a yaml file.
 
 .. tabs::
