@@ -14,7 +14,7 @@ spec = ServiceXSpec(
             ),
             Query=query.FuncADL_Uproot()
                        .FromTree('CollectionTree')
-                       .Select(lambda e: {'el_pt': e['AnalysisElectronsAuxDyn.pt']})  # type: ignore
+                       .Select(lambda e: {'el_pt': e['AnalysisElectronsAuxDyn.pt']})  # type:ignore
         )
     ]
 )
