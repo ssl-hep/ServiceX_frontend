@@ -72,4 +72,24 @@ even in a yaml file.
             :language: python
 
 
+Func_ADL Uproot Example
+-----------------------
+This example uses an Func_ADL to extract the `AnalysisElectronsAuxDyn.pt` branch from the `CollectionTree` tree
+in ATLAS PHYSLITE OpenData Dataset. 
 
+.. tabs::
+
+    .. tab:: *YAML*
+
+        .. literalinclude:: ../examples/config_FuncADL_Uproot.yaml
+            :language: yaml
+
+    .. tab:: *Python Dict*
+
+        .. literalinclude:: ../examples/FuncADL_Uproot_Dict.py
+            :language: python
+
+    .. tab:: *Python Typed Object*
+
+        .. literalinclude:: ../examples/FuncADL_Uproot_Typed.py
+            :language: python
