@@ -19,11 +19,11 @@ you can use the following code:
 
 .. code:: python
 
-from servicex import deliver
+    from servicex import deliver
 
-print(
-    deliver("config_Uproot_FuncADL.yaml")
-)
+    print(
+        deliver("config_Uproot_FuncADL.yaml")
+    )
 
 Raw Uproot Example
 ------------------
