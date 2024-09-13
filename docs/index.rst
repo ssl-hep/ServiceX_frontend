@@ -182,7 +182,6 @@ and then start looking in parent directories until a file is found.
    troubleshoot
    about
    modules
-   examples/code_try
 
 Indices and tables
 ==================
