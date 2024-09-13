@@ -11,5 +11,5 @@ Sample:
           import uproot
 
           with uproot.open({input_filenames:"CollectionTree"}) as o:
-          br = o.arrays("AnalysisElectronsAuxDyn.pt")
+            br = o.arrays("AnalysisElectronsAuxDyn.pt")
           return br
