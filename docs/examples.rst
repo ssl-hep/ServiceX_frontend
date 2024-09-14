@@ -104,9 +104,9 @@ You can use the following code:
     )
 
 .. _label_dataset:
-
-    The Dataset in Examples
-    -----------------------
-    The dataset in the examples is publically accessible ATLAS Open Data
-    (`ATLAS DAOD PHYSLITE format Run 2 2016 proton-proton collision data 
-    <https://opendata.cern.ch/record/80001>`_).
+    
+The Dataset in Examples
+-----------------------
+The dataset in the examples is publically accessible ATLAS Open Data
+(`ATLAS DAOD PHYSLITE format Run 2 2016 proton-proton collision data 
+<https://opendata.cern.ch/record/80001>`_).
