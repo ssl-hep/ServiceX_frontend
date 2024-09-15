@@ -26,7 +26,5 @@ def func_adl_xaod_simple():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    logging.info("Hi there")
     files = func_adl_xaod_simple()
-    # assert len(files['func_adl_xAOD_simple']) == 1
+    assert len(files['func_adl_xAOD_simple']) == 1
