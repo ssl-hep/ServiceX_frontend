@@ -1,12 +1,14 @@
-import logging
 from servicex import query as q, deliver, dataset
 
 
 def func_adl_xaod_simple():
     query = q.FuncADL_ATLASr22()  # type: ignore
-    jets_per_event = query.Select(lambda e: e.Jets())
+    jets_per_event = query.Select(lambda e: e.Jets('AnalysisJets'))
     jet_info_per_event = jets_per_event.Select(
-        lambda e: e.Select(lambda j: {'pt': j.pt(), 'eta': j.eta()})
+        lambda jets: {
+            'pt': jets.Select(lambda j: j.pt()),
+            'eta': jets.Select(lambda j: j.eta())
+        }
     )
 
     spec = {
