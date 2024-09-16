@@ -13,13 +13,12 @@ build:
     # nodejs: "20"
     # rust: "1.70"
     # golang: "1.20"
-  jobs:
-    post_create_environment:
-      - python -m pip install uv
-      - uv pip install --system --upgrade pip wheel
-      - uv pip install --system --upgrade ".[docs]"
-      - uv pip list --system
+  
   commands:
+    - python -m pip install uv
+    - uv pip install --system --upgrade pip wheel
+    - uv pip install --system --upgrade ".[docs]"
+    - uv pip list --system
     - pushd docs
     - make html
 
