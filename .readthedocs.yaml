@@ -19,7 +19,7 @@ build:
     - uv pip install --system --upgrade pip wheel
     - uv pip install --system --upgrade ".[docs]"
     - uv pip list --system
-    - pushd docs
+    - cd docs
     - make html
 
 # Build documentation in the "docs/" directory with Sphinx
