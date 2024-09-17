@@ -96,6 +96,7 @@
         "unittests",
         "URL's",
         "xaod",
+        "xaodr",
         "xrootd"
     ],
     "python.analysis.typeCheckingMode": "basic",
