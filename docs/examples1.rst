@@ -46,6 +46,35 @@ parquet files
 
     print(sx2)
 
+
+func_adl Example reading xAOD from ATLAS PHYSLITE on OpenData
+---------------------------------------------
+
+This example loads the $p_T$ and $\eta$ for jets from an xAOD PHYSLITE file found in the ATLAS OpenData release.
+
+.. .. code-include :: :func:`examples.func_adl_xAOD_simple.func_adl_xaod_simple`
+
+
+
+.. ..     automethod:: func_adl_xaod_simple
+.. .. literalinclude:: ../examples/func_adl_xAOD_simple.py
+
+
+func_adl Example reading xAOD using a Typed Dataset.
+---------------------------------------------
+
+This example loads the $p_T$ and $\eta$ for jets from an xAOD PHYSLITE file found in the ATLAS OpenData release.
+It uses the full type information, allowing one to access everything that could be translated in the xAOD.
+
+.. .. code-include :: :func:`examples.func_adl_xAOD_typed.func_adl_xaod_typed`
+
+
+
+.. ..     automethod:: func_adl_xaod_typed
+.. .. literalinclude:: ../examples/func_adl_xAOD_typed.py
+
+
+
 Python Code Generator
 ---------------------
 This example is using the python code generator. For this we don't use func_adl,
