@@ -69,7 +69,7 @@ re-running queries that have already been executed.
    contribute
    about
    modules
-   Github <https://github.com/ssl-hep/ServiceX_frontend>
+   GitHub <https://github.com/ssl-hep/ServiceX_frontend>
 
 Indices and tables
 ==================
