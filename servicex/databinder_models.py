@@ -30,7 +30,7 @@ from typing import Union, Optional, List
 from pydantic import (
     BaseModel,
     Field,
-    model_validator,
+    model_validator, field_validator,
 )
 import logging
 
@@ -43,19 +43,63 @@ logger = logging.getLogger(__name__)
 
 
 class Sample(BaseModel):
+    """
+    Represents a single transform request within a larger submission.
+    """
+
     Name: str
-    Codegen: Optional[str] = None
-    RucioDID: Optional[str] = None
-    XRootDFiles: Optional[Union[str, List[str]]] = None
+    """
+    The name of the sample. This makes it easier to identify the sample
+    in the output.
+    """
+
     Dataset: Optional[DataSetIdentifier] = None
+    """
+    Dataset identifier for the sample
+    """
+
     NFiles: Optional[int] = Field(default=None)
+    """
+    Limit the Number of files to be used in the sample.
+    The DID Finder will guarantee the same files will be returned
+    between each invocation. Set to `None` to use all files.
+    """
+
     Query: Optional[Union[str, QueryStringGenerator]] = Field(default=None)
+    """
+    Query string or query generator for the sample.
+    """
+
     IgnoreLocalCache: bool = False
+    """
+    Flag to ignore local cache.
+    """
+
+    Codegen: Optional[str] = None
+    """
+    Code generator name, if applicable. Generally users don't need to specify this. It is
+    implied by the query class
+    """
+
+    RucioDID: Optional[str] = Field(default=None, deprecated="Use 'Dataset' instead.")
+    """
+    Rucio Dataset Identifier, if applicable.
+        Deprecated: Use 'Dataset' instead.
+    """
+
+    XRootDFiles: Optional[Union[str, List[str]]] = Field(default=None, deprecated=True)
+    """
+    XRootD file(s) associated with the sample.
+            Deprecated: Use 'Dataset' instead.
+    """
 
     model_config = {"arbitrary_types_allowed": True}
 
     @property
     def dataset_identifier(self) -> DataSetIdentifier:
+        """
+        Access the dataset identifier for the sample.
+        """
         if self.Dataset:
             if self.NFiles:
                 self.Dataset.num_files = self.NFiles
@@ -82,23 +126,38 @@ class Sample(BaseModel):
             raise ValueError("Must specify one of Dataset, XRootDFiles, or RucioDID.")
         return values
 
-    @model_validator(mode="before")
+    @field_validator("Name", mode="before")
     @classmethod
-    def truncate_long_sample_name(cls, values):
+    def truncate_long_sample_name(cls, v):
         """
         Truncate sample name to 128 characters if exceed
         Print warning message
         """
-        if len(values["Name"]) > 128:
-            logger.warning(f"Truncating Sample name to 128 characters for {values['Name']}")
-            values["Name"] = values["Name"][0:128]
-        return values
+        if len(v) > 128:
+            logger.warning(f"Truncating Sample name to 128 characters for {v}")
+            v = v[0:128]
+        return v
 
 
 class General(BaseModel):
+    """
+    Represents a group of samples to be transformed together.
+    """
     class OutputFormatEnum(str, Enum):
+        """
+        Specifies the output format for the transform request.
+        """
         parquet = "parquet"
+        """
+        Save the output as
+        a parquet file https://parquet.apache.org/
+        """
+
         root_ttree = "root-ttree"
+        """
+        Save the output as
+        a ROOT TTree https://root.cern.ch/doc/master/classTTree.html
+        """
 
         def to_ResultFormat(self) -> ResultFormat:
             """ This method is used to convert the OutputFormatEnum enum to the ResultFormat enum,
@@ -114,13 +173,40 @@ class General(BaseModel):
 
     class DeliveryEnum(str, Enum):
         LocalCache = "LocalCache"
+        """
+        Download the files to the local computer and store them in the cache.
+        Transform requests will return paths to these files in the cache
+        """
+
         URLs = "URLs"
+        """
+        Return URLs to the files stored in the ServiceX object store
+        """
 
     Codegen: Optional[str] = None
+    """
+    Code generator name to be applied across all of the samples, if applicable.
+    Generally users don't need to specify this. It is implied by the query class
+    """
     OutputFormat: OutputFormatEnum = Field(default=OutputFormatEnum.root_ttree)
+    """
+    Output format for the transform request.
+    """
+
     Delivery: DeliveryEnum = Field(default=DeliveryEnum.LocalCache)
+    """
+    Specifies the delivery method for the output files.
+    """
+
     OutputDirectory: Optional[str] = None
+    """
+    Directory to output a yaml file describing the output files.
+    """
+
     OutFilesetName: str = 'servicex_fileset'
+    """
+    Name of the yaml file that will be created in the output directory.
+    """
 
 
 # TODO: ServiceXSpec class has a field name General and it clashes with the class name General
@@ -129,6 +215,20 @@ _General = General
 
 
 class ServiceXSpec(BaseModel):
+    """
+    ServiceX Submission Specification - pass this into the ServiceX `deliver` function
+    """
     General: _General = General()
+    """
+    General settings for the transform request
+    """
+
     Sample: List[Sample]
+    """
+    List of samples to be transformed
+    """
+
     Definition: Optional[List] = None
+    """
+    Any reusable definitions that are needed for the transform request
+    """

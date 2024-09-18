@@ -3,15 +3,135 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-ServiceX Client
+ServiceX
 ================
 
-Python SDK and CLI Client for ServiceX
+The High Luminosity Large Hadron Collider (HL-LHC) faces enormous computational challenges in the
+2020s. The HL-LHC will produce exabytes of data each year, with increasingly complex event
+structure due to high pileup conditions. The ATLAS and CMS experiments will record ~ 10 times as
+much data from ~ 100 times as many collisions as were used to discover the Higgs boson.
 
-Introduction
-------------
 
-Why do
+Columnar data delivery
+----------------------
+
+ServiceX seeks to enable on-demand data delivery of columnar data in a variety of formats for
+physics analyses. It provides a uniform backend to data storage services, ensuring the user doesn't
+have to know how or where the data is stored, and is capable of on-the-fly data transformations
+into a variety of formats (ROOT files, Arrow arrays, Parquet files, ...) The service offers
+preprocessing functionality via an analysis description language called
+`func-adl <https://pypi.org/project/func-adl/>`_ that allows users to filter events, request columns,
+and even compute new variables. This enables the user to start from any format and extract only the
+data needed for an analysis.
+
+.. image:: img/organize2.png
+    :alt: Organization
+
+ServiceX is designed to feed columns to a user running an analysis (e.g. via
+`Awkward <https://github.com/scikit-hep/awkward-array>`_ or
+`Coffea <https://github.com/CoffeaTeam/coffea>`_ tools) based on the results of a query designed by
+the user.
+
+Connecting to ServiceX
+----------------------
+ServiceX is a hosted service. Depending on which experiment you work in, there are different
+instances you can connect to. Some can be connected to from the outside world, while others are
+accessible only from a Jupyter notebook running inside the analysis facility.
+
+.. list-table::
+    :widths: 20 40 40
+    :header-rows: 1
+
+    *   - Collaboration
+        - Name
+        - URL
+    *   - ATLAS
+        - Chicago Analysis Facility
+        - `<https://servicex.af.uchicago.edu/>`_
+    *   - CMS
+        - Coffea-Casa Nebraska
+        - `<https://coffea.casa/hub>`_
+    *   - CMS
+        - FNAL Elastic Analysis Facility
+        - `<https://servicex.apps.okddev.fnal.gov>`_
+
+Follow the links to learn how to enable an account and launch a Jupyter notebook.
+
+Concepts
+--------
+This section describes the concepts that are important to understand when working with ServiceX.
+
+Datasets
+^^^^^^^^^
+Datasets are groups of experimental data from which columnar data can be extracted. ServiceX
+supports four sources of of datasets:
+1. Rucio
+2. CERN Open Data Portal
+3. File List
+4. EOS Directory
+
+Queries
+^^^^^^^
+Queries are used to extract data from a dataset. They specify the columns to extract, the events to
+include in the output. There are several types of queries supported by ServiceX:
+1. func-adl
+2. Python Function
+3. Dictionary of uproot selections
+
+
+Sample
+^^^^^^
+A sample is a request to extract columnar data from a given dataset, using a specific
+query. It results in a set of output files that can be used in an analysis.
+
+Transformation Request
+^^^^^^^^^^^^^^^^^^^^^^
+Multiple samples can be submitted to ServiceX at the same time. Each sample is processed
+independently, and the results can be retrieved as files downloaded to a local directory or
+a list of URLs.
+
+Local Cache
+^^^^^^^^^^^
+ServiceX maintains a local cache of the results of queries. This cache can be used to avoid
+re-running queries that have already been executed.
+
+Specify a Request
+-----------------
+Transform requests are specified with a General section, one or more Sample specifications, and
+optionally one or more definitions which are substituted into the Sample specifications.
+
+These requests can be defined as:
+
+1. A YAML file
+2. A Python dictionary
+3. Typed python objects
+
+Regardless of how the request is specified, the request is submitted to ServiceX using the
+``deliver`` function, which returns either a list of URLs or a list of local file paths.
+
+The General Section
+^^^^^^^^^^^^^^^^^^^
+The General section of the request includes the following fields:
+
+* OutputFormat: Can be ``root-ttree`` or ``parquet``
+* Delivery: Can be ``URLs`` or ``LocalCache``
+
+The Sample Sections
+^^^^^^^^^^^^^^^^^^^
+Each Sample section represents a single query to be executed. It includes the following fields:
+
+* Name: A title for this sample.
+* RucioDID: A Rucio Dataset Identifier
+* XRootDFiles: A list of files to be processed without using Rucio. You must use either ``RucioDID`` or ``XRootDFiles`` but not both.
+* NFiles: An optional limit on the number of files to process
+* Query: The query to be executed. This can be a func-adl query, a Python function, or a dictionary of uproot selections.
+* IgnoreLocalCache: If set to true, don't use a local cache for this sample and always submit to ServiceX
+
+The Definitions Sections
+^^^^^^^^^^^^^^^^^^^^^^^^
+The Definitions section is a dictionary of values that can be substituted into fields in the Sample
+sections. This is useful for defining common values that are used in multiple samples.
+
 
 Configuration
 -------------
@@ -47,152 +167,22 @@ Setting to false preserves the full filename from the dataset. \`
 The library will search for this file in the current working directory
 and then start looking in parent directories until a file is found.
 
-Command Line Interface
-----------------------
-
-When installed, the client provides a new command in your shell,
-``servicex``. This command uses a series of subcommands to work with
-various functions of serviceX.
-
-Common command line arguments:
-
-+-----+----------+-----------------------------------------------------+
-| F   | Long     | What it does                                        |
-| lag | Flag     |                                                     |
-+=====+==========+=====================================================+
-| -u  | –url     | The url of the serviceX ingress                     |
-+-----+----------+-----------------------------------------------------+
-| -b  | –backend | Named backend from the .servicex file endpoints     |
-|     |          | list                                                |
-+-----+----------+-----------------------------------------------------+
-
-If neither url nor backend are specified then the client will attempt to
-use the ``default_endpoint`` value to determine who to talk to.
-
-codegens
-~~~~~~~~
-
-This command will list the code generators deployed.
-
-transforms
-~~~~~~~~~~
-
-These commands interact with transforms that have been run
-
-list
-^^^^
-
-List transforms associated with the current user. Add the ``--complete``
-flag to only show transforms that have completed.
-
-files
-^^^^^
-
-List the files along with their size generated by a transform. Specify
-the transform request id with the ``-t`` or ``--transform-id`` flag
-
-download
-^^^^^^^^
-
-Download the files from a transform to a local directory. Specify the
-transform request id with ``-t`` and the directory to download to with
-``-d``. Defaults to downloading files to the current working directory.
-
-cache
-~~~~~
-
-These commands allow you to work with the query cache maintained by the
-serviceX client.
-
-.. _list-1:
-
-list
-^^^^
-
-Show all of the cached transforms along with the run time, code
-generator, and number of resulting files
-
-delete
-^^^^^^
-
-Delete a specific transform from the cache. Provide the transform
-request ID with the ``-t`` or ``--transform-id`` arg.
-
-clear
-^^^^^
-
-Clear all of the transforms from the cache. Add ``-y`` to force the
-operation without confirming with the console.
-
-Python SDK
-----------
-
-Entry to the SDK starts with constructing an instance of ServiceXClient.
-The constructor accepts ``backend`` argument to specify a named backend
-from the ``.servicex`` file, or ``url`` for the direct URL to a serviceX
-server. With the URL option you can’t provide a token from ``.servicex``
-so it must either be an unsecured endpoint, or the token must be
-provided via the WLCG standard of a file pointed to by
-``BEARER_TOKEN_FILE`` environment variable.
-
-With an instance of ServiceXClient you can - List the code generators
-deployed with the ServiceX instance - List the transformers that have
-been run - Get the current status of a specific transform
-
-Create a Dataset Instance to Run Transforms
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ServiceX client also can create a ``Dataset`` instance that allows
-you to specify a query, provide a dataset identifier, and retrieve the
-results of the resulting transform request.
-
-There are two types of datasets - func_adl_dataset - Python Function
-dataset
-
-Dataset Identifiers
-~~~~~~~~~~~~~~~~~~~
-
-Before we get too deeply into the dataset classes, we should look at how
-to specify a dataset. - RucioDatasetIdentifier - for retrieving data
-files registered with Rucio - FileListDataset - A list of URIs for
-accessing files using xRootd
-
-FuncADL Dataset
-~~~~~~~~~~~~~~~
-
-This dataset is controlled by the func_adl language. The dataset
-supports the ``Select``, ``SelectMany``, ``Where``, ``MetaData``, and
-``QMetaData`` operators from func_adl.
-
-Datasets
-~~~~~~~~
-
-This is the abstract class for requesting data from ServiceX. You have
-to specify the dataset identifier you want data from and provide some
-sort of selection query. You can set the result format with the
-``set_result_format`` operator (it’s also a factory method arg for the
-dataset).
-
-Operators that cause the client to interact with the server: These
-terminal operators will call out to the serviceX server and process
-results. They are all implemented as asynchronous coroutines, but they
-also come with synchronous versions to make it easy to do easy things.
-
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   introduction
    installation
+   query_types
+   examples
+   databinder
+   command_line
    getting_started
    transformer_matrix
-   databinder
-   examples1
    contribute
    troubleshoot
    about
    modules
-   examples/code_try
+   Github <https://github.com/ssl-hep/ServiceX_frontend>
 
 Indices and tables
 ==================
