@@ -2,7 +2,7 @@ from servicex import deliver, dataset
 from func_adl_servicex_xaodr22 import FuncADLQueryPHYSLITE, cpp_float
 
 
-def func_adl_xaod_simple():
+def func_adl_xaod_typed():
     query = FuncADLQueryPHYSLITE()  # type: ignore
     jets_per_event = query.Select(lambda e: e.Jets('AnalysisJets'))
     jet_info_per_event = jets_per_event.Select(
@@ -31,5 +31,5 @@ def func_adl_xaod_simple():
 
 
 if __name__ == "__main__":
-    files = func_adl_xaod_simple()
+    files = func_adl_xaod_typed()
     assert len(files['func_adl_xAOD_simple']) == 1
