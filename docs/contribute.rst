@@ -1,4 +1,4 @@
-ServiceX Contributor Guide
+Contributor Guide
 ===========================
 
 Welcome to the ServiceX contributor guide, and thank you for your interest in contributing to the project!
