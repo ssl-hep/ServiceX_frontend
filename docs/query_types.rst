@@ -1,16 +1,11 @@
 Query Types
 ===========
 
-ServiceX supports several ways to specify the data to be extracted from a dataset.
-The choice of query type depends on dataset format, and the complexity of the selection criteria.
-
-First a note about input data formats. The easiest data type to work with are flat root files that
-can be processed by the `uproot library <https://uproot.readthedocs.io/en/latest/index.html#documentation>`_.
-Examples of this file format would be CMS NanoAOD, ATLAS PHYSLITE, and group n-tuple files.
-
-Other datasets require the experiment's C++ framework to make sense of the data. For example, ATLAS
-xAOD, and CMS MiniAOD. For these datasets, ServiceX converts the query into C++ script that is acutally
-executed by the experiment framework.
+ServiceX queries can be expressed using a number of query languages.
+The queries are translated to actual code in the ServiceX *codegens*.
+Not all query languages support all potential input data formats,
+so once you have determined what input data you need to manipulate,
+you can decide what query language to express your query in.
 
 This table sumarizes the query types supported by ServiceX and the data formats they can be used with.
 
@@ -109,6 +104,19 @@ Each dictionary either has a ``treename`` key (indicating that it is a query on 
 
 .. _TTree.arrays(): https://uproot.readthedocs.io/en/latest/uproot.behaviors.TTree.TTree.html#arrays
 
+
+FuncADL Query Type
+------------------
+The FuncADL Query type is very powerful. It is based on functional programming concepts and allows
+the user to specify complex queries in a very compact form. The query is written in a functional
+style, with a series of functions that are applied to the data in sequence. The query is written
+in a string or as typed python objects. Depending on the source file format, the query is translated
+into C++ `EventLoop <https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisTools/el_intro/>`_
+code, or uproot python code.
+
+Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
+
+
 Python Function Query Type
 --------------------------
 This query type is the most flexible for extracting data from an uproot compatible dataset.
@@ -126,15 +134,3 @@ for each array. If a single awkward array is returned, it is stored in the tree 
         with uproot.open({input_filenames: "reco"}) as o:
             br = o.arrays("el_pt_NOSYS")
         return br
-
-
-FuncADL Query Type
-------------------
-The FuncADL Query type is very powerful. It is based on functional programming concepts and allows
-the user to specify complex queries in a very compact form. The query is written in a functional
-style, with a series of functions that are applied to the data in sequence. The query is written
-in a string or as typed python objects. Depending on the source file format, the query is translated
-into C++ `EventLoop <https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisTools/el_intro/>`_
-code, or uproot python code.
-
-Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
