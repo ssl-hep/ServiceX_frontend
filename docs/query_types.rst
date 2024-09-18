@@ -115,7 +115,7 @@ This query type is the most flexible for extracting data from an uproot compatib
 The user provides a Python function that is called for each root file in the dataset. The function
 is expected to return a dictionary of awkward arrays that will be stored in the output file.
 
-The function must be named `run_query` and must accept a single argument, the path to the uproot file.
+The function must be named ``run_query`` and must accept a single argument, the path to the uproot file.
 It can return either an awkward array or a dictionary of awkward arrays, where the keys are the tree names
 for each array. If a single awkward array is returned, it is stored in the tree named `servicex`.
 
@@ -134,7 +134,7 @@ The FuncADL Query type is very powerful. It is based on functional programming c
 the user to specify complex queries in a very compact form. The query is written in a functional
 style, with a series of functions that are applied to the data in sequence. The query is written
 in a string or as typed python objects. Depending on the source file format, the query is translated
-into C++ `EventLoop <https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisTools/el_intro/>_`
+into C++ `EventLoop <https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisTools/el_intro/>`_
 code, or uproot python code.
 
 Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
