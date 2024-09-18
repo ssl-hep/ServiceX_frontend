@@ -1,12 +1,11 @@
-Installation
+Client Installation
 ============
 
 Prerequisites
 -------------
 
-Python 3.8, or above
-
-Member of the ATLAS or CMS collaborations
+- Python 3.8, or above
+- Member of the ATLAS or CMS collaborations
 
 Installation
 -------------

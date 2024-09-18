@@ -1,6 +1,6 @@
-Examples
+First Examples
 ========
-Here are some examples of how to use the ServiceX client to extract data from a dataset. Each
+Here are simple examples of how to use the ServiceX client to extract data from a dataset. Each
 examples shows the three ways to specify a request: as a YAML file, as a Python dictionary, and
 as a typed Python object.
 
