@@ -59,6 +59,34 @@ from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset.
             :language: yaml
 
 
+Func_ADL xAOD Query Example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The two following examples read columns of data from an ATLAS PHYSLITE xAOD file
+(released by the experiment as OpenData). It uses the internal C++ framework, EventLoop, to read this data.
+EventLoop can be used to read xAOD files in general, not just PHYSLITE.
+
+THe first example uses the very simple model that is built into ServiceX:
+
+.. tabs::
+
+    .. tab:: *Python Dict*
+
+        .. literalinclude:: ../examples/func_adl_xAOD_simple.py
+            :language: python
+
+The second example uses the full type information, allowing one to
+access everything that could be translated in the xAOD (including ElementLink following):
+
+.. tabs::
+
+    .. tab:: *Python Dict*
+
+        .. literalinclude:: ../examples/func_adl_xAOD_typed.py
+            :language: python
+
+For this second example, make sure the extra package `func_adl_servicex_xaodr22` is installed!
+
 Python Function Query Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This example uses an uproot python function to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
