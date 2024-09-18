@@ -5,7 +5,6 @@ on:
     branches:
     - main
     - 3.0_develop
-    - doc_week
   pull_request:
   workflow_dispatch:
 
