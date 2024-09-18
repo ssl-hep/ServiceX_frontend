@@ -77,7 +77,7 @@ class MinioAdapter:
                 size=obj.size,
                 extension=obj.object_name.split(".")[-1],
             )
-            for obj in objects
+            for obj in objects if not obj.is_dir
         ]
 
     async def download_file(
