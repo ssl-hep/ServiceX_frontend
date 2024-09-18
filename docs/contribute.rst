@@ -106,7 +106,7 @@ Come join this intellectual hub!
 Running the Full ServiceX Chart Locally
 ----------------------------------------
 
-You can run ServiceX on your laptop using `docker` or another similar tool that supports kubernetes.
+You can run ServiceX on your laptop using ``docker`` or another similar tool that supports kubernetes.
 
 Prerequisites
 --------------

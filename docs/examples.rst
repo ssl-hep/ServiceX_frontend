@@ -7,8 +7,8 @@ as a typed Python object.
 
 Examples For Each Query Type
 -----------------------------
-Examples for each query type (`Uproot-Raw`, `Func_ADL Uproot`, `Python Function`) 
-and three different representations (`Python Dictionary`, `Python Typed Object`, and `YAML`).
+Examples for each query type (``Uproot-Raw``, ``Func_ADL Uproot``, ``Python Function``) 
+and three different representations (``Python Dictionary``, ``Python Typed Object``, and ``YAML``).
 Note that all examples extract the same branch of the same tree (``ROOT TTree``) from 
 the same :ref:`dataset <label_dataset>`.
 
@@ -85,7 +85,7 @@ access everything that could be translated in the xAOD (including ElementLink fo
         .. literalinclude:: ../examples/func_adl_xAOD_typed.py
             :language: python
 
-For this second example, make sure the extra package `func_adl_servicex_xaodr22` is installed!
+For this second example, make sure the extra package ``func_adl_servicex_xaodr22`` is installed!
 
 Python Function Query Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -113,14 +113,14 @@ Note that you can specify a python function even in a yaml file.
 
 The ServiceX Deliver Function
 ------------------------------
-The `deliver` function is used to submit a request to ServiceX. It takes a request in one of the
+The ``deliver`` function is used to submit a request to ServiceX. It takes a request in one of the
 three formats and returns a python dictionary with the name of the sample as a key 
 and a list of URLs or local file paths as a value. 
 
 
 How to Use YAML Specification
 ------------------------------
-YAML specification can be consumed by passing it to the ServiceX `deliver` function.
+YAML specification can be consumed by passing it to the ServiceX ``deliver`` function.
 You can use the following code:
 
 .. code:: python

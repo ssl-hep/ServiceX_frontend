@@ -56,7 +56,6 @@ cache
 These commands allow you to work with the query cache maintained by the
 serviceX client.
 
-.. _list-1:
 
 list
 ^^^^
