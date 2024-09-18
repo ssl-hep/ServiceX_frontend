@@ -128,5 +128,9 @@ are all implemented as asynchronous coroutines, but they also come with
 synchronous versions to make it easy to do easy things.
 
 
-#### 
+#### Documentation
+The development documentation is hosted at:
+- github pages: https://ssl-hep.github.io/ServiceX_frontend
+- readthedocs: https://servicex-frontend.readthedocs.io
+
 
