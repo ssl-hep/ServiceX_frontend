@@ -33,6 +33,20 @@ from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
     TimeRemainingColumn, TaskID
 
 
+DEFAULT_STYLE = [TextColumn("[progress.description]{task.description}"),
+                 BarColumn(complete_style="rgb(114,156,31)",
+                           finished_style="rgb(0,255,0)"),
+                 MofNCompleteColumn(),
+                 TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+                 ]
+
+BROKEN_STYLE = [TextColumn("[progress.description]{task.description}"),
+                BarColumn(complete_style="rgb(255,0,0)"),
+                MofNCompleteColumn(),
+                TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+                ]
+
+
 class ProgressCounts:
     def __init__(self,
                  description: str,
@@ -74,13 +88,7 @@ class ExpandableProgress:
         self.progress_counts = {}
         if display_progress:
             if self.overall_progress or not provided_progress:
-                self.progress = TranformStatusProgress(
-                    TextColumn("[progress.description]{task.description}"),
-                    BarColumn(complete_style="rgb(114,156,31)",
-                              finished_style="rgb(0,255,0)"),
-                    MofNCompleteColumn(),
-                    TimeRemainingColumn(compact=True, elapsed_when_finished=True)
-                )
+                self.progress = TranformStatusProgress(*DEFAULT_STYLE)
 
             if provided_progress:
                 self.progress = provided_progress if isinstance(provided_progress, Progress) \
@@ -190,10 +198,7 @@ class TranformStatusProgress(Progress):
     def get_renderables(self):
         for task in self.tasks:
             if task.fields.get("bar") == "failure":
-                self.columns = [
-                    TextColumn("[progress.description]{task.description}"),
-                    BarColumn(complete_style="rgb(255,0,0)"),
-                    MofNCompleteColumn(),
-                    TimeRemainingColumn(compact=True, elapsed_when_finished=True)
-                ]
+                self.columns = BROKEN_STYLE
+            else:
+                self.columns = DEFAULT_STYLE
             yield self.make_tasks_table([task])
