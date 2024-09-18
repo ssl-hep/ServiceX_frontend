@@ -1,4 +1,4 @@
-ServiceX_frontend
+API documentation
 =================
 
 .. toctree::

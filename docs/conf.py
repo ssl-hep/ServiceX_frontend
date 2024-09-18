@@ -11,9 +11,9 @@
 # sys.path.insert(0, os.path.abspath(".."))
 
 
-project = 'ServiceX Client'
-copyright = '2023, Ben Galewsky, Gordon Watts'
-author = 'Ben Galewsky, Gordon Watts'
+project = 'ServiceX'
+copyright = '2024 Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)'  # NOQA 501
+author = 'Ben Galewsky, Gordon Watts, KyongEon Choi, Ketan Mahajan, Peter Onyisi'
 release = '3.0.0'
 
 # -- General configuration ---------------------------------------------------
@@ -25,15 +25,26 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.doctest',
     'code_include.extension',
-    'myst_parser'
+    'myst_parser',
+    'sphinxcontrib.autodoc_pydantic',
+    'sphinx_tabs.tabs'
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'examples']
 
 autoclass_content = 'both'
 
-
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_field_list_validators = False
+autodoc_pydantic_config_members = False
+autodoc_pydantic_model_members = False
+autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_show_field_summary = False
+autodoc_pydantic_model_undoc_members = False
+autodoc_pydantic_settings_show_validator_summary = False
+autodoc_pydantic_settings_show_validator_members = False
+autodoc_pydantic_model_member_order = 'bysource'
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 

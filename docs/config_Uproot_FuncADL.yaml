@@ -1,8 +1,0 @@
-General:
-  ServiceX: servicex-uc-af
-
-Sample:
-  - Name: Uproot_FuncADL_YAML
-    RucioDID: user.mtost:user.mtost.singletop.p6026.Jun13
-    Query: !FuncADL_Uproot |
-            FromTree('reco').Select(lambda e: {'el_pt_NOSYS': e['el_pt_NOSYS']})

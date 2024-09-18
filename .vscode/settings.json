@@ -55,7 +55,9 @@
         "nqueries",
         "ntuples",
         "numpy",
+        "opendata",
         "pathlib",
+        "PHYSLITE",
         "pnfs",
         "posix",
         "Powheg",
@@ -94,6 +96,7 @@
         "unittests",
         "URL's",
         "xaod",
+        "xaodr",
         "xrootd"
     ],
     "python.analysis.typeCheckingMode": "basic",

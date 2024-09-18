@@ -1,4 +1,4 @@
-ServiceX Contributor Guide
+Contributor Guide
 ===========================
 
 Welcome to the ServiceX contributor guide, and thank you for your interest in contributing to the project!
@@ -106,7 +106,7 @@ Come join this intellectual hub!
 Running the Full ServiceX Chart Locally
 ----------------------------------------
 
-You can run ServiceX on your laptop using `docker` or another similar tool that supports kubernetes.
+You can run ServiceX on your laptop using ``docker`` or another similar tool that supports kubernetes.
 
 Prerequisites
 --------------
