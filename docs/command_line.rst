@@ -1,6 +1,6 @@
-Command Line Interface
-=======================
-*\*Experimental*
+Command Line Interface (Experimental)
+======================================
+*\*The command line interface is an under-development feature that is not supported in the 3.0.0 release*
 
 The command line interface (CLI) is a text-based interface used to interact with the system.
 When installed, the client provides a new command in your shell,
