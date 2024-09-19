@@ -381,6 +381,7 @@ class Query:
                 progress.update(
                     progress_task,
                     progress_bar_title,
+                    total=self.current_status.files,
                     completed=self.current_status.files_completed,
                 )
 
@@ -397,6 +398,7 @@ class Query:
                     progress.update(
                         progress_task,
                         progress_bar_title,
+                        self.current_status.files,
                         completed=self.current_status.files_completed,
                         bar=bar)
                     return
