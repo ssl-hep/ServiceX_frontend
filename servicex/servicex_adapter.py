@@ -30,7 +30,7 @@ from datetime import datetime
 from typing import Optional, Dict, List
 
 import httpx
-from aiohttp_retry import RetryClient, ExponentialRetry
+from aiohttp_retry import RetryClient, ExponentialRetry, asyncio
 from google.auth import jwt
 
 from servicex.models import TransformRequest, TransformStatus
@@ -133,11 +133,20 @@ class ServiceXAdapter:
         headers = await self._get_authorization()
         retry_options = ExponentialRetry(attempts=5, start_timeout=10)
         async with RetryClient(retry_options=retry_options) as client:
-            async with client.get(url=f"{self.url}/servicex/transformation/{request_id}",
-                                  headers=headers) as r:
-                if r.status == 401:
-                    raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
-                if r.status == 404:
-                    raise ValueError(f"Transform ID {request_id} not found")
-                o = await r.json()
-                return TransformStatus(**o)
+            retries = 5
+            for retry in range(retries):
+                try:
+                    async with client.get(url=f"{self.url}/servicex/transformation/{request_id}",
+                                          headers=headers) as r:
+                        if r.status == 401:
+                            raise AuthorizationError("Not authorized to access serviceX"
+                                                     f"at {self.url}")
+                        if r.status == 404:
+                            raise ValueError(f"Transform ID {request_id} not found")
+                        o = await r.json()
+                        return TransformStatus(**o)
+                except RuntimeError as e:
+                    if retry == retries:
+                        raise RuntimeError("ServiceX WebAPI Error"
+                                           f"while getting transform status: {e}")
+                    await asyncio.sleep(3)
