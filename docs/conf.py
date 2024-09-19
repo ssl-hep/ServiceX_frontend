@@ -27,7 +27,8 @@ extensions = [
     'code_include.extension',
     'myst_parser',
     'sphinxcontrib.autodoc_pydantic',
-    'sphinx_tabs.tabs'
+    'sphinx_tabs.tabs',
+    'sphinx_copybutton',
 ]
 
 templates_path = ['_templates']
@@ -50,3 +51,8 @@ autodoc_pydantic_model_member_order = 'bysource'
 
 html_theme = 'furo'
 html_static_path = ['_static']
+
+# sphinx-copybutton configuration
+copybutton_prompt_text = r">>> |\.\.\. |\$ "
+copybutton_prompt_is_regexp = True
+copybutton_here_doc_delimiter = "EOF"
