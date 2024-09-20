@@ -1,0 +1,38 @@
+name: Production Service Testing
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    environment: production-service
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Save secret
+        run: 'echo "$SERVICEX_YAML" > servicex.yaml'
+        shell: bash
+        env:
+          SERVICEX_YAML: ${{ secrets.SERVICEX_YAML }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install package
+        run: |
+          uv pip install --system --upgrade '.[test]'
+          uv pip list --system
+
+      - name: Run example
+        working-directory: examples
+        run: python3 Uproot_UprootRaw_Dict.py
+
