@@ -32,8 +32,7 @@ from typing import Optional, Dict, List
 import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry
 from google.auth import jwt
-from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed
-
+from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed, RetryError
 from servicex.models import TransformRequest, TransformStatus
 
 
@@ -149,6 +148,6 @@ class ServiceXAdapter:
                                 raise ValueError(f"Transform ID {request_id} not found")
                             o = await r.json()
                             return TransformStatus(**o)
-            except RuntimeError as e:
+            except RetryError as e:
                 raise RuntimeError("ServiceX WebAPI Error "
                                    f"while getting transform status: {e}")
