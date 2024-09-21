@@ -130,6 +130,15 @@ An example that fetches the :math:`p_T, \eta` and EM fraction of jets from an AT
       }
   )
 
+FuncADL is based on the concept of sequences. The events in a dataset are a sequence of events. The jets in an event are a sequence of jets.
+The ``Select`` call applies a function that transforms the input sequence, element-by-element, into an output sequence. In the above example,
+the first ``Select`` call is used to transform the sequence of events into a sequence of a sequence of jets (e.g. a sequence of jets representing
+the jets in an event - a 2D array, if you will). The lambda function passed to the ``Select`` call
+is applied to each event in the input sequence, and the result is a sequence of jets for each event.
+
+The dictionary defines the columns of the output file (e.g. the leaves in a ``TTree``). In each case, the three ``lambda`` functions are applied
+to each jet, transforming the sequence of jets into a sequence of :math:`p_T` values, a sequence of :math:`\eta` values, and a sequence of EM fractions.
+
 Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
 
 Python Function Query Type
