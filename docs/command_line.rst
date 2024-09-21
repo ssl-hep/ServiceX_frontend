@@ -2,10 +2,10 @@ Command Line Interface (Experimental)
 ======================================
 *\*The command line interface is an under-development feature that is not supported in the 3.0.0 release*
 
-The command line interface (CLI) is a text-based interface used to interact with the system.
-When installed, the client provides a new command in your shell,
+The command line interface (CLI) is a text-based interface used to interact with the ServiceX backend.
+The client provides a new command in your shell,
 ``servicex``. This command uses a series of subcommands to work with
-various functions of serviceX.
+various functions of serviceX. It is installed automatically when you install the servicex frontend package.
 
 Common command line arguments:
 
