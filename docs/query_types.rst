@@ -53,7 +53,7 @@ This table sumarizes the query types supported by ServiceX and the data formats 
 A brief introduction to the query languages
 -------------------------------------------
 
-* **FuncADL** is an Analysis Description Language inspired by functional languages. Sophisticated filtering and computation of new values can be expressed by chaining a series of simple functions. Because FuncADL is written independently of the underlying data libraries, it can run on many data formats.
+* **FuncADL** is an Analysis Description Language inspired by functional languages and C#'s LINQ. Sophisticated filtering and computation of new values can be expressed by chaining a series of simple functions. Because FuncADL is written independently of the underlying data libraries, it can run on many data formats.
 
 * **Uproot-Raw** passes user requests to the ``.arrays()`` function in ``uproot``. In particular, the branches of the input ``TTrees`` can be filtered, cuts can be specified to select events, and additional expressions can be computed. Additional non-``TTree`` objects can be copied from the inputs to the outputs.
 
@@ -107,15 +107,39 @@ Each dictionary either has a ``treename`` key (indicating that it is a query on 
 
 FuncADL Query Type
 ------------------
-The FuncADL Query type is very powerful. It is based on functional programming concepts and allows
-the user to specify complex queries in a very compact form. The query is written in a functional
+FuncADL queries are based on functional programming concepts and allow
+the user to specify complex queries in a compact form. The query is written in a functional
 style, with a series of functions that are applied to the data in sequence. The query is written
 in a string or as typed python objects. Depending on the source file format, the query is translated
 into C++ `EventLoop <https://atlassoftwaredocs.web.cern.ch/analysis-software/AnalysisTools/el_intro/>`_
 code, or uproot python code.
 
-Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
+An example that fetches the :math:`p_T, \eta` and EM fraction of jets from an ATLAS PHYSLITE file is as follows:
 
+.. code-block:: python
+  
+  from func_adl_servicex_xaodr22 import FuncADLQueryPHYSLITE, cpp_float
+
+  query = FuncADLQueryPHYSLITE()
+  jets_per_event = query.Select(lambda e: e.Jets('AnalysisJets'))
+  jet_info_per_event = jets_per_event.Select(
+      lambda jets: {
+          'pt': jets.Select(lambda j: j.pt()),
+          'eta': jets.Select(lambda j: j.eta()),
+          'emf': jets.Select(lambda j: j.getAttribute[cpp_float]('EMFrac'))  # type: ignore
+      }
+  )
+
+FuncADL is based on the concept of sequences. The events in a dataset are a sequence of events. The jets in an event are a sequence of jets.
+The ``Select`` call applies a function that transforms the input sequence, element-by-element, into an output sequence. In the above example,
+the first ``Select`` call is used to transform the sequence of events into a sequence of a sequence of jets (e.g. a sequence of jets representing
+the jets in an event - a 2D array, if you will). The lambda function passed to the ``Select`` call
+is applied to each event in the input sequence, and the result is a sequence of jets for each event.
+
+The dictionary defines the columns of the output file (e.g. the leaves in a ``TTree``). In each case, the three ``lambda`` functions are applied
+to each jet, transforming the sequence of jets into a sequence of :math:`p_T` values, a sequence of :math:`\eta` values, and a sequence of EM fractions.
+
+Full documentation on the func-adl query language can be found at this `JupyterBook <https://gordonwatts.github.io/xaod_usage/intro.html>`_.
 
 Python Function Query Type
 --------------------------

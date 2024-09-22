@@ -5,8 +5,9 @@ You need a `ServiceX endpoint <select-endpoint_>`_ where transformation is happe
 a `client library <client-installation_>`_ to submit a transformation request.
 
 .. _select-endpoint:
+
 Selecting an ServiceX endpoint
-----------------------
+------------------------------
 
 ServiceX is a hosted service. Each ServiceX instance is deployed at the server
 and dedicated to a specific experiment. Depending on which experiment you work in,
@@ -49,14 +50,21 @@ downloaded to your computer.
 
 
 ServiceX Access File
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 The client relies on a ``servicex.yaml`` file to obtain the URLs of different
 servicex deployments, as well as tokens to authenticate with the
-service. The format of this file is as follows:
+service.
+
+The client library will search for this file in the current working directory
+and then start looking in parent directories and your home directory until a file
+is found.
+
+The format of this file is as follows:
 
 .. code:: yaml
-   
+
+   api_endpoints:
      - endpoint: https://servicex.af.uchicago.edu
        name: servicex-uc-af
        token: <YOUR TOKEN>
@@ -64,18 +72,19 @@ service. The format of this file is as follows:
    cache_path: /tmp/ServiceX_Client/cache-dir
    shortened_downloaded_filename: true
 
+``cache_path`` and ``shortened_downloaded_filename`` are optional fields and default to
+reasonable values.
+
 The cache database and downloaded files will be stored in the directory
 specified by ``cache_path``.
 
 The ``shortened_downloaded_filename`` property controls whether
 downloaded files will have their names shortened for convenience.
-Setting to false preserves the full filename from the dataset. \`
-
-The client library will search for this file in the current working directory
-and then start looking in parent directories until a file is found.
+Setting to false preserves the full filename from the dataset.
 
 
 .. _client-installation:
+
 ServiceX Client Installation
 ----------------------------
 ServiceX client Python package is a python library for users to communicate 
@@ -87,7 +96,7 @@ Prerequisites
 ~~~~~~~~~~~~~
 
 - Python 3.8, or above
-- Access to ServiceX endpoint (Member of the ATLAS or CMS collaborations)
+- Access to ServiceX endpoint
 
 Installation
 ~~~~~~~~~~~~
