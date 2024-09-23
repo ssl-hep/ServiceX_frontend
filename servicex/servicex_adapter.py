@@ -32,6 +32,7 @@ from typing import Optional, Dict, List
 import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry
 from google.auth import jwt
+from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed, retry_if_not_exception_type
 
 from servicex.models import TransformRequest, TransformStatus
 
@@ -131,13 +132,26 @@ class ServiceXAdapter:
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=5, start_timeout=10)
+        retry_options = ExponentialRetry(attempts=5, start_timeout=3)
         async with RetryClient(retry_options=retry_options) as client:
-            async with client.get(url=f"{self.url}/servicex/transformation/{request_id}",
-                                  headers=headers) as r:
-                if r.status == 401:
-                    raise AuthorizationError(f"Not authorized to access serviceX at {self.url}")
-                if r.status == 404:
-                    raise ValueError(f"Transform ID {request_id} not found")
-                o = await r.json()
-                return TransformStatus(**o)
+            try:
+                async for attempt in AsyncRetrying(
+                        retry=(retry_if_not_exception_type(AuthorizationError)
+                               | retry_if_not_exception_type(ValueError)),
+                        stop=stop_after_attempt(3),
+                        wait=wait_fixed(3),
+                        reraise=True):
+                    with attempt:
+                        async with client.get(url=f"{self.url}/servicex/"
+                                              f"transformation/{request_id}",
+                                              headers=headers) as r:
+                            if r.status == 401:
+                                raise AuthorizationError("Not authorized to access serviceX"
+                                                         f"at {self.url}")
+                            if r.status == 404:
+                                raise ValueError(f"Transform ID {request_id} not found")
+                            o = await r.json()
+                            return TransformStatus(**o)
+            except RuntimeError as e:
+                raise RuntimeError("ServiceX WebAPI Error "
+                                   f"while getting transform status: {e}")

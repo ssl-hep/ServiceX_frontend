@@ -31,7 +31,6 @@ from unittest.mock import patch
 import httpx
 import pytest
 from pytest_asyncio import fixture
-
 from servicex.models import TransformRequest, ResultDestination, ResultFormat
 from servicex.servicex_adapter import ServiceXAdapter, AuthorizationError
 
@@ -197,6 +196,20 @@ async def test_get_transform_status_auth_error(get, servicex):
         get.return_value.__aenter__.return_value.status = 404
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
         assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(err.value)
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.TransformStatus', side_effect=RuntimeError)
+@patch('servicex.servicex_adapter.RetryClient.get')
+async def test_get_tranform_status_retry_error(get,
+                                               mock_transform_status,
+                                               servicex,
+                                               transform_status_response):
+    with pytest.raises(RuntimeError) as err:
+        get.return_value.__aenter__.return_value.json.return_value = transform_status_response['requests'][0]  # NOQA: E501
+        get.return_value.__aenter__.return_value.status = 200
+        await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
+        assert "ServiceX WebAPI Error while getting transform status:" in str(err.value)
 
 
 @pytest.mark.asyncio
