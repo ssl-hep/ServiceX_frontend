@@ -135,14 +135,12 @@ class ServiceXAdapter:
         retry_options = ExponentialRetry(attempts=5, start_timeout=3)
         async with RetryClient(retry_options=retry_options) as client:
             try:
-                async for attempt in AsyncRetrying(retry=retry_if_not_exception_type
-                                                   (
-                                                       AuthorizationError,
-                                                       ValueError
-                                                   ),
-                                                   stop=stop_after_attempt(3),
-                                                   wait=wait_fixed(3),
-                                                   reraise=True):
+                async for attempt in AsyncRetrying(
+                        retry=(retry_if_not_exception_type(AuthorizationError)
+                               | retry_if_not_exception_type(ValueError)),
+                        stop=stop_after_attempt(3),
+                        wait=wait_fixed(3),
+                        reraise=True):
                     with attempt:
                         async with client.get(url=f"{self.url}/servicex/"
                                               f"transformation/{request_id}",
