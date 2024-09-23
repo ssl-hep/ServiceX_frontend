@@ -32,7 +32,7 @@ from typing import Optional, Dict, List
 import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry
 from google.auth import jwt
-from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed
+from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed, retry_if_not_exception_type
 
 from servicex.models import TransformRequest, TransformStatus
 
@@ -132,10 +132,15 @@ class ServiceXAdapter:
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=5, start_timeout=10)
+        retry_options = ExponentialRetry(attempts=5, start_timeout=3)
         async with RetryClient(retry_options=retry_options) as client:
             try:
-                async for attempt in AsyncRetrying(stop=stop_after_attempt(5),
+                async for attempt in AsyncRetrying(retry=retry_if_not_exception_type
+                                                   (
+                                                       AuthorizationError,
+                                                       ValueError
+                                                   ),
+                                                   stop=stop_after_attempt(3),
                                                    wait=wait_fixed(3),
                                                    reraise=True):
                     with attempt:
