@@ -1,0 +1,123 @@
+[build-system]
+requires = [
+    "hatchling>=1.13.0",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "servicex"
+version = "3.0.0-alpha.100"
+description = "Python SDK and CLI Client for ServiceX"
+readme = "README.md"
+license = { text = "BSD-3-Clause" }  # SPDX short identifier
+requires-python = ">=3.8"
+authors = [
+    { name = "Ben Galewsky", email = "bengal1@illinois.edu" },
+    { name = "Gordon Watts", email = "gwatts@uw.edu" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "qastle>=0.17",
+    "func_adl>=3.2.6",
+    "requests>=2.31",
+    "pydantic>=2.6.0",
+    "aiohttp-retry>=2.8.3",
+    "httpx>=0.24",
+    "miniopy-async>=1.20.1",
+    "tinydb>=4.7",
+    "google-auth>=2.17",
+    "typer>=0.12.1",
+    "PyYAML>=6.0",
+    "types-PyYAML>=6.0",
+    "importlib_metadata; python_version <= '3.9'",
+    "typing_extensions; python_version <= '3.10'", # compatible versions controlled through pydantic
+    "rich>=13.0.0",  # databinder
+    "aiofile",  # compatible versions controlled through miniopy-async
+    "make-it-sync",  # compatible versions controlled through func_adl
+    "ruamel.yaml>=0.18",
+    "ccorp-yaml-include-relative-path>=0.0.4",
+    "filelock>=3.12.0",
+    "tenacity >= 9.0.0"
+]
+
+[project.scripts]
+servicex = "servicex.app.main:app"
+
+[project.urls]
+Documentation = "https://servicex.readthedocs.io/"
+Homepage = "https://github.com/ssl-hep/ServiceX_frontend"
+"Issue Tracker" = "https://github.com/ssl-hep/ServiceX_frontend/issues"
+"Release Notes" = "https://github.com/ssl-hep/ServiceX_frontend/releases"
+"Releases" = "https://github.com/ssl-hep/ServiceX_frontend/releases"
+"Source Code" = "https://github.com/ssl-hep/ServiceX_frontend"
+
+[project.optional-dependencies]
+
+# Developer extras
+test = [
+    "pytest>=7.2.0",
+    "pytest-mock>=3.10.0",
+    "pytest-cov>=4.0.0",
+    "flake8>=5.0.4",
+    "mypy>=0.981",
+    "pytest-asyncio>=0.21.0",
+    "asyncmock>=0.4.2",
+    "pandas>=2.0.2",
+    "pyarrow>=12.0.0",
+]
+docs = [
+    "sphinx>=7.0.1",
+    "furo>=2023.5.20",
+    "sphinx-code-include>=1.4.0",
+    "myst-parser>=3.0.1",
+    "func-adl-servicex-xaodr22",
+    "autodoc-pydantic==2.2.0",
+    "sphinx-tabs>=3.4.5",
+    "sphinx-copybutton>=0.5.2",
+]
+develop = [
+    "servicex[test,docs]",
+]
+
+[project.entry-points.'servicex.query']
+FuncADL_Uproot = "servicex.func_adl.func_adl_dataset:FuncADLQuery_Uproot"
+FuncADL_ATLASr21 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr21"
+FuncADL_ATLASr22 = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASr22"
+FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
+FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
+PythonFunction = "servicex.python_dataset:PythonFunction"
+UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
+
+[project.entry-points.'servicex.dataset']
+Rucio = "servicex.dataset_identifier:RucioDatasetIdentifier"
+FileList = "servicex.dataset_identifier:FileListDataset"
+CERNOpenData = "servicex.dataset_identifier:CERNOpenDataDatasetIdentifier"
+
+[tool.hatch.build.targets.sdist]
+# hatchling always includes:
+# pyproject.toml, .gitignore, any README, any LICENSE, AUTHORS
+include = [
+    "/servicex/",
+    "/tests/"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["servicex"]
+
+[tool.coverage.run]
+dynamic_context = "test_function"

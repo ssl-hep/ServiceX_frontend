@@ -1,0 +1,19 @@
+# Default settings for servicex. This will point you to a developer end-point, that
+# you've setup on your own machine (usually using k8's port-forward command):
+
+api_endpoints:
+  - endpoint: http://localhost:5000
+    name: localhost
+
+  - endpoint: https://servicex-release-testing-4.servicex.ssl-hep.org
+    name: testing4
+    token: notreallyatoken
+
+  - endpoint: https://servicex.af.uchicago.edu
+    name: servicex-uc-af
+    token: notreallyatoken
+
+# This is the path of the cache. The "/tmp" will be translated, platform appropriate, and
+# the env variable USER will be replaced.
+cache_path: /tmp/servicex_${USER}
+default_endpoint: servicex-uc-af

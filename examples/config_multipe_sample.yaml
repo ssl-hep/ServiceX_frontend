@@ -1,0 +1,34 @@
+Definition:
+  - &DEF_ggH_input "root://eospublic.cern.ch//eos/opendata/atlas/OutreachDatasets\
+                  /2020-01-22/4lep/MC/mc_345060.ggH125_ZZ4lep.4lep.root"
+
+  - &DEF_function1 !PythonFunction |
+    def run_query(input_filenames=None):
+        import uproot
+
+        with uproot.open({input_filenames:"nominal"}) as o:
+            br = o.arrays("mu_pt")
+        return br
+
+  - &DEF_function2 !FuncADL_Uproot  |
+    FromTree('mini').Select(lambda e: {'lep_pt': e['lep_pt']}).Where(lambda e: e['lep_pt'] > 1000)
+
+General:
+  OutputFormat: root-ttree
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    NFiles: 5
+    Query: *DEF_function1
+    # IgnoreLocalCache: False
+
+  - Name: ttZ
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttZ.v11
+    NFiles: 3
+    Query: *DEF_function1
+
+  - Name: ggH
+    XRootDFiles: *DEF_ggH_input
+    Query: *DEF_function2

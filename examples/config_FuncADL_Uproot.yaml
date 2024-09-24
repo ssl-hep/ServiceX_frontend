@@ -1,0 +1,12 @@
+# File: config_FuncADL_Uproot.yaml
+
+Sample:
+  - Name: Uproot_FuncADL_YAML
+    Dataset: !FileList  
+      [
+        "root://eospublic.cern.ch//eos/opendata/atlas/rucio/data16_13TeV/DAOD_PHYSLITE.37019878._000001.pool.root.1",
+        "root://eospublic.cern.ch//eos/opendata/atlas/rucio/data16_13TeV/DAOD_PHYSLITE.37019878._000002.pool.root.1",
+        "root://eospublic.cern.ch//eos/opendata/atlas/rucio/data16_13TeV/DAOD_PHYSLITE.37019878._000003.pool.root.1",
+      ]
+    Query: !FuncADL_Uproot |
+            FromTree('CollectionTree').Select(lambda e: {'el_pt': e['AnalysisElectronsAuxDyn.pt']})

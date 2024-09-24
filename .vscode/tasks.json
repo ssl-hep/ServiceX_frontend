@@ -6,7 +6,7 @@
     {
       "label": "Run Code Coverage",
       "type": "shell",
-      "command": ". .venv/scripts/activate.ps1 ; coverage-3.9.exe run -m pytest --ignore=setup.py --cov=servicex --cov-report=term-missing --cov-config=.coveragerc --cov-report xml",
+      "command": ". .venv/scripts/activate.ps1 ; coverage-3.11.exe run -m pytest --ignore=setup.py --cov=servicex_client --cov-report=term-missing --cov-config=.coveragerc --cov-report xml",
       "problemMatcher": []
     },
     {

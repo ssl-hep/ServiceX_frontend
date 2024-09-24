@@ -1,245 +1,220 @@
-from json import loads
-from pathlib import Path
+# Copyright (c) 2024, IRIS-HEP
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# * Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+# * Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+# * Neither the name of the copyright holder nor the names of its
+#   contributors may be used to endorse or promote products derived from
+#   this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+from datetime import datetime
 
-import asyncmock
-from servicex.data_conversions import DataConverterAdaptor
-from servicex.minio_adaptor import MinioAdaptor
-from typing import Any, Dict, List, Optional, Tuple
-from unittest.mock import Mock
+from pytest_asyncio import fixture
+from servicex.python_dataset import PythonFunction
+from servicex.query_core import Query
+from servicex.models import (
+    TransformRequest,
+    ResultDestination,
+    ResultFormat,
+    TransformStatus,
+    TransformedResults,
+)
 
-import aiohttp
-import pytest
-from pytest_mock import MockFixture
+from servicex.dataset_identifier import FileListDataset
+from servicex.minio_adapter import MinioAdapter
 
-from servicex.cache import Cache
-
-
-class ClientSessionMocker:
-    def __init__(self, text, status):
-        if type(text) == list:
-            self._text_iter = iter(text)
-        else:
-            self._text_iter = iter([text])
-
-        if type(status) == list:
-            self._status_iter = iter(status)
-        else:
-            self._status_iter = iter([status])
-
-    async def text(self):
-        return next(self._text_iter)  # type: ignore
-
-    async def json(self):
-        return loads(next(self._text_iter))  # type: ignore
-
-    @property
-    def status(self):
-        return next(self._status_iter)  # type: ignore
-
-    async def __aexit__(self, exc_type, exc, tb):
-        pass
-
-    async def __aenter__(self):
-        return self
-
-
-class MockServiceXAdaptor:
-    def __init__(
-        self,
-        mocker: MockFixture,
-        request_id: str,
-        mock_transform_status: Optional[Mock] = None,
-        mock_query: Optional[Mock] = None,
-        mock_transform_query_status: Optional[Mock] = None,
-    ):
-        self.request_id = request_id
-        self._endpoint = "http://localhost:5000"
-        self.requests_made = 0
-
-        def do_unique_id():
-            id = self.request_id.format(self.requests_made)
-            self.requests_made += 1
-            return {"request_id": id}
-
-        self.query = mock_query if mock_query else mocker.Mock(side_effect=do_unique_id)
-
-        self.transform_status = (
-            mock_transform_status
-            if mock_transform_status
-            else mocker.Mock(return_value=(0, 1, 0))
-        )
-
-        self.query_status = (
-            mock_transform_query_status if mock_transform_query_status else None
-        )
-
-        self.dump_query_errors_count = 0
-
-    async def submit_query(
-        self, client: aiohttp.ClientSession, json_query: Dict[str, str]
-    ) -> str:
-        self.query_json = json_query
-        return self.query()
-
-    async def get_transform_status(
-        self, client: str, request_id: str
-    ) -> Tuple[Optional[int], int, Optional[int]]:
-        # remaining, processed, skipped
-        return self.transform_status()
-
-    async def get_query_status(self, client, request_id):
-        if self.query_status is None:
-            return {
-                "request_id": request_id,
-                "dude": "way",
-            }
-        return self.query_status()
-
-    async def dump_query_errors(self, client, request_id):
-        self.dump_query_errors_count += 1
+import pandas as pd
+import os
 
 
-class MockMinioAdaptor(MinioAdaptor):
-    def __init__(
-        self,
-        mocker: MockFixture,
-        files: List[str] = [],
-        exception_on_access: Optional[Exception] = None,
-    ):
-        self._files = files
-        self.mock_download_file = mocker.Mock()
-        self._access_called_with = None
-        self._exception_on_access = exception_on_access
-        pass
-
-    async def download_file(
-        self, request_id: str, minio_object_name: str, final_path: Path
-    ):
-        self.mock_download_file(request_id, minio_object_name, final_path)
-
-    def get_files(self, request_id) -> List[str]:
-        "Return files in the bucket"
-        return self._files
-
-    def get_access_url(self, request_id: str, object_name: str) -> str:
-        self._access_called_with = (request_id, object_name)
-        if self._exception_on_access is not None:
-            e = self._exception_on_access
-            self._exception_on_access = None
-            raise e
-        return "http://the.url.com"
-
-    @property
-    def access_called_with(self) -> Optional[Tuple[str, str]]:
-        return self._access_called_with
+@fixture
+def transform_request() -> TransformRequest:
+    return TransformRequest(
+        title="Test submission",
+        did="rucio://foo.bar",
+        selection="(call EventDataset)",
+        codegen="uproot",
+        result_destination=ResultDestination.object_store,  # type: ignore
+        result_format=ResultFormat.parquet,  # type: ignore
+    )  # type: ignore
 
 
-__g_inmem_value = None
+@fixture
+def minio_adapter() -> MinioAdapter:
+    return MinioAdapter("localhost", False, "access_key", "secret_key", "bucket")
 
 
-def build_cache_mock(
-    mocker,
-    query_cache_return: Optional[str] = None,
-    files: Optional[List[Tuple[str, Path]]] = None,
-    in_memory: Any = None,
-    make_in_memory_work: bool = False,
-    data_file_return: Optional[str] = None,
-    query_status_lookup_return: Optional[Dict[str, str]] = None,
-) -> Cache:
-    c = mocker.MagicMock(spec=Cache)
+@fixture
+def python_dataset(dummy_parquet_file):
+    did = FileListDataset(dummy_parquet_file)
+    dataset = Query(
+        title="Test submission",
+        dataset_identifier=did,
+        codegen="uproot",
+        result_format=ResultFormat.parquet,
+        sx_adapter=None,  # type: ignore
+        config=None,  # type: ignore
+        query_cache=None  # type: ignore
+    )  # type: ignore
 
-    if in_memory is None:
-        c.lookup_inmem.return_value = None
-    else:
-        c.lookup_inmem.return_value = in_memory
+    def foo():
+        return
 
-    if make_in_memory_work:
-
-        def save_it(h, v):
-            global __g_inmem_value
-            __g_inmem_value = v
-
-        def find_it(h):
-            global __g_inmem_value
-            return __g_inmem_value
-
-        c.set_inmem.side_effect = save_it
-
-        c.lookup_inmem.side_effect = find_it
-
-    if query_cache_return is None:
-        c.lookup_query.return_value = None
-    else:
-        c.lookup_query.return_value = query_cache_return
-
-    if files is None:
-        c.lookup_files.return_value = None
-    else:
-        c.lookup_files.return_value = files
-
-    def data_file_return_generator(request_id: str, fname: str):
-        return Path(f"/tmp/servicex-testing/{request_id}/{fname}")
-
-    if data_file_return is None:
-        c.data_file_location.side_effect = data_file_return_generator
-    else:
-        c.data_file_location.return_value = data_file_return
-
-    if query_status_lookup_return is not None:
-        c.lookup_query_status.return_value = query_status_lookup_return
-
-    c.query_status_exists.return_value = True
-
-    return c
+    dataset.query_string_generator = PythonFunction(foo)
+    return dataset
 
 
-@pytest.fixture
-def good_root_file_path():
-    return Path("tests/sample_root_servicex_output.root")
-
-
-@pytest.fixture
-def good_uproot_file_path():
-    return Path("tests/sample_uproot_servicex_output.parquet")
-
-
-@pytest.fixture
-def good_pandas_file_data(mocker):
-    "Return a good pandas dataset"
-    import pandas as pd
-    import asyncmock
-
-    converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_pandas.return_value = pd.DataFrame(
-        {"JetPt": [0, 1, 2, 3, 4, 5]}
+@fixture
+def transformed_result_python_dataset(dummy_parquet_file) -> TransformedResults:
+    return TransformedResults(
+        hash="289e90f6fe3780253af35c428b784ac22d3ee9200a7581b8f0a9bdcc5ae93479",
+        title="Test submission",
+        codegen="uproot",
+        request_id="b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=[dummy_parquet_file],
+        signed_url_list=[],
+        files=1,
+        result_format=ResultFormat.parquet,
     )
-    converter.combine_pandas.return_value = converter.convert_to_pandas.return_value
-
-    return converter
 
 
-@pytest.fixture
-def good_awkward_file_data(mocker):
-    import awkward as ak
+@fixture
+def transform_status_response() -> dict:
+    return {
+        "requests": [
+            {
+                "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+                "did": "File List Provided in Request",
+                "columns": None,
+                "selection": "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA
+                "tree-name": None,
+                "image": "sslhep/servicex_func_adl_uproot_transformer:uproot4",
+                "workers": None,
+                "result-destination": "object-store",
+                "result-format": "parquet",
+                "workflow-name": "selection_codegen",
+                "generated-code-cm": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source",  # NOQA
+                "status": "Submitted",
+                "failure-info": None,
+                "app-version": "develop",
+                "code-gen-image": "sslhep/servicex_code_gen_func_adl_uproot:v1.2.0",
+                "files": 1,
+                "files-completed": 0,
+                "files-failed": 0,
+                "files-remaining": 1,
+                "submit-time": "2023-05-25T20:05:05.564137Z",
+                "finish-time": "None",
+            }
+        ]
+    }
 
-    converter = asyncmock.MagicMock(spec=DataConverterAdaptor)
-    converter.convert_to_awkward.return_value = {
-        "JetPt": ak.from_iter([0, 1, 2, 3, 4, 5])
-    }  # type: ignore
-    converter.combine_awkward.return_value = converter.convert_to_awkward.return_value
 
-    return converter
+@fixture
+def completed_status() -> TransformStatus:
+    return TransformStatus(
+        **{
+            "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
+            "did": "File List Provided in Request",
+            "columns": None,
+            "selection": "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA
+            "tree-name": None,
+            "image": "sslhep/servicex_func_adl_uproot_transformer:uproot4",
+            "workers": None,
+            "result-destination": "object-store",
+            "result-format": "parquet",
+            "workflow-name": "selection_codegen",
+            "generated-code-cm": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf-generated-source",
+            "status": "Submitted",
+            "failure-info": None,
+            "app-version": "develop",
+            "code-gen-image": "sslhep/servicex_code_gen_func_adl_uproot:v1.2.0",
+            "files": 1,
+            "files-completed": 0,
+            "files-failed": 0,
+            "files-remaining": 1,
+            "submit-time": "2023-05-25T20:05:05.564137Z",
+            "finish-time": None,
+            "minio-endpoint": "minio.org:9000",
+            "minio-secured": False,
+            "minio-access-key": "miniouser",
+            "minio-secret-key": "secret",
+        }
+    )
 
 
-@pytest.fixture
-def short_status_poll_time():
-    import servicex.servicex_adaptor as sxs
+@fixture
+def transformed_result(dummy_parquet_file) -> TransformedResults:
+    return TransformedResults(
+        hash="123-4455",
+        title="Test",
+        codegen="uproot",
+        request_id="123-45-6789",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=[dummy_parquet_file],
+        signed_url_list=[],
+        files=1,
+        result_format=ResultFormat.parquet,
+    )
 
-    old_value, sxs.servicex_status_poll_time = sxs.servicex_status_poll_time, 0.1
-    yield
-    sxs.servicex_status_poll_time = old_value
+
+@fixture
+def transformed_result_signed_url() -> TransformedResults:
+    return TransformedResults(
+        hash="123-4455",
+        title="Test",
+        codegen="uproot",
+        request_id="123-45-6789",
+        submit_time=datetime.now(),
+        data_dir="/foo/bar",
+        file_list=[],
+        signed_url_list=['https://dummy.junk.io/1.parquet', 'https://dummy.junk.io/2.parquet'],
+        files=2,
+        result_format=ResultFormat.root_ttree,
+    )
 
 
-async def as_async_seq(seq: List[Any]):
-    for i in seq:
-        yield i
+@fixture
+def dummy_parquet_file():
+    data = {'column1': [1, 2, 3, 4],
+            'column2': ['A', 'B', 'C', 'D']}
+    df = pd.DataFrame(data)
+    parquet_file_path = '1.parquet'
+    df.to_parquet(parquet_file_path, index=False)
+
+    yield parquet_file_path
+
+    if os.path.exists(parquet_file_path):
+        os.remove(parquet_file_path)
+
+
+@fixture
+def codegen_list():
+    return {'atlasr21': 'http://servicex-code-gen-atlasr21:8000',
+            'atlasr22': 'http://servicex-code-gen-atlasr22:8000',
+            'atlasxaod': 'http://servicex-code-gen-atlasxaod:8000',
+            'cms': 'http://servicex-code-gen-cms:8000',
+            'cmssw-5-3-32': 'http://servicex-code-gen-cmssw-5-3-32:8000',
+            'python': 'http://servicex-code-gen-python:8000',
+            'uproot': 'http://servicex-code-gen-uproot:8000',
+            'uproot-raw': 'http://servicex-code-gen-uproot-raw:8000'}
