@@ -378,11 +378,19 @@ class Query:
                     progress.start_task(task_id=download_task, task_type="Download")
 
             if progress:
+                # update the transform progress bar to get the total number of files
                 progress.update(
                     progress_task,
                     progress_bar_title,
                     total=self.current_status.files,
                     completed=self.current_status.files_completed,
+                )
+
+                # update the download progress bar to get the total number of files
+                progress.update(
+                    download_task,
+                    download_bar_title,
+                    total=self.current_status.files
                 )
 
             if self.current_status.status in DONE_STATUS:
