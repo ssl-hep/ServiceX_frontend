@@ -470,7 +470,7 @@ async def test_submit_generic(mocker, codegen_list):
 
 
 @pytest.mark.asyncio
-async def test_submit_cancelled(mocker):
+async def test_submit_cancelled(mocker, codegen_list):
     """ Uses Uproot-Raw classes which go through the query cancelled mechanism """
     import json
     sx = AsyncMock()
