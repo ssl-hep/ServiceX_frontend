@@ -29,7 +29,8 @@
 from ..dataset_identifier import (RucioDatasetIdentifier as Rucio,  # noqa: F401
                                   FileListDataset as FileList,
                                   CERNOpenDataDatasetIdentifier as CERNOpenData,
-                                  DataSetIdentifier as GenericDataSet)
+                                  DataSetIdentifier as GenericDataSet,
+                                  XRootDDatasetIdentifier as XRootD)
 
 
-__any__ = ['Rucio', 'FileList', 'CERNOpenData', 'GenericDataSet']
+__any__ = ['Rucio', 'FileList', 'CERNOpenData', 'GenericDataSet', 'XRootD']

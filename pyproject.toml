@@ -107,6 +107,7 @@ UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
 Rucio = "servicex.dataset_identifier:RucioDatasetIdentifier"
 FileList = "servicex.dataset_identifier:FileListDataset"
 CERNOpenData = "servicex.dataset_identifier:CERNOpenDataDatasetIdentifier"
+XRootD = "servicex.dataset_identifier:XRootDDatasetIdentifier"
 
 [tool.hatch.build.targets.sdist]
 # hatchling always includes:
