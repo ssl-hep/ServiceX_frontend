@@ -65,6 +65,7 @@ re-running queries that have already been executed.
    connect_servicex
    query_types
    transform_request
+   datasets
    examples
    command_line
    contribute
