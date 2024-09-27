@@ -357,7 +357,7 @@ Sample:
                 == ["/path/to/file1.root", "/path/to/file2.root"])
         assert isinstance(result.Sample[5].dataset_identifier, CERNOpenData)
         assert result.Sample[5].dataset_identifier.did == 'cernopendata://1507'
-        assert (result.Sample[6].dataset_identifier.did 
+        assert (result.Sample[6].dataset_identifier.did
                 == 'xrootd://root://eosatlas.cern.ch//eos/atlas/path/*/file.root')
 
     # Path from string
