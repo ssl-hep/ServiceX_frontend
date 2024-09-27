@@ -442,12 +442,12 @@ async def test_submit_generic(mocker, codegen_list):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
-    client.servicex = sx
-    client.query_cache = mock_cache
-
     with patch('servicex.servicex_client.ServiceXClient.get_code_generators',
                return_value=codegen_list):
+        client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+        client.servicex = sx
+        client.query_cache = mock_cache
+
         datasource = client.generic_query(
             dataset_identifier=did,
             query=UprootRawQuery({'treename': 'CollectionTree'})
