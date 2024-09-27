@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import tempfile
 from typing import List
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from pathlib import PurePath
 
 import pytest
@@ -422,7 +422,7 @@ async def test_submit_fatal(mocker):
 
 
 @pytest.mark.asyncio
-async def test_submit_generic(mocker):
+async def test_submit_generic(mocker, codegen_list):
     """ Uses Uproot-Raw classes which go through the generic query mechanism """
     import json
     sx = AsyncMock()
@@ -446,10 +446,12 @@ async def test_submit_generic(mocker):
     client.servicex = sx
     client.query_cache = mock_cache
 
-    datasource = client.generic_query(
-        dataset_identifier=did,
-        query=UprootRawQuery({'treename': 'CollectionTree'})
-    )
+    with patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+               return_value=codegen_list):
+        datasource = client.generic_query(
+            dataset_identifier=did,
+            query=UprootRawQuery({'treename': 'CollectionTree'})
+        )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         _ = await datasource.submit_and_download(signed_urls_only=False,
