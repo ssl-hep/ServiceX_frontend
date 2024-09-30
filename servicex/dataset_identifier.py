@@ -78,6 +78,7 @@ class FileListDataset(DataSetIdentifier):
 
         :param files: Either a list of URIs or a single URI string
         """
+        self.num_files: Optional[int] = None  # you should pass only the files you want
         self.files: List[str]
         if isinstance(files, str):
             self.files = [files]

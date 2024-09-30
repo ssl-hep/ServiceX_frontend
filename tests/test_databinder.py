@@ -155,6 +155,56 @@ def test_dataset_rucio_did_numfiles():
     )
 
 
+def test_dataset_zerofiles():
+    # with an actual dataset, giving no files should throw a validation error
+    with pytest.raises(ValidationError):
+        spec = ServiceXSpec.model_validate(
+            basic_spec(
+                samples=[
+                    {
+                        "Name": "sampleA",
+                        "Dataset":
+                            dataset.Rucio("user.ivukotic:user.ivukotic.single_top_tW__nominal"),
+                        "NFiles": 0,
+                        "Query": "a",
+                    }
+                ]
+            )
+        )
+
+    with pytest.raises(ValidationError):
+        spec = ServiceXSpec.model_validate(
+            basic_spec(
+                samples=[
+                    {
+                        "Name": "sampleA",
+                        "Dataset":
+                            dataset.Rucio("user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                                          num_files=0),
+                        "Query": "a",
+                    }
+                ]
+            )
+        )
+
+    # and num files should be ignored for fileset
+    spec = ServiceXSpec.model_validate(
+        basic_spec(
+            samples=[
+                {
+                    "Name": "sampleA",
+                    "Dataset": dataset.FileList([
+                        "root://eospublic.cern.ch//file1.root",
+                        "root://eospublic.cern.ch//file2.root",
+                    ]),
+                    "Query": "a",
+                }
+            ]
+        )
+    )
+    assert spec.Sample[0].dataset_identifier.num_files is None
+
+
 def test_cernopendata():
     spec = ServiceXSpec.model_validate({
         "Sample": [
