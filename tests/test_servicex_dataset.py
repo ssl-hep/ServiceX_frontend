@@ -527,3 +527,65 @@ def test_transform_request():
                               "(lambda (list e) (dict (list 'lep_pt') " \
                               "(list (subscript e 'lep_pt')))))"
         cache.close()
+
+@pytest.mark.asyncio
+async def test_use_of_cache_ignore_cache(mocker):
+    """ Do we pick up the cache on the second request for the same transform? """
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status3,
+    ]
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
+    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+    mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
+
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+
+    did = FileListDataset("/foo/bar/baz.root")
+    # 1st time sending the request
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        datasource = Query(
+            dataset_identifier=did,
+            title="ServiceX Client",
+            codegen="uproot",
+            sx_adapter=servicex,
+            query_cache=cache,
+            config=config,
+        )
+        datasource.query_string_generator = FuncADLQuery_Uproot()
+        datasource.result_format = ResultFormat.parquet
+        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            result1 = await datasource.submit_and_download(signed_urls_only=True,
+                                                           expandable_progress=progress)
+        upd.assert_not_called()
+        upd.reset_mock()
+        assert mock_minio.get_signed_url.await_count == 2
+
+        # 2nd time sending the same request with ignore_cache (So it will run again)
+        datasource2 = Query(
+            dataset_identifier=did,
+            title="ServiceX Client",
+            codegen="uproot",
+            sx_adapter=servicex,
+            query_cache=cache,
+            config=config,
+            ignore_cache=True
+        )
+        datasource2.query_string_generator = FuncADLQuery_Uproot()
+        datasource2.result_format = ResultFormat.parquet
+        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            result1 = await datasource2.submit_and_download(signed_urls_only=True,
+                                                           expandable_progress=progress)
+        upd.assert_not_called()
+        upd.reset_mock()
+        assert mock_minio.get_signed_url.await_count == 2
+        cache.close()
