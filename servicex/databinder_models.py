@@ -101,7 +101,7 @@ class Sample(BaseModel):
         Access the dataset identifier for the sample.
         """
         if self.Dataset:
-            if self.NFiles:
+            if self.NFiles is not None:
                 self.Dataset.num_files = self.NFiles
             return self.Dataset
         elif self.RucioDID:
@@ -125,6 +125,15 @@ class Sample(BaseModel):
         if count == 0:
             raise ValueError("Must specify one of Dataset, XRootDFiles, or RucioDID.")
         return values
+
+    @model_validator(mode="after")
+    def validate_nfiles_is_not_zero(self):
+        """
+        Ensure that NFiles is not set to zero
+        """
+        if self.dataset_identifier.num_files == 0:
+            raise ValueError("NFiles cannot be set to zero for a dataset.")
+        return self
 
     @field_validator("Name", mode="before")
     @classmethod
