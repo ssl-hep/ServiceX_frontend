@@ -442,7 +442,7 @@ async def test_submit_generic(mocker, codegen_list):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    with patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators',
                return_value=codegen_list):
         client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
         client.servicex = sx
@@ -488,7 +488,7 @@ async def test_submit_cancelled(mocker, codegen_list):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    with patch('servicex.servicex_client.ServiceXClient.get_code_generators',
+    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators',
                return_value=codegen_list):
         client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
         client.servicex = sx
