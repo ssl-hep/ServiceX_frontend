@@ -34,5 +34,5 @@ jobs:
 
       - name: Run example
         working-directory: examples
-        run: python3 Uproot_UprootRaw_Dict.py
+        run: python UprootRaw_Dict.py
 
