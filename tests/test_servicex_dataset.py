@@ -528,6 +528,7 @@ def test_transform_request():
                               "(list (subscript e 'lep_pt')))))"
         cache.close()
 
+
 @pytest.mark.asyncio
 async def test_use_of_cache_ignore_cache(mocker):
     """ Do we pick up the cache on the second request for the same transform? """
@@ -563,8 +564,8 @@ async def test_use_of_cache_ignore_cache(mocker):
         datasource.result_format = ResultFormat.parquet
         upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
         with ExpandableProgress(display_progress=False) as progress:
-            result1 = await datasource.submit_and_download(signed_urls_only=True,
-                                                           expandable_progress=progress)
+            await datasource.submit_and_download(signed_urls_only=True,
+                                                 expandable_progress=progress)
         upd.assert_not_called()
         upd.reset_mock()
         assert mock_minio.get_signed_url.await_count == 2
@@ -583,8 +584,8 @@ async def test_use_of_cache_ignore_cache(mocker):
         datasource2.result_format = ResultFormat.parquet
         upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
         with ExpandableProgress(display_progress=False) as progress:
-            result1 = await datasource2.submit_and_download(signed_urls_only=True,
-                                                           expandable_progress=progress)
+            await datasource2.submit_and_download(signed_urls_only=True,
+                                                  expandable_progress=progress)
         upd.assert_not_called()
         upd.reset_mock()
         assert mock_minio.get_signed_url.await_count == 2
