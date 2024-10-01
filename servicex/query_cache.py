@@ -77,6 +77,12 @@ class QueryCache:
         with self.lock:
             self.db.update(json.loads(record.model_dump_json()), transforms.hash == record.hash)
 
+    def contains_hash(self, hash: str) -> bool:
+        transforms = Query()
+        with self.lock:
+            records = self.db.search(transforms.hash == hash)
+        return len(records) > 0
+
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         transforms = Query()
         with self.lock:
@@ -121,6 +127,11 @@ class QueryCache:
     def delete_record_by_request_id(self, request_id: str):
         with self.lock:
             self.db.remove(where('request_id') == request_id)
+
+    def delete_record_by_hash(self, hash: str):
+        transforms = Query()
+        with self.lock:
+            self.db.remove(transforms.hash == hash)
 
     def get_codegen_by_backend(self, backend: str) -> Optional[dict]:
         codegens = Query()

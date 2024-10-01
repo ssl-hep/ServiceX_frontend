@@ -228,11 +228,16 @@ class Query:
                 logger.info(f"Transforms finished with code {self.current_status.status}")
 
         sx_request = self.transform_request
+        sx_request_hash = sx_request.compute_hash()
+
+        # Invalidate the cache if the hash already present but if the user ignores cache
+        if self.ignore_cache and self.cache.contains_hash(sx_request_hash):
+            self.cache.delete_record_by_hash(sx_request_hash)
 
         # Let's see if this is in the cache already, but respect the user's wishes
         # to ignore the cache
         cached_record = (
-            self.cache.get_transform_by_hash(sx_request.compute_hash())
+            self.cache.get_transform_by_hash(sx_request_hash)
             if not self.ignore_cache
             else None
         )

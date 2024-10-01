@@ -235,3 +235,48 @@ def test_add_both_codegen_and_transform_to_cache(transform_request, completed_st
         assert result == {'backend': 'backend_1', 'codegens': ['codegen_1']}
         assert len(cache.cached_queries()) == 1
         cache.close()
+
+
+def test_delete_codegen_by_hash(transform_request, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+
+        test = cache.get_transform_by_hash(transform_request.compute_hash())
+        assert test
+        assert test.title == "Test submission"
+        assert test.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+
+        cache.delete_record_by_hash(transform_request.compute_hash())
+        empty = cache.get_transform_by_hash(transform_request.compute_hash())
+        assert empty is None
+        cache.close()
+
+
+def test_contains_hash(transform_request, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+
+        assert cache.contains_hash(transform_request.compute_hash()) is True
+
+        assert cache.contains_hash("1234") is False
+        cache.close()
