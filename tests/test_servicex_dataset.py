@@ -30,6 +30,7 @@ from typing import List
 from unittest.mock import AsyncMock
 from pathlib import PurePath
 import pytest
+from itertools import cycle
 
 from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
@@ -149,6 +150,20 @@ transform_status6 = transform_status.model_copy(
         "files": 2,
     }
 )
+
+
+@pytest.fixture
+def servicex():
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transform_status = AsyncMock()
+    # servicex.get_transform_status.side_effect = [
+    #     transform_status1,
+    #     transform_status3,
+    # ]
+    yield servicex
+
 
 file1 = ResultFile(filename="file1", size=100, extension="parquet")
 file2 = ResultFile(filename="file2", size=100, extension="parquet")
@@ -529,26 +544,31 @@ def test_transform_request():
 
 
 @pytest.mark.asyncio
-async def test_use_of_cache_ignore_cache(mocker):
-    """ Do we pick up the cache on the second request for the same transform? """
-    servicex = AsyncMock()
-    servicex.submit_transform = AsyncMock()
-    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
-    servicex.get_transform_status = AsyncMock()
-    servicex.get_transform_status.side_effect = [
+async def test_use_of_ignore_cache(mocker, servicex):
+    """ Run a normal request -> run the same request with ignore cache -> run request with cache
+        After the first request the request is cached
+        After the second request, transformer runs again by ignoring cache
+        After the third request, the data is retrieved from the cache
+    """
+    # Prepare ServiceX
+    servicex.get_transform_status.side_effect = cycle([
         transform_status1,
         transform_status3,
-    ]
+    ])
+
+    # Prepare Minio
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
     mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    # 1st time sending the request
+
     with tempfile.TemporaryDirectory() as temp_dir:
+
+        # Datasource without cache ignore
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
-        datasource = Query(
+        datasource_without_ignore_cache = Query(
             dataset_identifier=did,
             title="ServiceX Client",
             codegen="uproot",
@@ -556,23 +576,11 @@ async def test_use_of_cache_ignore_cache(mocker):
             query_cache=cache,
             config=config,
         )
-        datasource.query_string_generator = FuncADLQuery_Uproot()
-        datasource.result_format = ResultFormat.parquet
-        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
-        with ExpandableProgress(display_progress=False) as progress:
-            await datasource.submit_and_download(signed_urls_only=True,
-                                                 expandable_progress=progress)
-        upd.assert_not_called()
-        upd.reset_mock()
-        assert mock_minio.get_signed_url.await_count == 2
+        datasource_without_ignore_cache.query_string_generator = FuncADLQuery_Uproot()
+        datasource_without_ignore_cache.result_format = ResultFormat.parquet
 
-        # 2nd time sending the same request with ignore_cache (So it will run again)
-        servicex.get_transform_status.side_effect = [
-            transform_status1,
-            transform_status3,
-        ]
-        mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
-        datasource2 = Query(
+        # Datasouce with ignore cache
+        datasource_with_ignore_cache = Query(
             dataset_identifier=did,
             title="ServiceX Client",
             codegen="uproot",
@@ -581,17 +589,29 @@ async def test_use_of_cache_ignore_cache(mocker):
             config=config,
             ignore_cache=True
         )
-        datasource2.query_string_generator = FuncADLQuery_Uproot()
-        datasource2.result_format = ResultFormat.parquet
+        datasource_with_ignore_cache.query_string_generator = FuncADLQuery_Uproot()
+        datasource_with_ignore_cache.result_format = ResultFormat.parquet
+
+        # 1st time sending the request
         upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
         with ExpandableProgress(display_progress=False) as progress:
-            await datasource2.submit_and_download(signed_urls_only=True,
-                                                  expandable_progress=progress)
+            await datasource_without_ignore_cache.submit_and_download(signed_urls_only=True,
+                                                                      expandable_progress=progress) # noqa
         upd.assert_not_called()
         upd.reset_mock()
         assert mock_minio.get_signed_url.await_count == 2
 
-        # third round, should hit the cache (and nothing else)
+        # 2nd time sending the same request with ignore_cache (So it will run again)
+        mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
+        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            await datasource_with_ignore_cache.submit_and_download(signed_urls_only=True,
+                                                                   expandable_progress=progress) # noqa
+        upd.assert_not_called()
+        upd.reset_mock()
+        assert mock_minio.get_signed_url.await_count == 2
+
+        # 3rd round, should hit the cache (and nothing else)
         servicex.get_transform_status.side_effect = [
             transform_status1,
             transform_status3,
@@ -599,8 +619,8 @@ async def test_use_of_cache_ignore_cache(mocker):
         mock_minio.list_bucket.reset_mock()
         mock_minio.download_file.reset_mock()
         with ExpandableProgress(display_progress=False) as progress:
-            res = await datasource.submit_and_download(signed_urls_only=True,
-                                                       expandable_progress=progress)
+            res = await datasource_without_ignore_cache.submit_and_download(signed_urls_only=True,
+                                                                            expandable_progress=progress) # noqa
         mock_minio.list_bucket.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         assert len(res.signed_url_list) == 2
