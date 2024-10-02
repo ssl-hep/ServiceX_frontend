@@ -27,12 +27,13 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 import httpx
 import pytest
 from pytest_asyncio import fixture
 from servicex.models import TransformRequest, ResultDestination, ResultFormat
 from servicex.servicex_adapter import ServiceXAdapter, AuthorizationError
+import time
 
 
 @fixture
@@ -213,7 +214,9 @@ async def test_get_tranform_status_retry_error(get,
 
 
 @pytest.mark.asyncio
+# @patch('google.auth.jwt.decode', return_value={'exp': time.time() + 90})
 async def test_get_authorization(servicex):
     servicex.token = "token"
-    r = await servicex._get_authorization()
-    assert r.get("Authorization") == "Bearer token"
+    with patch('google.auth.jwt.decode', return_value={'exp': time.time() + 90}):
+        r = await servicex._get_authorization()
+        assert r.get("Authorization") == "Bearer token"
