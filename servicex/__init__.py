@@ -27,12 +27,14 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from servicex.databinder_models import Sample, General, ServiceXSpec
 from servicex.servicex_client import deliver
-from .models import ResultFormat, ResultDestination
+from .models import ResultDestination
 import servicex.dataset as dataset
 import servicex.query as query
 
+OutputFormat = General.OutputFormatEnum
+
 __all__ = [
-    "ResultFormat",
+    "OutputFormat",
     "ResultDestination",
     "Sample",
     "General",

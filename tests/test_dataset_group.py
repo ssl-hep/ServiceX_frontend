@@ -29,7 +29,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from servicex import ResultFormat
+from servicex.models import ResultFormat
 from servicex.dataset_group import DatasetGroup
 from servicex.query_core import ServiceXException
 

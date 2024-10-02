@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch
 from pydantic import ValidationError
 
-from servicex import ServiceXSpec, dataset
+from servicex import ServiceXSpec, dataset, OutputFormat
 from servicex.query_core import ServiceXException
 from servicex.servicex_client import ReturnValueException
 from servicex.dataset import FileList, Rucio
@@ -91,6 +91,21 @@ def test_list_of_root_files():
         "root://eospublic.cern.ch//file1.root",
         "root://eospublic.cern.ch//file2.root",
     ]
+
+
+def test_output_format():
+    spec = basic_spec()
+    spec['General'] = {'OutputFormat': 'root-ttree'}
+    ServiceXSpec.model_validate(spec)
+    spec['General'] = {'OutputFormat': 'parquet'}
+    ServiceXSpec.model_validate(spec)
+    spec['General'] = {'OutputFormat': OutputFormat.root_ttree}
+    ServiceXSpec.model_validate(spec)
+    spec['General'] = {'OutputFormat': OutputFormat.parquet}
+    ServiceXSpec.model_validate(spec)
+    with pytest.raises(ValidationError):
+        spec['General'] = {'OutputFormat': 'root-tree'}
+        ServiceXSpec.model_validate(spec)
 
 
 def test_rucio_did():
