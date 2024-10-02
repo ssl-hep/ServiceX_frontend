@@ -27,12 +27,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import tempfile
-
+import json
 import pytest
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
-from servicex.query_cache import QueryCache
+from servicex.query_cache import QueryCache, CacheException
 from tinydb import Query
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
@@ -92,7 +92,7 @@ def test_cache_transform(transform_request, completed_status):
         assert not cache.get_transform_by_hash("thishashdoesnotexist")
         assert not cache.get_transform_by_request_id("this-uuid-does-not-exist")
 
-        # make a duplicate record
+        # try to create a duplicate record
         cache.cache_transform(
             cache.transformed_results(
                 transform=transform_request,
@@ -104,6 +104,23 @@ def test_cache_transform(transform_request, completed_status):
         )
 
         assert len(cache.cached_queries()) == 1
+
+        # forcefully create a duplicate record
+        cache.db.insert(
+            json.loads(
+                cache.transformed_results(
+                    transform=transform_request,
+                    completed_status=completed_status,
+                    data_dir="/foo/baz",
+                    file_list=file_uris,
+                    signed_urls=[],
+            ).model_dump_json()))  # noqa
+
+        with pytest.raises(CacheException):
+            cache.get_transform_by_hash(transform_request.compute_hash())
+
+        with pytest.raises(CacheException):
+            cache.get_transform_by_request_id("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
 
         cache.delete_record_by_request_id("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
         assert len(cache.cached_queries()) == 0
