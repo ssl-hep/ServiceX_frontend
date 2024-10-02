@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import tempfile
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 import httpx
 import pytest
 from pytest_asyncio import fixture
