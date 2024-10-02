@@ -187,7 +187,7 @@ async def test_get_transform_status(get, servicex, transform_status_response):
 
 @pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.get')
-async def test_get_transform_status_auth_error(get, servicex):
+async def test_get_transform_status_errors(get, servicex):
     with pytest.raises(AuthorizationError) as err:
         get.return_value.__aenter__.return_value.status = 401
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
@@ -197,6 +197,15 @@ async def test_get_transform_status_auth_error(get, servicex):
         get.return_value.__aenter__.return_value.status = 404
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
         assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(err.value)
+
+    with pytest.raises(RuntimeError) as err:
+        get.return_value.__aenter__.return_value.status = 500
+
+        async def patch_json():
+            return {'message': 'fifteen'}
+        get.return_value.__aenter__.return_value.json = patch_json
+        await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
+        assert "ServiceX WebAPI Error during transformation" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -214,9 +223,15 @@ async def test_get_tranform_status_retry_error(get,
 
 
 @pytest.mark.asyncio
-# @patch('google.auth.jwt.decode', return_value={'exp': time.time() + 90})
 async def test_get_authorization(servicex):
     servicex.token = "token"
+    servicex.refresh_token = "refresh"
     with patch('google.auth.jwt.decode', return_value={'exp': time.time() + 90}):
         r = await servicex._get_authorization()
         assert r.get("Authorization") == "Bearer token"
+
+    with patch('servicex.servicex_adapter.ServiceXAdapter._get_token', return_value='token')\
+            as get_token:
+        with patch('google.auth.jwt.decode', return_value={'exp': time.time() - 90}):
+            r = await servicex._get_authorization()
+            get_token.assert_called_once()
