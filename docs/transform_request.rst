@@ -41,5 +41,5 @@ data, select ``LocalCache`` for ``Delivery``. If you are located at an analysis 
 The Definitions Sections
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Definitions section is a dictionary of values that can be substituted into fields in the Sample
-sections. This is useful for defining common values that are used in multiple samples. This is an advanced concept.
+The Definitions section (only available when setting up the request using YAML files) is a list of values that can be substituted into fields in the Sample
+sections, defined using the YAML anchor/alias syntax. This is useful for defining common values that are used in multiple samples. This is an advanced concept.

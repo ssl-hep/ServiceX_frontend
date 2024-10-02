@@ -118,3 +118,23 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
     @classmethod
     def from_yaml(cls, _, node):
         return cls(int(node.value))
+
+
+class XRootDDatasetIdentifier(DataSetIdentifier):
+    def __init__(self, pattern: str, num_files: Optional[int] = None):
+        r"""
+        CERN Open Data Dataset - this will be looked up using the CERN Open Data DID finder.
+
+        :param dataset: The dataset ID - this is an integer.
+        :param num_files: Maximum number of files to return. This is useful during development
+            to perform quick runs. ServiceX is careful to make sure it always
+            returns the same subset of files.
+
+        """
+        super().__init__("xrootd", pattern, num_files=num_files)
+
+    yaml_tag = '!XRootD'
+
+    @classmethod
+    def from_yaml(cls, _, node):
+        return cls(node.value)

@@ -218,6 +218,19 @@ def test_cernopendata():
     assert spec.Sample[0].dataset_identifier.did == "cernopendata://1507"
 
 
+def test_xrootd():
+    spec = ServiceXSpec.model_validate({
+        "Sample": [
+            {
+                "Name": "sampleA",
+                "Dataset": dataset.XRootD('root://blablabla/*/?.root'),
+                "Function": "a"
+            }
+        ]
+    })
+    assert spec.Sample[0].dataset_identifier.did == "xrootd://root://blablabla/*/?.root"
+
+
 def test_invalid_dataset_identifier():
     with pytest.raises(ValidationError):
         ServiceXSpec.model_validate(
@@ -378,6 +391,8 @@ Sample:
   - Name: ttH6
     Dataset: !CERNOpenData 1507
     Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH7
+    Dataset: !XRootD root://eosatlas.cern.ch//eos/atlas/path/*/file.root
 """)
         f.flush()
         result = _load_ServiceXSpec(path)
@@ -392,6 +407,8 @@ Sample:
                 == ["/path/to/file1.root", "/path/to/file2.root"])
         assert isinstance(result.Sample[5].dataset_identifier, CERNOpenData)
         assert result.Sample[5].dataset_identifier.did == 'cernopendata://1507'
+        assert (result.Sample[6].dataset_identifier.did
+                == 'xrootd://root://eosatlas.cern.ch//eos/atlas/path/*/file.root')
 
     # Path from string
     result2 = _load_ServiceXSpec(str(path))

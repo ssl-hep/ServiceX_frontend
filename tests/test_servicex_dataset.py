@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import tempfile
 from typing import List
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from pathlib import PurePath
 import pytest
 from itertools import cycle
@@ -436,7 +436,7 @@ async def test_submit_fatal(mocker):
 
 
 @pytest.mark.asyncio
-async def test_submit_generic(mocker):
+async def test_submit_generic(mocker, codegen_list):
     """ Uses Uproot-Raw classes which go through the generic query mechanism """
     import json
     sx = AsyncMock()
@@ -456,14 +456,16 @@ async def test_submit_generic(mocker):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
-    client.servicex = sx
-    client.query_cache = mock_cache
+    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators',
+               return_value=codegen_list):
+        client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+        client.servicex = sx
+        client.query_cache = mock_cache
 
-    datasource = client.generic_query(
-        dataset_identifier=did,
-        query=UprootRawQuery({'treename': 'CollectionTree'})
-    )
+        datasource = client.generic_query(
+            dataset_identifier=did,
+            query=UprootRawQuery({'treename': 'CollectionTree'})
+        )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         _ = await datasource.submit_and_download(signed_urls_only=False,
@@ -482,7 +484,7 @@ async def test_submit_generic(mocker):
 
 
 @pytest.mark.asyncio
-async def test_submit_cancelled(mocker):
+async def test_submit_cancelled(mocker, codegen_list):
     """ Uses Uproot-Raw classes which go through the query cancelled mechanism """
     import json
     sx = AsyncMock()
@@ -500,14 +502,16 @@ async def test_submit_cancelled(mocker):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
-    client.servicex = sx
-    client.query_cache = mock_cache
+    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators',
+               return_value=codegen_list):
+        client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+        client.servicex = sx
+        client.query_cache = mock_cache
 
-    datasource = client.generic_query(
-        dataset_identifier=did,
-        query=UprootRawQuery({'treename': 'CollectionTree'})
-    )
+        datasource = client.generic_query(
+            dataset_identifier=did,
+            query=UprootRawQuery({'treename': 'CollectionTree'})
+        )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         _ = await datasource.submit_and_download(signed_urls_only=False,
