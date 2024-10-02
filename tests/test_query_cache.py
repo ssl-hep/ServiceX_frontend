@@ -32,7 +32,7 @@ import pytest
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
-from servicex.query_cache import QueryCache, CacheException
+from servicex.query_cache import QueryCache
 from tinydb import Query
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
@@ -103,15 +103,7 @@ def test_cache_transform(transform_request, completed_status):
             )
         )
 
-        with pytest.raises(CacheException):
-            _ = cache.get_transform_by_hash(transform_request.compute_hash())
-
-        with pytest.raises(CacheException):
-            _ = cache.get_transform_by_request_id(
-                "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
-            )
-
-        assert len(cache.cached_queries()) == 2
+        assert len(cache.cached_queries()) == 1
 
         cache.delete_record_by_request_id("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
         assert len(cache.cached_queries()) == 0
@@ -142,7 +134,7 @@ def test_record_delete(transform_request, completed_status):
                 signed_urls=[],
             )
         )
-
+        transform_request.did = "rucio://foo.baz"
         cache.cache_transform(
             cache.transformed_results(
                 transform=transform_request,
@@ -154,7 +146,6 @@ def test_record_delete(transform_request, completed_status):
                 signed_urls=[],
             )
         )
-
         assert len(cache.cached_queries()) == 2
         cache.delete_record_by_request_id("02c64494-4529-49a7-a4a6-95661ea3936e")
         assert len(cache.cached_queries()) == 1
