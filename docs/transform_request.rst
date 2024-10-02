@@ -32,7 +32,7 @@ The General Section
 ^^^^^^^^^^^^^^^^^^^
 The General section of the request includes the following fields:
 
-* (Optional) ``OutputFormat``: Can be ``root-ttree`` (default) or ``parquet``
+* (Optional) ``OutputFormat``: Can be ``root-ttree`` (default) or ``parquet`` (you can also use the enums ``servicex.OutputFormat.root_ttree`` and ``servicex.OutputFormat.parquet``)
 * (Optional) ``Delivery``: Can be ``URLs`` or ``LocalCache`` (default)
 
 In general, if you are running on your laptop away from the ServiceX site and are working with a small amount of
