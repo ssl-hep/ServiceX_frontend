@@ -70,7 +70,8 @@ class QueryCache:
 
     def cache_transform(self, record: TransformedResults):
         with self.lock:
-            self.db.insert(json.loads(record.model_dump_json()))
+            if not self.contains_hash(record.hash):
+                self.db.insert(json.loads(record.model_dump_json()))
 
     def update_record(self, record: TransformedResults):
         transforms = Query()
