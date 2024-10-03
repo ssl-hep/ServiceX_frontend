@@ -100,7 +100,7 @@ class TransformRequest(BaseModel):
                     self.codegen,
                     self.image,
                     self.result_format.name,
-                    self.file_list,
+                    sorted(self.file_list),
                 ]
             ).encode("utf-8")
         )
