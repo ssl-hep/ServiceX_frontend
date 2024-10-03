@@ -63,13 +63,13 @@ def test_hash(transform_request):
     assert request1.compute_hash() != request2.compute_hash()
 
     # Add file names and shuffle the order
-    request2 =  request1.model_copy()
+    request2 = request1.model_copy()
     request1.file_list = ["file1.txt", "file2.txt"]
     request2.file_list = ["file2.txt", "file1.txt"]
     assert request1.compute_hash() == request2.compute_hash()
 
     # Add different file names
-    request2 =  request1.model_copy()
+    request2 = request1.model_copy()
     request1.file_list = ["file1.txt", "file2.txt"]
     request2.file_list = ["file3.txt", "file4.txt"]
     assert request1.compute_hash() != request2.compute_hash()
