@@ -46,9 +46,14 @@ class QueryCache:
         Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
         self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
         self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
+        self.queue = TinyDB(os.path.join(self.config.cache_path, "queue.json"))
+
+    def close_queue(self):
+        self.queue.close()
 
     def close(self):
         self.db.close()
+        self.queue.close()
 
     def transformed_results(self, transform: TransformRequest,
                             completed_status: TransformStatus, data_dir: str,
@@ -67,6 +72,34 @@ class QueryCache:
             result_format=transform.result_format,
             log_url=completed_status.log_url
         )
+    
+    def queue_contains_hash(self, hash: str):
+        tranform_request = Query()
+        with self.lock:
+            records = self.queue.search(tranform_request.hash==hash)
+        return len(records) > 0
+
+    def queue_transform(self, record: TransformRequest):
+        with self.lock:
+            hash_value = record.compute_hash()
+            if not self.queue_contains_hash(hash_value):
+                record = json.loads(record.model_dump_json())
+                record["hash"]= hash_value
+                self.queue.insert(record)
+
+    def queue_get_transform_request_hash(self, hash) -> Optional[TransformRequest]:
+        transform_request = Query()
+        with self.lock:
+            records = self.queue.search(transform_request.hash == hash)
+
+        if not records:
+            return None
+
+        if len(records) != 1:
+            raise CacheException("Multiple records found in db for hash")
+        else:
+            return TransformRequest(**records[0])
+
 
     def cache_transform(self, record: TransformedResults):
         with self.lock:
@@ -156,3 +189,14 @@ class QueryCache:
     def delete_codegen_by_backend(self, backend: str):
         with self.lock:
             self.db.remove(where('backend') == backend)
+
+    def get_request_id(self, request: TransformRequest):
+        transform = Query()
+        with self.lock:
+            hash = request.compute_hash()
+            record = self.db.search(transform.hash == hash)
+
+        if not record:
+            return None
+        
+        return TransformedResults(**record[0]).request_id
