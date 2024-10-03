@@ -32,9 +32,11 @@ import servicex.dataset as dataset
 import servicex.query as query
 
 OutputFormat = General.OutputFormatEnum
+Delivery = General.DeliveryEnum
 
 __all__ = [
     "OutputFormat",
+    "Delivery",
     "ResultDestination",
     "Sample",
     "General",
