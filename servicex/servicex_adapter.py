@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
-from datetime import datetime
+import time
 from typing import Optional, Dict, List
 
 import httpx
@@ -69,8 +69,11 @@ class ServiceXAdapter:
                 bearer_token = f.read().strip()
         return bearer_token
 
-    async def _get_authorization(self) -> Dict[str, str]:
-        if self.token:
+    async def _get_authorization(self, force_reauth: bool = False) -> Dict[str, str]:
+        now = time.time()
+        if (self.token and jwt.decode(self.token, verify=False)["exp"] - now > 60
+                and not force_reauth):
+            # if less than one minute validity, renew
             return {"Authorization": f"Bearer {self.token}"}
         else:
             bearer_token = self._get_bearer_token_file()
@@ -80,9 +83,8 @@ class ServiceXAdapter:
             if not bearer_token and not self.refresh_token:
                 return {}
 
-            now = datetime.utcnow().timestamp()
-            if not self.token or \
-                    float(jwt.decode(self.token, verify=False)["exp"]) - now < 0:
+            if not self.token or force_reauth or\
+                    float(jwt.decode(self.token, verify=False)["exp"]) - now < 60:
                 await self._get_token()
             return {"Authorization": f"Bearer {self.token}"}
 
@@ -136,8 +138,7 @@ class ServiceXAdapter:
         async with RetryClient(retry_options=retry_options) as client:
             try:
                 async for attempt in AsyncRetrying(
-                        retry=(retry_if_not_exception_type(AuthorizationError)
-                               | retry_if_not_exception_type(ValueError)),
+                        retry=retry_if_not_exception_type(ValueError),
                         stop=stop_after_attempt(3),
                         wait=wait_fixed(3),
                         reraise=True):
@@ -146,10 +147,18 @@ class ServiceXAdapter:
                                               f"transformation/{request_id}",
                                               headers=headers) as r:
                             if r.status == 401:
+                                # perhaps we just ran out of auth validity the last time?
+                                # refetch auth then raise an error for retry
+                                headers = await self._get_authorization(True)
                                 raise AuthorizationError("Not authorized to access serviceX"
                                                          f"at {self.url}")
                             if r.status == 404:
                                 raise ValueError(f"Transform ID {request_id} not found")
+                            elif r.status > 400:
+                                o = await r.json()
+                                error_message = o.get('message', str(r))
+                                raise RuntimeError("ServiceX WebAPI Error during transformation: "
+                                                   f"{r.status} - {error_message}")
                             o = await r.json()
                             return TransformStatus(**o)
             except RuntimeError as e:
