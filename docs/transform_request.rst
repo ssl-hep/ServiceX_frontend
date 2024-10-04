@@ -33,7 +33,7 @@ The General Section
 The General section of the request includes the following fields:
 
 * (Optional) ``OutputFormat``: Can be ``root-ttree`` (default) or ``parquet`` (you can also use the enums ``servicex.OutputFormat.root_ttree`` and ``servicex.OutputFormat.parquet``)
-* (Optional) ``Delivery``: Can be ``URLs`` or ``LocalCache`` (default)
+* (Optional) ``Delivery``: Can be ``LocalCache`` (default) to download the results to the system on which you are running the client, or ``URLs`` to provide HTTPS URLs to the output on the ServiceX storage (you can also use the enums ``servicex.Delivery.LocalCache`` and ``servicex.Delivery.URLs``). The output files on the ServiceX storage will periodically get cleaned, so if you need to keep the results for long term use it is recommended that you download the output to local cache, but for transient use the URLs will be faster.
 
 In general, if you are running on your laptop away from the ServiceX site and are working with a small amount of
 data, select ``LocalCache`` for ``Delivery``. If you are located at an analysis facility, please select ``URLs``. 
