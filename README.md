@@ -13,6 +13,8 @@
 Python SDK and CLI Client for ServiceX
 
 ## Documentation
-The development documentation is hosted at https://servicex-frontend.readthedocs.io
+
+* The **user** documentation is hosted at https://servicex-frontend.readthedocs.io
+* The **developer** documentation is available under the [`latest` view](https://servicex-frontend.readthedocs.io/en/latest/)
 
 
