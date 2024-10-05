@@ -244,11 +244,14 @@ async def test_submit_and_download_cache_miss(python_dataset, completed_status):
         python_dataset.servicex = AsyncMock()
         python_dataset.cache.get_transform_by_hash = Mock()
         python_dataset.cache.get_transform_by_hash.return_value = None
+        python_dataset.cache.queue_get_transform_request_hash = Mock()
+        python_dataset.cache.queue_get_transform_request_hash.return_value = None
         python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
         python_dataset.download_files.return_value = []
+        python_dataset.cache.queue_transform_update = Mock()
 
         signed_urls_only = False
         expandable_progress = ExpandableProgress()
@@ -277,6 +280,7 @@ async def test_submit_and_download_cache_miss_overall_progress(python_dataset, c
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
         python_dataset.download_files.return_value = []
+        python_dataset.cache.queue_transform_update = Mock()
 
         signed_urls_only = False
         expandable_progress = ExpandableProgress(overall_progress=True)
@@ -338,6 +342,7 @@ async def test_submit_and_download_cache_miss_signed_urls_only(python_dataset, c
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
         python_dataset.download_files.return_value = []
+        python_dataset.cache.queue_transform_update = Mock()
 
         signed_urls_only = True
         expandable_progress = ExpandableProgress()
