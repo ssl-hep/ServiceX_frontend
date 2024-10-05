@@ -345,6 +345,10 @@ async def test_queue_get_transform_request_id(transform_request):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
+
+        # if the transform request is not in queue
+        request_id = await cache.queue_get_transform_request_id(transform_request)
+        assert request_id is None
         cache.queue_transform(transform_request)
 
         # assert cache.queue_contains_hash(transform_request.compute_hash()) is True
@@ -354,12 +358,17 @@ async def test_queue_get_transform_request_id(transform_request):
         assert "request_id" not in \
             cache.queue.search(transform.hash == transform_request.compute_hash())[0]
 
-        # request_id = await cache.queue_get_transform_request_id(transform_request)
-        # assert request_id is None
-
+        # update the trasnform request with a request id and then check for the request id
         cache.queue_transform_update(transform_request, "123456")
         request_id = await cache.queue_get_transform_request_id(transform_request)
         assert request_id == "123456"
+
+        # force duplicate records in queue
+        cache.queue.insert({"hash": transform_request.compute_hash(),
+                            "key": "value"})
+        with pytest.raises(CacheException):
+            await cache.queue_get_transform_request_id(transform_request)
+
         cache.close()
 
 
@@ -376,4 +385,12 @@ def test_queue_get_transform_request_hash(transform_request):
         assert not cache.queue_get_transform_request_hash(hash_value).did == "rucio://foo.baz"
 
         assert cache.queue_get_transform_request_hash(hash_value).codegen == "uproot"
+
+        # force duplicate entries in queue
+        record = json.loads(transform_request.model_dump_json())
+        record["hash"] = hash_value
+        cache.queue.insert(record)
+        with pytest.raises(CacheException):
+            cache.queue_get_transform_request_hash(hash_value)
+
         cache.close()
