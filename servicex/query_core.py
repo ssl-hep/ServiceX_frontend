@@ -243,12 +243,11 @@ class Query:
         )
 
         # Let's see if the request is already in the queue to be processed
-        queued_record = ( 
+        queued_record = (
             self.cache.queue_get_transform_request_hash(sx_request_hash)
             if not self.ignore_cache
             else None
         )
-
 
         # And that we grabbed the resulting files in the way that the user requested
         # (Downloaded, or obtained pre-signed URLs)
@@ -297,10 +296,11 @@ class Query:
                 self.cache.queue_transform(sx_request)
                 self.request_id = await self.servicex.submit_transform(sx_request)
                 self.cache.queue_transform_update(sx_request, self.request_id)
-                
-            else:
-                self.request_id = await loop.create_task(self.cache.queue_get_transform_request_id(sx_request))
 
+            else:
+                self.request_id = await loop.create_task(
+                    self.cache.queue_get_transform_request_id(sx_request)
+                    ) # noqa
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(

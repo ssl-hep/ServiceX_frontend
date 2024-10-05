@@ -73,11 +73,11 @@ class QueryCache:
             result_format=transform.result_format,
             log_url=completed_status.log_url
         )
-    
+
     def queue_contains_hash(self, hash: str):
         tranform_request = Query()
         with self.lock:
-            records = self.queue.search(tranform_request.hash==hash)
+            records = self.queue.search(tranform_request.hash == hash)
         return len(records) > 0
 
     def queue_transform(self, record: TransformRequest):
@@ -85,7 +85,7 @@ class QueryCache:
             hash_value = record.compute_hash()
             if not self.queue_contains_hash(hash_value):
                 record = json.loads(record.model_dump_json())
-                record["hash"]= hash_value
+                record["hash"] = hash_value
                 # record["request_id"] = request_id
                 self.queue.insert(record)
 
@@ -93,8 +93,7 @@ class QueryCache:
         transforms = Query()
         with self.lock:
             hash_value = record.compute_hash()
-            self.queue.upsert({'request_id': request_id},
-                           transforms.hash == hash_value)
+            self.queue.upsert({'request_id': request_id}, transforms.hash == hash_value)
 
     async def queue_get_transform_request_id(self, request: TransformRequest) -> str:
         transform_request = Query()
@@ -126,7 +125,6 @@ class QueryCache:
             raise CacheException("Multiple records found in db for hash")
         else:
             return TransformRequest(**records[0])
-
 
     def cache_transform(self, record: TransformedResults):
         with self.lock:
@@ -225,5 +223,5 @@ class QueryCache:
 
         if not record:
             return None
-        
+
         return TransformedResults(**record[0]).request_id
