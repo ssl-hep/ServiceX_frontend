@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import List, Optional
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
+import asyncio
 
 from servicex.configuration import Configuration
 from servicex.models import TransformRequest, TransformStatus, TransformedResults
@@ -85,7 +86,33 @@ class QueryCache:
             if not self.queue_contains_hash(hash_value):
                 record = json.loads(record.model_dump_json())
                 record["hash"]= hash_value
+                # record["request_id"] = request_id
                 self.queue.insert(record)
+
+    def queue_transform_update(self, record: TransformRequest, request_id: str):
+        transforms = Query()
+        with self.lock:
+            hash_value = record.compute_hash()
+            self.queue.upsert({'request_id': request_id},
+                           transforms.hash == hash_value)
+
+    async def queue_get_transform_request_id(self, request: TransformRequest) -> str:
+        transform_request = Query()
+        hash = request.compute_hash()
+        while True:
+            with self.lock:
+                records = self.queue.search(transform_request.hash == hash)
+
+            if not records:
+                return None
+
+            if len(records) != 1:
+                raise CacheException("Multiple records found in db for hash")
+            else:
+                if 'request_id' in records[0]:
+                    return records[0]["request_id"]
+                else:
+                    await asyncio.sleep(1)
 
     def queue_get_transform_request_hash(self, hash) -> Optional[TransformRequest]:
         transform_request = Query()
