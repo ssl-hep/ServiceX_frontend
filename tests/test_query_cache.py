@@ -288,3 +288,92 @@ def test_contains_hash(transform_request, completed_status):
 
         assert cache.contains_hash("1234") is False
         cache.close()
+
+
+def test_queue_contains_hash(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.queue_transform(transform_request)
+
+        assert cache.queue_contains_hash(transform_request.compute_hash()) is True
+
+        assert cache.contains_hash("1234") is False
+        cache.close()
+
+
+def test_queue_transform(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.queue_transform(transform_request)
+
+        # assert cache.queue_contains_hash(transform_request.compute_hash()) is True
+        transform = Query()
+        assert len(cache.queue.all()) == 1
+
+        assert len(cache.queue.search(transform.hash == transform_request.compute_hash())) == 1
+        # assert cache.contains_hash("1234") is False
+        cache.close()
+
+
+def test_queue_transform_update(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.queue_transform(transform_request)
+
+        # assert cache.queue_contains_hash(transform_request.compute_hash()) is True
+        transform = Query()
+        assert len(cache.queue.all()) == 1
+
+        assert "request_id" not in \
+            cache.queue.search(transform.hash == transform_request.compute_hash())[0]
+
+        cache.queue_transform_update(transform_request, "123456")
+
+        assert "request_id" in \
+            cache.queue.search(transform.hash == transform_request.compute_hash())[0]
+
+        assert cache.queue.get(transform.hash == transform_request.compute_hash())['request_id'] \
+            == "123456"
+        cache.close()
+
+
+@pytest.mark.asyncio
+async def test_queue_get_transform_request_id(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.queue_transform(transform_request)
+
+        # assert cache.queue_contains_hash(transform_request.compute_hash()) is True
+        transform = Query()
+        assert len(cache.queue.all()) == 1
+
+        assert "request_id" not in \
+            cache.queue.search(transform.hash == transform_request.compute_hash())[0]
+
+        # request_id = await cache.queue_get_transform_request_id(transform_request)
+        # assert request_id is None
+
+        cache.queue_transform_update(transform_request, "123456")
+        request_id = await cache.queue_get_transform_request_id(transform_request)
+        assert request_id == "123456"
+        cache.close()
+
+
+def test_queue_get_transform_request_hash(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.queue_transform(transform_request)
+
+        hash_value = transform_request.compute_hash()
+
+        assert cache.queue_get_transform_request_hash(hash_value).title == "Test submission"
+
+        assert not cache.queue_get_transform_request_hash(hash_value).did == "rucio://foo.baz"
+
+        assert cache.queue_get_transform_request_hash(hash_value).codegen == "uproot"
+        cache.close()
