@@ -215,13 +215,3 @@ class QueryCache:
         with self.lock:
             self.db.remove(where('backend') == backend)
 
-    async def get_request_id(self, request: TransformRequest):
-        transform = Query()
-        with self.lock:
-            hash = request.compute_hash()
-            record = self.db.search(transform.hash == hash)
-
-        if not record:
-            return None
-
-        return TransformedResults(**record[0]).request_id
