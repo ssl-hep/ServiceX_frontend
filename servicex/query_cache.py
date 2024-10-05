@@ -214,4 +214,3 @@ class QueryCache:
     def delete_codegen_by_backend(self, backend: str):
         with self.lock:
             self.db.remove(where('backend') == backend)
-
