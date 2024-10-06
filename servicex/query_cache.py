@@ -126,6 +126,11 @@ class QueryCache:
         else:
             return TransformRequest(**records[0])
 
+    def queue_delete_record(self, record: TransformRequest):
+        hash_value = record.compute_hash()
+        with self.lock:
+            self.queue.remove(where('hash') == hash_value)
+
     def cache_transform(self, record: TransformedResults):
         with self.lock:
             if not self.contains_hash(record.hash):
