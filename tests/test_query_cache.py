@@ -34,6 +34,7 @@ from servicex.configuration import Configuration
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache, CacheException
 from tinydb import Query
+import asyncio
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
 
@@ -358,10 +359,17 @@ async def test_queue_get_transform_request_id(transform_request):
         assert "request_id" not in \
             cache.queue.search(transform.hash == transform_request.compute_hash())[0]
 
-        # update the trasnform request with a request id and then check for the request id
+        # update the transform request with a request id and then check for the request id
+        # Create 2 tasks to mimic asynchronous requests
+        loop = asyncio.get_event_loop()
+        task1 = loop.create_task(cache.queue_get_transform_request_id(transform_request))
+        await asyncio.sleep(3)
         cache.queue_transform_update(transform_request, "123456")
-        request_id = await cache.queue_get_transform_request_id(transform_request)
+        task2 = loop.create_task(cache.queue_get_transform_request_id(transform_request))
+        request_id = await task1
+        request_id2 = await task2
         assert request_id == "123456"
+        assert request_id == request_id2
 
         # force duplicate records in queue
         cache.queue.insert({"hash": transform_request.compute_hash(),

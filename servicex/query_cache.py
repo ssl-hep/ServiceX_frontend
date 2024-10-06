@@ -49,9 +49,6 @@ class QueryCache:
         self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
         self.queue = TinyDB(os.path.join(self.config.cache_path, "queue.json"))
 
-    def close_queue(self):
-        self.queue.close()
-
     def close(self):
         self.db.close()
         self.queue.close()
