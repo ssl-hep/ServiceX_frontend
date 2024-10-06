@@ -394,3 +394,16 @@ def test_queue_get_transform_request_hash(transform_request):
             cache.queue_get_transform_request_hash(hash_value)
 
         cache.close()
+
+
+def test_queue_delete_record(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.queue_transform(transform_request)
+        hash_value = transform_request.compute_hash()
+        assert cache.queue_get_transform_request_hash(hash_value).title == "Test submission"
+
+        cache.queue_delete_record(transform_request)
+        assert cache.queue_get_transform_request_hash(hash_value) is None
+        cache.close()
