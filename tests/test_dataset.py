@@ -435,3 +435,68 @@ async def test_network_loss(python_dataset, transformed_result):
         assert result is not None
         assert result.request_id == "123-45-6789"
         cache.close()
+
+
+@pytest.mark.asyncio
+async def test_submit_and_download_queue_submission_failed(
+        python_dataset,
+        completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        python_dataset.current_status = None
+        python_dataset.servicex = AsyncMock()
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        python_dataset.cache = cache
+        python_dataset.configuration = config
+        python_dataset.servicex = AsyncMock()
+        python_dataset.cache.get_transform_by_hash = Mock()
+        python_dataset.cache.get_transform_by_hash.return_value = None
+        python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
+        python_dataset.servicex.get_transform_status.return_value = completed_status
+        python_dataset.servicex.submit_transform = AsyncMock()
+        python_dataset.servicex.submit_transform.side_effect = Exception
+        python_dataset.download_files = AsyncMock()
+        python_dataset.download_files.return_value = []
+        python_dataset.cache.queue_transform = Mock()
+        python_dataset.cache.queue_delete_record = Mock()
+
+        signed_urls_only = True
+        expandable_progress = ExpandableProgress()
+        with pytest.raises(Exception) as err:
+            await python_dataset.submit_and_download(signed_urls_only, expandable_progress)
+            assert "Submission Failed" == str(err.value)
+
+        cache.close()
+
+
+@pytest.mark.asyncio
+async def test_submit_and_download_queue_submission(
+        python_dataset,
+        completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        python_dataset.current_status = None
+        python_dataset.servicex = AsyncMock()
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        python_dataset.cache = cache
+        python_dataset.configuration = config
+        python_dataset.servicex = AsyncMock()
+        python_dataset.cache.get_transform_by_hash = Mock()
+        python_dataset.cache.get_transform_by_hash.return_value = None
+        python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
+        python_dataset.servicex.get_transform_status.return_value = completed_status
+        python_dataset.servicex.submit_transform = AsyncMock()
+        python_dataset.servicex.submit_transform.side_effect = Exception
+        python_dataset.download_files = AsyncMock()
+        python_dataset.download_files.return_value = []
+        python_dataset.cache.queue_transform = Mock()
+        python_dataset.cache.queue_delete_record = Mock()
+
+        signed_urls_only = True
+        expandable_progress = ExpandableProgress()
+        python_dataset.cache.queue_get_transform_request_hash = Mock()
+        result = await python_dataset.submit_and_download(signed_urls_only, expandable_progress)
+
+        assert result is not None
+        assert result.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+        cache.close()
