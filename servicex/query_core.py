@@ -242,6 +242,13 @@ class Query:
             else None
         )
 
+        # Let's see if the request is already in the queue to be processed
+        queued_record = (
+            self.cache.queue_get_transform_request_hash(sx_request_hash)
+            if not self.ignore_cache
+            else None
+        )
+
         # And that we grabbed the resulting files in the way that the user requested
         # (Downloaded, or obtained pre-signed URLs)
         if cached_record:
@@ -285,7 +292,23 @@ class Query:
         )
 
         if not cached_record:
-            self.request_id = await self.servicex.submit_transform(sx_request)
+            # if the transform request is not queued, then queue the request
+            # get the request id
+            # update the queued request with the request id
+            if not queued_record:
+                # if there is an error submitting the request,
+                # it is evicted from the queue
+                try:
+                    self.cache.queue_transform(sx_request)
+                    self.request_id = await self.servicex.submit_transform(sx_request)
+                except Exception:
+                    if not self.request_id:
+                        self.cache.queue_delete_record(sx_request)
+                    raise Exception("Submission Failed")
+
+                self.cache.queue_transform_update(sx_request, self.request_id)
+            else:  # if in queue, get the request id from submitted transform request
+                self.request_id = await self.cache.queue_get_transform_request_id(sx_request)
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
