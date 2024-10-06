@@ -292,15 +292,23 @@ class Query:
         )
 
         if not cached_record:
+            # if the transform request is not queued, then queue the request
+            # get the request id
+            # update the queued request with the request id
             if not queued_record:
-                self.cache.queue_transform(sx_request)
-                self.request_id = await self.servicex.submit_transform(sx_request)
-                self.cache.queue_transform_update(sx_request, self.request_id)
+                # if there is an error submitting the request,
+                # it is evicted from the queue
+                try:
+                    self.cache.queue_transform(sx_request)
+                    self.request_id = await self.servicex.submit_transform(sx_request)
+                except Exception:
+                    if not self.request_id:
+                        self.cache.queue_delete_record(sx_request)
+                    raise Exception("Submission Failed")
 
-            else:
-                self.request_id = await loop.create_task(
-                    self.cache.queue_get_transform_request_id(sx_request)
-                    ) # noqa
+                self.cache.queue_transform_update(sx_request, self.request_id)
+            else:  # if in queue, get the request id from submitted transform request
+                self.request_id = await self.cache.queue_get_transform_request_id(sx_request)
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
