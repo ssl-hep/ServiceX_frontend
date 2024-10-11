@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import List, Optional
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
+import asyncio
 
 from servicex.configuration import Configuration
 from servicex.models import TransformRequest, TransformStatus, TransformedResults
@@ -69,9 +70,11 @@ class QueryCache:
         )
 
     def cache_transform(self, record: TransformedResults):
+        transforms = Query()
         with self.lock:
-            if not self.contains_hash(record.hash):
-                self.db.insert(json.loads(record.model_dump_json()))
+            # if not self.contains_hash(record.hash):
+            self.db.upsert(json.loads(record.model_dump_json()),
+                           transforms.hash == record.hash)
 
     def update_record(self, record: TransformedResults):
         transforms = Query()
@@ -81,13 +84,57 @@ class QueryCache:
     def contains_hash(self, hash: str) -> bool:
         transforms = Query()
         with self.lock:
-            records = self.db.search(transforms.hash == hash)
+            records = self.db.search((transforms.hash == hash) & (transforms.status.exists()) & 
+                                     (transforms.status == 'COMPLETE'))
         return len(records) > 0
+
+    def get_transform_request_status(self, hash_value: str) -> Optional[str]:
+        transform = Query()
+        # hash_value = request.compute_hash()
+        with self.lock:
+            records = self.db.search((transform.hash==hash_value) & (transform.status.exists()))
+        
+        if not records:
+            return None
+        if len(records) != 1:
+            raise CacheException("Multiple records found in db for hash")
+        else:
+            return records[0]['status']
+        
+    async def get_transform_request_id(self, hash_value: str) -> Optional[str]:
+        transform = Query()
+        # hash_value = request.compute_hash()
+        while True:
+            with self.lock:
+                records = self.db.search(transform.hash == hash_value)
+
+            if not records:
+                return None
+
+            if len(records) != 1:
+                raise CacheException("Multiple records found in db for hash")
+            else:
+                if 'request_id' in records[0]:
+                    return records[0]["request_id"]
+                else:
+                    await asyncio.sleep(1)
+        
+    def update_transform_status(self, hash_value: str, status: str) -> None:
+        transform = Query()
+        with self.lock:
+            self.db.upsert({"hash":hash_value, "status":status}, transform.hash==hash_value)
+
+    def update_transform_request_id(self, hash_value: str, request_id: str) -> None:
+        transform = Query()
+        # hash_value = request.compute_hash()
+        with self.lock:
+            self.db.upsert({"hash":hash_value, "request_id":request_id}, transform.hash==hash_value)
 
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         transforms = Query()
         with self.lock:
-            records = self.db.search(transforms.hash == hash)
+            records = self.db.search((transforms.hash == hash) & (transforms.status.exists()) & 
+                                     (transforms.status == 'COMPLETE'))
 
         if not records:
             return None
