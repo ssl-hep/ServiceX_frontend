@@ -285,7 +285,13 @@ class Query:
         )
 
         if not cached_record:
-            self.request_id = await self.servicex.submit_transform(sx_request)
+
+            if self.cache.get_transform_request_status(sx_request_hash) == "SUBMITTED":
+                self.request_id = await self.cache.get_transform_request_id(sx_request_hash)
+            else:
+                self.request_id = await self.servicex.submit_transform(sx_request)
+                self.cache.update_transform_request_id(sx_request_hash, self.request_id)
+                self.cache.update_transform_status(sx_request_hash, "SUBMITTED")
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
@@ -329,6 +335,7 @@ class Query:
                     signed_urls,
                 )
                 if self.current_status.files_failed == 0:
+                    self.cache.update_transform_status(sx_request_hash, "COMPLETE")
                     self.cache.cache_transform(transform_report)
             else:
                 if self.current_status.files_failed == 0:
