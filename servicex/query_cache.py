@@ -31,7 +31,6 @@ from pathlib import Path
 from typing import List, Optional
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
-import asyncio
 
 from servicex.configuration import Configuration
 from servicex.models import TransformRequest, TransformStatus, TransformedResults
@@ -82,8 +81,7 @@ class QueryCache:
     def contains_hash(self, hash: str) -> bool:
         transforms = Query()
         with self.lock:
-            records = self.db.search((transforms.hash == hash) & (transforms.status.exists())
-                                     & (transforms.status == 'COMPLETE'))
+            records = self.db.search((transforms.hash == hash) & (transforms.files.exists()))
         return len(records) > 0
 
     def get_transform_request_status(self, hash_value: str) -> Optional[str]:
@@ -94,27 +92,17 @@ class QueryCache:
 
         if not records:
             return None
-        if len(records) != 1:
-            raise CacheException("Multiple records found in db for hash")
-        else:
-            return records[0]['status']
+        return records[0]['status']
 
-    async def get_transform_request_id(self, hash_value: str) -> Optional[str]:
+    def get_transform_request_id(self, hash_value: str) -> Optional[str]:
         transform = Query()
-        while True:
-            with self.lock:
-                records = self.db.search(transform.hash == hash_value)
 
-            if not records:
-                return None
+        with self.lock:
+            records = self.db.search(transform.hash == hash_value)
 
-            if len(records) != 1:
-                raise CacheException("Multiple records found in db for hash")
-            else:
-                if 'request_id' in records[0]:
-                    return records[0]["request_id"]
-                else:
-                    await asyncio.sleep(1)
+        if not records or 'request_id' not in records[0]:
+            raise CacheException("Request Id not found")
+        return records[0]["request_id"]
 
     def update_transform_status(self, hash_value: str, status: str) -> None:
         transform = Query()
@@ -130,8 +118,8 @@ class QueryCache:
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         transforms = Query()
         with self.lock:
-            records = self.db.search((transforms.hash == hash) & (transforms.status.exists())
-                                     & (transforms.status == 'COMPLETE'))
+            records = records = self.db.search((transforms.hash == hash)
+                                               & (transforms.files.exists()))
 
         if not records:
             return None
