@@ -79,12 +79,18 @@ class QueryCache:
             self.db.update(json.loads(record.model_dump_json()), transforms.hash == record.hash)
 
     def contains_hash(self, hash: str) -> bool:
+        """
+        Check if the cache has completed records for a hash
+        """
         transforms = Query()
         with self.lock:
             records = self.db.search((transforms.hash == hash) & (transforms.files.exists()))
         return len(records) > 0
 
     def get_transform_request_status(self, hash_value: str) -> Optional[str]:
+        """
+        Get the status of a transform request
+        """
         transform = Query()
         with self.lock:
             records = self.db.search((transform.hash == hash_value)
@@ -95,6 +101,9 @@ class QueryCache:
         return records[0]['status']
 
     def get_transform_request_id(self, hash_value: str) -> Optional[str]:
+        """
+        Return the request id of cached record
+        """
         transform = Query()
 
         with self.lock:
@@ -105,17 +114,26 @@ class QueryCache:
         return records[0]["request_id"]
 
     def update_transform_status(self, hash_value: str, status: str) -> None:
+        """
+        Update the cached record status
+        """
         transform = Query()
         with self.lock:
             self.db.upsert({"hash": hash_value, "status": status}, transform.hash == hash_value)
 
     def update_transform_request_id(self, hash_value: str, request_id: str) -> None:
+        """
+        Update the cached record request id
+        """
         transform = Query()
         with self.lock:
             self.db.upsert({"hash": hash_value, "request_id": request_id},
                            transform.hash == hash_value)
 
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
+        """
+        Returns completed transformations by hash
+        """
         transforms = Query()
         with self.lock:
             records = records = self.db.search((transforms.hash == hash)
@@ -130,6 +148,9 @@ class QueryCache:
             return TransformedResults(**records[0])
 
     def get_transform_by_request_id(self, request_id: str) -> Optional[TransformedResults]:
+        """
+        Returns completed transformed results using a request id
+        """
         transforms = Query()
 
         with self.lock:
