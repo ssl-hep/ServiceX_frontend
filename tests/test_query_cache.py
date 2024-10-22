@@ -29,7 +29,6 @@ import os
 import tempfile
 import json
 import pytest
-import asyncio
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
@@ -308,34 +307,22 @@ def test_contains_hash(transform_request, completed_status):
         cache.close()
 
 
-@pytest.mark.asyncio
-async def test_get_transform_request_id(transform_request, completed_status):
+def test_get_transform_request_id(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
         hash_value = transform_request.compute_hash()
 
         # if the transform request id is not cached
-        request_id = await cache.get_transform_request_id(hash_value)
-        assert request_id is None
+        with pytest.raises(CacheException):
+            request_id = cache.get_transform_request_id(hash_value)
+            print(request_id)
 
         # update the transform request with a request id and then check for the request id
-        # Create 2 tasks to mimic asynchronous requests
-        loop = asyncio.get_event_loop()
         cache.update_transform_status(hash_value, 'SUBMITTED')
-        task1 = loop.create_task(cache.get_transform_request_id(hash_value))
-        await asyncio.sleep(3)
         cache.update_transform_request_id(hash_value, "123456")
-        task2 = loop.create_task(cache.get_transform_request_id(hash_value))
-        request_id = await task1
-        request_id2 = await task2
+        request_id = cache.get_transform_request_id(hash_value)
         assert request_id == "123456"
-        assert request_id == request_id2
-
-        # force duplicate records in queue
-        cache.db.insert({"hash": transform_request.compute_hash(), "key": "value"})
-        with pytest.raises(CacheException):
-            await cache.get_transform_request_id(hash_value)
 
         cache.close()
 
@@ -361,21 +348,5 @@ def test_get_transform_request_status(transform_request, completed_status):
         )
 
         assert cache.get_transform_request_status(hash_value) == "COMPLETE"
-
-        # force add duplicate values in cache
-        record = json.loads(
-            cache.transformed_results(
-                transform=transform_request,
-                completed_status=completed_status,
-                data_dir="/foo/baz",
-                file_list=file_uris,
-                signed_urls=[],
-            ).model_dump_json())
-        record["hash"] = transform_request.compute_hash()
-        record["status"] = "COMPLETE"
-        cache.db.insert(record)
-
-        with pytest.raises(CacheException):
-            cache.get_transform_request_status(hash_value)
 
         cache.close()

@@ -456,6 +456,7 @@ async def test_submit_and_download_get_request_id_from_previous_submitted_reques
         python_dataset.download_files = AsyncMock()
         python_dataset.download_files.return_value = []
         python_dataset.cache.get_transform_request_status = Mock(return_value='SUBMITTED')
+        python_dataset.cache.get_transform_request_id = Mock(return_value="b8c508d0-ccf2-4deb-a1f7-65c839eebabf")  # noqa
         signed_urls_only = True
         expandable_progress = ExpandableProgress()
         result = await python_dataset.submit_and_download(signed_urls_only, expandable_progress)
