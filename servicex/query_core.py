@@ -288,7 +288,7 @@ class Query:
 
         if not cached_record:
 
-            if self.cache.get_transform_request_status(sx_request_hash) == "SUBMITTED":
+            if self.cache.is_transform_request_submitted(sx_request_hash):
                 self.request_id = self.cache.get_transform_request_id(sx_request_hash)
             else:
                 self.request_id = await self.servicex.submit_transform(sx_request)

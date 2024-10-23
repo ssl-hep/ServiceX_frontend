@@ -84,21 +84,24 @@ class QueryCache:
         """
         transforms = Query()
         with self.lock:
-            records = self.db.search((transforms.hash == hash) & (transforms.files.exists()))
+            records = self.db.search((transforms.hash == hash)
+                                     & ~(transforms.status == 'SUBMITTED'))
         return len(records) > 0
 
-    def get_transform_request_status(self, hash_value: str) -> Optional[str]:
+    def is_transform_request_submitted(self, hash_value: str) -> bool:
         """
         Get the status of a transform request
         """
         transform = Query()
         with self.lock:
-            records = self.db.search((transform.hash == hash_value)
-                                     & (transform.status.exists()))
+            records = self.db.search((transform.hash == hash_value))
 
         if not records:
-            return None
-        return records[0]['status']
+            return False
+
+        if "status" in records[0] and records[0]["status"] == 'SUBMITTED':
+            return True
+        return False
 
     def get_transform_request_id(self, hash_value: str) -> Optional[str]:
         """
@@ -137,7 +140,7 @@ class QueryCache:
         transforms = Query()
         with self.lock:
             records = records = self.db.search((transforms.hash == hash)
-                                               & (transforms.files.exists()))
+                                               & ~(transforms.status == 'SUBMITTED'))
 
         if not records:
             return None
