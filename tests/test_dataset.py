@@ -279,7 +279,6 @@ async def test_submit_and_download_cache_miss_overall_progress(python_dataset, c
         python_dataset.download_files = AsyncMock()
         python_dataset.download_files.return_value = []
         python_dataset.cache.update_transform_request_id = Mock()
-        # python_dataset.cache.update_transform_status = Mock()
 
         signed_urls_only = False
         expandable_progress = ExpandableProgress(overall_progress=True)
