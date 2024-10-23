@@ -90,7 +90,9 @@ class QueryCache:
 
     def is_transform_request_submitted(self, hash_value: str) -> bool:
         """
-        Get the status of a transform request
+        Returns True if request is submitted
+        Returns False if the request is not in the cache at all
+        or not submitted
         """
         transform = Query()
         with self.lock:
