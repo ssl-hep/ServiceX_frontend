@@ -333,7 +333,7 @@ def test_get_transform_request_status(transform_request, completed_status):
         cache = QueryCache(config)
         hash_value = transform_request.compute_hash()
 
-        assert cache.get_transform_request_status(hash_value) is None
+        assert cache.is_transform_request_submitted(hash_value) is False
 
         # cache transform
         cache.update_transform_status(hash_value, "COMPLETE")
@@ -347,6 +347,20 @@ def test_get_transform_request_status(transform_request, completed_status):
             )
         )
 
-        assert cache.get_transform_request_status(hash_value) == "COMPLETE"
+        assert cache.is_transform_request_submitted(hash_value) is False
+
+        # cache transform
+        cache.update_transform_status(hash_value, "SUBMITTED")
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+
+        assert cache.is_transform_request_submitted(hash_value) is True
 
         cache.close()
