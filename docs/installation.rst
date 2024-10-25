@@ -11,9 +11,17 @@ Installation
 -------------
 
 
+The ServiceX client library can be installed either with ``pip``
+
 .. code-block:: bash
-    
-    pip install servicex
+
+    python -m pip install servicex
+
+or with ``conda``
+
+.. code-block:: bash
+
+    conda install --channel conda-forge servicex
 
 This installs the servicex command line tool and the servicex Python package.
 
