@@ -195,6 +195,7 @@ class Query:
                 logger.error(
                     "ServiceX Exception", exc_info=task.exception()
                 )
+                self.cache.delete_record_by_request_id(self.request_id)
                 if download_files_task:
                     import sys
                     if sys.version_info < (3, 9):
@@ -205,6 +206,7 @@ class Query:
 
             if self.current_status.status in DONE_STATUS:
                 if self.current_status.files_failed:
+                    self.cache.delete_record_by_request_id(self.request_id)
                     titlestr = (f'"{self.current_status.title}" '
                                 if self.current_status.title is not None else '')
                     logger.error(
@@ -285,7 +287,13 @@ class Query:
         )
 
         if not cached_record:
-            self.request_id = await self.servicex.submit_transform(sx_request)
+
+            if self.cache.is_transform_request_submitted(sx_request_hash):
+                self.request_id = self.cache.get_transform_request_id(sx_request_hash)
+            else:
+                self.request_id = await self.servicex.submit_transform(sx_request)
+                self.cache.update_transform_request_id(sx_request_hash, self.request_id)
+                self.cache.update_transform_status(sx_request_hash, "SUBMITTED")
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
@@ -329,6 +337,7 @@ class Query:
                     signed_urls,
                 )
                 if self.current_status.files_failed == 0:
+                    self.cache.update_transform_status(sx_request_hash, "COMPLETE")
                     self.cache.cache_transform(transform_report)
             else:
                 if self.current_status.files_failed == 0:

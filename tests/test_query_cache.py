@@ -79,6 +79,7 @@ def test_cache_transform(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
+        cache.update_transform_status(transform_request.compute_hash(), "COMPLETE")
         cache.cache_transform(
             cache.transformed_results(
                 transform=transform_request,
@@ -118,15 +119,17 @@ def test_cache_transform(transform_request, completed_status):
         assert len(cache.cached_queries()) == 1
 
         # forcefully create a duplicate record
-        cache.db.insert(
-            json.loads(
-                cache.transformed_results(
-                    transform=transform_request,
-                    completed_status=completed_status,
-                    data_dir="/foo/baz",
-                    file_list=file_uris,
-                    signed_urls=[],
-            ).model_dump_json()))  # noqa
+        record = json.loads(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/baz",
+                file_list=file_uris,
+                signed_urls=[],
+            ).model_dump_json())
+        record["hash"] = transform_request.compute_hash()
+        record["status"] = "COMPLETE"
+        cache.db.insert(record)
 
         with pytest.raises(CacheException):
             cache.get_transform_by_hash(transform_request.compute_hash())
@@ -261,6 +264,7 @@ def test_delete_codegen_by_hash(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
+        cache.update_transform_status(transform_request.compute_hash(), "COMPLETE")
         cache.cache_transform(
             cache.transformed_results(
                 transform=transform_request,
@@ -286,6 +290,7 @@ def test_contains_hash(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
+        cache.update_transform_status(transform_request.compute_hash(), "COMPLETE")
         cache.cache_transform(
             cache.transformed_results(
                 transform=transform_request,
@@ -299,4 +304,63 @@ def test_contains_hash(transform_request, completed_status):
         assert cache.contains_hash(transform_request.compute_hash()) is True
 
         assert cache.contains_hash("1234") is False
+        cache.close()
+
+
+def test_get_transform_request_id(transform_request, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        hash_value = transform_request.compute_hash()
+
+        # if the transform request id is not cached
+        with pytest.raises(CacheException):
+            request_id = cache.get_transform_request_id(hash_value)
+            print(request_id)
+
+        # update the transform request with a request id and then check for the request id
+        cache.update_transform_status(hash_value, 'SUBMITTED')
+        cache.update_transform_request_id(hash_value, "123456")
+        request_id = cache.get_transform_request_id(hash_value)
+        assert request_id == "123456"
+
+        cache.close()
+
+
+def test_get_transform_request_status(transform_request, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        hash_value = transform_request.compute_hash()
+
+        assert cache.is_transform_request_submitted(hash_value) is False
+
+        # cache transform
+        cache.update_transform_status(hash_value, "COMPLETE")
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+
+        assert cache.is_transform_request_submitted(hash_value) is False
+
+        # cache transform
+        cache.update_transform_status(hash_value, "SUBMITTED")
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+
+        assert cache.is_transform_request_submitted(hash_value) is True
+
         cache.close()
