@@ -5,6 +5,7 @@
 [![Code Coverage](https://codecov.io/gh/ssl-hep/ServiceX_frontend/graph/badge.svg)](https://codecov.io/gh/ssl-hep/ServiceX_frontend)
 
 [![PyPI version](https://badge.fury.io/py/servicex.svg)](https://badge.fury.io/py/servicex)
+[![conda-forge version](https://img.shields.io/conda/vn/conda-forge/servicex.svg)](https://github.com/conda-forge/servicex-feedstock.git)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/servicex.svg)](https://pypi.org/project/servicex/)
 
 [![Docs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://servicex-frontend.readthedocs.io)

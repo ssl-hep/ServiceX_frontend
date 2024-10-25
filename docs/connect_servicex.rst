@@ -87,7 +87,7 @@ Setting to false preserves the full filename from the dataset.
 
 ServiceX Client Installation
 ----------------------------
-ServiceX client Python package is a python library for users to communicate 
+ServiceX client Python package is a python library for users to communicate
 with ServiceX backend (or server) to make transformation requests and handling
 of outputs.
 
@@ -101,8 +101,16 @@ Prerequisites
 Installation
 ~~~~~~~~~~~~
 
+The ServiceX client library can be installed either with ``pip``
+
 .. code-block:: bash
-    
-    pip install servicex
+
+    python -m pip install servicex
+
+or with ``conda``
+
+.. code-block:: bash
+
+    conda install --channel conda-forge servicex
 
 You're all set to make your ServiceX transformation request!
