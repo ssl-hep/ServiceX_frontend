@@ -262,7 +262,6 @@ class ServiceXSpec(BaseModel):
     @classmethod
     def validate_unique_sample(cls, v):
         hash_set = set([i.hash for i in v])
-        if len(hash_set)!=len(v):
+        if len(hash_set) != len(v):
             raise RuntimeError("Duplicate samples detected")
         return v
-

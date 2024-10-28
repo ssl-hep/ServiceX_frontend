@@ -110,7 +110,7 @@ class FileListDataset(DataSetIdentifier):
     @classmethod
     def from_yaml(cls, constructor, node):
         return cls(constructor.construct_sequence(node))
-    
+
     @property
     def hash(self):
         self.files.sort()

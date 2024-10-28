@@ -371,7 +371,7 @@ def test_submit_mapping_failure_signed_urls(codegen_list):
             for _ in results['sampleA']:
                 pass
 
-        
+
 def test_yaml(tmp_path):
     from servicex.servicex_client import _load_ServiceXSpec
     from servicex.dataset import FileList, Rucio, CERNOpenData
