@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from typing import List, Union, Optional
+import hashlib
 
 from servicex.models import TransformRequest
 
@@ -48,6 +49,17 @@ class DataSetIdentifier:
     def populate_transform_request(self, transform_request: TransformRequest) -> None:
         transform_request.did = self.did
         transform_request.file_list = None
+
+    @property
+    def hash(self):
+        sha = hashlib.sha256(
+            str(
+                [
+                    self.dataset
+                ]
+            ).encode("utf-8")
+        )
+        return sha.hexdigest()
 
 
 class RucioDatasetIdentifier(DataSetIdentifier):
@@ -98,6 +110,18 @@ class FileListDataset(DataSetIdentifier):
     @classmethod
     def from_yaml(cls, constructor, node):
         return cls(constructor.construct_sequence(node))
+    
+    @property
+    def hash(self):
+        self.files.sort()
+        sha = hashlib.sha256(
+            str(
+                [
+                    self.files
+                ]
+            ).encode("utf-8")
+        )
+        return sha.hexdigest()
 
 
 class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
