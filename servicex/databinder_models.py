@@ -261,10 +261,6 @@ class ServiceXSpec(BaseModel):
     @field_validator("Sample", mode="after")
     @classmethod
     def validate_unique_sample(cls, v):
-        # hash_set = {i.hash for i in v}
-        # if len(hash_set) != len(v):
-        #     raise RuntimeError("Duplicate samples detected")
-        # return v
         hash_set = set()
         for sample in v:
             if sample.hash in hash_set:
