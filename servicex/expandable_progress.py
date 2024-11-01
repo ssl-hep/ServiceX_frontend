@@ -194,7 +194,8 @@ class ExpandableProgress:
             self.progress.advance(task_id=task_id)
 
     def refresh(self):
-        self.progress.refresh()
+        if self.progress is not None:
+            self.progress.refresh()
 
 
 class TranformStatusProgress(Progress):
