@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
+import hashlib
 from typing import Union, Optional, List
 from pydantic import (
     BaseModel,
@@ -147,6 +148,21 @@ class Sample(BaseModel):
             v = v[0:128]
         return v
 
+    @property
+    def hash(self):
+        sha = hashlib.sha256(
+            str(
+                [
+                    self.dataset_identifier.hash,
+                    self.NFiles,
+                    self.Query if (not self.Query or isinstance(self.Query, str))
+                    else self.Query.generate_selection_string(),
+                    self.Codegen
+                ]
+            ).encode("utf-8")
+        )
+        return sha.hexdigest()
+
 
 class General(BaseModel):
     """
@@ -241,3 +257,13 @@ class ServiceXSpec(BaseModel):
     """
     Any reusable definitions that are needed for the transform request
     """
+
+    @field_validator("Sample", mode="after")
+    @classmethod
+    def validate_unique_sample(cls, v):
+        hash_set = set()
+        for sample in v:
+            if sample.hash in hash_set:
+                raise RuntimeError(f"Duplicate samples detected: {sample.Name}")
+            hash_set.add(sample.hash)
+        return v

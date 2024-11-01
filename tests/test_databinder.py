@@ -398,7 +398,7 @@ Sample:
     Query: !UprootRaw |
                 [{"treename": "nominal"}]
   - Name: ttH4
-    Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v112
     Query: !UprootRaw '[{"treename": "nominal"}]'
   - Name: ttH5
     Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
@@ -416,7 +416,7 @@ Sample:
         assert type(result.Sample[2].Query).__name__ == 'UprootRawQuery'
         assert isinstance(result.Sample[3].dataset_identifier, Rucio)
         assert (result.Sample[3].dataset_identifier.did
-                == 'rucio://user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11')
+                == 'rucio://user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v112')
         assert isinstance(result.Sample[4].dataset_identifier, FileList)
         assert (result.Sample[4].dataset_identifier.files
                 == ["/path/to/file1.root", "/path/to/file2.root"])
@@ -446,6 +446,97 @@ Sample:
         f.flush()
         with pytest.raises(SyntaxError):
             _load_ServiceXSpec(path)
+
+    # Duplicate samples with different names but same dataset and query
+    with open(path := (tmp_path / "python.yaml"), "w") as f:
+        f.write("""
+General:
+  OutputFormat: root-ttree
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH3
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !UprootRaw |
+                [{"treename": "nominal"}]
+  - Name: ttH4
+    Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH5
+    Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+    """)
+        f.flush()
+        with pytest.raises(RuntimeError):
+            _load_ServiceXSpec(path)
+
+    # Duplicate samples with different names but same datasets (multiple) and query
+    # change the order of the datasets
+    with open(path := (tmp_path / "python.yaml"), "w") as f:
+        f.write("""
+General:
+  OutputFormat: root-ttree
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH3
+    RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: !UprootRaw |
+                [{"treename": "nominal"}]
+  - Name: ttH5
+    Dataset: !FileList ["/path/to/file2.root", "/path/to/file1.root"]
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH5
+    Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+    """)
+        f.flush()
+        with pytest.raises(RuntimeError):
+            _load_ServiceXSpec(path)
+
+    # Samples with different names but same datasets(multiple) and query
+    # different NFiles
+    with open(path := (tmp_path / "python.yaml"), "w") as f:
+        f.write("""
+General:
+  OutputFormat: root-ttree
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH5
+    Dataset: !FileList ["/path/to/file2.root", "/path/to/file1.root"]
+    NFiles: 3
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH6
+    NFiles: 1
+    Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+    """)
+        f.flush()
+        result = _load_ServiceXSpec(path)
+        assert type(result.Sample[0].Query).__name__ == 'UprootRawQuery'
+        assert type(result.Sample[1].Query).__name__ == 'UprootRawQuery'
+
+    # Samples with different names but same datasets(multiple) and
+    # different queries
+    with open(path := (tmp_path / "python.yaml"), "w") as f:
+        f.write("""
+General:
+  OutputFormat: root-ttree
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH5
+    Dataset: !FileList ["/path/to/file2.root", "/path/to/file1.root"]
+    Query: !UprootRaw '[{"treename": "nominal"}]'
+  - Name: ttH6
+    Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
+    Query: !UprootRaw '[{"treename": "CollectionTree"}]'
+    """)
+        f.flush()
+        result = _load_ServiceXSpec(path)
+        assert type(result.Sample[0].Query).__name__ == 'UprootRawQuery'
+        assert type(result.Sample[1].Query).__name__ == 'UprootRawQuery'
 
 
 def test_yaml_include(tmp_path):
