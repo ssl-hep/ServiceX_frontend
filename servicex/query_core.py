@@ -191,6 +191,7 @@ class Query:
             :param task:
             :return:
             """
+            expandable_progress.refresh()
             if task.exception():
                 logger.error(
                     "ServiceX Exception", exc_info=task.exception()
