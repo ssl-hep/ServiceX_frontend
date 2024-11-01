@@ -29,21 +29,38 @@
 # pydantic 2 API
 
 import pydantic
+from ..models import DocStringBaseModel
 from typing import List, Union, Mapping, Optional, get_args
 from ..query_core import QueryStringGenerator
 
 
-class TreeSubQuery(pydantic.BaseModel):
+class TreeSubQuery(DocStringBaseModel):
+    """Express an uproot-raw query on an ntuple. Arguments have the same meaning as the
+    ones of the same name for uproot.arrays():
+    https://uproot.readthedocs.io/en/stable/uproot.behaviors.TBranch.HasBranches.html#uproot-behaviors-tbranch-hasbranches-arrays
+    """
+    model_config = {'use_attribute_docstrings': True}
+
     treename: Union[Mapping[str, str], List[str], str]
+    """Name of input ntuple in file"""
     expressions: Optional[Union[List[str], str]] = None
+    """Awkward Array expressions to evaluate for output"""
     cut: Optional[str] = None
+    """Awkward Array expressions to select passing rows"""
     filter_name: Optional[Union[List[str], str]] = None
+    """Expression to filter the list of considered input variables by name"""
     filter_typename: Optional[Union[List[str], str]] = None
+    """Expression to filter the list of considered input variables by type name"""
     aliases: Optional[Mapping[str, str]] = None
+    """Define aliases to use in computation and expressions"""
 
 
-class CopyHistogramSubQuery(pydantic.BaseModel):
+class CopyHistogramSubQuery(DocStringBaseModel):
+    """Request the copying of a ROOT object from the input file to the output."""
+    model_config = {'use_attribute_docstrings': True}
+
     copy_histograms: Union[List[str], str]
+    """Objects to copy"""
 
 
 SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
