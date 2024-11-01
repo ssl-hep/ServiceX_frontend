@@ -30,7 +30,30 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional
+from typing import List, Optional, Any
+
+
+def _get_typename(typeish) -> str:
+    return typeish.__name__ if isinstance(typeish, type) else str(typeish)
+
+
+def _generate_model_docstring(model: type) -> str:
+    NL = '\n'
+    return '\n'.join([(model.__doc__ if model.__doc__ else model.__name__).strip(),
+                      '', 'Args:']
+                     + [f'    {field}: ({_get_typename(info.annotation)}) '
+                        f'{info.description.replace(NL, NL + " " * 8) if info.description else ""}'
+                        for field, info in model.model_fields.items()]
+                     )
+
+
+class DocStringBaseModel(BaseModel):
+    """Class to autogenerate a docstring for a Pydantic model"""
+
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any):
+        super().__pydantic_init_subclass__(**kwargs)
+        cls.__doc__ = _generate_model_docstring(cls)
 
 
 class ResultDestination(str, Enum):
@@ -65,7 +88,7 @@ class Status(str, Enum):
     running = "Running"
 
 
-class TransformRequest(BaseModel):
+class TransformRequest(DocStringBaseModel):
     r"""
     Transform request sent to ServiceX
     """
@@ -82,7 +105,7 @@ class TransformRequest(BaseModel):
     )
     result_format: ResultFormat = Field(serialization_alias="result-format")
 
-    model_config = {"populate_by_name": True}
+    model_config = {"populate_by_name": True, "use_attribute_docstrings": True}
 
     def compute_hash(self):
         r"""
@@ -107,10 +130,11 @@ class TransformRequest(BaseModel):
         return sha.hexdigest()
 
 
-class TransformStatus(BaseModel):
+class TransformStatus(DocStringBaseModel):
     r"""
     Status object returned by servicex
     """
+    model_config = {'use_attribute_docstrings': True}
 
     request_id: str
     did: str
@@ -143,33 +167,46 @@ class TransformStatus(BaseModel):
         return v
 
 
-class ResultFile(BaseModel):
+class ResultFile(DocStringBaseModel):
     r"""
     Record reporting the properties of a transformed file result
     """
+    model_config = {'use_attribute_docstrings': True}
 
     filename: str
     size: int
     extension: str
 
 
-class TransformedResults(BaseModel):
+class TransformedResults(DocStringBaseModel):
     r"""
     Returned for a submission. Gives you everything you need to know about a completed
     transform.
     """
+    model_config = {'use_attribute_docstrings': True}
 
     hash: str
+    """Unique hash for transformation (used to look up results in cache)"""
     title: str
+    """Title of transformation request"""
     codegen: str
+    """Code generator used (internal ServiceX information related to query type)"""
     request_id: str
+    """Associated request ID from the ServiceX server"""
     submit_time: datetime
+    """Time of submission"""
     data_dir: str
+    """Local directory for output"""
     file_list: List[str]
+    """List of downloaded files on local disk"""
     signed_url_list: List[str]
+    """List of URLs to retrieve output from remote ServiceX object store"""
     files: int
+    """Number of files in result"""
     result_format: ResultFormat
+    """File format for results"""
     log_url: Optional[str] = None
+    """URL for looking up logs on the ServiceX server"""
 
 
 class CachedDataset(BaseModel):

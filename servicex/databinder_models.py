@@ -29,7 +29,6 @@ from enum import Enum
 import hashlib
 from typing import Union, Optional, List
 from pydantic import (
-    BaseModel,
     Field,
     model_validator, field_validator,
 )
@@ -38,15 +37,16 @@ import logging
 from servicex.dataset_identifier import (DataSetIdentifier, RucioDatasetIdentifier,
                                          FileListDataset)
 from servicex.query_core import QueryStringGenerator
-from servicex.models import ResultFormat
+from servicex.models import ResultFormat, DocStringBaseModel
 
 logger = logging.getLogger(__name__)
 
 
-class Sample(BaseModel):
+class Sample(DocStringBaseModel):
     """
     Represents a single transform request within a larger submission.
     """
+    model_config = {'use_attribute_docstrings': True}
 
     Name: str
     """
@@ -164,10 +164,12 @@ class Sample(BaseModel):
         return sha.hexdigest()
 
 
-class General(BaseModel):
+class General(DocStringBaseModel):
     """
     Represents a group of samples to be transformed together.
     """
+    model_config = {'use_attribute_docstrings': True}
+
     class OutputFormatEnum(str, Enum):
         """
         Specifies the output format for the transform request.
@@ -239,10 +241,12 @@ class General(BaseModel):
 _General = General
 
 
-class ServiceXSpec(BaseModel):
+class ServiceXSpec(DocStringBaseModel):
     """
     ServiceX Submission Specification - pass this into the ServiceX `deliver` function
     """
+    model_config = {'use_attribute_docstrings': True}
+
     General: _General = General()
     """
     General settings for the transform request
