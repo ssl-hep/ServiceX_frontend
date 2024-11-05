@@ -67,6 +67,7 @@ re-running queries that have already been executed.
    transform_request
    datasets
    examples
+   errors
    command_line
    contribute
    about
