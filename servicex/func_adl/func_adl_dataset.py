@@ -209,8 +209,27 @@ class FuncADLQuery_Uproot(FuncADLQuery):
     yaml_tag = '!FuncADL_Uproot'
     default_codegen = 'uproot'
 
+    def __init__(
+        self,
+        item_type: Type = Any,
+    ):
+        super().__init__(item_type)
+        self.tree_is_set = False
+
     def FromTree(self, tree_name):
+        self.tree_is_set = True
         return self.set_tree(tree_name=tree_name)
+
+    def generate_selection_string(self):
+        if not self.tree_is_set:
+            raise ValueError('Uproot FuncADL query requires that you set a tree name with FromTree()')
+        return super().generate_selection_string()
+    
+    def set_provided_qastle(self, qastle_query: str):
+        # we do not validate provided qastle, so we don't know if a tree name is specified.
+        # assume user knows what they're doing
+        self.tree_is_set = True
+        super().set_provided_qastle(qastle_query)
 
     @classmethod
     def from_yaml(cls, _, node):

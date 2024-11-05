@@ -393,6 +393,7 @@ Sample:
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     Query: !FuncADL_Uproot |
                 Select(lambda e: {'lep_pt': e['lep_pt']})
+                .FromTree("nominal")
   - Name: ttH3
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     Query: !UprootRaw |
