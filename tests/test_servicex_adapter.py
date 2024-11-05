@@ -33,6 +33,7 @@ import pytest
 from pytest_asyncio import fixture
 from servicex.models import TransformRequest, ResultDestination, ResultFormat
 from servicex.servicex_adapter import ServiceXAdapter, AuthorizationError
+from aiohttp import ContentTypeError
 import time
 
 
@@ -60,6 +61,17 @@ async def test_get_transforms(mock_get, servicex, transform_status_response):
     assert len(t) == 1
     assert t[0].request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
     mock_get.assert_called_with(url='https://servicex.org/servicex/transformation', headers={})
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.RetryClient.get")
+async def test_get_transforms_error(mock_get, servicex, transform_status_response):
+    mock_get.return_value.__aenter__.return_value.json.return_value = {'message': 'error_message'}
+    mock_get.return_value.__aenter__.return_value.status = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.get_transforms()
+        assert "ServiceX WebAPI Error during transformation submission: 500 - error_message" \
+               == str(err.value)
 
 
 @pytest.mark.asyncio
@@ -195,6 +207,15 @@ async def test_submit_errors(post, servicex):
         await servicex.submit_transform(request)
         assert "Not authorized to access serviceX at" in str(err.value)
 
+    post.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
+    post.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    post.return_value.__aenter__.return_value.status = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.submit_transform(request)
+        assert "ServiceX WebAPI Error during transformation submission: 500 - error_message" \
+               == str(err.value)
+
+    post.return_value.__aenter__.return_value.json.reset_mock()
     post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
     post.return_value.__aenter__.return_value.status = 400
     with pytest.raises(ValueError) as err:
