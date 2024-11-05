@@ -74,6 +74,11 @@ class RucioDatasetIdentifier(DataSetIdentifier):
             returns the same subset of files.
 
         """
+        if ':' not in dataset:
+            # Missing a colon means that no namespace is specified and the request
+            # will fail on the backend
+            raise ValueError(f'Specified dataset {dataset} is missing a Rucio namespace. '
+                             'Please specify the dataset ID in the form "namespace:dataset".')
         super().__init__("rucio", dataset, num_files=num_files)
 
     yaml_tag = '!Rucio'
