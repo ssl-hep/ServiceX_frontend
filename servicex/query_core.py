@@ -197,7 +197,8 @@ class Query:
             expandable_progress.refresh()
             if task.exception():
                 logger.error(
-                    "ServiceX Exception", exc_info=task.exception()
+                    f"ServiceX Exception for request ID {self.request_id} ({self.title})\"",
+                    exc_info=task.exception()
                 )
                 self.cache.delete_record_by_request_id(self.request_id)
                 if download_files_task:
