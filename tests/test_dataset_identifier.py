@@ -27,16 +27,22 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from servicex.dataset_identifier import DataSetIdentifier, RucioDatasetIdentifier, \
     FileListDataset
+import pytest
 
 
 def test_did():
-    did = DataSetIdentifier(scheme="rucio", dataset="123-455")
-    assert did.did == "rucio://123-455"
+    did = DataSetIdentifier(scheme="rucio", dataset="abc:123-455")
+    assert did.did == "rucio://abc:123-455"
 
 
 def test_rucio():
-    did = RucioDatasetIdentifier("123-456")
-    assert did.did == "rucio://123-456"
+    did = RucioDatasetIdentifier("abc:123-456")
+    assert did.did == "rucio://abc:123-456"
+
+
+def test_rucio_no_namespace():
+    with pytest.raises(ValueError):
+        RucioDatasetIdentifier("123-456")
 
 
 def test_file_list():
@@ -54,6 +60,6 @@ def test_populate_transform_request(transform_request):
     did.populate_transform_request(transform_request)
     assert transform_request.file_list == ["c:/foo.bar"]
 
-    did2 = RucioDatasetIdentifier("123-456")
+    did2 = RucioDatasetIdentifier("abc:123-456")
     did2.populate_transform_request(transform_request)
-    assert transform_request.did == "rucio://123-456"
+    assert transform_request.did == "rucio://abc:123-456"
