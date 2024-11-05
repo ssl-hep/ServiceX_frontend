@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from unittest.mock import patch
+import pytest
 
 from servicex.configuration import Configuration
 
@@ -45,6 +46,10 @@ def test_config_read(tempdir):
     os.environ['USER'] = "p_higgs2"
     c = Configuration.read(config_path="tests/example_config.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs2"
+
+    # but what if there is no file at all?
+    with pytest.raises(NameError):
+        Configuration.read(config_path="invalid.yaml")
 
 
 @patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
