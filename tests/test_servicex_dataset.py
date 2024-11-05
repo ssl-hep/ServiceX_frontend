@@ -580,7 +580,8 @@ async def test_use_of_ignore_cache(mocker, servicex):
             query_cache=cache,
             config=config,
         )
-        datasource_without_ignore_cache.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+        datasource_without_ignore_cache.query_string_generator = \
+            FuncADLQuery_Uproot().FromTree("nominal")
         datasource_without_ignore_cache.result_format = ResultFormat.parquet
 
         # Datasouce with ignore cache
@@ -593,7 +594,8 @@ async def test_use_of_ignore_cache(mocker, servicex):
             config=config,
             ignore_cache=True
         )
-        datasource_with_ignore_cache.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+        datasource_with_ignore_cache.query_string_generator = \
+            FuncADLQuery_Uproot().FromTree("nominal")
         datasource_with_ignore_cache.result_format = ResultFormat.parquet
 
         # 1st time sending the request

@@ -222,9 +222,10 @@ class FuncADLQuery_Uproot(FuncADLQuery):
 
     def generate_selection_string(self):
         if not self.tree_is_set:
-            raise ValueError('Uproot FuncADL query requires that you set a tree name with FromTree()')
+            raise ValueError('Uproot FuncADL query requires '
+                             'that you set a tree name with FromTree()')
         return super().generate_selection_string()
-    
+
     def set_provided_qastle(self, qastle_query: str):
         # we do not validate provided qastle, so we don't know if a tree name is specified.
         # assume user knows what they're doing
