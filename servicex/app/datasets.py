@@ -42,8 +42,13 @@ datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 
 @datasets_app.command(no_args_is_help=True)
 def list(
-    url: Optional[str] = url_cli_option,
-    backend: Optional[str] = backend_cli_option,
+        url: Optional[str] = url_cli_option,
+        backend: Optional[str] = backend_cli_option,
+        did_finder: Optional[str] = typer.Option(
+            None,
+            help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
+            show_default=False,
+        ),
 ):
     """
     List the datasets.
@@ -56,14 +61,19 @@ def list(
     table.add_column("Size")
     table.add_column("Status")
     table.add_column("Created")
-    datasets = asyncio.run(sx.get_datasets())
+    datasets = asyncio.run(sx.get_datasets(did_finder=did_finder))
     for d in datasets:
+        # Format the CachedDataset object into a table row
+        # The last_updated field is what we should be displaying, but that is
+        # currently set to 1970-00-00 in the server and is never updated.
+        # Stick with the last_used field until
+        # https://github.com/ssl-hep/ServiceX/issues/906 is resolved
         table.add_row(
             str(d.id),
             d.name if d.did_finder != "user" else "File list",
             "%d" % d.n_files,
             "{:,}MB".format(round(d.size / 1e6)),
             d.lookup_status,
-            d.last_updated.isoformat(),
+            d.last_used.strftime('%Y-%m-%dT%H:%M:%S'),
         )
     rich.print(table)

@@ -109,12 +109,14 @@ class ServiceXAdapter:
                     f"Not authorized to access serviceX at {self.url}")
             return r.json()
 
-    async def get_datasets(self) -> List[CachedDataset]:
+    async def get_datasets(self, did_finder=None) -> List[CachedDataset]:
         headers = await self._get_authorization()
 
         with httpx.Client() as client:
+            params = {"did-finder": did_finder} if did_finder else {}
             r = client.get(headers=headers,
-                           url=f"{self.url}/servicex/datasets")
+                           url=f"{self.url}/servicex/datasets",
+                           params=params)
 
             if r.status_code == 403:
                 raise AuthorizationError(

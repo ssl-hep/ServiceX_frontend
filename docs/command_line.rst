@@ -76,3 +76,14 @@ clear
 Clear all of the transforms from the cache. Add ``-y`` to force the
 operation without confirming with the console.
 
+datasets
+~~~~~~~~
+
+These commands interact with datasets cached on the server
+
+list
+^^^^
+List all of the datasets cached on the server. Accepts a command line argument
+of ``--did-finder`` to filter the list of datasets by a specific DID finder such
+as ``rucio`` or ``user``.
+
