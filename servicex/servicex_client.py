@@ -280,6 +280,13 @@ class ServiceXClient:
 
     get_transform_status = make_sync(get_transform_status_async)
 
+    def get_datasets(self):
+        r"""
+        Retrieve all datasets you have run on the server
+        :return: List of Query objects
+        """
+        return self.servicex.get_datasets()
+
     def get_code_generators(self, backend=None):
         r"""
         Retrieve the code generators deployed with the serviceX instance

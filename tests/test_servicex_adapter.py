@@ -130,6 +130,30 @@ def test_get_codegens_error(get, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.get')
+async def test_get_datasets(get, servicex):
+    get.return_value = httpx.Response(200, json={
+        "datasets": [
+            {
+                "id": "123",
+                "name": "dataset1",
+                "events": 100,
+                "size": 1000,
+                "n_files": 1,
+                "last_used": "2022-01-01T00:00:00.000000Z",
+                "last_updated": "2022-01-01T00:00:00.000000Z",
+                "lookup_status": "looking",
+                "did_finder": "rucio"
+            }
+
+        ]
+    })
+    c = await servicex.get_datasets()
+    assert len(c) == 1
+    assert c[0].id == 123
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
     post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}

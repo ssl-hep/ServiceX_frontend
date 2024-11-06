@@ -170,3 +170,18 @@ class TransformedResults(BaseModel):
     files: int
     result_format: ResultFormat
     log_url: Optional[str] = None
+
+
+class CachedDataset(BaseModel):
+    """
+    Model for a cached dataset held by ServiceX server
+    """
+    id: int
+    name: str
+    did_finder: str
+    n_files: int
+    size: int
+    events: int
+    last_used: datetime
+    last_updated: datetime
+    lookup_status: str

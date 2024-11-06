@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,43 +25,45 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 from typing import Optional
 
 import rich
+
+from servicex.app.cli_options import url_cli_option, backend_cli_option
+
 import typer
 
-from servicex._version import __version__
-from servicex.app.datasets import datasets_app
-from servicex.app.transforms import transforms_app
-from servicex.app.cache import cache_app
-from servicex.app.codegen import codegen_app
+from servicex.servicex_client import ServiceXClient
+from rich.table import Table
 
-app = typer.Typer(no_args_is_help=True)
-
-app.add_typer(transforms_app)
-app.add_typer(cache_app)
-app.add_typer(codegen_app)
-app.add_typer(datasets_app)
+datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 
 
-def show_version(show: bool):
-    """Display the installed version and quit."""
-    if show:
-        rich.print(f"ServiceX {__version__}")
-        raise typer.Exit()
-
-
-@app.callback()
-def main_info(
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=show_version, is_eager=True
-    )
+@datasets_app.command(no_args_is_help=True)
+def list(
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
 ):
     """
-    ServiceX Client
+    List the datasets.
     """
-    pass
-
-
-if __name__ == "__main__":
-    app()
+    sx = ServiceXClient(url=url, backend=backend)
+    table = Table(title="ServiceX Datasets")
+    table.add_column("ID")
+    table.add_column("Name")
+    table.add_column("Files")
+    table.add_column("Size")
+    table.add_column("Status")
+    table.add_column("Created")
+    datasets = asyncio.run(sx.get_datasets())
+    for d in datasets:
+        table.add_row(
+            str(d.id),
+            d.name if d.did_finder != "user" else "File list",
+            "%d" % d.n_files,
+            "{:,}MB".format(round(d.size / 1e6)),
+            d.lookup_status,
+            d.last_updated.isoformat(),
+        )
+    rich.print(table)
