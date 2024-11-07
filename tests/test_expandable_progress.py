@@ -61,6 +61,14 @@ def test_overall_progress_mock(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
+@patch("servicex.expandable_progress.TranformStatusProgress",
+       return_value=MagicMock(TranformStatusProgress))
+def test_refresh_mock(mock_progress):
+    with ExpandableProgress(overall_progress=True) as progress:
+        progress.refresh()
+        mock_progress.return_value.refresh.assert_called_once()
+
+
 def test_provided_progress(mocker):
     class MockedProgress(TranformStatusProgress):
         def __init__(self):

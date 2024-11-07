@@ -193,6 +193,10 @@ class ExpandableProgress:
         elif self.display_progress and not self.overall_progress:
             self.progress.advance(task_id=task_id)
 
+    def refresh(self):
+        if self.progress is not None:
+            self.progress.refresh()
+
 
 class TranformStatusProgress(Progress):
     def get_renderables(self):
