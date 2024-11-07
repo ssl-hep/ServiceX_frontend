@@ -137,7 +137,7 @@ def _load_ServiceXSpec(
     return config
 
 
-def _build_datasets(config, config_path, servicex_name):
+def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -158,6 +158,7 @@ def _build_datasets(config, config_path, servicex_name):
             result_format=config.General.OutputFormat.to_ResultFormat(),
             ignore_cache=sample.IgnoreLocalCache,
             query=sample.Query,
+            fail_if_incomplete=fail_if_incomplete
         )
         logger.debug(f"Query string: {query.generate_selection_string()}")
         query.ignore_cache = sample.IgnoreLocalCache
@@ -197,11 +198,12 @@ def deliver(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
-    return_exceptions: bool = True
+    return_exceptions: bool = True,
+    fail_if_incomplete: bool = True
 ):
     config = _load_ServiceXSpec(config)
 
-    datasets = _build_datasets(config, config_path, servicex_name)
+    datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
 
     group = DatasetGroup(datasets)
 
@@ -302,6 +304,7 @@ class ServiceXClient:
         title: str = "ServiceX Client",
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
+        fail_if_incomplete: bool = True,
     ) -> Query:
         r"""
         Generate a Query object for a generic codegen specification
@@ -345,6 +348,7 @@ class ServiceXClient:
             query_cache=self.query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
-            query_string_generator=query
+            query_string_generator=query,
+            fail_if_incomplete=fail_if_incomplete
         )
         return qobj
