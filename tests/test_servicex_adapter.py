@@ -154,6 +154,15 @@ async def test_get_datasets(get, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.get')
+async def test_get_datasets_auth_error(get, servicex):
+    get.return_value = httpx.Response(403)
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.get_datasets()
+        assert "Not authorized to access serviceX at" in str(err.value)
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
     post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}
