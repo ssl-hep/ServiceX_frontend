@@ -34,7 +34,7 @@ from aiohttp_retry import RetryClient, ExponentialRetry
 from google.auth import jwt
 from tenacity import AsyncRetrying, stop_after_attempt, wait_fixed, retry_if_not_exception_type
 
-from servicex.models import TransformRequest, TransformStatus
+from servicex.models import TransformRequest, TransformStatus, CachedDataset
 
 
 class AuthorizationError(BaseException):
@@ -108,6 +108,22 @@ class ServiceXAdapter:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}")
             return r.json()
+
+    async def get_datasets(self, did_finder=None) -> List[CachedDataset]:
+        headers = await self._get_authorization()
+
+        with httpx.Client() as client:
+            params = {"did-finder": did_finder} if did_finder else {}
+            r = client.get(headers=headers,
+                           url=f"{self.url}/servicex/datasets",
+                           params=params)
+
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}")
+
+            datasets = [CachedDataset(**d) for d in r.json()['datasets']]
+            return datasets
 
     async def submit_transform(self, transform_request: TransformRequest):
         headers = await self._get_authorization()

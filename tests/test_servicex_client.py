@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,43 +25,39 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Optional
+from unittest.mock import MagicMock
 
-import rich
-import typer
+from pytest_asyncio import fixture
 
-from servicex._version import __version__
-from servicex.app.datasets import datasets_app
-from servicex.app.transforms import transforms_app
-from servicex.app.cache import cache_app
-from servicex.app.codegen import codegen_app
-
-app = typer.Typer(no_args_is_help=True)
-
-app.add_typer(transforms_app)
-app.add_typer(cache_app)
-app.add_typer(codegen_app)
-app.add_typer(datasets_app)
+from servicex.query_cache import QueryCache
+from servicex.servicex_adapter import ServiceXAdapter
+from servicex.servicex_client import ServiceXClient
 
 
-def show_version(show: bool):
-    """Display the installed version and quit."""
-    if show:
-        rich.print(f"ServiceX {__version__}")
-        raise typer.Exit()
+@fixture
+def servicex_adaptor(mocker):
+    adapter_mock = mocker.patch('servicex.servicex_client.ServiceXAdapter')
+    mock_adapter = MagicMock(spec=ServiceXAdapter)
+
+    adapter_mock.return_value = mock_adapter
+    return mock_adapter
 
 
-@app.callback()
-def main_info(
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=show_version, is_eager=True
-    )
-):
-    """
-    ServiceX Client
-    """
-    pass
+@fixture
+def mock_cache(mocker):
+    cache_mock = mocker.patch('servicex.servicex_client.QueryCache')
+    mock_cache = MagicMock(spec=QueryCache)
+    mock_cache.get_codegen_by_backend.return_value = {
+        "codegens": {
+            "ROOT": "my_root_generator",
+            "UPROOT": "my_uproot_generator"
+        }
+    }
+    cache_mock.return_value = mock_cache
+    return cache_mock
 
 
-if __name__ == "__main__":
-    app()
+def test_get_datasets(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.get_datasets()
+    servicex_adaptor.get_datasets.assert_called_once()
