@@ -77,3 +77,27 @@ def list(
             d.last_used.strftime('%Y-%m-%dT%H:%M:%S'),
         )
     rich.print(table)
+
+
+@datasets_app.command(no_args_is_help=True)
+def get(
+        url: Optional[str] = url_cli_option,
+        backend: Optional[str] = backend_cli_option,
+        dataset_id: int = typer.Argument(..., help="The ID of the dataset to get")
+):
+    sx = ServiceXClient(url=url, backend=backend)
+    table = Table(title=f"Dataset ID {dataset_id}")
+    table.add_column("Paths")
+    dataset = asyncio.run(sx.get_dataset(dataset_id))
+    for file in dataset.files:
+        sub_table = Table(title="")
+        sub_table.add_column(f"File ID: {file.id}")
+        for path in file.paths.split(','):
+            sub_table.add_row(path)
+
+        table.add_row(
+            sub_table
+        )
+    # Set alternating row styles
+    table.row_styles = ["", ""]
+    rich.print(table)

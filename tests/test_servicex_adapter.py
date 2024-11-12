@@ -175,6 +175,33 @@ async def test_get_datasets_auth_error(get, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.get')
+async def test_get_dataset(get, servicex):
+    get.return_value = httpx.Response(200, json={
+        "id": 123,
+        "name": "rucio://user.mtost:user.mtost.700349.Sh.DAOD_PHYS.e8351_s3681_r13144_r13146_p6026.Jul13_less_jet_and_new_GN?files=7",  # NOQA: E501
+        "did_finder": "rucio",
+        "n_files": 7,
+        "size": 1359895862,
+        "events": 0,
+        "last_used": "2024-11-12T01:59:19.161655Z",
+        "last_updated": "1969-12-31T18:00:00.000000Z",
+        "lookup_status": "complete",
+        "files": [
+            {
+                "id": 12,
+                "adler32": "62c594d4",
+                "file_size": 34831129,
+                "file_events": 0,
+                "paths": "https://xenia.nevis.columbia.edu:1094/atlas/dq2/rucio/user/mtost/06/a1/user.mtost.40294033._000002.less_jet_and_new_GN.root"  # NOQA: E501
+            }]
+    })
+    c = await servicex.get_dataset(123)
+    assert c
+    assert c.id == 123
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
     post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}

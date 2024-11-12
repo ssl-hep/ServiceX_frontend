@@ -61,3 +61,9 @@ def test_get_datasets(mock_cache, servicex_adaptor):
     sx = ServiceXClient(config_path="tests/example_config.yaml")
     sx.get_datasets()
     servicex_adaptor.get_datasets.assert_called_once()
+
+
+def test_get_dataset(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.get_dataset("123")
+    servicex_adaptor.get_dataset.assert_called_once_with("123")

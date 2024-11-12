@@ -287,6 +287,13 @@ class ServiceXClient:
         """
         return self.servicex.get_datasets(did_finder)
 
+    def get_dataset(self, dataset_id):
+        r"""
+        Retrieve a dataset by its ID
+        :return: A Query object
+        """
+        return self.servicex.get_dataset(dataset_id)
+
     def get_code_generators(self, backend=None):
         r"""
         Retrieve the code generators deployed with the serviceX instance
