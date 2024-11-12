@@ -172,6 +172,17 @@ class TransformedResults(BaseModel):
     log_url: Optional[str] = None
 
 
+class DatasetFile(BaseModel):
+    """
+    Model for a file in a cached dataset
+    """
+    id: int
+    adler32: Optional[str]
+    file_size: int
+    file_events: int
+    paths: str
+
+
 class CachedDataset(BaseModel):
     """
     Model for a cached dataset held by ServiceX server
@@ -185,3 +196,4 @@ class CachedDataset(BaseModel):
     last_used: datetime
     last_updated: datetime
     lookup_status: str
+    files: Optional[List[DatasetFile]] = []
