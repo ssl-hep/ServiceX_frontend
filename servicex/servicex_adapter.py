@@ -141,6 +141,21 @@ class ServiceXAdapter:
             dataset = CachedDataset(**r.json())
             return dataset
 
+    async def delete_dataset(self, dataset_id=None) -> bool:
+        headers = await self._get_authorization()
+
+        with httpx.Client() as client:
+            path_template = '/servicex/datasets/{dataset_id}'
+            url = self.url + path_template.format(dataset_id=dataset_id)
+            r = client.delete(headers=headers,
+                              url=url)
+
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}")
+
+            return r.status_code == 200
+
     async def submit_transform(self, transform_request: TransformRequest):
         headers = await self._get_authorization()
         retry_options = ExponentialRetry(attempts=3, start_timeout=30)

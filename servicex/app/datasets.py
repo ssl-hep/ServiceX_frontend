@@ -101,3 +101,17 @@ def get(
     # Set alternating row styles
     table.row_styles = ["", ""]
     rich.print(table)
+
+
+@datasets_app.command(no_args_is_help=True)
+def delete(
+        url: Optional[str] = url_cli_option,
+        backend: Optional[str] = backend_cli_option,
+        dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete")
+):
+    sx = ServiceXClient(url=url, backend=backend)
+    result = asyncio.run(sx.delete_dataset(dataset_id))
+    if result:
+        typer.echo(f"Dataset {dataset_id} deleted")
+    else:
+        typer.echo(f"Dataset {dataset_id} not found")
