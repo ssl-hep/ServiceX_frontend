@@ -202,6 +202,29 @@ async def test_get_dataset(get, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.delete')
+async def test_delete_dataset(delete, servicex):
+    delete.return_value = httpx.Response(200, json={
+        'dataset-id': 123,
+        'stale': True
+    })
+    await servicex.delete_dataset(123)
+    delete.assert_called_with(
+        url='https://servicex.org/servicex/datasets/123',
+        headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.delete')
+async def test_delete_dataset_auth_error(delete, servicex):
+    delete.return_value = httpx.Response(403)
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.delete_dataset(123)
+        assert "Not authorized to access serviceX at" in str(err.value)
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
     post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}
