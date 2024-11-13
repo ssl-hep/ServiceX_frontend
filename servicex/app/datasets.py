@@ -49,6 +49,11 @@ def list(
             help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
             show_default=False,
         ),
+        show_deleted: Optional[bool] = typer.Option(
+            False,
+            help="Show deleted datasets",
+            show_default=True,
+        ),
 ):
     """
     List the datasets.
@@ -61,7 +66,10 @@ def list(
     table.add_column("Size")
     table.add_column("Status")
     table.add_column("Created")
-    datasets = asyncio.run(sx.get_datasets(did_finder=did_finder))
+    if show_deleted:
+        table.add_column("Deleted")
+
+    datasets = asyncio.run(sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted))
     for d in datasets:
         # Format the CachedDataset object into a table row
         # The last_updated field is what we should be displaying, but that is
@@ -75,6 +83,7 @@ def list(
             "{:,}MB".format(round(d.size / 1e6)),
             d.lookup_status,
             d.last_used.strftime('%Y-%m-%dT%H:%M:%S'),
+            "Yes" if d.is_stale else ""
         )
     rich.print(table)
 

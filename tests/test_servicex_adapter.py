@@ -141,28 +141,56 @@ def test_get_codegens_error(get, servicex):
         assert "Not authorized to access serviceX at" in str(err.value)
 
 
+@fixture
+def dataset():
+    return {
+        "id": 123,
+        "name": "rucio://user.mtost:user.mtost.700349.Sh.DAOD_PHYS.e8351_s3681_r13144_r13146_p6026.Jul13_less_jet_and_new_GN?files=7",  # NOQA: E501
+        "did_finder": "rucio",
+        "n_files": 7,
+        "size": 1359895862,
+        "events": 0,
+        "last_used": "2024-11-12T01:59:19.161655Z",
+        "last_updated": "1969-12-31T18:00:00.000000Z",
+        "lookup_status": "complete",
+        "is_stale": False,
+        "files": [
+            {
+                "id": 12,
+                "adler32": "62c594d4",
+                "file_size": 34831129,
+                "file_events": 0,
+                "paths": "https://xenia.nevis.columbia.edu:1094/atlas/dq2/rucio/user/mtost/06/a1/user.mtost.40294033._000002.less_jet_and_new_GN.root"  # NOQA: E501
+            }]
+    }
+
+
 @pytest.mark.asyncio
 @patch('servicex.servicex_adapter.httpx.Client.get')
-async def test_get_datasets(get, servicex):
-    get.return_value = httpx.Response(200, json={
-        "datasets": [
-            {
-                "id": "123",
-                "name": "dataset1",
-                "events": 100,
-                "size": 1000,
-                "n_files": 1,
-                "last_used": "2022-01-01T00:00:00.000000Z",
-                "last_updated": "2022-01-01T00:00:00.000000Z",
-                "lookup_status": "looking",
-                "did_finder": "rucio"
-            }
-
-        ]
-    })
+async def test_get_datasets(get, servicex, dataset):
+    get.return_value = httpx.Response(200, json={"datasets": [dataset]})
     c = await servicex.get_datasets()
     assert len(c) == 1
     assert c[0].id == 123
+    get.assert_called_with(
+        url='https://servicex.org/servicex/datasets',
+        params={},
+        headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.get')
+async def test_get_datasets_show_deleted(get, servicex, dataset):
+    get.return_value = httpx.Response(200, json={"datasets": [dataset]})
+    c = await servicex.get_datasets(show_deleted=True)
+    assert len(c) == 1
+    assert c[0].id == 123
+    get.assert_called_with(
+        url='https://servicex.org/servicex/datasets',
+        params={'show-deleted': True},
+        headers={}
+    )
 
 
 @pytest.mark.asyncio
@@ -176,29 +204,20 @@ async def test_get_datasets_auth_error(get, servicex):
 
 @pytest.mark.asyncio
 @patch('servicex.servicex_adapter.httpx.Client.get')
-async def test_get_dataset(get, servicex):
-    get.return_value = httpx.Response(200, json={
-        "id": 123,
-        "name": "rucio://user.mtost:user.mtost.700349.Sh.DAOD_PHYS.e8351_s3681_r13144_r13146_p6026.Jul13_less_jet_and_new_GN?files=7",  # NOQA: E501
-        "did_finder": "rucio",
-        "n_files": 7,
-        "size": 1359895862,
-        "events": 0,
-        "last_used": "2024-11-12T01:59:19.161655Z",
-        "last_updated": "1969-12-31T18:00:00.000000Z",
-        "lookup_status": "complete",
-        "files": [
-            {
-                "id": 12,
-                "adler32": "62c594d4",
-                "file_size": 34831129,
-                "file_events": 0,
-                "paths": "https://xenia.nevis.columbia.edu:1094/atlas/dq2/rucio/user/mtost/06/a1/user.mtost.40294033._000002.less_jet_and_new_GN.root"  # NOQA: E501
-            }]
-    })
+async def test_get_dataset(get, servicex, dataset):
+    get.return_value = httpx.Response(200, json=dataset)
     c = await servicex.get_dataset(123)
     assert c
     assert c.id == 123
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.httpx.Client.get')
+async def test_get_dataset_auth_error(get, servicex, dataset):
+    get.return_value = httpx.Response(403)
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.get_dataset(123)
+        assert "Not authorized to access serviceX at" in str(err.value)
 
 
 @pytest.mark.asyncio
