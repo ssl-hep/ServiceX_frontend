@@ -143,7 +143,8 @@ async def test_get_datasets(get, servicex):
                 "last_used": "2022-01-01T00:00:00.000000Z",
                 "last_updated": "2022-01-01T00:00:00.000000Z",
                 "lookup_status": "looking",
-                "did_finder": "rucio"
+                "did_finder": "rucio",
+                "is_stale": False
             }
 
         ]
@@ -175,6 +176,7 @@ async def test_get_dataset(get, servicex):
         "last_used": "2024-11-12T01:59:19.161655Z",
         "last_updated": "1969-12-31T18:00:00.000000Z",
         "lookup_status": "complete",
+        "is_stale": False,
         "files": [
             {
                 "id": 12,

@@ -196,4 +196,5 @@ class CachedDataset(BaseModel):
     last_used: datetime
     last_updated: datetime
     lookup_status: str
+    is_stale: bool
     files: Optional[List[DatasetFile]] = []

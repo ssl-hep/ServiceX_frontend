@@ -280,12 +280,12 @@ class ServiceXClient:
 
     get_transform_status = make_sync(get_transform_status_async)
 
-    def get_datasets(self, did_finder=None):
+    def get_datasets(self, did_finder=None, show_deleted=False):
         r"""
         Retrieve all datasets you have run on the server
         :return: List of Query objects
         """
-        return self.servicex.get_datasets(did_finder)
+        return self.servicex.get_datasets(did_finder, show_deleted)
 
     def get_dataset(self, dataset_id):
         r"""
