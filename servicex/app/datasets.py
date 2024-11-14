@@ -49,6 +49,11 @@ def list(
             help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
             show_default=False,
         ),
+        show_deleted: Optional[bool] = typer.Option(
+            False,
+            help="Show deleted datasets",
+            show_default=True,
+        ),
 ):
     """
     List the datasets.
@@ -61,7 +66,10 @@ def list(
     table.add_column("Size")
     table.add_column("Status")
     table.add_column("Created")
-    datasets = asyncio.run(sx.get_datasets(did_finder=did_finder))
+    if show_deleted:
+        table.add_column("Deleted")
+
+    datasets = asyncio.run(sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted))
     for d in datasets:
         # Format the CachedDataset object into a table row
         # The last_updated field is what we should be displaying, but that is
@@ -75,5 +83,44 @@ def list(
             "{:,}MB".format(round(d.size / 1e6)),
             d.lookup_status,
             d.last_used.strftime('%Y-%m-%dT%H:%M:%S'),
+            "Yes" if d.is_stale else ""
         )
     rich.print(table)
+
+
+@datasets_app.command(no_args_is_help=True)
+def get(
+        url: Optional[str] = url_cli_option,
+        backend: Optional[str] = backend_cli_option,
+        dataset_id: int = typer.Argument(..., help="The ID of the dataset to get")
+):
+    sx = ServiceXClient(url=url, backend=backend)
+    table = Table(title=f"Dataset ID {dataset_id}")
+    table.add_column("Paths")
+    dataset = asyncio.run(sx.get_dataset(dataset_id))
+    for file in dataset.files:
+        sub_table = Table(title="")
+        sub_table.add_column(f"File ID: {file.id}")
+        for path in file.paths.split(','):
+            sub_table.add_row(path)
+
+        table.add_row(
+            sub_table
+        )
+    # Set alternating row styles
+    table.row_styles = ["", ""]
+    rich.print(table)
+
+
+@datasets_app.command(no_args_is_help=True)
+def delete(
+        url: Optional[str] = url_cli_option,
+        backend: Optional[str] = backend_cli_option,
+        dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete")
+):
+    sx = ServiceXClient(url=url, backend=backend)
+    result = asyncio.run(sx.delete_dataset(dataset_id))
+    if result:
+        typer.echo(f"Dataset {dataset_id} deleted")
+    else:
+        typer.echo(f"Dataset {dataset_id} not found")

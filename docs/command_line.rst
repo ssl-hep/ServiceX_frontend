@@ -85,5 +85,16 @@ list
 ^^^^
 List all of the datasets cached on the server. Accepts a command line argument
 of ``--did-finder`` to filter the list of datasets by a specific DID finder such
-as ``rucio`` or ``user``.
+as ``rucio`` or ``user``. By default this will filter out deleted datasets. They
+are still in the cache, but marked as stale. To see deleted datasets, use the
+``--show-deleted`` flag.
 
+get
+^^^
+Get details about a specific dataset. Provide the dataset ID as a parameter. This
+Will list the physical file paths found for each file in the dataset.
+
+delete
+^^^^^^
+Delete a specific dataset from the cache. Provide the dataset ID as a parameter. This
+will force the service to re-query the dataset for the next request.

@@ -27,14 +27,16 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import tempfile
+import time
 from unittest.mock import patch
+
 import httpx
 import pytest
+from aiohttp import ContentTypeError
 from pytest_asyncio import fixture
+
 from servicex.models import TransformRequest, ResultDestination, ResultFormat
 from servicex.servicex_adapter import ServiceXAdapter, AuthorizationError
-from aiohttp import ContentTypeError
-import time
 
 
 @fixture
@@ -141,37 +143,136 @@ def test_get_codegens_error(get, servicex):
         assert "Not authorized to access serviceX at" in str(err.value)
 
 
-@pytest.mark.asyncio
-@patch('servicex.servicex_adapter.httpx.Client.get')
-async def test_get_datasets(get, servicex):
-    get.return_value = httpx.Response(200, json={
-        "datasets": [
+@fixture
+def dataset():
+    return {
+        "id": 123,
+        "name": "rucio://user.mtost:user.mtost.700349.Sh.DAOD_PHYS.e8351_s3681_r13144_r13146_p6026.Jul13_less_jet_and_new_GN?files=7",  # NOQA: E501
+        "did_finder": "rucio",
+        "n_files": 7,
+        "size": 1359895862,
+        "events": 0,
+        "last_used": "2024-11-12T01:59:19.161655Z",
+        "last_updated": "1969-12-31T18:00:00.000000Z",
+        "lookup_status": "complete",
+        "is_stale": False,
+        "files": [
             {
-                "id": "123",
-                "name": "dataset1",
-                "events": 100,
-                "size": 1000,
-                "n_files": 1,
-                "last_used": "2022-01-01T00:00:00.000000Z",
-                "last_updated": "2022-01-01T00:00:00.000000Z",
-                "lookup_status": "looking",
-                "did_finder": "rucio"
-            }
+                "id": 12,
+                "adler32": "62c594d4",
+                "file_size": 34831129,
+                "file_events": 0,
+                "paths": "https://xenia.nevis.columbia.edu:1094/atlas/dq2/rucio/user/mtost/06/a1/user.mtost.40294033._000002.less_jet_and_new_GN.root"  # NOQA: E501
+            }]
+    }
 
-        ]
-    })
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.get')
+async def test_get_datasets(get, servicex, dataset):
+    get.return_value.__aenter__.return_value.json.return_value = {"datasets": [dataset]}
+    get.return_value.__aenter__.return_value.status = 200
+
     c = await servicex.get_datasets()
     assert len(c) == 1
     assert c[0].id == 123
+    get.assert_called_with(
+        url='https://servicex.org/servicex/datasets',
+        params={},
+        headers={}
+    )
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.httpx.Client.get')
+@patch('servicex.servicex_adapter.ClientSession.get')
+async def test_get_datasets_show_deleted(get, servicex, dataset):
+    get.return_value.__aenter__.return_value.json.return_value = {"datasets": [dataset]}
+    get.return_value.__aenter__.return_value.status = 200
+    c = await servicex.get_datasets(show_deleted=True)
+    assert len(c) == 1
+    assert c[0].id == 123
+    get.assert_called_with(
+        url='https://servicex.org/servicex/datasets',
+        params={'show-deleted': True},
+        headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.get')
 async def test_get_datasets_auth_error(get, servicex):
-    get.return_value = httpx.Response(403)
+    get.return_value.__aenter__.return_value.status = 403
     with pytest.raises(AuthorizationError) as err:
         await servicex.get_datasets()
-        assert "Not authorized to access serviceX at" in str(err.value)
+    assert "Not authorized to access serviceX at" in str(err.value)
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.get')
+async def test_get_dataset(get, servicex, dataset):
+    get.return_value.__aenter__.return_value.json.return_value = dataset
+    get.return_value.__aenter__.return_value.status = 200
+    c = await servicex.get_dataset(123)
+    assert c
+    assert c.id == 123
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.get')
+async def test_get_dataset_errors(get, servicex, dataset):
+    get.return_value.__aenter__.return_value.status = 403
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.get_dataset(123)
+    assert "Not authorized to access serviceX at" in str(err.value)
+
+    get.return_value.__aenter__.return_value.status = 404
+    with pytest.raises(ValueError) as err:
+        await servicex.get_dataset(123)
+    assert "Dataset 123 not found" in str(err.value)
+
+    get.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
+    get.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    get.return_value.__aenter__.return_value.status = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.get_dataset(123)
+    assert "Failed to get dataset 123 - error_message" in str(err.value)
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.delete')
+async def test_delete_dataset(delete, servicex):
+    delete.return_value.__aenter__.return_value.json.return_value = {
+        'dataset-id': 123,
+        'stale': True
+    }
+    delete.return_value.__aenter__.return_value.status = 200
+
+    await servicex.delete_dataset(123)
+    delete.assert_called_with(
+        url='https://servicex.org/servicex/datasets/123',
+        headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.delete')
+async def test_delete_dataset_errors(delete, servicex):
+    delete.return_value.__aenter__.return_value.status = 403
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.delete_dataset(123)
+    assert "Not authorized to access serviceX at" in str(err.value)
+
+    delete.return_value.__aenter__.return_value.status = 404
+    with pytest.raises(ValueError) as err:
+        await servicex.delete_dataset(123)
+    assert "Dataset 123 not found" in str(err.value)
+
+    delete.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
+    delete.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    delete.return_value.__aenter__.return_value.status = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.delete_dataset(123)
+    assert "Failed to delete dataset 123 - error_message" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -205,29 +306,29 @@ async def test_submit_errors(post, servicex):
     )
     with pytest.raises(AuthorizationError) as err:
         await servicex.submit_transform(request)
-        assert "Not authorized to access serviceX at" in str(err.value)
+    assert "Not authorized to access serviceX at" in str(err.value)
 
     post.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
     post.return_value.__aenter__.return_value.text.return_value = 'error_message'
     post.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.submit_transform(request)
-        assert "ServiceX WebAPI Error during transformation submission: 500 - error_message" \
-               == str(err.value)
+    assert "ServiceX WebAPI Error during transformation submission: 500 - error_message" \
+           == str(err.value)
 
     post.return_value.__aenter__.return_value.json.reset_mock()
     post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
     post.return_value.__aenter__.return_value.status = 400
     with pytest.raises(ValueError) as err:
         await servicex.submit_transform(request)
-        assert "Invalid transform request: error_message" == str(err.value)
+    assert "Invalid transform request: error_message" == str(err.value)
 
     post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
     post.return_value.__aenter__.return_value.status = 410
     with pytest.raises(RuntimeError) as err:
         await servicex.submit_transform(request)
-        assert "ServiceX WebAPI Error during transformation submission: 410 - error_message" \
-               == str(err.value)
+    assert "ServiceX WebAPI Error during transformation submission: 410 - error_message" \
+           == str(err.value)
 
 
 @pytest.mark.asyncio
@@ -245,12 +346,12 @@ async def test_get_transform_status_errors(get, servicex):
     with pytest.raises(AuthorizationError) as err:
         get.return_value.__aenter__.return_value.status = 401
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
-        assert "Not authorized to access serviceX at " in str(err.value)
+    assert "Not authorized to access serviceX at " in str(err.value)
 
     with pytest.raises(ValueError) as err:
         get.return_value.__aenter__.return_value.status = 404
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
-        assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(err.value)
+    assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(err.value)
 
     with pytest.raises(RuntimeError) as err:
         get.return_value.__aenter__.return_value.status = 500
@@ -259,7 +360,7 @@ async def test_get_transform_status_errors(get, servicex):
             return {'message': 'fifteen'}
         get.return_value.__aenter__.return_value.json = patch_json
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
-        assert "ServiceX WebAPI Error during transformation" in str(err.value)
+    assert "ServiceX WebAPI Error during transformation" in str(err.value)
 
 
 @pytest.mark.asyncio
@@ -273,7 +374,7 @@ async def test_get_tranform_status_retry_error(get,
         get.return_value.__aenter__.return_value.json.return_value = transform_status_response['requests'][0]  # NOQA: E501
         get.return_value.__aenter__.return_value.status = 200
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
-        assert "ServiceX WebAPI Error while getting transform status:" in str(err.value)
+    assert "ServiceX WebAPI Error while getting transform status:" in str(err.value)
 
 
 @pytest.mark.asyncio
