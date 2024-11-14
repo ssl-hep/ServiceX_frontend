@@ -29,6 +29,7 @@ import os
 import time
 from typing import Optional, Dict, List
 
+from aiohttp import ClientSession
 import httpx
 from aiohttp_retry import RetryClient, ExponentialRetry, ClientResponse
 from aiohttp import ContentTypeError
@@ -125,53 +126,69 @@ class ServiceXAdapter:
 
     async def get_datasets(self, did_finder=None, show_deleted=False) -> List[CachedDataset]:
         headers = await self._get_authorization()
+        params = {"did-finder": did_finder} if did_finder else {}
+        if show_deleted:
+            params['show-deleted'] = True
 
-        with httpx.Client() as client:
-            params = {"did-finder": did_finder} if did_finder else {}
-            if show_deleted:
-                params['show-deleted'] = True
+        async with ClientSession() as session:
+            async with session.get(
+                    headers=headers,
+                    url=f"{self.url}/servicex/datasets",
+                    params=params) as r:
 
-            r = client.get(headers=headers,
-                           url=f"{self.url}/servicex/datasets",
-                           params=params)
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}")
+                elif r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed to get datasets: {r.status} - {msg}")
 
-            if r.status_code == 403:
-                raise AuthorizationError(
-                    f"Not authorized to access serviceX at {self.url}")
+                result = await r.json()
 
-            datasets = [CachedDataset(**d) for d in r.json()['datasets']]
+            datasets = [CachedDataset(**d) for d in result['datasets']]
             return datasets
 
     async def get_dataset(self, dataset_id=None) -> CachedDataset:
         headers = await self._get_authorization()
+        path_template = '/servicex/datasets/{dataset_id}'
+        url = self.url + path_template.format(dataset_id=dataset_id)
+        async with ClientSession() as session:
+            async with session.get(
+                headers=headers,
+                url=url
+            ) as r:
 
-        with httpx.Client() as client:
-            path_template = '/servicex/datasets/{dataset_id}'
-            url = self.url + path_template.format(dataset_id=dataset_id)
-            r = client.get(headers=headers,
-                           url=url)
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}")
+                elif r.status == 404:
+                    raise ValueError(f"Dataset {dataset_id} not found")
+                elif r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed to get dataset {dataset_id} - {msg}")
+                result = await r.json()
 
-            if r.status_code == 403:
-                raise AuthorizationError(
-                    f"Not authorized to access serviceX at {self.url}")
-
-            dataset = CachedDataset(**r.json())
+            dataset = CachedDataset(**result)
             return dataset
 
-    async def delete_dataset(self, dataset_id=None) -> bool:
+    async def delete_dataset(self, dataset_id=None):
         headers = await self._get_authorization()
+        path_template = '/servicex/datasets/{dataset_id}'
+        url = self.url + path_template.format(dataset_id=dataset_id)
 
-        with httpx.Client() as client:
-            path_template = '/servicex/datasets/{dataset_id}'
-            url = self.url + path_template.format(dataset_id=dataset_id)
-            r = client.delete(headers=headers,
-                              url=url)
+        async with ClientSession() as session:
+            async with session.delete(
+                    headers=headers,
+                    url=url) as r:
 
-            if r.status_code == 403:
-                raise AuthorizationError(
-                    f"Not authorized to access serviceX at {self.url}")
-
-            return r.status_code == 200
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}")
+                elif r.status == 404:
+                    raise ValueError(f"Dataset {dataset_id} not found")
+                elif r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed to delete dataset {dataset_id} - {msg}")
 
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
@@ -213,8 +230,8 @@ class ServiceXAdapter:
                                 # perhaps we just ran out of auth validity the last time?
                                 # refetch auth then raise an error for retry
                                 headers = await self._get_authorization(True)
-                                raise AuthorizationError("Not authorized to access serviceX"
-                                                         f"at {self.url}")
+                                raise AuthorizationError(
+                                    f"Not authorized to access serviceX at {self.url}")
                             if r.status == 404:
                                 raise ValueError(f"Transform ID {request_id} not found")
                             elif r.status > 400:
