@@ -31,3 +31,5 @@ import typer
 url_cli_option = typer.Option(None, "-u", "--url", help="URL of ServiceX server")
 backend_cli_option = typer.Option(None, "-b", "--backend",
                                   help="Name of backend server from .servicex file")
+config_file_option = typer.Option(None, "-c", "--config",
+                                  help="ServiceX client configuration file")
