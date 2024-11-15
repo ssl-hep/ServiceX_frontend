@@ -68,7 +68,7 @@ class ServiceXAdapter:
                     self.token = o['access_token']
                 else:
                     raise AuthorizationError(
-                        f"ServiceX access token request rejected: {r.status}"
+                        f"ServiceX access token request rejected [{r.status} {r.reason}]"
                     )
 
     @staticmethod
