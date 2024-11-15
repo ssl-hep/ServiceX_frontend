@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -26,37 +26,35 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import rich
-import typer
-
-from servicex.app.cli_options import url_cli_option, backend_cli_option, config_file_option
-from servicex.servicex_client import ServiceXClient
-from typing import Optional
-
-codegen_app = typer.Typer(name="codegen", no_args_is_help=True)
+from unittest.mock import patch
 
 
-@codegen_app.command(no_args_is_help=False)
-def flush(
-        url: Optional[str] = url_cli_option,
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option):
-    """
-    Flush the available code generators from the cache
-    """
-    sx = ServiceXClient(url=url, backend=backend, config_path=config_path)
-    cache = sx.query_cache
-    cache.delete_codegen_by_backend(backend)
-    rich.print("Deleted cached code generators.")
+def test_app_version(script_runner):
+    import servicex._version
+    result = script_runner.run(['servicex', '--version'])
+    assert result.returncode == 0
+    assert result.stdout == f'ServiceX {servicex._version.__version__}\n'
 
 
-@codegen_app.command(no_args_is_help=False)
-def list(
-        url: Optional[str] = url_cli_option,
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option):
-    """
-    List the available code generators
-    """
-    sx = ServiceXClient(url=url, backend=backend, config_path=config_path)
-    rich.print_json(data=sx.get_code_generators())
+def test_codegen_list(script_runner):
+    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators', return_value={
+        "uproot": "http://uproot-codegen",
+        "xaod": "http://xaod-codegen"
+    }):
+        result = script_runner.run(['servicex', 'codegen', 'list', '-c',
+                                    'tests/example_config.yaml'])
+        assert result.returncode == 0
+        assert result.stdout == '''{
+  "uproot": "http://uproot-codegen",
+  "xaod": "http://xaod-codegen"
+}
+'''
+
+
+def test_codegen_flush(script_runner):
+    with patch('servicex.query_cache.QueryCache.delete_codegen_by_backend') as p:
+        result = script_runner.run(['servicex', 'codegen', 'flush',
+                                    '-c', 'tests/example_config.yaml',
+                                    '-b', 'localhost'])
+        assert result.returncode == 0
+        p.assert_called_once_with('localhost')
