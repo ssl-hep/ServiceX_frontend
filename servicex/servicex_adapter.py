@@ -192,6 +192,25 @@ class ServiceXAdapter:
                 result = await r.json()
                 return result['stale']
 
+    async def delete_transform(self, transform_id=None):
+        headers = await self._get_authorization()
+        path_template = f'/servicex/transformation/{transform_id}'
+        url = self.url + path_template.format(transform_id=transform_id)
+
+        async with ClientSession() as session:
+            async with session.delete(
+                    headers=headers,
+                    url=url) as r:
+
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}")
+                elif r.status == 404:
+                    raise ValueError(f"Transform {transform_id} not found")
+                elif r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed to delete transform {transform_id} - {msg}")
+
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
         retry_options = ExponentialRetry(attempts=3, start_timeout=30)

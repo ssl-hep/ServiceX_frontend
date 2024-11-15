@@ -301,6 +301,13 @@ class ServiceXClient:
         """
         return self.servicex.delete_dataset(dataset_id)
 
+    def delete_transform(self, transform_id):
+        r"""
+        Delete a Transform by its request ID
+        :return: A Query object
+        """
+        return self.servicex.delete_transform(transform_id)
+
     def get_code_generators(self, backend=None):
         r"""
         Retrieve the code generators deployed with the serviceX instance

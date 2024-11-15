@@ -277,6 +277,38 @@ async def test_delete_dataset_errors(delete, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.delete')
+async def test_delete_transform(delete, servicex):
+    delete.return_value.__aenter__.return_value.status = 200
+    await servicex.delete_transform("123-45-6789")
+    delete.assert_called_with(
+        url='https://servicex.org/servicex/transformation/123-45-6789',
+        headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.delete')
+async def test_delete_transform_errors(delete, servicex):
+    delete.return_value.__aenter__.return_value.status = 403
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.delete_transform("123-45-6789")
+    assert "Not authorized to access serviceX at" in str(err.value)
+
+    delete.return_value.__aenter__.return_value.status = 404
+    with pytest.raises(ValueError) as err:
+        await servicex.delete_transform("123-45-6789")
+    assert "Transform 123-45-6789 not found" in str(err.value)
+
+    delete.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
+    delete.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    delete.return_value.__aenter__.return_value.status = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.delete_transform("123-45-6789")
+    assert "Failed to delete transform 123-45-6789 - error_message" in str(err.value)
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
     post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}
