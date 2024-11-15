@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot, FuncADLQuery
 from typing import Any
+import pytest
 
 
 def test_set_from_tree():
@@ -34,6 +35,13 @@ def test_set_from_tree():
     query = query.FromTree("TREE_NAME")
 
     assert "TREE_NAME" in query.generate_selection_string()
+
+
+def test_requires_tree():
+    query = FuncADLQuery_Uproot()
+
+    with pytest.raises(ValueError):
+        query.generate_selection_string()
 
 
 def test_a_query():

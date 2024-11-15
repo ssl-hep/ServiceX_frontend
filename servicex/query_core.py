@@ -79,6 +79,7 @@ class Query:
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
         query_string_generator: Optional[QueryStringGenerator] = None,
+        fail_if_incomplete: bool = True,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -96,6 +97,7 @@ class Query:
                                         for new files?
         :param result_format:
         :param ignore_cache:  If true, ignore the cache and always submit a new transform
+        :param fail_if_incomplete: If true, raise an exception if we don't have 100% completion
         """
         self.servicex = sx_adapter
         self.configuration = config
@@ -116,6 +118,7 @@ class Query:
 
         self.request_id = None
         self.ignore_cache = ignore_cache
+        self.fail_if_incomplete = fail_if_incomplete
         self.query_string_generator = query_string_generator
 
         # Number of seconds in between ServiceX status polls
@@ -191,9 +194,11 @@ class Query:
             :param task:
             :return:
             """
+            expandable_progress.refresh()
             if task.exception():
                 logger.error(
-                    "ServiceX Exception", exc_info=task.exception()
+                    f"ServiceX Exception for request ID {self.request_id} ({self.title})\"",
+                    exc_info=task.exception()
                 )
                 self.cache.delete_record_by_request_id(self.request_id)
                 if download_files_task:
@@ -209,11 +214,16 @@ class Query:
                     self.cache.delete_record_by_request_id(self.request_id)
                     titlestr = (f'"{self.current_status.title}" '
                                 if self.current_status.title is not None else '')
-                    logger.error(
+                    errorstr = (
                         f"Transform {titlestr}completed with failures: "
                         f"{self.current_status.files_failed}/"
                         f"{self.current_status.files} files failed. Will not cache."
                     )
+                    failedfiles = (self.servicex.url + '/transformation-request/'
+                                   + f'/{self.request_id}/results?status=failure')
+                    errorstr2 = ("A list of failed files is at [bold red on white]"
+                                 f"[link={failedfiles}]this link[/link][/bold red on white]")
+                    logger.error(errorstr2)
                     logger.error(
                         f"Transform Request id: {self.current_status.request_id}"
                     )
@@ -224,6 +234,8 @@ class Query:
                                                           LogLevel.error,
                                                           TimeFrame.month)
                         logger.error(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
+                    if self.fail_if_incomplete:
+                        raise ServiceXException(errorstr)
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
@@ -233,7 +245,8 @@ class Query:
         sx_request_hash = sx_request.compute_hash()
 
         # Invalidate the cache if the hash already present but if the user ignores cache
-        if self.ignore_cache and self.cache.contains_hash(sx_request_hash):
+        if self.ignore_cache and (self.cache.contains_hash(sx_request_hash)
+                                  or self.cache.is_transform_request_submitted(sx_request_hash)):
             self.cache.delete_record_by_hash(sx_request_hash)
 
         # Let's see if this is in the cache already, but respect the user's wishes

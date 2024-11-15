@@ -223,7 +223,7 @@ async def test_submit(mocker):
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
-    datasource.query_string_generator = FuncADLQuery_Uproot()
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         result = await datasource.submit_and_download(signed_urls_only=False,
@@ -264,7 +264,7 @@ async def test_submit_partial_success(mocker):
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
-    datasource.query_string_generator = FuncADLQuery_Uproot()
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         result = await datasource.submit_and_download(signed_urls_only=False,
@@ -304,7 +304,7 @@ async def test_use_of_cache(mocker):
             query_cache=cache,
             config=config,
         )
-        datasource.query_string_generator = FuncADLQuery_Uproot()
+        datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
         datasource.result_format = ResultFormat.parquet
         upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
         with ExpandableProgress(display_progress=False) as progress:
@@ -326,7 +326,7 @@ async def test_use_of_cache(mocker):
                 query_cache=cache,
                 config=config,
             )
-            datasource2.query_string_generator = FuncADLQuery_Uproot()
+            datasource2.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
             datasource2.result_format = ResultFormat.parquet
             result2 = await datasource2.submit_and_download(signed_urls_only=True,
                                                             expandable_progress=progress)
@@ -388,7 +388,7 @@ async def test_submit_cancel(mocker):
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
-    datasource.query_string_generator = FuncADLQuery_Uproot()
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         with pytest.raises(ServiceXException):
@@ -426,7 +426,7 @@ async def test_submit_fatal(mocker):
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
     )
-    datasource.query_string_generator = FuncADLQuery_Uproot()
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         with pytest.raises(ServiceXException):
@@ -580,7 +580,8 @@ async def test_use_of_ignore_cache(mocker, servicex):
             query_cache=cache,
             config=config,
         )
-        datasource_without_ignore_cache.query_string_generator = FuncADLQuery_Uproot()
+        datasource_without_ignore_cache.query_string_generator = \
+            FuncADLQuery_Uproot().FromTree("nominal")
         datasource_without_ignore_cache.result_format = ResultFormat.parquet
 
         # Datasouce with ignore cache
@@ -593,7 +594,8 @@ async def test_use_of_ignore_cache(mocker, servicex):
             config=config,
             ignore_cache=True
         )
-        datasource_with_ignore_cache.query_string_generator = FuncADLQuery_Uproot()
+        datasource_with_ignore_cache.query_string_generator = \
+            FuncADLQuery_Uproot().FromTree("nominal")
         datasource_with_ignore_cache.result_format = ResultFormat.parquet
 
         # 1st time sending the request

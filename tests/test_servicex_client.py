@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2024, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,41 +25,51 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from servicex.dataset_identifier import DataSetIdentifier, RucioDatasetIdentifier, \
-    FileListDataset
-import pytest
+from unittest.mock import MagicMock
+
+from pytest_asyncio import fixture
+
+from servicex.query_cache import QueryCache
+from servicex.servicex_adapter import ServiceXAdapter
+from servicex.servicex_client import ServiceXClient
 
 
-def test_did():
-    did = DataSetIdentifier(scheme="rucio", dataset="abc:123-455")
-    assert did.did == "rucio://abc:123-455"
+@fixture
+def servicex_adaptor(mocker):
+    adapter_mock = mocker.patch('servicex.servicex_client.ServiceXAdapter')
+    mock_adapter = MagicMock(spec=ServiceXAdapter)
+
+    adapter_mock.return_value = mock_adapter
+    return mock_adapter
 
 
-def test_rucio():
-    did = RucioDatasetIdentifier("abc:123-456")
-    assert did.did == "rucio://abc:123-456"
+@fixture
+def mock_cache(mocker):
+    cache_mock = mocker.patch('servicex.servicex_client.QueryCache')
+    mock_cache = MagicMock(spec=QueryCache)
+    mock_cache.get_codegen_by_backend.return_value = {
+        "codegens": {
+            "ROOT": "my_root_generator",
+            "UPROOT": "my_uproot_generator"
+        }
+    }
+    cache_mock.return_value = mock_cache
+    return cache_mock
 
 
-def test_rucio_no_namespace():
-    with pytest.raises(ValueError):
-        RucioDatasetIdentifier("123-456")
+def test_get_datasets(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.get_datasets()
+    servicex_adaptor.get_datasets.assert_called_once()
 
 
-def test_file_list():
-    did = FileListDataset(["c:/foo.bar"])
-    assert did.files == ["c:/foo.bar"]
+def test_get_dataset(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.get_dataset("123")
+    servicex_adaptor.get_dataset.assert_called_once_with("123")
 
 
-def test_single_file():
-    did = FileListDataset("c:/foo.bar")
-    assert did.files == ["c:/foo.bar"]
-
-
-def test_populate_transform_request(transform_request):
-    did = FileListDataset(["c:/foo.bar"])
-    did.populate_transform_request(transform_request)
-    assert transform_request.file_list == ["c:/foo.bar"]
-
-    did2 = RucioDatasetIdentifier("abc:123-456")
-    did2.populate_transform_request(transform_request)
-    assert transform_request.did == "rucio://abc:123-456"
+def test_delete_dataset(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.delete_dataset("123")
+    servicex_adaptor.delete_dataset.assert_called_once_with("123")
