@@ -84,7 +84,7 @@ def list(
 def files(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    transform_id: str = typer.Argument(help="Transform ID"),
 ):
     """
     List the files that were produced by a transform.
@@ -109,7 +109,7 @@ def files(
 def download(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    transform_id: str = typer.Argument(help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
 ):
     """
@@ -202,7 +202,7 @@ def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, ti
 def logs(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    transform_id: str = typer.Argument(help="Transform ID"),
     log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
                                                  help="Level of Logs",
                                                  case_sensitive=False),
