@@ -51,6 +51,7 @@ autodoc_pydantic_model_member_order = 'bysource'
 
 html_theme = 'furo'
 html_static_path = ['_static']
+html_show_sourcelink = False
 
 # sphinx-copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
