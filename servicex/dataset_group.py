@@ -66,6 +66,9 @@ class DatasetGroup:
         provided_progress: Optional[Progress] = None,
         return_exceptions: bool = False,
     ) -> List[Union[TransformedResults, BaseException]]:
+        # preflight auth
+        if self.datasets:
+            await self.datasets[0].servicex._get_authorization()
         with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
                 d.as_signed_urls_async(provided_progress=progress)
@@ -80,6 +83,9 @@ class DatasetGroup:
                              provided_progress: Optional[Progress] = None,
                              return_exceptions: bool = False,
                              ) -> List[Union[TransformedResults, BaseException]]:
+        # preflight auth
+        if self.datasets:
+            await self.datasets[0].servicex._get_authorization()
         with ExpandableProgress(display_progress, provided_progress) as progress:
             self.tasks = [
                 d.as_files_async(provided_progress=progress)
