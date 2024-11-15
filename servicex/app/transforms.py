@@ -143,6 +143,20 @@ def download(
         print(path.as_posix())
 
 
+@transforms_app.command(no_args_is_help=True)
+def delete(
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
+    transform_id: str = typer.Argument(help="Transform ID"),
+):
+    """
+    Delete a completed transform along with the result files.
+    """
+    sx = ServiceXClient(url=url, backend=backend)
+    asyncio.run(sx.delete_transform(transform_id))
+    print(f"Transform {transform_id} deleted")
+
+
 class TimeFrame(str, Enum):
     r"""
     Time Frame levels: 'day', 'week' & 'month'

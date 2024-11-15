@@ -73,3 +73,9 @@ def test_delete_dataset(mock_cache, servicex_adaptor):
     sx = ServiceXClient(config_path="tests/example_config.yaml")
     sx.delete_dataset("123")
     servicex_adaptor.delete_dataset.assert_called_once_with("123")
+
+
+def test_delete_transform(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.delete_transform("123-45-6789")
+    servicex_adaptor.delete_transform.assert_called_once_with("123-45-6789")
