@@ -152,8 +152,11 @@ def delete(
     """
     Delete a completed transform along with the result files.
     """
+    import servicex.app.cache
     sx = ServiceXClient(url=url, backend=backend)
     asyncio.run(sx.delete_transform(transform_id))
+    servicex.app.cache.delete(transform_id)
+
     print(f"Transform {transform_id} deleted")
 
 
