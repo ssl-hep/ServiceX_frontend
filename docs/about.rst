@@ -1,32 +1,53 @@
-About Page
+Outreach
 ===========
 
+This page lists presentations and posters on the ServiceX client (frontend) library.
+The `Client version` stands for the ServiceX client version for the given presentation.
+A demo (or demo-like) talks are marked as `Notebook`.
 
-Report
--------
-
-- Report problems - Servicex channel
-
-
-Outreach
----------
+You can find more materials on the ServiceX backend or intergration into broader 
+python ecosystem at the `IRIS-HEP ServiceX page <https://iris-hep.org/projects/servicex.html>`_.
 
 
-Information available in the HEP community.
 
-Presentations
-~~~~~~~~~~~~~~
+.. list-table::
+   :widths: 15 30 60 15 10 5
+   :align: center
+   :header-rows: 1
 
-List of talks/posters to the HEP community on ServiceX
-
-- `IRIS-HEP Poster Session 2020 at Princeton University <https://indico.cern.ch/event/894127/attachments/1996570/3331175/8_-_weinbergGalewsky-serviceX-irisHepReview.pdf>`_
-- `ServiceX talk at CHEP 2019 <https://indico.cern.ch/event/773049/contributions/3474438/attachments/1935769/3207764/BenGalewskyCHEP2019.pdf>`_
-- `ServiceX talk at HSF DAWG – DOMA Access meeting <https://docs.google.com/presentation/d/1T3FszCMpnkvvdNuoXAUZuX10hHI-hp2m0-cKYABJWmE/edit#slide=id.g6458619ede_0_0>`_
-
-Tutorials
-~~~~~~~~~
-
-A link to our tutorials. We currently have two:
-
-- `A streaming example for xAOD files using func_adl <https://github.com/d-w-liu/documentation/blob/1.0/ServiceX%20stuff/ElectronData_1.1.ipynb>`_
-- `An example using hep_tables for the frontend <https://github.com/mweinberg2718/useful-scripts/blob/master/ServiceX_hep_tables_plotting.ipynb>`_
+   * - Date     
+     - Event
+     - Title
+     - Speaker
+     - Client version
+     - Notebook
+   * - Nov 1, 2024
+     - `IRS-HEP AGC Demo Day #6 <https://indico.cern.ch/event/1457904/>`_
+     - `ServiceX 3.0 <https://indico.cern.ch/event/1457904/contributions/6137959/attachments/2959238/5204402/2024-11-01%20-%20ServiceX%20Frontend%20Release%203.0.pdf>`_
+     - Gordon Watts
+     - 3.0.0
+     - \-
+   * - Sep 24, 2024
+     - `IRIS-HEP AS Biweekly Meeting <https://indico.cern.ch/event/1387758/#2-analysis-systems-project-foc>`_
+     - `ServiceX Client 3.0 <https://indico.cern.ch/event/1387758/#2-analysis-systems-project-foc>`_
+     - Peter Onyisi
+     - 3.0.0
+     - o
+   * - Mar 13, 2024     
+     - `ACAT 2024 <https://indico.cern.ch/event/1330797/contributions/5796587/>`_
+     - `ServiceX, the novel data delivery system, for physics analysis <https://indico.cern.ch/event/1330797/contributions/5796587/attachments/2817384/4918917/acat2024_ServiceX_Choi.pdf>`_
+     - KyungEon Choi
+     - \-
+     - \-
+   * - May 11, 2023 
+     - `CHEP 2023 <https://indico.jlab.org/event/459/contributions/11568/>`_
+     - `Data Management Package for the novel data delivery system, ServiceX, and Applications to various physics analysis workflows <https://indico.jlab.org/event/459/contributions/11568/attachments/9720/14195/KyungEon_CHEP2023.pdf>`_
+     - KyungEon Choi
+     - \-
+     - \-
+   * - Sep 14, 2022
+     - `PyHEP 2022 <https://indico.cern.ch/event/1150631/contributions/5004345/>`_
+     - `Data Management Package for the novel data delivery system, ServiceX, and its application to an ATLAS Run-2 Physics Analysis Workflow <https://nbviewer.org/github/kyungeonchoi/pyhep2022_ServiceXDataBinder/blob/master/pyhep2022_choi.ipynb>`_
+     - KyungEon Choi
+     - \-
+     - o
