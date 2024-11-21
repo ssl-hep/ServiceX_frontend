@@ -29,12 +29,6 @@ import ast
 from typing import Optional, cast
 
 
-class FuncADLServerException (Exception):
-    'Thrown when an exception happens contacting the server'
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
-
-
 def has_tuple(a: ast.AST) -> bool:
     """Determine if this query used tuples in its final result
 
