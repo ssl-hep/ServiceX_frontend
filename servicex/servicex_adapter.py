@@ -171,7 +171,7 @@ class ServiceXAdapter:
             dataset = CachedDataset(**result)
             return dataset
 
-    async def delete_dataset(self, dataset_id=None):
+    async def delete_dataset(self, dataset_id=None) -> bool:
         headers = await self._get_authorization()
         path_template = '/servicex/datasets/{dataset_id}'
         url = self.url + path_template.format(dataset_id=dataset_id)
@@ -189,6 +189,8 @@ class ServiceXAdapter:
                 elif r.status != 200:
                     msg = await _extract_message(r)
                     raise RuntimeError(f"Failed to delete dataset {dataset_id} - {msg}")
+                result = await r.json()
+                return result['stale']
 
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()

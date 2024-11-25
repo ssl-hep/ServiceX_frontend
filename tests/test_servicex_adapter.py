@@ -247,11 +247,12 @@ async def test_delete_dataset(delete, servicex):
     }
     delete.return_value.__aenter__.return_value.status = 200
 
-    await servicex.delete_dataset(123)
+    r = await servicex.delete_dataset(123)
     delete.assert_called_with(
         url='https://servicex.org/servicex/datasets/123',
         headers={}
     )
+    assert r
 
 
 @pytest.mark.asyncio
