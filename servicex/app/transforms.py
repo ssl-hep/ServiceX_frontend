@@ -147,17 +147,18 @@ def download(
 def delete(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Argument(help="Transform ID"),
+    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
 ):
     """
     Delete a completed transform along with the result files.
     """
     import servicex.app.cache
     sx = ServiceXClient(url=url, backend=backend)
-    asyncio.run(sx.delete_transform(transform_id))
-    servicex.app.cache.delete(transform_id)
+    for transform_id in transform_id_list:
+        asyncio.run(sx.delete_transform(transform_id))
+        servicex.app.cache.delete(transform_id)
 
-    print(f"Transform {transform_id} deleted")
+        print(f"Transform {transform_id} deleted")
 
 
 class TimeFrame(str, Enum):
