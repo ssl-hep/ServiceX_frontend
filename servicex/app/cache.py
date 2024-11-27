@@ -85,12 +85,16 @@ def clear(force: bool = typer.Option(False, "-y", help="Force, don't ask for per
 
 
 @cache_app.command(no_args_is_help=True)
-def delete(transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID")):
+def delete(transform_id: str = typer.Argument(help="Transform ID")):
     """
     Delete a cached query. Use -t to specify the transform ID
     """
     sx = ServiceXClient()
     cache = sx.query_cache
     rec = cache.get_transform_by_request_id(transform_id)
-    shutil.rmtree(rec.data_dir)
+    if not rec:
+        rich.print(f"Transform {transform_id} not found in cache")
+        return
+
+    shutil.rmtree(rec.data_dir, ignore_errors=True)
     cache.delete_record_by_request_id(rec.request_id)

@@ -84,7 +84,7 @@ def list(
 def files(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    transform_id: str = typer.Argument(help="Transform ID"),
 ):
     """
     List the files that were produced by a transform.
@@ -109,7 +109,7 @@ def files(
 def download(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    transform_id: str = typer.Argument(help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
 ):
     """
@@ -141,6 +141,24 @@ def download(
 
     for path in result_files:
         print(path.as_posix())
+
+
+@transforms_app.command(no_args_is_help=True)
+def delete(
+    url: Optional[str] = url_cli_option,
+    backend: Optional[str] = backend_cli_option,
+    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+):
+    """
+    Delete a completed transform along with the result files.
+    """
+    import servicex.app.cache
+    sx = ServiceXClient(url=url, backend=backend)
+    for transform_id in transform_id_list:
+        asyncio.run(sx.delete_transform(transform_id))
+        servicex.app.cache.delete(transform_id)
+
+        print(f"Transform {transform_id} deleted")
 
 
 class TimeFrame(str, Enum):
@@ -202,7 +220,7 @@ def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, ti
 def logs(
     url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
+    transform_id: str = typer.Argument(help="Transform ID"),
     log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
                                                  help="Level of Logs",
                                                  case_sensitive=False),
