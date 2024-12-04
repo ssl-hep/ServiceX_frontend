@@ -13,13 +13,11 @@ Common command line arguments:
 | F   | Long     | What it does                                        |
 | lag | Flag     |                                                     |
 +=====+==========+=====================================================+
-| -u  | –url     | The url of the serviceX ingress                     |
-+-----+----------+-----------------------------------------------------+
 | -b  | –backend | Named backend from the .servicex file endpoints     |
 |     |          | list                                                |
 +-----+----------+-----------------------------------------------------+
 
-If neither url nor backend are specified then the client will attempt to
+If no backend is specified then the client will attempt to
 use the ``default_endpoint`` value to determine who to talk to.
 
 codegens

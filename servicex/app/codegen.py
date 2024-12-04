@@ -29,7 +29,7 @@
 import rich
 import typer
 
-from servicex.app.cli_options import url_cli_option, backend_cli_option, config_file_option
+from servicex.app.cli_options import backend_cli_option, config_file_option
 from servicex.servicex_client import ServiceXClient
 from typing import Optional
 
@@ -38,13 +38,12 @@ codegen_app = typer.Typer(name="codegen", no_args_is_help=True)
 
 @codegen_app.command(no_args_is_help=False)
 def flush(
-        url: Optional[str] = url_cli_option,
         backend: Optional[str] = backend_cli_option,
         config_path: Optional[str] = config_file_option):
     """
     Flush the available code generators from the cache
     """
-    sx = ServiceXClient(url=url, backend=backend, config_path=config_path)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     cache = sx.query_cache
     cache.delete_codegen_by_backend(backend)
     rich.print("Deleted cached code generators.")
@@ -52,11 +51,10 @@ def flush(
 
 @codegen_app.command(no_args_is_help=False)
 def list(
-        url: Optional[str] = url_cli_option,
         backend: Optional[str] = backend_cli_option,
         config_path: Optional[str] = config_file_option):
     """
     List the available code generators
     """
-    sx = ServiceXClient(url=url, backend=backend, config_path=config_path)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     rich.print_json(data=sx.get_code_generators())

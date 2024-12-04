@@ -30,7 +30,7 @@ from typing import Optional
 
 import rich
 
-from servicex.app.cli_options import url_cli_option, backend_cli_option
+from servicex.app.cli_options import backend_cli_option
 
 import typer
 
@@ -42,7 +42,6 @@ datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 
 @datasets_app.command(no_args_is_help=True)
 def list(
-        url: Optional[str] = url_cli_option,
         backend: Optional[str] = backend_cli_option,
         did_finder: Optional[str] = typer.Option(
             None,
@@ -58,7 +57,7 @@ def list(
     """
     List the datasets.
     """
-    sx = ServiceXClient(url=url, backend=backend)
+    sx = ServiceXClient(backend=backend)
     table = Table(title="ServiceX Datasets")
     table.add_column("ID")
     table.add_column("Name")
@@ -90,11 +89,10 @@ def list(
 
 @datasets_app.command(no_args_is_help=True)
 def get(
-        url: Optional[str] = url_cli_option,
         backend: Optional[str] = backend_cli_option,
         dataset_id: int = typer.Argument(..., help="The ID of the dataset to get")
 ):
-    sx = ServiceXClient(url=url, backend=backend)
+    sx = ServiceXClient(backend=backend)
     table = Table(title=f"Dataset ID {dataset_id}")
     table.add_column("Paths")
     dataset = asyncio.run(sx.get_dataset(dataset_id))
@@ -114,11 +112,10 @@ def get(
 
 @datasets_app.command(no_args_is_help=True)
 def delete(
-        url: Optional[str] = url_cli_option,
         backend: Optional[str] = backend_cli_option,
         dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete")
 ):
-    sx = ServiceXClient(url=url, backend=backend)
+    sx = ServiceXClient(backend=backend)
     result = asyncio.run(sx.delete_dataset(dataset_id))
     if result:
         typer.echo(f"Dataset {dataset_id} deleted")
