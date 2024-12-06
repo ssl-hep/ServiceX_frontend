@@ -37,7 +37,7 @@ import typer
 from rich.progress import Progress
 from rich.table import Table
 
-from servicex.app.cli_options import url_cli_option, backend_cli_option
+from servicex.app.cli_options import backend_cli_option
 from servicex.minio_adapter import MinioAdapter
 from servicex.models import Status, ResultFile
 from servicex.servicex_client import ServiceXClient
@@ -55,7 +55,6 @@ def transforms():
 
 @transforms_app.command(no_args_is_help=True)
 def list(
-    url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
     complete: Optional[bool] = typer.Option(
         None, "--complete", help="Only show successfully completed transforms"
@@ -64,7 +63,7 @@ def list(
     """
     List the transforms that have been run.
     """
-    sx = ServiceXClient(url=url, backend=backend)
+    sx = ServiceXClient(backend=backend)
     table = Table(title="ServiceX Transforms")
     table.add_column("Transform ID")
     table.add_column("Title")
@@ -82,7 +81,6 @@ def list(
 
 @transforms_app.command(no_args_is_help=True)
 def files(
-    url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
 ):
@@ -94,7 +92,7 @@ def files(
         minio = MinioAdapter.for_transform(transform)
         return await minio.list_bucket()
 
-    sx = ServiceXClient(url=url, backend=backend)
+    sx = ServiceXClient(backend=backend)
     result_files = asyncio.run(list_files(sx, transform_id))
     table = rich.table.Table(title=f"Files from {transform_id}")
     table.add_column("filename")
@@ -107,7 +105,6 @@ def files(
 
 @transforms_app.command(no_args_is_help=True)
 def download(
-    url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
@@ -136,7 +133,7 @@ def download(
 
     with Progress() as progress:
         download_progress = progress.add_task("Downloading", start=False, total=None)
-        sx = ServiceXClient(url=url, backend=backend)
+        sx = ServiceXClient(backend=backend)
         result_files = asyncio.run(download_files(sx, transform_id, local_dir))
 
     for path in result_files:
@@ -200,7 +197,6 @@ def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, ti
 
 @transforms_app.command(no_args_is_help=True)
 def logs(
-    url: Optional[str] = url_cli_option,
     backend: Optional[str] = backend_cli_option,
     transform_id: str = typer.Option(None, "-t", "--transform-id", help="Transform ID"),
     log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
@@ -213,7 +209,7 @@ def logs(
     """
     Open the URL to the Kibana dashboard of the logs of a tranformer
     """
-    sx = ServiceXClient(backend=backend, url=url)
+    sx = ServiceXClient(backend=backend)
     transforms = sx.get_transform_status(transform_id)
     if transforms and transforms.request_id == transform_id:
         kibana_link = create_kibana_link_parameters(transforms.log_url,
