@@ -562,7 +562,8 @@ class Query:
             # signing urls for a previous transform then we know it is complete as well
             if cached_record or (
                 self.current_status
-                and self.current_status.status in DONE_STATUS
+                and (self.current_status.status in DONE_STATUS
+                     and self.current_status.files_completed == len(files_seen))
             ):
                 break
 

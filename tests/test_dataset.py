@@ -116,7 +116,7 @@ async def test_download_files(python_dataset):
     progress_mock = Mock()
     python_dataset.minio_polling_interval = 0
     python_dataset.minio = minio_mock
-    python_dataset.current_status = Mock(status="Complete")
+    python_dataset.current_status = Mock(status="Complete", files_completed=2)
     python_dataset.configuration.shortened_downloaded_filename = False
 
     result_uris = await python_dataset.download_files(
@@ -142,7 +142,7 @@ async def test_download_files_with_signed_urls(python_dataset):
 
     python_dataset.minio_polling_interval = 0
     python_dataset.minio = minio_mock
-    python_dataset.current_status = Mock(status="Complete")
+    python_dataset.current_status = Mock(status="Complete", files_completed=2)
     python_dataset.configuration.shortened_downloaded_filename = False
 
     result_uris = await python_dataset.download_files(
