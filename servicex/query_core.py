@@ -32,7 +32,7 @@ import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Type, Union
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
 
@@ -80,6 +80,7 @@ class Query:
         ignore_cache: bool = False,
         query_string_generator: Optional[QueryStringGenerator] = None,
         fail_if_incomplete: bool = True,
+        minio_adaptor_class: Optional[Type] = None,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -124,6 +125,8 @@ class Query:
         # Number of seconds in between ServiceX status polls
         self.servicex_polling_interval = servicex_polling_interval
         self.minio_polling_interval = minio_polling_interval
+
+        self.minio_adaptor_class = minio_adaptor_class if minio_adaptor_class is not None else MinioAdapter
 
     def generate_selection_string(self) -> str:
         if self.query_string_generator is None:
@@ -483,7 +486,7 @@ class Query:
         # status. This includes the minio host and credentials. We use the
         # transform id as the bucket.
         if not self.minio:
-            self.minio = MinioAdapter.for_transform(self.current_status)
+            self.minio = self.minio_adaptor_class.for_transform(self.current_status)
 
     async def download_files(
         self,
