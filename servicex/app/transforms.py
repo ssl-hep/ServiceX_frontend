@@ -33,10 +33,11 @@ import re
 from enum import Enum
 
 import rich
+import rich.box
 import typer
 from rich.progress import Progress
-from rich.table import Table
 
+from servicex.app import pipeable_table
 from servicex.app.cli_options import backend_cli_option
 from servicex.minio_adapter import MinioAdapter
 from servicex.models import Status, ResultFile
@@ -64,7 +65,8 @@ def list(
     List the transforms that have been run.
     """
     sx = ServiceXClient(backend=backend)
-    table = Table(title="ServiceX Transforms")
+
+    table = pipeable_table(title="ServiceX Transforms")
     table.add_column("Transform ID")
     table.add_column("Title")
     table.add_column("Status")
@@ -94,7 +96,7 @@ def files(
 
     sx = ServiceXClient(backend=backend)
     result_files = asyncio.run(list_files(sx, transform_id))
-    table = rich.table.Table(title=f"Files from {transform_id}")
+    table = pipeable_table(title=f"Files from {transform_id}")
     table.add_column("filename")
     table.add_column("Size(Mb)")
     table.add_column("Filetype")

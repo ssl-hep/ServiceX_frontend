@@ -30,8 +30,8 @@ import shutil
 import rich
 import typer
 from rich.prompt import Confirm
-from rich.table import Table
 
+from servicex.app import pipeable_table
 from servicex.servicex_client import ServiceXClient
 
 cache_app = typer.Typer(name="cache", no_args_is_help=True)
@@ -52,7 +52,7 @@ def list():
     """
     sx = ServiceXClient()
     cache = sx.query_cache
-    table = Table(title="Cached Queries")
+    table = pipeable_table(title="Cached Queries")
     table.add_column("Title")
     table.add_column("Codegen")
     table.add_column("Transform ID")
