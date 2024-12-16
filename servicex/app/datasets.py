@@ -30,6 +30,7 @@ from typing import Optional
 
 import rich
 
+from servicex.app import pipeable_table, is_terminal_output
 from servicex.app.cli_options import backend_cli_option
 
 import typer
@@ -55,10 +56,11 @@ def list(
         ),
 ):
     """
-    List the datasets.
+    List the datasets. Use fancy formatting if printing to a terminal.
+    Output as plain text if redirected.
     """
     sx = ServiceXClient(backend=backend)
-    table = Table(title="ServiceX Datasets")
+    table = pipeable_table(title="ServiceX Datasets")
     table.add_column("ID")
     table.add_column("Name")
     table.add_column("Files")
@@ -75,14 +77,17 @@ def list(
         # currently set to 1970-00-00 in the server and is never updated.
         # Stick with the last_used field until
         # https://github.com/ssl-hep/ServiceX/issues/906 is resolved
+        d_name = d.name if d.did_finder != "user" else "File list"
+        is_stale = "Yes" if d.is_stale else ""
+        last_used = d.last_used.strftime('%Y-%m-%dT%H:%M:%S')
         table.add_row(
             str(d.id),
-            d.name if d.did_finder != "user" else "File list",
+            d_name,
             "%d" % d.n_files,
             "{:,}MB".format(round(d.size / 1e6)),
             d.lookup_status,
-            d.last_used.strftime('%Y-%m-%dT%H:%M:%S'),
-            "Yes" if d.is_stale else ""
+            last_used,
+            is_stale
         )
     rich.print(table)
 
@@ -92,22 +97,41 @@ def get(
         backend: Optional[str] = backend_cli_option,
         dataset_id: int = typer.Argument(..., help="The ID of the dataset to get")
 ):
+    """
+    Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
+    Output as json if redirected.
+    """
     sx = ServiceXClient(backend=backend)
-    table = Table(title=f"Dataset ID {dataset_id}")
-    table.add_column("Paths")
-    dataset = asyncio.run(sx.get_dataset(dataset_id))
-    for file in dataset.files:
-        sub_table = Table(title="")
-        sub_table.add_column(f"File ID: {file.id}")
-        for path in file.paths.split(','):
-            sub_table.add_row(path)
+    if is_terminal_output():
+        table = Table(title=f"Dataset ID {dataset_id}")
+        table.add_column("Paths")
+    else:
+        table = None
 
-        table.add_row(
-            sub_table
-        )
-    # Set alternating row styles
-    table.row_styles = ["", ""]
-    rich.print(table)
+    dataset = asyncio.run(sx.get_dataset(dataset_id))
+
+    if table:
+        for file in dataset.files:
+            sub_table = Table(title="")
+            sub_table.add_column(f"File ID: {file.id}")
+            for path in file.paths.split(','):
+                sub_table.add_row(path)
+
+            table.add_row(
+                sub_table
+            )
+        # Set alternating row styles
+        table.row_styles = ["", ""]
+        rich.print(table)
+    else:
+        data = {"dataset": {
+            "id": dataset.id,
+            "name": dataset.name,
+            "files": [
+                {"id": file.id, "paths": file.paths.split(',')} for file in dataset.files
+            ]}
+        }
+        rich.print_json(data=data)
 
 
 @datasets_app.command(no_args_is_help=True)
