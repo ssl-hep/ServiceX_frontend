@@ -210,3 +210,16 @@ def test_delete_transform(script_runner, transform_status_record):
         assert result.returncode == 0
         assert result.stdout == "Transform test-request-123 deleted\n"
         mock_delete_transform.assert_called_once_with('test-request-123')
+
+
+def test_cancel_transform(script_runner, transform_status_record):
+    with patch('servicex.app.transforms.ServiceXClient') as mock_servicex:
+        mock_cancel_transform = AsyncMock(return_value=True)
+        mock_servicex.return_value.cancel_transform = mock_cancel_transform
+
+        result = script_runner.run(['servicex', 'transforms', 'cancel',
+                                    '-c', 'tests/example_config.yaml',
+                                    'test-request-123'])
+        assert result.returncode == 0
+        assert result.stdout == "Transform test-request-123 cancelled\n"
+        mock_cancel_transform.assert_called_once_with('test-request-123')

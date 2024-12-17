@@ -175,6 +175,21 @@ def delete(
         print(f"Transform {transform_id} deleted")
 
 
+@transforms_app.command(no_args_is_help=True)
+def cancel(
+        backend: Optional[str] = backend_cli_option,
+        config_path: Optional[str] = config_file_option,
+        transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+):
+    """
+    Cancel a running transform request.
+    """
+    sx = ServiceXClient(backend=backend, config_path=config_path)
+    for transform_id in transform_id_list:
+        asyncio.run(sx.cancel_transform(transform_id))
+        print(f"Transform {transform_id} cancelled")
+
+
 class TimeFrame(str, Enum):
     r"""
     Time Frame levels: 'day', 'week' & 'month'

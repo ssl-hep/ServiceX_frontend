@@ -61,6 +61,11 @@ delete
 
 Delete a transform and its associated result files. Provide the transform request ID as an argument.
 
+cancel
+^^^^^^
+
+Cancel a running transform. Provide the transform request ID as an argument.
+
 cache
 ~~~~~
 

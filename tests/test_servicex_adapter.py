@@ -311,6 +311,42 @@ async def test_delete_transform_errors(delete, servicex):
 
 
 @pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.get')
+async def test_cancel_transform(get, servicex):
+    get.return_value.__aenter__.return_value.json.return_value = {
+        "message": "Canceled transformation request 123"
+    }
+    get.return_value.__aenter__.return_value.status = 200
+
+    await servicex.cancel_transform(123)
+    get.assert_called_with(
+        url='https://servicex.org/servicex/transformation/123/cancel',
+        headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch('servicex.servicex_adapter.ClientSession.get')
+async def test_cancel_transform_errors(get, servicex):
+    get.return_value.__aenter__.return_value.status = 403
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.cancel_transform(123)
+    assert "Not authorized to access serviceX at" in str(err.value)
+
+    get.return_value.__aenter__.return_value.status = 404
+    with pytest.raises(ValueError) as err:
+        await servicex.cancel_transform(123)
+    assert "Transform 123 not found" in str(err.value)
+
+    get.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
+    get.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    get.return_value.__aenter__.return_value.status = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.cancel_transform(123)
+    assert "Failed to cancel transform 123 - error_message" in str(err.value)
+
+
+@pytest.mark.asyncio
 @patch('servicex.servicex_adapter.RetryClient.post')
 async def test_submit(post, servicex):
     post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}
