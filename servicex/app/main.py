@@ -69,13 +69,18 @@ def main_info(
 def deliver(
         backend: Optional[str] = backend_cli_option,
         config_path: Optional[str] = config_file_option,
-        spec_file: str = typer.Argument(..., help="Spec file to submit to serviceX")):
+        spec_file: str = typer.Argument(..., help="Spec file to submit to serviceX"),
+        ignore_cache: Optional[bool] = typer.Option(
+        None, "--ignore-cache", help="Ignore local cache and always submit to ServiceX")
+):
     """
     Deliver a file to the ServiceX cache.
     """
 
     print(f"Delivering {spec_file} to ServiceX cache")
-    results = servicex_client.deliver(spec_file, servicex_name=backend, config_path=config_path)
+    results = servicex_client.deliver(spec_file, servicex_name=backend,
+                                      config_path=config_path,
+                                      ignore_local_cache=ignore_cache)
     rich.print(results)
 
 

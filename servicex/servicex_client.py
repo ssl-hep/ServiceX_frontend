@@ -200,9 +200,15 @@ def deliver(
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
     return_exceptions: bool = True,
-    fail_if_incomplete: bool = True
+    fail_if_incomplete: bool = True,
+    ignore_local_cache: bool = False
+
 ):
     config = _load_ServiceXSpec(config)
+
+    if ignore_local_cache:
+        for sample in config.Sample:
+            sample.IgnoreLocalCache = True
 
     datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
 
