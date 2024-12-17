@@ -90,11 +90,5 @@ def delete(transform_id: str = typer.Argument(help="Transform ID")):
     Delete a cached query. Use -t to specify the transform ID
     """
     sx = ServiceXClient()
-    cache = sx.query_cache
-    rec = cache.get_transform_by_request_id(transform_id)
-    if not rec:
+    if not sx.delete_transform_from_cache(transform_id):
         rich.print(f"Transform {transform_id} not found in cache")
-        return
-
-    shutil.rmtree(rec.data_dir, ignore_errors=True)
-    cache.delete_record_by_request_id(rec.request_id)

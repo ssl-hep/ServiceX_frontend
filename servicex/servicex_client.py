@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
+import shutil
 from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
@@ -380,3 +381,13 @@ class ServiceXClient:
             fail_if_incomplete=fail_if_incomplete
         )
         return qobj
+
+    def delete_transform_from_cache(self, transform_id: str):
+        cache = self.query_cache
+        rec = cache.get_transform_by_request_id(transform_id)
+        if not rec:
+            return False
+
+        shutil.rmtree(rec.data_dir, ignore_errors=True)
+        cache.delete_record_by_request_id(rec.request_id)
+        return True

@@ -38,7 +38,7 @@ import typer
 from rich.progress import Progress
 
 from servicex.app import pipeable_table
-from servicex.app.cli_options import backend_cli_option
+from servicex.app.cli_options import backend_cli_option, config_file_option
 from servicex.minio_adapter import MinioAdapter
 from servicex.models import Status, ResultFile
 from servicex.servicex_client import ServiceXClient
@@ -57,6 +57,7 @@ def transforms():
 @transforms_app.command(no_args_is_help=True)
 def list(
     backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
     complete: Optional[bool] = typer.Option(
         None, "--complete", help="Only show successfully completed transforms"
     ),
@@ -64,7 +65,7 @@ def list(
     """
     List the transforms that have been run.
     """
-    sx = ServiceXClient(backend=backend)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
 
     table = pipeable_table(title="ServiceX Transforms")
     table.add_column("Transform ID")
@@ -84,6 +85,7 @@ def list(
 @transforms_app.command(no_args_is_help=True)
 def files(
     backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
     transform_id: str = typer.Argument(help="Transform ID"),
 ):
     """
@@ -94,7 +96,7 @@ def files(
         minio = MinioAdapter.for_transform(transform)
         return await minio.list_bucket()
 
-    sx = ServiceXClient(backend=backend)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     result_files = asyncio.run(list_files(sx, transform_id))
     table = pipeable_table(title=f"Files from {transform_id}")
     table.add_column("filename")
@@ -108,6 +110,7 @@ def files(
 @transforms_app.command(no_args_is_help=True)
 def download(
     backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
     transform_id: str = typer.Argument(help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
 ):
@@ -135,7 +138,7 @@ def download(
 
     with Progress() as progress:
         download_progress = progress.add_task("Downloading", start=False, total=None)
-        sx = ServiceXClient(backend=backend)
+        sx = ServiceXClient(backend=backend, config_path=config_path)
         result_files = asyncio.run(download_files(sx, transform_id, local_dir))
 
     for path in result_files:
@@ -144,17 +147,17 @@ def download(
 
 @transforms_app.command(no_args_is_help=True)
 def delete(
-    backend: Optional[str] = backend_cli_option,
-    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+        backend: Optional[str] = backend_cli_option,
+        config_path: Optional[str] = config_file_option,
+        transform_id_list: List[str] = typer.Argument(help="Transform ID"),
 ):
     """
     Delete a completed transform along with the result files.
     """
-    import servicex.app.cache
-    sx = ServiceXClient(backend=backend)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     for transform_id in transform_id_list:
         asyncio.run(sx.delete_transform(transform_id))
-        servicex.app.cache.delete(transform_id)
+        sx.delete_transform_from_cache(transform_id)
 
         print(f"Transform {transform_id} deleted")
 
