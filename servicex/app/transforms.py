@@ -61,10 +61,23 @@ def list(
     complete: Optional[bool] = typer.Option(
         None, "--complete", help="Only show successfully completed transforms"
     ),
+    running: Optional[bool] = typer.Option(
+        None, "--running", help="Only show transforms that are currently running"
+    ),
 ):
     """
     List the transforms that have been run.
     """
+
+    def transform_filter(status: Status) -> bool:
+        if complete and status == Status.complete:
+            return True
+        if running and status == Status.running:
+            return True
+        if not complete and not running:
+            return True
+        return False
+
     sx = ServiceXClient(backend=backend, config_path=config_path)
 
     table = pipeable_table(title="ServiceX Transforms")
@@ -74,7 +87,7 @@ def list(
     table.add_column("Files")
     transforms = sx.get_transforms()
     for t in transforms:
-        if not complete or complete and t.status == Status.complete:
+        if transform_filter(t.status):
             table.add_row(
                 t.request_id, t.title, t.status, str(t.files_completed)
             )
