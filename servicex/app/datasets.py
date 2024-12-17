@@ -41,7 +41,7 @@ from rich.table import Table
 datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 
 
-@datasets_app.command(no_args_is_help=True)
+@datasets_app.command(no_args_is_help=False)
 def list(
         backend: Optional[str] = backend_cli_option,
         config_path: Optional[str] = config_file_option,
