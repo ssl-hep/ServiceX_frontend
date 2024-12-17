@@ -91,7 +91,9 @@ async def test_get_transforms_wlcg_bearer_token(decode,
                                                 servicex,
                                                 transform_status_response):
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
-    token_file.write("luckycharms")
+    token_file.write(""""
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+    """)
     token_file.close()
 
     os.environ['BEARER_TOKEN_FILE'] = token_file.name
