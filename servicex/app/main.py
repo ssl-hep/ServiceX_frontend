@@ -30,7 +30,9 @@ from typing import Optional
 import rich
 import typer
 
+from servicex import servicex_client
 from servicex._version import __version__
+from servicex.app.cli_options import backend_cli_option, config_file_option
 from servicex.app.datasets import datasets_app
 from servicex.app.transforms import transforms_app
 from servicex.app.cache import cache_app
@@ -61,6 +63,20 @@ def main_info(
     ServiceX Client
     """
     pass
+
+
+@app.command()
+def deliver(
+        backend: Optional[str] = backend_cli_option,
+        config_path: Optional[str] = config_file_option,
+        spec_file: str = typer.Argument(..., help="Spec file to submit to serviceX")):
+    """
+    Deliver a file to the ServiceX cache.
+    """
+
+    print(f"Delivering {spec_file} to ServiceX cache")
+    results = servicex_client.deliver(spec_file, servicex_name=backend, config_path=config_path)
+    rich.print(results)
 
 
 if __name__ == "__main__":

@@ -20,6 +20,13 @@ Common command line arguments:
 If no backend is specified then the client will attempt to
 use the ``default_endpoint`` value to determine who to talk to.
 
+deliver
+~~~~~~~
+This command is used to submit a yaml configuration file to the serviceX backend.
+It will print the paths to the resulting files.
+
+Provide the path to the configuration file as an argument to the command.
+
 codegens
 ~~~~~~~~
 
