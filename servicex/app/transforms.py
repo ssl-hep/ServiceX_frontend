@@ -54,7 +54,7 @@ def transforms():
     pass
 
 
-@transforms_app.command(no_args_is_help=True)
+@transforms_app.command(no_args_is_help=False)
 def list(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
