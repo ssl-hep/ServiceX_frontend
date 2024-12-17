@@ -84,6 +84,12 @@ def test_delete_transform(mock_cache, servicex_adaptor):
     servicex_adaptor.delete_transform.assert_called_once_with("123-45-6789")
 
 
+def test_cancel_transform(mock_cache, servicex_adaptor):
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx.cancel_transform("123-45-6789")
+    servicex_adaptor.cancel_transform.assert_called_once_with("123-45-6789")
+
+
 @pytest.fixture
 def transformed_results() -> TransformedResults:
     """
