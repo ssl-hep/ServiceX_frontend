@@ -31,7 +31,7 @@ from typing import Optional
 import rich
 
 from servicex.app import pipeable_table, is_terminal_output
-from servicex.app.cli_options import backend_cli_option
+from servicex.app.cli_options import backend_cli_option, config_file_option
 
 import typer
 
@@ -44,6 +44,7 @@ datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 @datasets_app.command(no_args_is_help=True)
 def list(
         backend: Optional[str] = backend_cli_option,
+        config_path: Optional[str] = config_file_option,
         did_finder: Optional[str] = typer.Option(
             None,
             help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
@@ -59,7 +60,7 @@ def list(
     List the datasets. Use fancy formatting if printing to a terminal.
     Output as plain text if redirected.
     """
-    sx = ServiceXClient(backend=backend)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     table = pipeable_table(title="ServiceX Datasets")
     table.add_column("ID")
     table.add_column("Name")
@@ -95,13 +96,14 @@ def list(
 @datasets_app.command(no_args_is_help=True)
 def get(
         backend: Optional[str] = backend_cli_option,
+        config_path: Optional[str] = config_file_option,
         dataset_id: int = typer.Argument(..., help="The ID of the dataset to get")
 ):
     """
     Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
     Output as json if redirected.
     """
-    sx = ServiceXClient(backend=backend)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     if is_terminal_output():
         table = Table(title=f"Dataset ID {dataset_id}")
         table.add_column("Paths")
@@ -137,11 +139,13 @@ def get(
 @datasets_app.command(no_args_is_help=True)
 def delete(
         backend: Optional[str] = backend_cli_option,
+        config_path: Optional[str] = config_file_option,
         dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete")
 ):
-    sx = ServiceXClient(backend=backend)
+    sx = ServiceXClient(backend=backend, config_path=config_path)
     result = asyncio.run(sx.delete_dataset(dataset_id))
     if result:
         typer.echo(f"Dataset {dataset_id} deleted")
     else:
         typer.echo(f"Dataset {dataset_id} not found")
+        raise typer.Abort()

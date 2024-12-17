@@ -25,10 +25,13 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from unittest.mock import MagicMock
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
+import pytest
 from pytest_asyncio import fixture
 
+from servicex.models import TransformedResults, ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.servicex_client import ServiceXClient
@@ -79,3 +82,52 @@ def test_delete_transform(mock_cache, servicex_adaptor):
     sx = ServiceXClient(config_path="tests/example_config.yaml")
     sx.delete_transform("123-45-6789")
     servicex_adaptor.delete_transform.assert_called_once_with("123-45-6789")
+
+
+@pytest.fixture
+def transformed_results() -> TransformedResults:
+    """
+    Pytest fixture generating a realistic TransformedResults instance for testing.
+
+    Returns:
+        TransformedResults: A populated TransformedResults object with sample data
+    """
+    # Default data that can be overridden
+    base_data = {
+        "hash": "abc123def456",
+        "title": "Test Transformation Request",
+        "codegen": "python-selector",
+        "request_id": "servicex-request-789",
+        "submit_time": datetime.now(),
+        "data_dir": "/tmp/servicex/results",
+        "file_list": [
+            "/tmp/servicex/results/output1.parquet",
+            "/tmp/servicex/results/output2.parquet"
+        ],
+        "signed_url_list": [
+            "https://example.com/signed-url-1",
+            "https://example.com/signed-url-2"
+        ],
+        "files": 2,
+        "result_format": ResultFormat.parquet,
+        "log_url": "https://logs.servicex.com/request-789"
+    }
+
+    return TransformedResults(**base_data)
+
+
+def test_delete_transform_from_cache(mock_cache, servicex_adaptor, transformed_results):
+    with patch('servicex.servicex_client.QueryCache') as mock_cache:
+        mock_cache.return_value.get_transform_by_request_id = \
+            MagicMock(return_value=transformed_results)
+        with patch('servicex.servicex_client.shutil.rmtree') as mock_rmtree:
+            sx = ServiceXClient(config_path="tests/example_config.yaml")
+            sx.delete_transform_from_cache("servicex-request-789")
+
+            mock_cache.return_value.\
+                get_transform_by_request_id.\
+                assert_called_once_with("servicex-request-789")
+            mock_rmtree.assert_called_once_with('/tmp/servicex/results', ignore_errors=True)
+            mock_cache.return_value.\
+                delete_record_by_request_id.\
+                assert_called_once_with("servicex-request-789")

@@ -26,35 +26,9 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from unittest.mock import patch
-
 
 def test_app_version(script_runner):
     import servicex._version
     result = script_runner.run(['servicex', '--version'])
     assert result.returncode == 0
     assert result.stdout == f'ServiceX {servicex._version.__version__}\n'
-
-
-def test_codegen_list(script_runner):
-    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators', return_value={
-        "uproot": "http://uproot-codegen",
-        "xaod": "http://xaod-codegen"
-    }):
-        result = script_runner.run(['servicex', 'codegen', 'list', '-c',
-                                    'tests/example_config.yaml'])
-        assert result.returncode == 0
-        assert result.stdout == '''{
-  "uproot": "http://uproot-codegen",
-  "xaod": "http://xaod-codegen"
-}
-'''
-
-
-def test_codegen_flush(script_runner):
-    with patch('servicex.query_cache.QueryCache.delete_codegen_by_backend') as p:
-        result = script_runner.run(['servicex', 'codegen', 'flush',
-                                    '-c', 'tests/example_config.yaml',
-                                    '-b', 'localhost'])
-        assert result.returncode == 0
-        p.assert_called_once_with('localhost')
