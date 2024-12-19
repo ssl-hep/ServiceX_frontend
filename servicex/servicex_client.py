@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
-from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
+from typing import Optional, List, Type, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
 from servicex.configuration import Configuration
@@ -114,7 +114,7 @@ def _load_ServiceXSpec(
             file_path = config
 
         import sys
-        from ccorp.ruamel.yaml.include import YAML
+        from ccorp.ruamel.yaml.include import YAML  # type: ignore
         yaml = YAML()
 
         if sys.version_info < (3, 10):
@@ -137,7 +137,14 @@ def _load_ServiceXSpec(
     return config
 
 
-def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
+def _build_datasets(
+    config,
+    config_path,
+    servicex_name,
+    fail_if_incomplete,
+    servicex_adaptor,
+    minio_adaptor_class,
+):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -148,7 +155,7 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
         elif isinstance(_sample.Query, Query):
             return _sample.Query.codegen
 
-    sx = ServiceXClient(backend=servicex_name, config_path=config_path)
+    sx = ServiceXClient(backend=servicex_name, config_path=config_path, servicex_adaptor=servicex_adaptor)
     datasets = []
     for sample in config.Sample:
         query = sx.generic_query(
@@ -158,7 +165,8 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
             result_format=config.General.OutputFormat.to_ResultFormat(),
             ignore_cache=sample.IgnoreLocalCache,
             query=sample.Query,
-            fail_if_incomplete=fail_if_incomplete
+            fail_if_incomplete=fail_if_incomplete,
+            minio_adaptor_class=minio_adaptor_class
         )
         logger.debug(f"Query string: {query.generate_selection_string()}")
         query.ignore_cache = sample.IgnoreLocalCache
@@ -199,11 +207,13 @@ def deliver(
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
     return_exceptions: bool = True,
-    fail_if_incomplete: bool = True
+    fail_if_incomplete: bool = True,
+    servicex_adaptor: Optional[ServiceXAdapter] = None,
+    minio_adaptor_class: Optional[Type] = None,
 ):
     config = _load_ServiceXSpec(config)
 
-    datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
+    datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete, servicex_adaptor, minio_adaptor_class=minio_adaptor_class)
 
     group = DatasetGroup(datasets)
 
@@ -223,7 +233,7 @@ class ServiceXClient:
     Instances of this class are factories for `Datasets``
     """
 
-    def __init__(self, backend=None, url=None, config_path=None):
+    def __init__(self, backend=None, url=None, config_path=None, servicex_adaptor=None):
         r"""
         If both `backend` and `url` are unspecified then it will attempt to pick up
         the default backend from `.servicex`
@@ -248,15 +258,18 @@ class ServiceXClient:
         if bool(url) == bool(backend):
             raise ValueError("Only specify backend or url... not both")
 
-        if url:
-            self.servicex = ServiceXAdapter(url)
-        elif backend:
-            if backend not in self.endpoints:
-                raise ValueError(f"Backend {backend} not defined in .servicex file")
-            self.servicex = ServiceXAdapter(
-                self.endpoints[backend].endpoint,
-                refresh_token=self.endpoints[backend].token,
-            )
+        if servicex_adaptor is None:
+            if url:
+                self.servicex = ServiceXAdapter(url)
+            elif backend:
+                if backend not in self.endpoints:
+                    raise ValueError(f"Backend {backend} not defined in .servicex file")
+                self.servicex = ServiceXAdapter(
+                    self.endpoints[backend].endpoint,
+                    refresh_token=self.endpoints[backend].token,
+                )
+        else:
+            self.servicex = servicex_adaptor
 
         self.query_cache = QueryCache(self.config)
         self.code_generators = set(self.get_code_generators(backend).keys())
@@ -308,7 +321,7 @@ class ServiceXClient:
         """
         return self.servicex.delete_transform(transform_id)
 
-    def get_code_generators(self, backend=None):
+    def get_code_generators(self, backend: Optional[str]=None):
         r"""
         Retrieve the code generators deployed with the serviceX instance
         :return:  The list of code generators as json dictionary
@@ -321,6 +334,7 @@ class ServiceXClient:
             return cached_backends["codegens"]
         else:
             code_generators = self.servicex.get_code_generators()
+            assert backend is not None, "Backend must be specified to cache code generators"
             self.query_cache.update_codegen_by_backend(backend, code_generators)
             return code_generators
 
@@ -333,6 +347,7 @@ class ServiceXClient:
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
         fail_if_incomplete: bool = True,
+        minio_adaptor_class: Optional[Type] = None,
     ) -> Query:
         r"""
         Generate a Query object for a generic codegen specification
@@ -377,6 +392,7 @@ class ServiceXClient:
             result_format=result_format,
             ignore_cache=ignore_cache,
             query_string_generator=query,
-            fail_if_incomplete=fail_if_incomplete
+            fail_if_incomplete=fail_if_incomplete,
+            minio_adaptor_class=minio_adaptor_class,
         )
         return qobj
