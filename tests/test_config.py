@@ -53,6 +53,21 @@ def test_config_read(tempdir):
 
 
 @patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+def test_config_endpoint_dict(tempdir):
+    os.environ['UserName'] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    endpoints = c.endpoint_dict()
+    assert len(endpoints) == 3
+    assert "servicex-uc-af" in endpoints
+
+    # Make sure we get back what we expect
+    ep = endpoints["servicex-uc-af"]
+    assert ep.endpoint == "https://servicex.af.uchicago.edu"
+    assert ep.name == "servicex-uc-af"
+    assert ep.token == "notreallyatoken"
+
+
+@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
 def test_default_cache_path(tempdir):
 
     # Windows style user name
