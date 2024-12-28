@@ -52,6 +52,7 @@
         "ncols",
         "ndarray",
         "NOQA",
+        "notreallyatoken",
         "nqueries",
         "ntuples",
         "numpy",
