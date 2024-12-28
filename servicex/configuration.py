@@ -41,6 +41,9 @@ class Endpoint(BaseModel):
     token: Optional[str] = ""
 
 
+g_registered_endpoints: List[Endpoint] = []
+
+
 class Configuration(BaseModel):
     api_endpoints: List[Endpoint]
     default_endpoint: Optional[str] = Field(alias="default-endpoint", default=None)
@@ -101,7 +104,9 @@ class Configuration(BaseModel):
             yaml_config = cls._add_from_path(walk_up_tree=True)
 
         if yaml_config:
-            return Configuration.model_validate(yaml_config)
+            r = Configuration.model_validate(yaml_config)
+            r.api_endpoints += g_registered_endpoints
+            return r
         else:
             path_extra = f"in {config_path}" if config_path else ""
             raise NameError(
@@ -144,3 +149,20 @@ class Configuration(BaseModel):
             dir = dir.parent
 
         return config
+
+    @classmethod
+    def register_endpoint(cls, ep: Endpoint):
+        '''Store this endpoint registration
+
+        Args:
+            ep (Endpoint): The endpoint to store
+        '''
+        global g_registered_endpoints
+        g_registered_endpoints.append(ep)
+
+    @classmethod
+    def clear_registered_endpoints(cls):
+        '''Clear the list of registered endpoints.
+        '''
+        global g_registered_endpoints
+        g_registered_endpoints = []

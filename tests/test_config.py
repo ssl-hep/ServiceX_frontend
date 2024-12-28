@@ -29,7 +29,7 @@ import os
 from unittest.mock import patch
 import pytest
 
-from servicex.configuration import Configuration
+from servicex.configuration import Configuration, Endpoint
 
 
 @patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
@@ -80,4 +80,25 @@ def test_default_cache_path(tempdir):
     os.environ["USER"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
-    del os.environ["USER"]
+    del os.environ['USER']
+
+
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
+def test_config_register(tempdir):
+    Configuration.register_endpoint(
+        Endpoint(
+            endpoint="https://servicex.cern.ch",
+            name="servicex-cern",
+            token="notreallyatoken2",
+        )
+    )
+
+    os.environ["UserName"] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    endpoints = c.endpoint_dict()
+    assert len(endpoints) == 4
+    assert "servicex-cern" in endpoints
+
+    # Make sure we get back what we expect
+    ep = endpoints["servicex-cern"]
+    assert ep.endpoint == "https://servicex.cern.ch"
