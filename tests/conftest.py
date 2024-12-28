@@ -218,3 +218,9 @@ def codegen_list():
             'python': 'http://servicex-code-gen-python:8000',
             'uproot': 'http://servicex-code-gen-uproot:8000',
             'uproot-raw': 'http://servicex-code-gen-uproot-raw:8000'}
+
+
+@fixture(autouse=True)
+def clear_registered_endpoints():
+    from servicex.configuration import Configuration
+    Configuration.clear_registered_endpoints()
