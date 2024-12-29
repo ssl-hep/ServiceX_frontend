@@ -304,6 +304,7 @@ class ServiceXClient:
                     will search in local directory and up in enclosing directories
         """
         self.config = Configuration.read(config_path)
+        # TODO: Remove this as an instance var (no reason to carry it around?).
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:
