@@ -39,6 +39,8 @@ class Endpoint(BaseModel):
     endpoint: str
     name: str
     token: Optional[str] = ""
+    # TODO: don't know how to use ServiceXAdapterProtocol here as pydantic can't handle it
+    adapter: Optional[object] = None
 
 
 g_registered_endpoints: List[Endpoint] = []
@@ -155,8 +157,11 @@ class Configuration(BaseModel):
         '''Store this endpoint registration
 
         Args:
-            ep (Endpoint): The endpoint to store
+            ep: Endpoint object to register
         '''
+        # TODO: This requires exposing Endpoint
+        # There is no check in this setup that the adaptor is a valid ServiceXAdapterProtocol
+        # because I couldn't figure out how to make pydantic handle a protocol object.
         global g_registered_endpoints
         g_registered_endpoints.append(ep)
 
