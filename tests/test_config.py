@@ -102,3 +102,24 @@ def test_config_register(tempdir):
     # Make sure we get back what we expect
     ep = endpoints["servicex-cern"]
     assert ep.endpoint == "https://servicex.cern.ch"
+
+
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
+def test_config_register_adaptor(tempdir):
+    'Make sure we can do this with an adaptor'
+    class MyAdaptor:
+        pass
+
+    Configuration.register_endpoint(
+        Endpoint(
+            name="my-adaptor",
+            adapter=MyAdaptor,
+            endpoint="",
+        )
+    )
+
+    os.environ["UserName"] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    endpoints = c.endpoint_dict()
+    assert len(endpoints) == 4
+    assert "my-adaptor" in endpoints
