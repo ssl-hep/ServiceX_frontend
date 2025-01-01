@@ -32,6 +32,7 @@ from pytest_asyncio import fixture
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.servicex_client import ServiceXClient
+from servicex.configuration import Configuration, Endpoint
 
 
 @fixture
@@ -79,3 +80,20 @@ def test_delete_transform(mock_cache, servicex_adaptor):
     sx = ServiceXClient(config_path="tests/example_config.yaml")
     sx.delete_transform("123-45-6789")
     servicex_adaptor.delete_transform.assert_called_once_with("123-45-6789")
+
+
+def test_adaptor_created(mock_cache):
+    class my_adaptor:
+        pass
+
+    my_backend = my_adaptor()
+    Configuration.register_endpoint(
+        Endpoint(
+            name="my-backend",
+            adapter=my_backend,
+            endpoint="",
+        )
+    )
+
+    sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
+    assert sx.servicex == my_backend
