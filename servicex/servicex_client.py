@@ -322,9 +322,12 @@ class ServiceXClient:
         elif backend:
             if backend not in self.endpoints:
                 raise ValueError(f"Backend {backend} not defined in .servicex file")
-            self.servicex = ServiceXAdapter(
-                self.endpoints[backend].endpoint,
-                refresh_token=self.endpoints[backend].token,
+            ep = self.endpoints[backend]
+            self.servicex = (
+                ep.adapter if ep.adapter is not None else ServiceXAdapter(
+                    self.endpoints[backend].endpoint,
+                    refresh_token=self.endpoints[backend].token,
+                )
             )
 
         self.query_cache = QueryCache(self.config)
