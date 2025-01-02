@@ -320,6 +320,7 @@ class ServiceXClient:
 
         if url:
             self.servicex = ServiceXAdapter(url)
+            self.minio_generator = MinioAdapter.for_transform
         elif backend:
             if backend not in self.endpoints:
                 raise ValueError(f"Backend {backend} not defined in .servicex file")
@@ -330,6 +331,7 @@ class ServiceXClient:
                     refresh_token=self.endpoints[backend].token,
                 )
             )
+            self.minio_generator = MinioAdapter.for_transform if ep.minio is None else ep.minio
 
         self.query_cache = QueryCache(self.config)
         self.code_generators = set(self.get_code_generators(backend).keys())

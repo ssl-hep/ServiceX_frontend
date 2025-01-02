@@ -28,9 +28,12 @@
 import os
 import tempfile
 from pathlib import Path, PurePath
-from typing import List, Optional, Dict
+from typing import Callable, List, Optional, Dict
 
 from pydantic import BaseModel, Field, AliasChoices, model_validator
+# TODO: allow including this, but current import loop
+# from servicex.models import TransformResult
+from servicex.protocols import MinioAdapterProtocol
 
 import yaml
 
@@ -41,6 +44,8 @@ class Endpoint(BaseModel):
     token: Optional[str] = ""
     # TODO: don't know how to use ServiceXAdapterProtocol here as pydantic can't handle it
     adapter: Optional[object] = None
+    # TODO: TransformResult causes an import loop, so call it object for now.
+    minio: Optional[Callable[[object], MinioAdapterProtocol]] = None
 
 
 g_registered_endpoints: List[Endpoint] = []

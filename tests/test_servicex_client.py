@@ -155,3 +155,24 @@ def test_adaptor_created(mock_cache):
 
     sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
     assert sx.servicex == my_backend
+
+
+def test_minio_created(mock_cache):
+    class my_minio:
+        def __init__(self, x):
+            self.x = x
+        pass
+
+    def my_ctor_func(x):
+        return my_minio(x)
+    
+    Configuration.register_endpoint(
+        Endpoint(
+            name="my-backend",
+            endpoint="fork-it-over",
+            minio=my_ctor_func,
+        )
+    )
+
+    sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
+    assert sx.minio_generator == my_ctor_func
