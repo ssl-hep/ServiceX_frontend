@@ -48,6 +48,7 @@ from servicex.query_cache import QueryCache
 from servicex.query_core import ServiceXException, Query
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
+from servicex.minio_adapter import MinioAdapter
 
 transform_status = TransformStatus(
     **{
@@ -233,6 +234,7 @@ async def test_submit(mocker):
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
+        minio_generator=MinioAdapter.for_transform,
     )
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
@@ -277,6 +279,7 @@ async def test_submit_partial_success(mocker):
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
+        minio_generator=MinioAdapter.for_transform,
     )
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
@@ -320,6 +323,7 @@ async def test_use_of_cache(mocker):
             sx_adapter=servicex,
             query_cache=cache,
             config=config,
+            minio_generator=MinioAdapter.for_transform,
         )
         datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
         datasource.result_format = ResultFormat.parquet
@@ -345,6 +349,7 @@ async def test_use_of_cache(mocker):
                 sx_adapter=servicex2,
                 query_cache=cache,
                 config=config,
+                minio_generator=MinioAdapter.for_transform,
             )
             datasource2.query_string_generator = FuncADLQuery_Uproot().FromTree(
                 "nominal"
@@ -414,6 +419,7 @@ async def test_submit_cancel(mocker):
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
+        minio_generator=MinioAdapter.for_transform,
     )
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
@@ -455,6 +461,7 @@ async def test_submit_fatal(mocker):
         sx_adapter=servicex,
         query_cache=mock_cache,
         config=Configuration(api_endpoints=[]),
+        minio_generator=MinioAdapter.for_transform,
     )
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
@@ -571,6 +578,7 @@ def test_transform_request():
             sx_adapter=servicex,
             query_cache=None,
             config=Configuration(api_endpoints=[]),
+            minio_generator=MinioAdapter.for_transform,
         )
         datasource.query_string_generator = (
             FuncADLQuery_Uproot()
@@ -621,6 +629,7 @@ async def test_use_of_ignore_cache(mocker, servicex):
             sx_adapter=servicex,
             query_cache=cache,
             config=config,
+            minio_generator=MinioAdapter.for_transform,
         )
         datasource_without_ignore_cache.query_string_generator = (
             FuncADLQuery_Uproot().FromTree("nominal")
@@ -636,6 +645,7 @@ async def test_use_of_ignore_cache(mocker, servicex):
             query_cache=cache,
             config=config,
             ignore_cache=True,
+            minio_generator=MinioAdapter.for_transform,
         )
         datasource_with_ignore_cache.query_string_generator = (
             FuncADLQuery_Uproot().FromTree("nominal")

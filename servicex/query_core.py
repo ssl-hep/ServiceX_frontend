@@ -32,7 +32,7 @@ import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
 import logging
-from typing import List, Optional, Union
+from typing import Callable, List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
 
@@ -51,6 +51,7 @@ from servicex.models import (
 )
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
+from servicex.protocols import MinioAdapterProtocol
 
 from make_it_sync import make_sync
 
@@ -66,6 +67,7 @@ class ServiceXException(Exception):
 
 
 class Query:
+
     def __init__(
         self,
         dataset_identifier: DID,
@@ -74,6 +76,7 @@ class Query:
         sx_adapter: ServiceXAdapter,
         config: Configuration,
         query_cache: Optional[QueryCache],
+        minio_generator: Callable[[TransformRequest], MinioAdapterProtocol],
         servicex_polling_interval: int = 5,
         minio_polling_interval: int = 5,
         result_format: ResultFormat = ResultFormat.parquet,
@@ -115,6 +118,8 @@ class Query:
         self.files_failed = None
         self.files_completed = None
         self._return_qastle = True
+
+        self.minio_generator = minio_generator
 
         self.request_id = None
         self.ignore_cache = ignore_cache
@@ -504,7 +509,7 @@ class Query:
         # status. This includes the minio host and credentials. We use the
         # transform id as the bucket.
         if not self.minio:
-            self.minio = MinioAdapter.for_transform(self.current_status)
+            self.minio = self.minio_generator(self.current_status)
 
     async def download_files(
         self,
