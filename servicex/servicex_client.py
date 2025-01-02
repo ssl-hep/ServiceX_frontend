@@ -40,6 +40,7 @@ from servicex.query_core import (
 )
 from servicex.types import DID
 from servicex.dataset_group import DatasetGroup
+from servicex.minio_adapter import MinioAdapter
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
@@ -375,12 +376,13 @@ class ServiceXClient:
             dataset_identifier=dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
+            minio_generator=MinioAdapter.for_transform,
             codegen=real_codegen,
             config=self.config,
             query_cache=self.query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
             query_string_generator=query,
-            fail_if_incomplete=fail_if_incomplete
+            fail_if_incomplete=fail_if_incomplete,
         )
         return qobj
