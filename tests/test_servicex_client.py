@@ -36,6 +36,7 @@ from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.servicex_client import ServiceXClient
 from servicex.configuration import Configuration, Endpoint
+from servicex.query_core import Query
 
 
 @fixture
@@ -55,7 +56,7 @@ def mock_cache(mocker):
         "codegens": {"ROOT": "my_root_generator", "UPROOT": "my_uproot_generator"}
     }
     cache_mock.return_value = mock_cache
-    return cache_mock
+    return mock_cache
 
 
 def test_get_datasets(mock_cache, servicex_adaptor):
@@ -157,7 +158,7 @@ def test_adaptor_created(mock_cache):
     assert sx.servicex == my_backend
 
 
-def test_minio_created(mock_cache):
+def test_minio_created_and_used(mock_cache, mocker):
     class my_minio:
         def __init__(self, x):
             self.x = x
@@ -165,7 +166,7 @@ def test_minio_created(mock_cache):
 
     def my_ctor_func(x):
         return my_minio(x)
-    
+
     Configuration.register_endpoint(
         Endpoint(
             name="my-backend",
@@ -174,5 +175,18 @@ def test_minio_created(mock_cache):
         )
     )
 
+    # Mock the Query class
+    mock_query = mocker.patch('servicex.servicex_client.Query', autospec=True)
+
+    # Make sure externally accessible property is correct.
     sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
     assert sx.minio_generator == my_ctor_func
+
+    # Call generic_query and verify the minio_generator argument
+    sx.generic_query(
+        dataset_identifier="some-did",
+        query="some-query",
+        codegen="ROOT"
+    )
+    mock_query.assert_called_once()
+    assert mock_query.call_args[1]['minio_generator'] == my_ctor_func

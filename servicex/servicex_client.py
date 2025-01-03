@@ -448,14 +448,15 @@ class ServiceXClient:
         if real_codegen not in self.code_generators:
             raise NameError(
                 f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
+                f"deployment at {self.servicex.url}. Supported codegens are "
+                f"[{', '.join(self.code_generators)}]"
             )
 
         qobj = Query(
             dataset_identifier=dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
-            minio_generator=MinioAdapter.for_transform,
+            minio_generator=self.minio_generator,
             codegen=real_codegen,
             config=self.config,
             query_cache=self.query_cache,
