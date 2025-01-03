@@ -49,9 +49,15 @@ from rich.progress import Progress
 async def test_as_signed_urls_happy(transformed_result):
     # Test when display_progress is True and provided_progress is None
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = Query(dataset_identifier=did, codegen="uproot",
-                    title="", config=None,
-                    sx_adapter=None, query_cache=None)
+    dataset = Query(
+        dataset_identifier=did,
+        codegen="uproot",
+        title="",
+        config=None,
+        sx_adapter=None,
+        query_cache=None,
+        minio_generator=MinioAdapter.for_transform,
+    )
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -63,9 +69,15 @@ async def test_as_signed_urls_happy(transformed_result):
 async def test_as_signed_urls_happy_dataset_group(transformed_result):
     # Test when display_progress is True and provided_progress is None
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = Query(dataset_identifier=did, codegen="uproot",
-                    title="", config=None,
-                    sx_adapter=None, query_cache=None)
+    dataset = Query(
+        dataset_identifier=did,
+        codegen="uproot",
+        title="",
+        config=None,
+        sx_adapter=None,
+        query_cache=None,
+        minio_generator=MinioAdapter.for_transform,
+    )
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 
@@ -77,9 +89,15 @@ async def test_as_signed_urls_happy_dataset_group(transformed_result):
 @pytest.mark.asyncio
 async def test_as_files_happy(transformed_result):
     did = FileListDataset("/foo/bar/baz.root")
-    dataset = Query(dataset_identifier=did, codegen="uproot",
-                    title="", config=None,
-                    sx_adapter=None, query_cache=None)
+    dataset = Query(
+        dataset_identifier=did,
+        codegen="uproot",
+        title="",
+        config=None,
+        sx_adapter=None,
+        query_cache=None,
+        minio_generator=MinioAdapter.for_transform,
+    )
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
 

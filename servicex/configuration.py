@@ -28,9 +28,12 @@
 import os
 import tempfile
 from pathlib import Path, PurePath
-from typing import List, Optional, Dict
+from typing import Callable, List, Optional, Dict
 
 from pydantic import BaseModel, Field, AliasChoices, model_validator
+# TODO: allow including this, but current import loop
+# from servicex.models import TransformResult
+from servicex.protocols import MinioAdapterProtocol
 
 import yaml
 
@@ -39,6 +42,13 @@ class Endpoint(BaseModel):
     endpoint: str
     name: str
     token: Optional[str] = ""
+    # TODO: don't know how to use ServiceXAdapterProtocol here as pydantic can't handle it
+    adapter: Optional[object] = None
+    # TODO: TransformResult causes an import loop, so call it object for now.
+    minio: Optional[Callable[[object], MinioAdapterProtocol]] = None
+
+
+g_registered_endpoints: List[Endpoint] = []
 
 
 class Configuration(BaseModel):
@@ -101,7 +111,9 @@ class Configuration(BaseModel):
             yaml_config = cls._add_from_path(walk_up_tree=True)
 
         if yaml_config:
-            return Configuration.model_validate(yaml_config)
+            r = Configuration.model_validate(yaml_config)
+            r.api_endpoints += g_registered_endpoints
+            return r
         else:
             path_extra = f"in {config_path}" if config_path else ""
             raise NameError(
@@ -144,3 +156,23 @@ class Configuration(BaseModel):
             dir = dir.parent
 
         return config
+
+    @classmethod
+    def register_endpoint(cls, ep: Endpoint):
+        '''Store this endpoint registration
+
+        Args:
+            ep: Endpoint object to register
+        '''
+        # TODO: This requires exposing Endpoint
+        # There is no check in this setup that the adaptor is a valid ServiceXAdapterProtocol
+        # because I couldn't figure out how to make pydantic handle a protocol object.
+        global g_registered_endpoints
+        g_registered_endpoints.append(ep)
+
+    @classmethod
+    def clear_registered_endpoints(cls):
+        '''Clear the list of registered endpoints.
+        '''
+        global g_registered_endpoints
+        g_registered_endpoints = []

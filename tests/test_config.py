@@ -29,7 +29,7 @@ import os
 from unittest.mock import patch
 import pytest
 
-from servicex.configuration import Configuration
+from servicex.configuration import Configuration, Endpoint
 
 
 @patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
@@ -53,6 +53,21 @@ def test_config_read(tempdir):
 
 
 @patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+def test_config_endpoint_dict(tempdir):
+    os.environ['UserName'] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    endpoints = c.endpoint_dict()
+    assert len(endpoints) == 3
+    assert "servicex-uc-af" in endpoints
+
+    # Make sure we get back what we expect
+    ep = endpoints["servicex-uc-af"]
+    assert ep.endpoint == "https://servicex.af.uchicago.edu"
+    assert ep.name == "servicex-uc-af"
+    assert ep.token == "notreallyatoken"
+
+
+@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
 def test_default_cache_path(tempdir):
 
     # Windows style user name
@@ -66,3 +81,45 @@ def test_default_cache_path(tempdir):
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
     del os.environ['USER']
+
+
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
+def test_config_register(tempdir):
+    Configuration.register_endpoint(
+        Endpoint(
+            endpoint="https://servicex.cern.ch",
+            name="servicex-cern",
+            token="notreallyatoken2",
+        )
+    )
+
+    os.environ["UserName"] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    endpoints = c.endpoint_dict()
+    assert len(endpoints) == 4
+    assert "servicex-cern" in endpoints
+
+    # Make sure we get back what we expect
+    ep = endpoints["servicex-cern"]
+    assert ep.endpoint == "https://servicex.cern.ch"
+
+
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
+def test_config_register_adaptor(tempdir):
+    'Make sure we can do this with an adaptor'
+    class MyAdaptor:
+        pass
+
+    Configuration.register_endpoint(
+        Endpoint(
+            name="my-adaptor",
+            adapter=MyAdaptor,
+            endpoint="",
+        )
+    )
+
+    os.environ["UserName"] = "p_higgs"
+    c = Configuration.read(config_path="tests/example_config.yaml")
+    endpoints = c.endpoint_dict()
+    assert len(endpoints) == 4
+    assert "my-adaptor" in endpoints

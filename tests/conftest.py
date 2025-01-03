@@ -37,6 +37,7 @@ from servicex.models import (
     TransformStatus,
     TransformedResults,
 )
+from servicex.minio_adapter import MinioAdapter
 
 from servicex.dataset_identifier import FileListDataset
 from servicex.minio_adapter import MinioAdapter
@@ -72,7 +73,8 @@ def python_dataset(dummy_parquet_file):
         result_format=ResultFormat.parquet,
         sx_adapter=None,  # type: ignore
         config=None,  # type: ignore
-        query_cache=None  # type: ignore
+        query_cache=None,  # type: ignore
+        minio_generator=MinioAdapter.for_transform,
     )  # type: ignore
 
     def foo():
@@ -218,3 +220,9 @@ def codegen_list():
             'python': 'http://servicex-code-gen-python:8000',
             'uproot': 'http://servicex-code-gen-uproot:8000',
             'uproot-raw': 'http://servicex-code-gen-uproot-raw:8000'}
+
+
+@fixture(autouse=True)
+def clear_registered_endpoints():
+    from servicex.configuration import Configuration
+    Configuration.clear_registered_endpoints()

@@ -40,6 +40,7 @@ from servicex.query_core import (
 )
 from servicex.types import DID
 from servicex.dataset_group import DatasetGroup
+from servicex.minio_adapter import MinioAdapter
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
@@ -236,6 +237,7 @@ class ServiceXClient:
                     will search in local directory and up in enclosing directories
         """
         self.config = Configuration.read(config_path)
+        # TODO: Remove this as an instance var (no reason to carry it around?).
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:
@@ -250,13 +252,18 @@ class ServiceXClient:
 
         if url:
             self.servicex = ServiceXAdapter(url)
+            self.minio_generator = MinioAdapter.for_transform
         elif backend:
             if backend not in self.endpoints:
                 raise ValueError(f"Backend {backend} not defined in .servicex file")
-            self.servicex = ServiceXAdapter(
-                self.endpoints[backend].endpoint,
-                refresh_token=self.endpoints[backend].token,
+            ep = self.endpoints[backend]
+            self.servicex = (
+                ep.adapter if ep.adapter is not None else ServiceXAdapter(
+                    self.endpoints[backend].endpoint,
+                    refresh_token=self.endpoints[backend].token,
+                )
             )
+            self.minio_generator = MinioAdapter.for_transform if ep.minio is None else ep.minio
 
         self.query_cache = QueryCache(self.config)
         self.code_generators = set(self.get_code_generators(backend).keys())
@@ -364,19 +371,21 @@ class ServiceXClient:
         if real_codegen not in self.code_generators:
             raise NameError(
                 f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
+                f"deployment at {self.servicex.url}. Supported codegens are "
+                f"[{', '.join(self.code_generators)}]"
             )
 
         qobj = Query(
             dataset_identifier=dataset_identifier,
             sx_adapter=self.servicex,
             title=title,
+            minio_generator=self.minio_generator,
             codegen=real_codegen,
             config=self.config,
             query_cache=self.query_cache,
             result_format=result_format,
             ignore_cache=ignore_cache,
             query_string_generator=query,
-            fail_if_incomplete=fail_if_incomplete
+            fail_if_incomplete=fail_if_incomplete,
         )
         return qobj
