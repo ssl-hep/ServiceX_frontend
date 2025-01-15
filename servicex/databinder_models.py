@@ -235,6 +235,11 @@ class General(DocStringBaseModel):
     Name of the yaml file that will be created in the output directory.
     """
 
+    IgnoreLocalCache: bool = False
+    """
+    Flag to ignore local cache for all samples.
+    """
+
 
 # TODO: ServiceXSpec class has a field name General and it clashes with the class name General
 # when it is called General() to initialize default values for General class

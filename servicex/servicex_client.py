@@ -206,7 +206,7 @@ def deliver(
 ):
     config = _load_ServiceXSpec(config)
 
-    if ignore_local_cache:
+    if ignore_local_cache or config.General.IgnoreLocalCache:
         for sample in config.Sample:
             sample.IgnoreLocalCache = True
 
