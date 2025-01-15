@@ -126,17 +126,21 @@ def download(
     config_path: Optional[str] = config_file_option,
     transform_id: str = typer.Argument(help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
+    concurrency: int = typer.Option(20, "--concurrency", help="Number of concurrent downloads"),
 ):
     """
     Download the files that were produced by a transform.
     """
     async def download_files(sx: ServiceXClient, transform_id: str, local_dir):
+        s3_semaphore = asyncio.Semaphore(concurrency)
+
         async def download_with_progress(filename) -> Path:
-            p = await minio.download_file(
-                filename,
-                local_dir,
-                shorten_filename=sx.config.shortened_downloaded_filename,
-            )
+            async with s3_semaphore:
+                p = await minio.download_file(
+                    filename,
+                    local_dir,
+                    shorten_filename=sx.config.shortened_downloaded_filename,
+                )
             progress.advance(download_progress)
             return p
 
