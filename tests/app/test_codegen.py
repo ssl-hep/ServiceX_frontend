@@ -1,8 +1,3 @@
-# Copyright (c) 2022, IRIS-HEP
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
 #
 # * Redistributions of source code must retain the above copyright notice, this
 #   list of conditions and the following disclaimer.
@@ -26,21 +21,28 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-def is_terminal_output():
-    import sys
-    return sys.stdout.isatty()
+from unittest.mock import patch
 
 
-def pipeable_table(title: str):
-    """
-    Create a table that can be used in a pipeable command. Make it pretty if we
-    are outputting to a terminal, otherwise just make it as simple as possible.
-    """
-    from rich.table import Table
-    import rich.box
+def test_codegen_list(script_runner):
+    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators', return_value={
+        "uproot": "http://uproot-codegen",
+        "xaod": "http://xaod-codegen"
+    }):
+        result = script_runner.run(['servicex', 'codegen', 'list', '-c',
+                                    'tests/example_config.yaml'])
+        assert result.returncode == 0
+        assert result.stdout == '''{
+  "uproot": "http://uproot-codegen",
+  "xaod": "http://xaod-codegen"
+}
+'''
 
-    table = Table(title=title if is_terminal_output() else None,
-                  show_header=is_terminal_output(),
-                  box=rich.box.HEAVY_HEAD if is_terminal_output() else None)
 
-    return table
+def test_codegen_flush(script_runner):
+    with patch('servicex.query_cache.QueryCache.delete_codegen_by_backend') as p:
+        result = script_runner.run(['servicex', 'codegen', 'flush',
+                                    '-c', 'tests/example_config.yaml',
+                                    '-b', 'localhost'])
+        assert result.returncode == 0
+        p.assert_called_once_with('localhost')

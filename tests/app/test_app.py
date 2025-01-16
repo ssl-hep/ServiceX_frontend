@@ -25,8 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 def test_app_version(script_runner):
@@ -36,25 +35,15 @@ def test_app_version(script_runner):
     assert result.stdout == f'ServiceX {servicex._version.__version__}\n'
 
 
-def test_codegen_list(script_runner):
-    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators', return_value={
-        "uproot": "http://uproot-codegen",
-        "xaod": "http://xaod-codegen"
-    }):
-        result = script_runner.run(['servicex', 'codegen', 'list', '-c',
-                                    'tests/example_config.yaml'])
+def test_deliver(script_runner):
+    with patch('servicex.app.main.servicex_client') as mock_servicex_client:
+        mock_servicex_client.deliver = Mock(return_value={
+            "UprootRaw_YAML": [
+                "/tmp/foo.root",
+                "/tmp/bar.root"
+            ]})
+        result = script_runner.run(['servicex', 'deliver', "foo.yaml"])
         assert result.returncode == 0
-        assert result.stdout == '''{
-  "uproot": "http://uproot-codegen",
-  "xaod": "http://xaod-codegen"
-}
-'''
-
-
-def test_codegen_flush(script_runner):
-    with patch('servicex.query_cache.QueryCache.delete_codegen_by_backend') as p:
-        result = script_runner.run(['servicex', 'codegen', 'flush',
-                                    '-c', 'tests/example_config.yaml',
-                                    '-b', 'localhost'])
-        assert result.returncode == 0
-        p.assert_called_once_with('localhost')
+        result_rows = result.stdout.split('\n')
+        assert result_rows[0] == 'Delivering foo.yaml to ServiceX cache'
+        assert result_rows[1] == "{'UprootRaw_YAML': ['/tmp/foo.root', '/tmp/bar.root']}"

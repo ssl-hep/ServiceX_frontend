@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
+import shutil
 from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
@@ -199,9 +200,15 @@ def deliver(
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
     return_exceptions: bool = True,
-    fail_if_incomplete: bool = True
+    fail_if_incomplete: bool = True,
+    ignore_local_cache: bool = False
+
 ):
     config = _load_ServiceXSpec(config)
+
+    if ignore_local_cache or config.General.IgnoreLocalCache:
+        for sample in config.Sample:
+            sample.IgnoreLocalCache = True
 
     datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
 
@@ -308,6 +315,13 @@ class ServiceXClient:
         """
         return self.servicex.delete_transform(transform_id)
 
+    def cancel_transform(self, transform_id):
+        r"""
+        Cancel a Transform by its request ID
+        :return: A Query object
+        """
+        return self.servicex.cancel_transform(transform_id)
+
     def get_code_generators(self, backend=None):
         r"""
         Retrieve the code generators deployed with the serviceX instance
@@ -380,3 +394,13 @@ class ServiceXClient:
             fail_if_incomplete=fail_if_incomplete
         )
         return qobj
+
+    def delete_transform_from_cache(self, transform_id: str):
+        cache = self.query_cache
+        rec = cache.get_transform_by_request_id(transform_id)
+        if not rec:
+            return False
+
+        shutil.rmtree(rec.data_dir, ignore_errors=True)
+        cache.delete_record_by_request_id(rec.request_id)
+        return True
