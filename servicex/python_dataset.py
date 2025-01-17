@@ -31,6 +31,7 @@ from base64 import b64encode
 from textwrap import dedent
 from servicex.query_core import QueryStringGenerator
 import sys
+
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
@@ -38,8 +39,8 @@ else:
 
 
 class PythonFunction(QueryStringGenerator):
-    yaml_tag = '!PythonFunction'
-    default_codegen = 'python'
+    yaml_tag = "!PythonFunction"
+    default_codegen = "python"
 
     def __init__(self, python_function: Optional[Union[str, Callable]] = None):
         self.python_function: Optional[Union[str, Callable]] = python_function
@@ -50,14 +51,18 @@ class PythonFunction(QueryStringGenerator):
 
     def generate_selection_string(self) -> str:
         if not self.python_function:
-            raise ValueError("You must provide a python function using with_uproot_function")
+            raise ValueError(
+                "You must provide a python function using with_uproot_function"
+            )
 
         if isinstance(self.python_function, str):
-            return b64encode(dedent(self.python_function).encode("utf-8")).decode("utf-8")
+            return b64encode(dedent(self.python_function).encode("utf-8")).decode(
+                "utf-8"
+            )
         else:
-            return b64encode(dedent(inspect.getsource(self.python_function))
-                             .encode("utf-8"))\
-                .decode("utf-8")
+            return b64encode(
+                dedent(inspect.getsource(self.python_function)).encode("utf-8")
+            ).decode("utf-8")
 
     @classmethod
     def from_yaml(cls, _, node):

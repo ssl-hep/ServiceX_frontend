@@ -31,8 +31,10 @@ from servicex.expandable_progress import ExpandableProgress, TranformStatusProgr
 from rich.progress import TextColumn, BarColumn, MofNCompleteColumn, TimeRemainingColumn
 
 
-@patch("servicex.expandable_progress.TranformStatusProgress",
-       return_value=MagicMock(TranformStatusProgress))
+@patch(
+    "servicex.expandable_progress.TranformStatusProgress",
+    return_value=MagicMock(TranformStatusProgress),
+)
 def test_progress(mock_progress):
     with ExpandableProgress() as progress:
         assert progress.progress == mock_progress.return_value
@@ -41,8 +43,10 @@ def test_progress(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
-@patch("servicex.expandable_progress.TranformStatusProgress",
-       return_value=MagicMock(TranformStatusProgress))
+@patch(
+    "servicex.expandable_progress.TranformStatusProgress",
+    return_value=MagicMock(TranformStatusProgress),
+)
 def test_overall_progress(mock_progress):
     with ExpandableProgress(overall_progress=True) as progress:
         assert progress.progress == mock_progress.return_value
@@ -51,8 +55,10 @@ def test_overall_progress(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
-@patch("servicex.expandable_progress.TranformStatusProgress",
-       return_value=MagicMock(TranformStatusProgress))
+@patch(
+    "servicex.expandable_progress.TranformStatusProgress",
+    return_value=MagicMock(TranformStatusProgress),
+)
 def test_overall_progress_mock(mock_progress):
     with ExpandableProgress(overall_progress=True) as progress:
         assert progress.progress == mock_progress.return_value
@@ -61,8 +67,10 @@ def test_overall_progress_mock(mock_progress):
     assert mock_progress.return_value.stop.call_count == 1
 
 
-@patch("servicex.expandable_progress.TranformStatusProgress",
-       return_value=MagicMock(TranformStatusProgress))
+@patch(
+    "servicex.expandable_progress.TranformStatusProgress",
+    return_value=MagicMock(TranformStatusProgress),
+)
 def test_refresh_mock(mock_progress):
     with ExpandableProgress(overall_progress=True) as progress:
         progress.refresh()
@@ -92,8 +100,10 @@ def test_provided_progress(mocker):
     assert provided_progress.stop.call_count == 0
 
 
-@patch("servicex.expandable_progress.TranformStatusProgress",
-       return_value=MagicMock(TranformStatusProgress))
+@patch(
+    "servicex.expandable_progress.TranformStatusProgress",
+    return_value=MagicMock(TranformStatusProgress),
+)
 def test_no_progress(mock_progress):
     with ExpandableProgress(display_progress=False) as progress:
         assert not progress.progress
@@ -117,31 +127,29 @@ def test_nested_expandable_progress():
 def test_get_renderables_without_failure(mock_make_tasks_table):
     progress = TranformStatusProgress(
         TextColumn("[progress.description]{task.description}"),
-        BarColumn(complete_style="rgb(114,156,31)",
-                  finished_style="rgb(0,255,0)"),
+        BarColumn(complete_style="rgb(114,156,31)", finished_style="rgb(0,255,0)"),
         MofNCompleteColumn(),
-        TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+        TimeRemainingColumn(compact=True, elapsed_when_finished=True),
     )
     progress.add_task("test_without_failure")
     list(progress.get_renderables())
     mock_make_tasks_table.assert_called()
     mock_make_tasks_table.assert_called_with(progress.tasks)
-    assert progress.columns[1].complete_style == 'rgb(114,156,31)'
+    assert progress.columns[1].complete_style == "rgb(114,156,31)"
 
 
 def test_get_renderables_with_failure():
     progress = TranformStatusProgress(
         TextColumn("[progress.description]{task.description}"),
-        BarColumn(complete_style="rgb(114,156,31)",
-                  finished_style="rgb(0,255,0)"),
+        BarColumn(complete_style="rgb(114,156,31)", finished_style="rgb(0,255,0)"),
         MofNCompleteColumn(),
-        TimeRemainingColumn(compact=True, elapsed_when_finished=True)
+        TimeRemainingColumn(compact=True, elapsed_when_finished=True),
     )
     progress.add_task("test_with_failure", bar="failure")
     list(progress.get_renderables())
     assert len(progress.columns) == 4
     assert isinstance(progress.columns[1], BarColumn)
-    assert progress.columns[1].complete_style == 'rgb(255,0,0)'
+    assert progress.columns[1].complete_style == "rgb(255,0,0)"
 
 
 def test_progress_advance():

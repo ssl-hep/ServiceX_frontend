@@ -19,7 +19,7 @@ spec = ServiceXSpec(
                         "filter_name": "AnalysisElectronsAuxDyn.pt",
                     }
                 ]
-            )
+            ),
         )
     ]
 )

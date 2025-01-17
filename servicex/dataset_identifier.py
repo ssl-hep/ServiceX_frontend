@@ -36,6 +36,7 @@ class DataSetIdentifier:
     Base class for specifying the dataset to transform. This can either be a list of
     xRootD URIs or a rucio DID
     """
+
     def __init__(self, scheme: str, dataset: str, num_files: Optional[int] = None):
         self.scheme = scheme
         self.dataset = dataset
@@ -52,13 +53,7 @@ class DataSetIdentifier:
 
     @property
     def hash(self):
-        sha = hashlib.sha256(
-            str(
-                [
-                    self.dataset
-                ]
-            ).encode("utf-8")
-        )
+        sha = hashlib.sha256(str([self.dataset]).encode("utf-8"))
         return sha.hexdigest()
 
 
@@ -74,14 +69,16 @@ class RucioDatasetIdentifier(DataSetIdentifier):
             returns the same subset of files.
 
         """
-        if ':' not in dataset:
+        if ":" not in dataset:
             # Missing a colon means that no namespace is specified and the request
             # will fail on the backend
-            raise ValueError(f'Specified dataset {dataset} is missing a Rucio namespace. '
-                             'Please specify the dataset ID in the form "namespace:dataset".')
+            raise ValueError(
+                f"Specified dataset {dataset} is missing a Rucio namespace. "
+                'Please specify the dataset ID in the form "namespace:dataset".'
+            )
         super().__init__("rucio", dataset, num_files=num_files)
 
-    yaml_tag = '!Rucio'
+    yaml_tag = "!Rucio"
 
     @classmethod
     def from_yaml(cls, _, node):
@@ -110,7 +107,7 @@ class FileListDataset(DataSetIdentifier):
     def did(self):
         return None
 
-    yaml_tag = '!FileList'
+    yaml_tag = "!FileList"
 
     @classmethod
     def from_yaml(cls, constructor, node):
@@ -119,13 +116,7 @@ class FileListDataset(DataSetIdentifier):
     @property
     def hash(self):
         self.files.sort()
-        sha = hashlib.sha256(
-            str(
-                [
-                    self.files
-                ]
-            ).encode("utf-8")
-        )
+        sha = hashlib.sha256(str([self.files]).encode("utf-8"))
         return sha.hexdigest()
 
 
@@ -140,9 +131,9 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
             returns the same subset of files.
 
         """
-        super().__init__("cernopendata", f'{dataset}', num_files=num_files)
+        super().__init__("cernopendata", f"{dataset}", num_files=num_files)
 
-    yaml_tag = '!CERNOpenData'
+    yaml_tag = "!CERNOpenData"
 
     @classmethod
     def from_yaml(cls, _, node):
@@ -162,7 +153,7 @@ class XRootDDatasetIdentifier(DataSetIdentifier):
         """
         super().__init__("xrootd", pattern, num_files=num_files)
 
-    yaml_tag = '!XRootD'
+    yaml_tag = "!XRootD"
 
     @classmethod
     def from_yaml(cls, _, node):

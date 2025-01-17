@@ -40,8 +40,8 @@ Let's look at the structure of an Uproot-Raw query.
 ```python
 query = [
          {
-          'treename': 'reco', 
-          'filter_name': ['/mu.*/', 'runNumber', 'lbn', 'jet_pt_*'], 
+          'treename': 'reco',
+          'filter_name': ['/mu.*/', 'runNumber', 'lbn', 'jet_pt_*'],
           'cut':'(count_nonzero(jet_pt_NOSYS>40e3, axis=1)>=4)'
          },
          {
@@ -59,7 +59,7 @@ Each dictionary either has a `treename` key (indicating that it is a query on a 
   * `expressions`, `cut`, `filter_name`, `aliases`: have the same meaning as for [`TTree.arrays()`](https://uproot.readthedocs.io/en/latest/uproot.behaviors.TTree.TTree.html#arrays) in `uproot`, except that functions aren't permitted (but *glob*s and _regular expressions_, which are special kinds of strings, are).
 
   Other keys will be ignored.
-  
+
   Most queries will probably use `filter_names`, which selects specific branches, and `cut`, which selects specific rows. The `expressions` argument permits new values to be computed from the branches in the tree, and `aliases` can be used to introduce shorthand to make these expressions cleaner.
 
   The Uproot-Raw language extends the default `uproot` expression language by adding many functions from Awkward Array (the example above uses `awkward.count_nonzero`). This permits very powerful expressions for cuts and expression evaluation.

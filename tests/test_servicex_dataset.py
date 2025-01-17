@@ -36,8 +36,14 @@ from servicex.configuration import Configuration
 from servicex.dataset_identifier import FileListDataset
 from servicex.expandable_progress import ExpandableProgress
 from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
-from servicex.models import (TransformStatus, Status, ResultFile, ResultFormat,
-                             TransformRequest, TransformedResults)
+from servicex.models import (
+    TransformStatus,
+    Status,
+    ResultFile,
+    ResultFormat,
+    TransformRequest,
+    TransformedResults,
+)
 from servicex.query_cache import QueryCache
 from servicex.query_core import ServiceXException, Query
 from servicex.servicex_client import ServiceXClient
@@ -169,10 +175,13 @@ file1 = ResultFile(filename="file1", size=100, extension="parquet")
 file2 = ResultFile(filename="file2", size=100, extension="parquet")
 
 
-def transformed_results(transform: TransformRequest,
-                        completed_status: TransformStatus, data_dir: str,
-                        file_list: List[str],
-                        signed_urls) -> TransformedResults:
+def transformed_results(
+    transform: TransformRequest,
+    completed_status: TransformStatus,
+    data_dir: str,
+    file_list: List[str],
+    signed_urls,
+) -> TransformedResults:
     return TransformedResults(
         hash=transform.compute_hash(),
         title=transform.title,
@@ -184,7 +193,7 @@ def transformed_results(transform: TransformRequest,
         signed_url_list=signed_urls,
         files=completed_status.files,
         result_format=transform.result_format,
-        log_url=completed_status.log_url
+        log_url=completed_status.log_url,
     )
 
 
@@ -206,13 +215,15 @@ async def test_submit(mocker):
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
-    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
 
     mock_cache = mocker.MagicMock(QueryCache)
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
     mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
-    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
     datasource = Query(
@@ -226,10 +237,11 @@ async def test_submit(mocker):
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        result = await datasource.submit_and_download(signed_urls_only=False,
-                                                      expandable_progress=progress)
+        result = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
         print(mock_minio.download_file.call_args)
-    assert result.file_list == ['file1', 'file2']
+    assert result.file_list == ["file1", "file2"]
     mock_cache.cache_transform.assert_called_once()
 
 
@@ -247,13 +259,15 @@ async def test_submit_partial_success(mocker):
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
-    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
 
     mock_cache = mocker.MagicMock(QueryCache)
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
     mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
-    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
     datasource = Query(
@@ -267,16 +281,17 @@ async def test_submit_partial_success(mocker):
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        result = await datasource.submit_and_download(signed_urls_only=False,
-                                                      expandable_progress=progress)
+        result = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
         print(mock_minio.download_file.call_args)
-    assert result.file_list == ['file1']
+    assert result.file_list == ["file1"]
     mock_cache.cache_transform.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_use_of_cache(mocker):
-    """ Do we pick up the cache on the second request for the same transform? """
+    """Do we pick up the cache on the second request for the same transform?"""
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
@@ -287,8 +302,10 @@ async def test_use_of_cache(mocker):
     ]
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
-    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
-    mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
+    mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
 
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
 
@@ -306,10 +323,13 @@ async def test_use_of_cache(mocker):
         )
         datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
         datasource.result_format = ResultFormat.parquet
-        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        upd = mocker.patch.object(
+            cache, "update_record", side_effect=cache.update_record
+        )
         with ExpandableProgress(display_progress=False) as progress:
-            result1 = await datasource.submit_and_download(signed_urls_only=True,
-                                                           expandable_progress=progress)
+            result1 = await datasource.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )
         upd.assert_not_called()
         upd.reset_mock()
         assert mock_minio.get_signed_url.await_count == 2
@@ -326,10 +346,13 @@ async def test_use_of_cache(mocker):
                 query_cache=cache,
                 config=config,
             )
-            datasource2.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+            datasource2.query_string_generator = FuncADLQuery_Uproot().FromTree(
+                "nominal"
+            )
             datasource2.result_format = ResultFormat.parquet
-            result2 = await datasource2.submit_and_download(signed_urls_only=True,
-                                                            expandable_progress=progress)
+            result2 = await datasource2.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )
             servicex2.assert_not_awaited()
             mock_minio.list_bucket.assert_not_awaited()
             mock_minio.get_signed_url.assert_not_awaited()
@@ -341,8 +364,9 @@ async def test_use_of_cache(mocker):
         mock_minio.list_bucket.reset_mock(side_effect=True)
         # third round, should hit the cache and download files (and call update_record)
         with ExpandableProgress(display_progress=False) as progress:
-            await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
+            await datasource.submit_and_download(
+                signed_urls_only=False, expandable_progress=progress
+            )
         servicex.assert_not_awaited()
         assert mock_minio.download_file.await_count == 2
         upd.assert_called_once()
@@ -350,8 +374,9 @@ async def test_use_of_cache(mocker):
         mock_minio.list_bucket.reset_mock()
         mock_minio.download_file.reset_mock()
         with ExpandableProgress(display_progress=False) as progress:
-            await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
+            await datasource.submit_and_download(
+                signed_urls_only=False, expandable_progress=progress
+            )
         servicex.assert_not_awaited()
         mock_minio.list_bucket.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
@@ -372,12 +397,14 @@ async def test_submit_cancel(mocker):
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
-    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
 
     mock_cache = mocker.MagicMock(QueryCache)
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
-    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
     datasource = Query(
@@ -392,8 +419,9 @@ async def test_submit_cancel(mocker):
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         with pytest.raises(ServiceXException):
-            _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                     expandable_progress=progress)
+            _ = await datasource.submit_and_download(
+                signed_urls_only=False, expandable_progress=progress
+            )
     mock_cache.cache_transform.assert_not_called()
 
 
@@ -410,12 +438,14 @@ async def test_submit_fatal(mocker):
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
-    mock_minio.download_file = AsyncMock(side_effect=lambda a, _, shorten_filename: PurePath(a))
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
 
     mock_cache = mocker.MagicMock(QueryCache)
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
-    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath('.'))
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
     datasource = Query(
@@ -430,15 +460,17 @@ async def test_submit_fatal(mocker):
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         with pytest.raises(ServiceXException):
-            _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                     expandable_progress=progress)
+            _ = await datasource.submit_and_download(
+                signed_urls_only=False, expandable_progress=progress
+            )
     mock_cache.cache_transform.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_submit_generic(mocker, codegen_list):
-    """ Uses Uproot-Raw classes which go through the generic query mechanism """
+    """Uses Uproot-Raw classes which go through the generic query mechanism"""
     import json
+
     sx = AsyncMock()
     sx.submit_transform = AsyncMock()
     sx.submit_transform.return_value = {"request_id": '123-456-789"'}
@@ -456,44 +488,47 @@ async def test_submit_generic(mocker, codegen_list):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators',
-               return_value=codegen_list):
-        client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+    with patch(
+        "servicex.servicex_adapter.ServiceXAdapter.get_code_generators",
+        return_value=codegen_list,
+    ):
+        client = ServiceXClient(
+            backend="servicex-uc-af", config_path="tests/example_config.yaml"
+        )
         client.servicex = sx
         client.query_cache = mock_cache
 
         datasource = client.generic_query(
-            dataset_identifier=did,
-            query=UprootRawQuery({'treename': 'CollectionTree'})
+            dataset_identifier=did, query=UprootRawQuery({"treename": "CollectionTree"})
         )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
+        _ = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
 
     # same thing but a list argument to UprootRawQuery (UprootRawQuery test...)
     datasource = client.generic_query(
-        dataset_identifier=did,
-        query=UprootRawQuery({'treename': 'CollectionTree'})
+        dataset_identifier=did, query=UprootRawQuery({"treename": "CollectionTree"})
     )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
+        _ = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
     assert isinstance(json.loads(datasource.generate_selection_string()), list)
 
 
 @pytest.mark.asyncio
 async def test_submit_cancelled(mocker, codegen_list):
-    """ Uses Uproot-Raw classes which go through the query cancelled mechanism """
+    """Uses Uproot-Raw classes which go through the query cancelled mechanism"""
     import json
+
     sx = AsyncMock()
     sx.submit_transform = AsyncMock()
     sx.submit_transform.return_value = {"request_id": '123-456-789"'}
     sx.get_transform_status = AsyncMock()
-    sx.get_transform_status.side_effect = [
-        transform_status4
-    ]
+    sx.get_transform_status.side_effect = [transform_status4]
 
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
@@ -502,20 +537,24 @@ async def test_submit_cancelled(mocker, codegen_list):
     mock_cache = mocker.MagicMock(QueryCache)
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
-    with patch('servicex.servicex_adapter.ServiceXAdapter.get_code_generators',
-               return_value=codegen_list):
-        client = ServiceXClient(backend='servicex-uc-af', config_path='tests/example_config.yaml')
+    with patch(
+        "servicex.servicex_adapter.ServiceXAdapter.get_code_generators",
+        return_value=codegen_list,
+    ):
+        client = ServiceXClient(
+            backend="servicex-uc-af", config_path="tests/example_config.yaml"
+        )
         client.servicex = sx
         client.query_cache = mock_cache
 
         datasource = client.generic_query(
-            dataset_identifier=did,
-            query=UprootRawQuery({'treename': 'CollectionTree'})
+            dataset_identifier=did, query=UprootRawQuery({"treename": "CollectionTree"})
         )
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
-        _ = await datasource.submit_and_download(signed_urls_only=False,
-                                                 expandable_progress=progress)
+        _ = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
     assert isinstance(json.loads(datasource.generate_selection_string()), list)
 
 
@@ -533,37 +572,40 @@ def test_transform_request():
             query_cache=None,
             config=Configuration(api_endpoints=[]),
         )
-        datasource.query_string_generator = (FuncADLQuery_Uproot()
-                                             .FromTree("nominal")
-                                             .Select(lambda e: {"lep_pt": e["lep_pt"]}))
-
-        q = (
-            datasource.set_result_format(ResultFormat.parquet)
-            .transform_request
+        datasource.query_string_generator = (
+            FuncADLQuery_Uproot()
+            .FromTree("nominal")
+            .Select(lambda e: {"lep_pt": e["lep_pt"]})
         )
-        assert q.selection == "(call Select (call EventDataset 'bogus.root' 'nominal') " \
-                              "(lambda (list e) (dict (list 'lep_pt') " \
-                              "(list (subscript e 'lep_pt')))))"
+
+        q = datasource.set_result_format(ResultFormat.parquet).transform_request
+        assert (
+            q.selection == "(call Select (call EventDataset 'bogus.root' 'nominal') "
+            "(lambda (list e) (dict (list 'lep_pt') "
+            "(list (subscript e 'lep_pt')))))"
+        )
         cache.close()
 
 
 @pytest.mark.asyncio
 async def test_use_of_ignore_cache(mocker, servicex):
-    """ Run a normal request -> run the same request with ignore cache -> run request with cache
-        After the first request the request is cached
-        After the second request, transformer runs again by ignoring cache
-        After the third request, the data is retrieved from the cache
+    """Run a normal request -> run the same request with ignore cache -> run request with cache
+    After the first request the request is cached
+    After the second request, transformer runs again by ignoring cache
+    After the third request, the data is retrieved from the cache
     """
     # Prepare ServiceX
-    servicex.get_transform_status.side_effect = cycle([
-        transform_status1,
-        transform_status3,
-    ])
+    servicex.get_transform_status.side_effect = cycle(
+        [
+            transform_status1,
+            transform_status3,
+        ]
+    )
 
     # Prepare Minio
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
-    mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
+    mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
 
@@ -580,8 +622,9 @@ async def test_use_of_ignore_cache(mocker, servicex):
             query_cache=cache,
             config=config,
         )
-        datasource_without_ignore_cache.query_string_generator = \
+        datasource_without_ignore_cache.query_string_generator = (
             FuncADLQuery_Uproot().FromTree("nominal")
+        )
         datasource_without_ignore_cache.result_format = ResultFormat.parquet
 
         # Datasouce with ignore cache
@@ -592,27 +635,36 @@ async def test_use_of_ignore_cache(mocker, servicex):
             sx_adapter=servicex,
             query_cache=cache,
             config=config,
-            ignore_cache=True
+            ignore_cache=True,
         )
-        datasource_with_ignore_cache.query_string_generator = \
+        datasource_with_ignore_cache.query_string_generator = (
             FuncADLQuery_Uproot().FromTree("nominal")
+        )
         datasource_with_ignore_cache.result_format = ResultFormat.parquet
 
         # 1st time sending the request
-        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        upd = mocker.patch.object(
+            cache, "update_record", side_effect=cache.update_record
+        )
         with ExpandableProgress(display_progress=False) as progress:
-            await datasource_without_ignore_cache.submit_and_download(signed_urls_only=True,
-                                                                      expandable_progress=progress) # noqa
+            await datasource_without_ignore_cache.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )  # noqa
         upd.assert_not_called()
         upd.reset_mock()
         assert mock_minio.get_signed_url.await_count == 2
 
         # 2nd time sending the same request with ignore_cache (So it will run again)
-        mock_minio.get_signed_url = AsyncMock(side_effect=['http://file1', 'http://file2'])
-        upd = mocker.patch.object(cache, 'update_record', side_effect=cache.update_record)
+        mock_minio.get_signed_url = AsyncMock(
+            side_effect=["http://file1", "http://file2"]
+        )
+        upd = mocker.patch.object(
+            cache, "update_record", side_effect=cache.update_record
+        )
         with ExpandableProgress(display_progress=False) as progress:
-            await datasource_with_ignore_cache.submit_and_download(signed_urls_only=True,
-                                                                   expandable_progress=progress) # noqa
+            await datasource_with_ignore_cache.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )  # noqa
         upd.assert_not_called()
         upd.reset_mock()
         assert mock_minio.get_signed_url.await_count == 2
@@ -625,8 +677,9 @@ async def test_use_of_ignore_cache(mocker, servicex):
         mock_minio.list_bucket.reset_mock()
         mock_minio.download_file.reset_mock()
         with ExpandableProgress(display_progress=False) as progress:
-            res = await datasource_without_ignore_cache.submit_and_download(signed_urls_only=True,
-                                                                            expandable_progress=progress) # noqa
+            res = await datasource_without_ignore_cache.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )  # noqa
         mock_minio.list_bucket.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         assert len(res.signed_url_list) == 2

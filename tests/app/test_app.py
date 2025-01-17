@@ -30,20 +30,21 @@ from unittest.mock import Mock, patch
 
 def test_app_version(script_runner):
     import servicex._version
-    result = script_runner.run(['servicex', '--version'])
+
+    result = script_runner.run(["servicex", "--version"])
     assert result.returncode == 0
-    assert result.stdout == f'ServiceX {servicex._version.__version__}\n'
+    assert result.stdout == f"ServiceX {servicex._version.__version__}\n"
 
 
 def test_deliver(script_runner):
-    with patch('servicex.app.main.servicex_client') as mock_servicex_client:
-        mock_servicex_client.deliver = Mock(return_value={
-            "UprootRaw_YAML": [
-                "/tmp/foo.root",
-                "/tmp/bar.root"
-            ]})
-        result = script_runner.run(['servicex', 'deliver', "foo.yaml"])
+    with patch("servicex.app.main.servicex_client") as mock_servicex_client:
+        mock_servicex_client.deliver = Mock(
+            return_value={"UprootRaw_YAML": ["/tmp/foo.root", "/tmp/bar.root"]}
+        )
+        result = script_runner.run(["servicex", "deliver", "foo.yaml"])
         assert result.returncode == 0
-        result_rows = result.stdout.split('\n')
-        assert result_rows[0] == 'Delivering foo.yaml to ServiceX cache'
-        assert result_rows[1] == "{'UprootRaw_YAML': ['/tmp/foo.root', '/tmp/bar.root']}"
+        result_rows = result.stdout.split("\n")
+        assert result_rows[0] == "Delivering foo.yaml to ServiceX cache"
+        assert (
+            result_rows[1] == "{'UprootRaw_YAML': ['/tmp/foo.root', '/tmp/bar.root']}"
+        )

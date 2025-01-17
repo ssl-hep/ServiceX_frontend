@@ -67,13 +67,15 @@ def list():
             r.request_id,
             r.submit_time.astimezone().strftime("%a, %Y-%m-%d %H:%M"),
             str(r.files),
-            r.result_format
+            r.result_format,
         )
     rich.print(table)
 
 
 @cache_app.command()
-def clear(force: bool = typer.Option(False, "-y", help="Force, don't ask for permission")):
+def clear(
+    force: bool = typer.Option(False, "-y", help="Force, don't ask for permission")
+):
     """
     Clear the local query cache
     """

@@ -57,23 +57,31 @@ def test_result_formats():
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.RetryClient.get")
 async def test_get_transforms(mock_get, servicex, transform_status_response):
-    mock_get.return_value.__aenter__.return_value.json.return_value = transform_status_response
+    mock_get.return_value.__aenter__.return_value.json.return_value = (
+        transform_status_response
+    )
     mock_get.return_value.__aenter__.return_value.status = 200
     t = await servicex.get_transforms()
     assert len(t) == 1
     assert t[0].request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
-    mock_get.assert_called_with(url='https://servicex.org/servicex/transformation', headers={})
+    mock_get.assert_called_with(
+        url="https://servicex.org/servicex/transformation", headers={}
+    )
 
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.RetryClient.get")
 async def test_get_transforms_error(mock_get, servicex, transform_status_response):
-    mock_get.return_value.__aenter__.return_value.json.return_value = {'message': 'error_message'}
+    mock_get.return_value.__aenter__.return_value.json.return_value = {
+        "message": "error_message"
+    }
     mock_get.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.get_transforms()
-        assert "ServiceX WebAPI Error during transformation submission: 500 - error_message" \
-               == str(err.value)
+        assert (
+            "ServiceX WebAPI Error during transformation submission: 500 - error_message"
+            == str(err.value)
+        )
 
 
 @pytest.mark.asyncio
@@ -86,58 +94,68 @@ async def test_get_transforms_auth_error(mock_get, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.jwt.decode')
-async def test_get_transforms_wlcg_bearer_token(decode,
-                                                servicex,
-                                                transform_status_response):
+@patch("servicex.servicex_adapter.jwt.decode")
+async def test_get_transforms_wlcg_bearer_token(
+    decode, servicex, transform_status_response
+):
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
-    token_file.write(""""
+    token_file.write(
+        """"
     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-    """)
+    """
+    )
     token_file.close()
 
-    os.environ['BEARER_TOKEN_FILE'] = token_file.name
+    os.environ["BEARER_TOKEN_FILE"] = token_file.name
 
     # Try with an expired token
     with pytest.raises(AuthorizationError) as err:
-        decode.return_value = {'exp': 0.0}
+        decode.return_value = {"exp": 0.0}
         await servicex.get_transforms()
         assert "ServiceX access token request rejected:" in str(err.value)
 
     os.remove(token_file.name)
-    del os.environ['BEARER_TOKEN_FILE']
+    del os.environ["BEARER_TOKEN_FILE"]
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.RetryClient.post')
-@patch('servicex.servicex_adapter.RetryClient.get')
+@patch("servicex.servicex_adapter.RetryClient.post")
+@patch("servicex.servicex_adapter.RetryClient.get")
 async def test_get_transforms_with_refresh(get, post, transform_status_response):
     servicex = ServiceXAdapter(url="https://servicex.org", refresh_token="refrescas")
-    post.return_value.__aenter__.return_value.json.return_value = {"access_token": "luckycharms"}
+    post.return_value.__aenter__.return_value.json.return_value = {
+        "access_token": "luckycharms"
+    }
     post.return_value.__aenter__.return_value.status = 200
-    get.return_value.__aenter__.return_value.json.return_value = transform_status_response
+    get.return_value.__aenter__.return_value.json.return_value = (
+        transform_status_response
+    )
     get.return_value.__aenter__.return_value.status = 200
     await servicex.get_transforms()
 
-    post.assert_called_with('https://servicex.org/token/refresh',
-                            headers={'Authorization': 'Bearer refrescas'}, json=None)
+    post.assert_called_with(
+        "https://servicex.org/token/refresh",
+        headers={"Authorization": "Bearer refrescas"},
+        json=None,
+    )
 
-    get.assert_called_with(url='https://servicex.org/servicex/transformation',
-                           headers={'Authorization': 'Bearer luckycharms'})
+    get.assert_called_with(
+        url="https://servicex.org/servicex/transformation",
+        headers={"Authorization": "Bearer luckycharms"},
+    )
 
 
-@patch('servicex.servicex_adapter.httpx.Client.get')
+@patch("servicex.servicex_adapter.httpx.Client.get")
 def test_get_codegens(get, servicex):
-    get.return_value = httpx.Response(200, json={
-        "uproot": "http://uproot-codegen",
-        "xaod": "http://xaod-codegen"
-    })
+    get.return_value = httpx.Response(
+        200, json={"uproot": "http://uproot-codegen", "xaod": "http://xaod-codegen"}
+    )
     c = servicex.get_code_generators()
     assert len(c) == 2
     assert c["uproot"] == "http://uproot-codegen"
 
 
-@patch('servicex.servicex_adapter.httpx.Client.get')
+@patch("servicex.servicex_adapter.httpx.Client.get")
 def test_get_codegens_error(get, servicex):
     get.return_value = httpx.Response(403)
     with pytest.raises(AuthorizationError) as err:
@@ -164,13 +182,14 @@ def dataset():
                 "adler32": "62c594d4",
                 "file_size": 34831129,
                 "file_events": 0,
-                "paths": "https://xenia.nevis.columbia.edu:1094/atlas/dq2/rucio/user/mtost/06/a1/user.mtost.40294033._000002.less_jet_and_new_GN.root"  # NOQA: E501
-            }]
+                "paths": "https://xenia.nevis.columbia.edu:1094/atlas/dq2/rucio/user/mtost/06/a1/user.mtost.40294033._000002.less_jet_and_new_GN.root",  # NOQA: E501
+            }
+        ],
     }
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_datasets(get, servicex, dataset):
     get.return_value.__aenter__.return_value.json.return_value = {"datasets": [dataset]}
     get.return_value.__aenter__.return_value.status = 200
@@ -179,14 +198,12 @@ async def test_get_datasets(get, servicex, dataset):
     assert len(c) == 1
     assert c[0].id == 123
     get.assert_called_with(
-        url='https://servicex.org/servicex/datasets',
-        params={},
-        headers={}
+        url="https://servicex.org/servicex/datasets", params={}, headers={}
     )
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_datasets_show_deleted(get, servicex, dataset):
     get.return_value.__aenter__.return_value.json.return_value = {"datasets": [dataset]}
     get.return_value.__aenter__.return_value.status = 200
@@ -194,14 +211,14 @@ async def test_get_datasets_show_deleted(get, servicex, dataset):
     assert len(c) == 1
     assert c[0].id == 123
     get.assert_called_with(
-        url='https://servicex.org/servicex/datasets',
-        params={'show-deleted': True},
-        headers={}
+        url="https://servicex.org/servicex/datasets",
+        params={"show-deleted": True},
+        headers={},
     )
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_datasets_auth_error(get, servicex):
     get.return_value.__aenter__.return_value.status = 403
     with pytest.raises(AuthorizationError) as err:
@@ -210,7 +227,7 @@ async def test_get_datasets_auth_error(get, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_dataset(get, servicex, dataset):
     get.return_value.__aenter__.return_value.json.return_value = dataset
     get.return_value.__aenter__.return_value.status = 200
@@ -220,7 +237,7 @@ async def test_get_dataset(get, servicex, dataset):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_dataset_errors(get, servicex, dataset):
     get.return_value.__aenter__.return_value.status = 403
     with pytest.raises(AuthorizationError) as err:
@@ -232,8 +249,10 @@ async def test_get_dataset_errors(get, servicex, dataset):
         await servicex.get_dataset(123)
     assert "Dataset 123 not found" in str(err.value)
 
-    get.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
-    get.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    get.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(
+        None, None
+    )
+    get.return_value.__aenter__.return_value.text.return_value = "error_message"
     get.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.get_dataset(123)
@@ -241,24 +260,23 @@ async def test_get_dataset_errors(get, servicex, dataset):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.delete')
+@patch("servicex.servicex_adapter.ClientSession.delete")
 async def test_delete_dataset(delete, servicex):
     delete.return_value.__aenter__.return_value.json.return_value = {
-        'dataset-id': 123,
-        'stale': True
+        "dataset-id": 123,
+        "stale": True,
     }
     delete.return_value.__aenter__.return_value.status = 200
 
     r = await servicex.delete_dataset(123)
     delete.assert_called_with(
-        url='https://servicex.org/servicex/datasets/123',
-        headers={}
+        url="https://servicex.org/servicex/datasets/123", headers={}
     )
     assert r
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.delete')
+@patch("servicex.servicex_adapter.ClientSession.delete")
 async def test_delete_dataset_errors(delete, servicex):
     delete.return_value.__aenter__.return_value.status = 403
     with pytest.raises(AuthorizationError) as err:
@@ -270,8 +288,10 @@ async def test_delete_dataset_errors(delete, servicex):
         await servicex.delete_dataset(123)
     assert "Dataset 123 not found" in str(err.value)
 
-    delete.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
-    delete.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    delete.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(
+        None, None
+    )
+    delete.return_value.__aenter__.return_value.text.return_value = "error_message"
     delete.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.delete_dataset(123)
@@ -279,18 +299,17 @@ async def test_delete_dataset_errors(delete, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.delete')
+@patch("servicex.servicex_adapter.ClientSession.delete")
 async def test_delete_transform(delete, servicex):
     delete.return_value.__aenter__.return_value.status = 200
     await servicex.delete_transform("123-45-6789")
     delete.assert_called_with(
-        url='https://servicex.org/servicex/transformation/123-45-6789',
-        headers={}
+        url="https://servicex.org/servicex/transformation/123-45-6789", headers={}
     )
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.delete')
+@patch("servicex.servicex_adapter.ClientSession.delete")
 async def test_delete_transform_errors(delete, servicex):
     delete.return_value.__aenter__.return_value.status = 403
     with pytest.raises(AuthorizationError) as err:
@@ -302,8 +321,10 @@ async def test_delete_transform_errors(delete, servicex):
         await servicex.delete_transform("123-45-6789")
     assert "Transform 123-45-6789 not found" in str(err.value)
 
-    delete.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
-    delete.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    delete.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(
+        None, None
+    )
+    delete.return_value.__aenter__.return_value.text.return_value = "error_message"
     delete.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.delete_transform("123-45-6789")
@@ -311,7 +332,7 @@ async def test_delete_transform_errors(delete, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_cancel_transform(get, servicex):
     get.return_value.__aenter__.return_value.json.return_value = {
         "message": "Canceled transformation request 123"
@@ -320,13 +341,12 @@ async def test_cancel_transform(get, servicex):
 
     await servicex.cancel_transform(123)
     get.assert_called_with(
-        url='https://servicex.org/servicex/transformation/123/cancel',
-        headers={}
+        url="https://servicex.org/servicex/transformation/123/cancel", headers={}
     )
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.ClientSession.get')
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_cancel_transform_errors(get, servicex):
     get.return_value.__aenter__.return_value.status = 403
     with pytest.raises(AuthorizationError) as err:
@@ -338,8 +358,10 @@ async def test_cancel_transform_errors(get, servicex):
         await servicex.cancel_transform(123)
     assert "Transform 123 not found" in str(err.value)
 
-    get.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
-    get.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    get.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(
+        None, None
+    )
+    get.return_value.__aenter__.return_value.text.return_value = "error_message"
     get.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.cancel_transform(123)
@@ -347,9 +369,11 @@ async def test_cancel_transform_errors(get, servicex):
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.RetryClient.post')
+@patch("servicex.servicex_adapter.RetryClient.post")
 async def test_submit(post, servicex):
-    post.return_value.__aenter__.return_value.json.return_value = {"request_id": "123-456-789"}
+    post.return_value.__aenter__.return_value.json.return_value = {
+        "request_id": "123-456-789"
+    }
     post.return_value.__aenter__.return_value.status = 200
     request = TransformRequest(
         title="Test submission",
@@ -357,14 +381,14 @@ async def test_submit(post, servicex):
         selection="(call EventDataset)",
         codegen="uproot",
         result_destination=ResultDestination.object_store,
-        result_format=ResultFormat.parquet
+        result_format=ResultFormat.parquet,
     )
     result = await servicex.submit_transform(request)
     assert result == "123-456-789"
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.RetryClient.post')
+@patch("servicex.servicex_adapter.RetryClient.post")
 async def test_submit_errors(post, servicex):
     post.return_value.__aenter__.return_value.status = 401
     request = TransformRequest(
@@ -373,46 +397,58 @@ async def test_submit_errors(post, servicex):
         selection="(call EventDataset)",
         codegen="uproot",
         result_destination=ResultDestination.object_store,
-        result_format=ResultFormat.parquet
+        result_format=ResultFormat.parquet,
     )
     with pytest.raises(AuthorizationError) as err:
         await servicex.submit_transform(request)
     assert "Not authorized to access serviceX at" in str(err.value)
 
-    post.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(None, None)
-    post.return_value.__aenter__.return_value.text.return_value = 'error_message'
+    post.return_value.__aenter__.return_value.json.side_effect = ContentTypeError(
+        None, None
+    )
+    post.return_value.__aenter__.return_value.text.return_value = "error_message"
     post.return_value.__aenter__.return_value.status = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.submit_transform(request)
-    assert "ServiceX WebAPI Error during transformation submission: 500 - error_message" \
-           == str(err.value)
+    assert (
+        "ServiceX WebAPI Error during transformation submission: 500 - error_message"
+        == str(err.value)
+    )
 
     post.return_value.__aenter__.return_value.json.reset_mock()
-    post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
+    post.return_value.__aenter__.return_value.json.return_value = {
+        "message": "error_message"
+    }
     post.return_value.__aenter__.return_value.status = 400
     with pytest.raises(ValueError) as err:
         await servicex.submit_transform(request)
     assert "Invalid transform request: error_message" == str(err.value)
 
-    post.return_value.__aenter__.return_value.json.return_value = {"message": "error_message"}
+    post.return_value.__aenter__.return_value.json.return_value = {
+        "message": "error_message"
+    }
     post.return_value.__aenter__.return_value.status = 410
     with pytest.raises(RuntimeError) as err:
         await servicex.submit_transform(request)
-    assert "ServiceX WebAPI Error during transformation submission: 410 - error_message" \
-           == str(err.value)
+    assert (
+        "ServiceX WebAPI Error during transformation submission: 410 - error_message"
+        == str(err.value)
+    )
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.RetryClient.get')
+@patch("servicex.servicex_adapter.RetryClient.get")
 async def test_get_transform_status(get, servicex, transform_status_response):
-    get.return_value.__aenter__.return_value.json.return_value = transform_status_response['requests'][0]  # NOQA: E501
+    get.return_value.__aenter__.return_value.json.return_value = (
+        transform_status_response["requests"][0]
+    )  # NOQA: E501
     get.return_value.__aenter__.return_value.status = 200
     result = await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
     assert result.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.RetryClient.get')
+@patch("servicex.servicex_adapter.RetryClient.get")
 async def test_get_transform_status_errors(get, servicex):
     with pytest.raises(AuthorizationError) as err:
         get.return_value.__aenter__.return_value.status = 401
@@ -422,27 +458,31 @@ async def test_get_transform_status_errors(get, servicex):
     with pytest.raises(ValueError) as err:
         get.return_value.__aenter__.return_value.status = 404
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
-    assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(err.value)
+    assert "Transform ID b8c508d0-ccf2-4deb-a1f7-65c839eebabf not found" == str(
+        err.value
+    )
 
     with pytest.raises(RuntimeError) as err:
         get.return_value.__aenter__.return_value.status = 500
 
         async def patch_json():
-            return {'message': 'fifteen'}
+            return {"message": "fifteen"}
+
         get.return_value.__aenter__.return_value.json = patch_json
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
     assert "ServiceX WebAPI Error during transformation" in str(err.value)
 
 
 @pytest.mark.asyncio
-@patch('servicex.servicex_adapter.TransformStatus', side_effect=RuntimeError)
-@patch('servicex.servicex_adapter.RetryClient.get')
-async def test_get_tranform_status_retry_error(get,
-                                               mock_transform_status,
-                                               servicex,
-                                               transform_status_response):
+@patch("servicex.servicex_adapter.TransformStatus", side_effect=RuntimeError)
+@patch("servicex.servicex_adapter.RetryClient.get")
+async def test_get_tranform_status_retry_error(
+    get, mock_transform_status, servicex, transform_status_response
+):
     with pytest.raises(RuntimeError) as err:
-        get.return_value.__aenter__.return_value.json.return_value = transform_status_response['requests'][0]  # NOQA: E501
+        get.return_value.__aenter__.return_value.json.return_value = (
+            transform_status_response["requests"][0]
+        )  # NOQA: E501
         get.return_value.__aenter__.return_value.status = 200
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
     assert "ServiceX WebAPI Error while getting transform status:" in str(err.value)
@@ -452,12 +492,13 @@ async def test_get_tranform_status_retry_error(get,
 async def test_get_authorization(servicex):
     servicex.token = "token"
     servicex.refresh_token = "refresh"
-    with patch('google.auth.jwt.decode', return_value={'exp': time.time() + 90}):
+    with patch("google.auth.jwt.decode", return_value={"exp": time.time() + 90}):
         r = await servicex._get_authorization()
         assert r.get("Authorization") == "Bearer token"
 
-    with patch('servicex.servicex_adapter.ServiceXAdapter._get_token', return_value='token')\
-            as get_token:
-        with patch('google.auth.jwt.decode', return_value={'exp': time.time() - 90}):
+    with patch(
+        "servicex.servicex_adapter.ServiceXAdapter._get_token", return_value="token"
+    ) as get_token:
+        with patch("google.auth.jwt.decode", return_value={"exp": time.time() - 90}):
             r = await servicex._get_authorization()
             get_token.assert_called_once()

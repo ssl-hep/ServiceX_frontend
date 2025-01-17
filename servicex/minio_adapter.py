@@ -70,8 +70,9 @@ class MinioAdapter:
             bucket=transform.request_id,
         )
 
-    @retry(stop=stop_after_attempt(3), wait=wait_random_exponential(max=60),
-           reraise=True)
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
     async def list_bucket(self) -> List[ResultFile]:
         objects = await self.minio.list_objects(self.bucket)
         return [
@@ -80,11 +81,13 @@ class MinioAdapter:
                 size=obj.size,
                 extension=obj.object_name.split(".")[-1],
             )
-            for obj in objects if not obj.is_dir
+            for obj in objects
+            if not obj.is_dir
         ]
 
-    @retry(stop=stop_after_attempt(3), wait=wait_random_exponential(max=60),
-           reraise=True)
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
     async def download_file(
         self, object_name: str, local_dir: str, shorten_filename: bool = False
     ) -> Path:
@@ -103,8 +106,9 @@ class MinioAdapter:
         )
         return path.resolve()
 
-    @retry(stop=stop_after_attempt(3), wait=wait_random_exponential(max=60),
-           reraise=True)
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
     async def get_signed_url(self, object_name: str) -> str:
         return await self.minio.get_presigned_url(
             bucket_name=self.bucket, object_name=object_name, method="GET"

@@ -43,18 +43,18 @@ datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 
 @datasets_app.command(no_args_is_help=False)
 def list(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option,
-        did_finder: Optional[str] = typer.Option(
-            None,
-            help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
-            show_default=False,
-        ),
-        show_deleted: Optional[bool] = typer.Option(
-            False,
-            help="Show deleted datasets",
-            show_default=True,
-        ),
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+    did_finder: Optional[str] = typer.Option(
+        None,
+        help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
+        show_default=False,
+    ),
+    show_deleted: Optional[bool] = typer.Option(
+        False,
+        help="Show deleted datasets",
+        show_default=True,
+    ),
 ):
     """
     List the datasets. Use fancy formatting if printing to a terminal.
@@ -71,7 +71,9 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    datasets = asyncio.run(sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted))
+    datasets = asyncio.run(
+        sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
+    )
     for d in datasets:
         # Format the CachedDataset object into a table row
         # The last_updated field is what we should be displaying, but that is
@@ -80,7 +82,7 @@ def list(
         # https://github.com/ssl-hep/ServiceX/issues/906 is resolved
         d_name = d.name if d.did_finder != "user" else "File list"
         is_stale = "Yes" if d.is_stale else ""
-        last_used = d.last_used.strftime('%Y-%m-%dT%H:%M:%S')
+        last_used = d.last_used.strftime("%Y-%m-%dT%H:%M:%S")
         table.add_row(
             str(d.id),
             d_name,
@@ -88,16 +90,16 @@ def list(
             "{:,}MB".format(round(d.size / 1e6)),
             d.lookup_status,
             last_used,
-            is_stale
+            is_stale,
         )
     rich.print(table)
 
 
 @datasets_app.command(no_args_is_help=True)
 def get(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option,
-        dataset_id: int = typer.Argument(..., help="The ID of the dataset to get")
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+    dataset_id: int = typer.Argument(..., help="The ID of the dataset to get"),
 ):
     """
     Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
@@ -116,31 +118,32 @@ def get(
         for file in dataset.files:
             sub_table = Table(title="")
             sub_table.add_column(f"File ID: {file.id}")
-            for path in file.paths.split(','):
+            for path in file.paths.split(","):
                 sub_table.add_row(path)
 
-            table.add_row(
-                sub_table
-            )
+            table.add_row(sub_table)
         # Set alternating row styles
         table.row_styles = ["", ""]
         rich.print(table)
     else:
-        data = {"dataset": {
-            "id": dataset.id,
-            "name": dataset.name,
-            "files": [
-                {"id": file.id, "paths": file.paths.split(',')} for file in dataset.files
-            ]}
+        data = {
+            "dataset": {
+                "id": dataset.id,
+                "name": dataset.name,
+                "files": [
+                    {"id": file.id, "paths": file.paths.split(",")}
+                    for file in dataset.files
+                ],
+            }
         }
         rich.print_json(data=data)
 
 
 @datasets_app.command(no_args_is_help=True)
 def delete(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option,
-        dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete")
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+    dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete"),
 ):
     sx = ServiceXClient(backend=backend, config_path=config_path)
     result = asyncio.run(sx.delete_dataset(dataset_id))

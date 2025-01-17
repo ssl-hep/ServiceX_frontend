@@ -37,15 +37,15 @@ def dataset():
             adler32="some_adler32_hash",
             file_size=1024,
             file_events=100,
-            paths="/path/to/file1"
+            paths="/path/to/file1",
         ),
         DatasetFile(
             id=2,
             adler32="another_adler32_hash",
             file_size=2048,
             file_events=200,
-            paths="/path/to/file2"
-        )
+            paths="/path/to/file2",
+        ),
     ]
 
     cached_dataset = CachedDataset(
@@ -59,72 +59,86 @@ def dataset():
         last_updated=datetime.now(),
         lookup_status="completed",
         is_stale=False,
-        files=dataset_files
+        files=dataset_files,
     )
     return cached_dataset
 
 
 @pytest.mark.asyncio
 def test_datasets_list(script_runner, dataset):
-    with patch('servicex.app.datasets.ServiceXClient') as mock_servicex:
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_datasets = AsyncMock(return_value=[dataset])
         mock_servicex.return_value.get_datasets = mock_get_datasets
 
-        result = script_runner.run(['servicex', 'datasets', 'list',
-                                    '-c', 'tests/example_config.yaml'])
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "-c", "tests/example_config.yaml"]
+        )
         assert result.returncode == 0
         result_row = result.stdout.split("  ")
         assert len(result_row) == 7, f"Expected 7 elements, got {len(result_row)}"
 
         # Assert specific index values
-        assert result_row[0].strip() == '42'
-        assert result_row[1] == 'test_dataset'
-        assert result_row[2] == '2'
-        assert result_row[3] == '0MB'
-        assert result_row[4] == 'completed'
+        assert result_row[0].strip() == "42"
+        assert result_row[1] == "test_dataset"
+        assert result_row[2] == "2"
+        assert result_row[3] == "0MB"
+        assert result_row[4] == "completed"
 
         mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)
 
         mock_get_datasets.reset_mock()
-        result = script_runner.run(['servicex', 'datasets', 'list',
-                                    '-c', 'tests/example_config.yaml',
-                                    '--did-finder', 'some_finder',
-                                    '--show-deleted'])
+        result = script_runner.run(
+            [
+                "servicex",
+                "datasets",
+                "list",
+                "-c",
+                "tests/example_config.yaml",
+                "--did-finder",
+                "some_finder",
+                "--show-deleted",
+            ]
+        )
         assert result.returncode == 0
-        mock_get_datasets.assert_called_once_with(did_finder='some_finder', show_deleted=True)
+        mock_get_datasets.assert_called_once_with(
+            did_finder="some_finder", show_deleted=True
+        )
 
 
 def test_dataset_get(script_runner, dataset):
-    with patch('servicex.app.datasets.ServiceXClient') as mock_servicex:
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_dataset = AsyncMock(return_value=dataset)
         mock_servicex.return_value.get_dataset = mock_get_dataset
 
-        result = script_runner.run(['servicex', 'datasets', 'get', '42',
-                                    '-c', 'tests/example_config.yaml'])
+        result = script_runner.run(
+            ["servicex", "datasets", "get", "42", "-c", "tests/example_config.yaml"]
+        )
         assert result.returncode == 0
         mock_get_dataset.assert_called_once_with(42)
 
         # The output is a json document
         result_doc = json.loads(result.stdout)
-        assert result_doc['dataset']['id'] == 42
-        assert len(result_doc['dataset']['files']) == 2
+        assert result_doc["dataset"]["id"] == 42
+        assert len(result_doc["dataset"]["files"]) == 2
 
 
 def test_dataset_delete(script_runner):
-    with patch('servicex.app.datasets.ServiceXClient') as mock_servicex:
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_delete_dataset = AsyncMock(return_value=True)
         mock_servicex.return_value.delete_dataset = mock_delete_dataset
 
-        result = script_runner.run(['servicex', 'datasets', 'delete',
-                                    '-c', 'tests/example_config.yaml', '42'])
+        result = script_runner.run(
+            ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
+        )
         assert result.returncode == 0
         assert result.stdout == "Dataset 42 deleted\n"
         mock_delete_dataset.assert_called_once_with(42)
 
         mock_delete_dataset_not_found = AsyncMock(return_value=False)
         mock_servicex.return_value.delete_dataset = mock_delete_dataset_not_found
-        result = script_runner.run(['servicex', 'datasets', 'delete',
-                                    '-c', 'tests/example_config.yaml', '42'])
+        result = script_runner.run(
+            ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
+        )
         assert result.returncode == 1
         mock_delete_dataset.assert_called_once_with(42)
         assert result.stdout == "Dataset 42 not found\n"

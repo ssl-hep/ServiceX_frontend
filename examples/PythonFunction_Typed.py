@@ -3,6 +3,7 @@ from servicex import Sample, ServiceXSpec, query, dataset, deliver
 
 def run_query(input_filenames=None):
     import uproot  # type: ignore
+
     with uproot.open({input_filenames: "CollectionTree"}) as o:
         br = o.arrays("AnalysisElectronsAuxDyn.pt")
     return br
@@ -19,7 +20,7 @@ spec = ServiceXSpec(
                     "root://eospublic.cern.ch//eos/opendata/atlas/rucio/data16_13TeV/DAOD_PHYSLITE.37019878._000003.pool.root.1",  # noqa: E501
                 ]
             ),
-            Query=query.PythonFunction().with_uproot_function(run_query)
+            Query=query.PythonFunction().with_uproot_function(run_query),
         )
     ]
 )

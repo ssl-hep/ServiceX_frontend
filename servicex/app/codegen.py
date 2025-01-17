@@ -38,8 +38,9 @@ codegen_app = typer.Typer(name="codegen", no_args_is_help=True)
 
 @codegen_app.command(no_args_is_help=False)
 def flush(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option):
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+):
     """
     Flush the available code generators from the cache
     """
@@ -51,8 +52,9 @@ def flush(
 
 @codegen_app.command(no_args_is_help=False)
 def list(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option):
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+):
     """
     List the available code generators
     """
