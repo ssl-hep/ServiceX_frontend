@@ -118,7 +118,7 @@ def _load_ServiceXSpec(
             file_path = config
 
         import sys
-        from ccorp.ruamel.yaml.include import YAML
+        from .yaml_parser import YAML
 
         yaml = YAML()
 
