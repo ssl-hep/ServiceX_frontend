@@ -20,4 +20,3 @@ servicex.databinder_models
    :model-show-validator-summary: False
    :model-show-field-summary: False
    :undoc-members:
-

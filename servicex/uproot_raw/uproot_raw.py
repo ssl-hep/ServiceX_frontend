@@ -39,7 +39,8 @@ class TreeSubQuery(DocStringBaseModel):
     ones of the same name for uproot.arrays():
     https://uproot.readthedocs.io/en/stable/uproot.behaviors.TBranch.HasBranches.html#uproot-behaviors-tbranch-hasbranches-arrays
     """
-    model_config = {'use_attribute_docstrings': True}
+
+    model_config = {"use_attribute_docstrings": True}
 
     treename: Union[Mapping[str, str], List[str], str]
     """Name of input ntuple in file"""
@@ -57,7 +58,8 @@ class TreeSubQuery(DocStringBaseModel):
 
 class CopyHistogramSubQuery(DocStringBaseModel):
     """Request the copying of a ROOT object from the input file to the output."""
-    model_config = {'use_attribute_docstrings': True}
+
+    model_config = {"use_attribute_docstrings": True}
 
     copy_histograms: Union[List[str], str]
     """Objects to copy"""
@@ -68,15 +70,18 @@ SubQuery = Union[TreeSubQuery, CopyHistogramSubQuery]
 
 @pydantic.dataclasses.dataclass
 class UprootRawQuery(QueryStringGenerator):
-    yaml_tag = '!UprootRaw'
+    yaml_tag = "!UprootRaw"
 
     query: Union[List[SubQuery], SubQuery]
-    default_codegen: str = 'uproot-raw'
+    default_codegen: str = "uproot-raw"
 
     def generate_selection_string(self):
         import json
+
         final_query: List[SubQuery]
-        if isinstance(self.query, get_args(SubQuery)):  # from Python 3.10 we don't need "get_args"
+        if isinstance(
+            self.query, get_args(SubQuery)
+        ):  # from Python 3.10 we don't need "get_args"
             final_query = [self.query]
         else:
             final_query = self.query
@@ -86,6 +91,7 @@ class UprootRawQuery(QueryStringGenerator):
     def from_yaml(cls, _, node):
         code = node.value
         import json
+
         queries = json.loads(code)
         q = cls(queries)
         return q

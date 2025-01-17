@@ -72,7 +72,7 @@ def python_dataset(dummy_parquet_file):
         result_format=ResultFormat.parquet,
         sx_adapter=None,  # type: ignore
         config=None,  # type: ignore
-        query_cache=None  # type: ignore
+        query_cache=None,  # type: ignore
     )  # type: ignore
 
     def foo():
@@ -188,7 +188,10 @@ def transformed_result_signed_url() -> TransformedResults:
         submit_time=datetime.now(),
         data_dir="/foo/bar",
         file_list=[],
-        signed_url_list=['https://dummy.junk.io/1.parquet', 'https://dummy.junk.io/2.parquet'],
+        signed_url_list=[
+            "https://dummy.junk.io/1.parquet",
+            "https://dummy.junk.io/2.parquet",
+        ],
         files=2,
         result_format=ResultFormat.root_ttree,
     )
@@ -196,10 +199,9 @@ def transformed_result_signed_url() -> TransformedResults:
 
 @fixture
 def dummy_parquet_file():
-    data = {'column1': [1, 2, 3, 4],
-            'column2': ['A', 'B', 'C', 'D']}
+    data = {"column1": [1, 2, 3, 4], "column2": ["A", "B", "C", "D"]}
     df = pd.DataFrame(data)
-    parquet_file_path = '1.parquet'
+    parquet_file_path = "1.parquet"
     df.to_parquet(parquet_file_path, index=False)
 
     yield parquet_file_path
@@ -210,11 +212,13 @@ def dummy_parquet_file():
 
 @fixture
 def codegen_list():
-    return {'atlasr21': 'http://servicex-code-gen-atlasr21:8000',
-            'atlasr22': 'http://servicex-code-gen-atlasr22:8000',
-            'atlasxaod': 'http://servicex-code-gen-atlasxaod:8000',
-            'cms': 'http://servicex-code-gen-cms:8000',
-            'cmssw-5-3-32': 'http://servicex-code-gen-cmssw-5-3-32:8000',
-            'python': 'http://servicex-code-gen-python:8000',
-            'uproot': 'http://servicex-code-gen-uproot:8000',
-            'uproot-raw': 'http://servicex-code-gen-uproot-raw:8000'}
+    return {
+        "atlasr21": "http://servicex-code-gen-atlasr21:8000",
+        "atlasr22": "http://servicex-code-gen-atlasr22:8000",
+        "atlasxaod": "http://servicex-code-gen-atlasxaod:8000",
+        "cms": "http://servicex-code-gen-cms:8000",
+        "cmssw-5-3-32": "http://servicex-code-gen-cmssw-5-3-32:8000",
+        "python": "http://servicex-code-gen-python:8000",
+        "uproot": "http://servicex-code-gen-uproot:8000",
+        "uproot-raw": "http://servicex-code-gen-uproot-raw:8000",
+    }

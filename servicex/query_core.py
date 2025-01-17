@@ -62,7 +62,7 @@ logger.addHandler(shell_handler)
 
 
 class ServiceXException(Exception):
-    """ Something happened while trying to carry out a ServiceX request """
+    """Something happened while trying to carry out a ServiceX request"""
 
 
 class Query:
@@ -127,7 +127,7 @@ class Query:
 
     def generate_selection_string(self) -> str:
         if self.query_string_generator is None:
-            raise RuntimeError('query string generator not set')
+            raise RuntimeError("query string generator not set")
         return self.query_string_generator.generate_selection_string()
 
     @property
@@ -182,8 +182,12 @@ class Query:
         :return: Transform results object which contains the list of files downloaded
                  or the list of pre-signed urls
         """
-        from servicex.app.transforms import \
-            create_kibana_link_parameters, TimeFrame, LogLevel
+        from servicex.app.transforms import (
+            create_kibana_link_parameters,
+            TimeFrame,
+            LogLevel,
+        )
+
         download_files_task = None
         loop = asyncio.get_running_loop()
 
@@ -197,8 +201,8 @@ class Query:
             expandable_progress.refresh()
             if task.exception():
                 logger.error(
-                    f"ServiceX Exception for request ID {self.request_id} ({self.title})\"",
-                    exc_info=task.exception()
+                    f'ServiceX Exception for request ID {self.request_id} ({self.title})"',
+                    exc_info=task.exception(),
                 )
                 self.cache.delete_record_by_request_id(self.request_id)
                 if download_files_task:
@@ -208,41 +212,56 @@ class Query:
             if self.current_status.status in DONE_STATUS:
                 if self.current_status.files_failed:
                     self.cache.delete_record_by_request_id(self.request_id)
-                    titlestr = (f'"{self.current_status.title}" '
-                                if self.current_status.title is not None else '')
+                    titlestr = (
+                        f'"{self.current_status.title}" '
+                        if self.current_status.title is not None
+                        else ""
+                    )
                     errorstr = (
                         f"Transform {titlestr}completed with failures: "
                         f"{self.current_status.files_failed}/"
                         f"{self.current_status.files} files failed. Will not cache."
                     )
-                    failedfiles = (self.servicex.url + '/transformation-request/'
-                                   + f'/{self.request_id}/results?status=failure')
-                    errorstr2 = ("A list of failed files is at [bold red on white]"
-                                 f"[link={failedfiles}]this link[/link][/bold red on white]")
+                    failedfiles = (
+                        self.servicex.url
+                        + "/transformation-request/"
+                        + f"/{self.request_id}/results?status=failure"
+                    )
+                    errorstr2 = (
+                        "A list of failed files is at [bold red on white]"
+                        f"[link={failedfiles}]this link[/link][/bold red on white]"
+                    )
                     logger.error(errorstr2)
                     logger.error(
                         f"Transform Request id: {self.current_status.request_id}"
                     )
                     if self.current_status.log_url is not None:
-                        kibana_link = \
-                            create_kibana_link_parameters(self.current_status.log_url,
-                                                          self.current_status.request_id,
-                                                          LogLevel.error,
-                                                          TimeFrame.month)
-                        logger.error(f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501
+                        kibana_link = create_kibana_link_parameters(
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            LogLevel.error,
+                            TimeFrame.month,
+                        )
+                        logger.error(
+                            f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
+                        )
                     if self.fail_if_incomplete:
                         raise ServiceXException(errorstr)
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
-                logger.info(f"Transforms finished with code {self.current_status.status}")
+                logger.info(
+                    f"Transforms finished with code {self.current_status.status}"
+                )
 
         sx_request = self.transform_request
         sx_request_hash = sx_request.compute_hash()
 
         # Invalidate the cache if the hash already present but if the user ignores cache
-        if self.ignore_cache and (self.cache.contains_hash(sx_request_hash)
-                                  or self.cache.is_transform_request_submitted(sx_request_hash)):
+        if self.ignore_cache and (
+            self.cache.contains_hash(sx_request_hash)
+            or self.cache.is_transform_request_submitted(sx_request_hash)
+        ):
             self.cache.delete_record_by_hash(sx_request_hash)
 
         # Let's see if this is in the cache already, but respect the user's wishes
@@ -256,9 +275,8 @@ class Query:
         # And that we grabbed the resulting files in the way that the user requested
         # (Downloaded, or obtained pre-signed URLs)
         if cached_record:
-            if (
-                (signed_urls_only and cached_record.signed_url_list)
-                or (not signed_urls_only and cached_record.file_list)
+            if (signed_urls_only and cached_record.signed_url_list) or (
+                not signed_urls_only and cached_record.file_list
             ):
                 logger.info("Returning results from cache")
                 return cached_record
@@ -355,9 +373,7 @@ class Query:
 
             return transform_report
         except CancelledError:
-            logger.warning(
-                "Aborted file downloads due to transform failure"
-            )
+            logger.warning("Aborted file downloads due to transform failure")
 
         _ = await monitor_task  # raise exception, if it is there
 
@@ -374,8 +390,11 @@ class Query:
         of status. Once we know the number of files in the dataset, update the progress
         bars.
         """
-        from servicex.app.transforms import LogLevel, \
-            create_kibana_link_parameters, TimeFrame
+        from servicex.app.transforms import (
+            LogLevel,
+            create_kibana_link_parameters,
+            TimeFrame,
+        )
 
         # Actual number of files in the dataset. We only know this once the DID
         # finder has completed its work. In the meantime transformers will already
@@ -411,27 +430,29 @@ class Query:
 
                 # update the download progress bar to get the total number of files
                 progress.update(
-                    download_task,
-                    download_bar_title,
-                    total=self.current_status.files
+                    download_task, download_bar_title, total=self.current_status.files
                 )
 
             if self.current_status.status in DONE_STATUS:
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
-                titlestr = (f'"{self.current_status.title}" '
-                            if self.current_status.title is not None else '')
+                titlestr = (
+                    f'"{self.current_status.title}" '
+                    if self.current_status.title is not None
+                    else ""
+                )
                 if self.current_status.status == Status.complete:
                     if self.files_failed:
-                        bar = 'failure'
+                        bar = "failure"
                     else:
-                        bar = 'complete'
+                        bar = "complete"
                     progress.update(
                         progress_task,
                         progress_bar_title,
                         self.current_status.files,
                         completed=self.current_status.files_completed,
-                        bar=bar)
+                        bar=bar,
+                    )
                     return
                 elif self.current_status.status == Status.canceled:
                     logger.warning(
@@ -441,23 +462,29 @@ class Query:
                     )
                     err_str = f"Request {titlestr}was canceled"
                     if self.current_status.log_url is not None:
-                        kibana_link = \
-                            create_kibana_link_parameters(self.current_status.log_url,
-                                                          self.current_status.request_id,
-                                                          LogLevel.error,
-                                                          TimeFrame.month)
-                        logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
+                        kibana_link = create_kibana_link_parameters(
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            LogLevel.error,
+                            TimeFrame.month,
+                        )
+                        logger.error(
+                            f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
+                        )
                     raise ServiceXException(err_str)
 
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
-                        kibana_link = \
-                            create_kibana_link_parameters(self.current_status.log_url,
-                                                          self.current_status.request_id,
-                                                          LogLevel.error,
-                                                          TimeFrame.month)
-                        logger.error(f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]")  # NOQA: E501"
+                        kibana_link = create_kibana_link_parameters(
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            LogLevel.error,
+                            TimeFrame.month,
+                        )
+                        logger.error(
+                            f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
+                        )
                     raise ServiceXException(err_str)
 
             await asyncio.sleep(self.servicex_polling_interval)
@@ -468,9 +495,7 @@ class Query:
         # Is this the first time we've polled status? We now know the request ID.
         # Update the display and set our download directory.
         if not self.current_status:
-            logger.info(
-                f"ServiceX Transform {s.title}: {s.request_id}"
-            )
+            logger.info(f"ServiceX Transform {s.title}: {s.request_id}")
             self.download_path = self.cache.cache_path_for_transform(s)
 
         self.current_status = s
@@ -558,8 +583,10 @@ class Query:
             # signing urls for a previous transform then we know it is complete as well
             if cached_record or (
                 self.current_status
-                and (self.current_status.status in DONE_STATUS
-                     and self.current_status.files_completed == len(files_seen))
+                and (
+                    self.current_status.status in DONE_STATUS
+                    and self.current_status.files_completed == len(files_seen)
+                )
             ):
                 break
 
@@ -614,17 +641,19 @@ class Query:
 
 
 class QueryStringGenerator(ABC):
-    '''This abstract class just defines an interface to give the selection string'''
+    """This abstract class just defines an interface to give the selection string"""
+
     @abc.abstractmethod
     def generate_selection_string(self) -> str:
-        """ override with the selection string to send to ServiceX """
+        """override with the selection string to send to ServiceX"""
 
     """ override with the codegen string you would like associated with this query class """
     default_codegen: Optional[str] = None
 
 
 class GenericQueryStringGenerator(QueryStringGenerator):
-    '''Return the string from the initializer'''
+    """Return the string from the initializer"""
+
     def __init__(self, query: str, codegen: str):
         self.query = query
         self.default_codegen = codegen

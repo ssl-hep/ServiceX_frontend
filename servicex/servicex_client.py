@@ -52,12 +52,14 @@ logger = logging.getLogger(__name__)
 
 
 class ReturnValueException(Exception):
-    """ An exception occurred at some point while obtaining this result from ServiceX """
+    """An exception occurred at some point while obtaining this result from ServiceX"""
+
     def __init__(self, exc):
         import copy
-        message = ('Exception occurred while making ServiceX request.\n'
-                   + (''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
-                   )
+
+        message = "Exception occurred while making ServiceX request.\n" + (
+            "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        )
         super().__init__(message)
         self._exc = copy.copy(exc)
 
@@ -65,6 +67,7 @@ class ReturnValueException(Exception):
 class GuardList(Sequence):
     def __init__(self, data: Union[Sequence, Exception]):
         import copy
+
         super().__init__()
         if isinstance(data, Exception):
             self._data = ReturnValueException(data)
@@ -95,7 +98,7 @@ class GuardList(Sequence):
             return repr(self._data)
         else:
             data = cast(ReturnValueException, self._data)
-            return f'Invalid GuardList: {repr(data._exc)}'
+            return f"Invalid GuardList: {repr(data._exc)}"
 
 
 def _load_ServiceXSpec(
@@ -116,6 +119,7 @@ def _load_ServiceXSpec(
 
         import sys
         from .yaml_parser import YAML
+
         yaml = YAML()
 
         if sys.version_info < (3, 10):
@@ -159,7 +163,7 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
             result_format=config.General.OutputFormat.to_ResultFormat(),
             ignore_cache=sample.IgnoreLocalCache,
             query=sample.Query,
-            fail_if_incomplete=fail_if_incomplete
+            fail_if_incomplete=fail_if_incomplete,
         )
         logger.debug(f"Query string: {query.generate_selection_string()}")
         query.ignore_cache = sample.IgnoreLocalCache
@@ -168,19 +172,26 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
     return datasets
 
 
-def _output_handler(config: ServiceXSpec, requests: List[Query],
-                    results: List[Union[TransformedResults, Exception]]):
+def _output_handler(
+    config: ServiceXSpec,
+    requests: List[Query],
+    results: List[Union[TransformedResults, Exception]],
+):
     matched_results = zip(requests, results)
     if config.General.Delivery == General.DeliveryEnum.URLs:
-        out_dict = {obj[0].title: GuardList(obj[1].signed_url_list
-                                            if not isinstance(obj[1], Exception)
-                                            else obj[1])
-                    for obj in matched_results}
+        out_dict = {
+            obj[0].title: GuardList(
+                obj[1].signed_url_list if not isinstance(obj[1], Exception) else obj[1]
+            )
+            for obj in matched_results
+        }
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        out_dict = {obj[0].title: GuardList(obj[1].file_list
-                                            if not isinstance(obj[1], Exception)
-                                            else obj[1])
-                    for obj in matched_results}
+        out_dict = {
+            obj[0].title: GuardList(
+                obj[1].file_list if not isinstance(obj[1], Exception) else obj[1]
+            )
+            for obj in matched_results
+        }
 
     if config.General.OutputDirectory:
         import yaml as yl
@@ -201,8 +212,7 @@ def deliver(
     servicex_name: Optional[str] = None,
     return_exceptions: bool = True,
     fail_if_incomplete: bool = True,
-    ignore_local_cache: bool = False
-
+    ignore_local_cache: bool = False,
 ):
     config = _load_ServiceXSpec(config)
 
@@ -364,7 +374,9 @@ class ServiceXClient:
 
         if isinstance(query, str):
             if codegen is None:
-                raise RuntimeError("A pure string query requires a codegen argument as well")
+                raise RuntimeError(
+                    "A pure string query requires a codegen argument as well"
+                )
             query = GenericQueryStringGenerator(query, codegen)
         if not isinstance(query, QueryStringGenerator):
             raise ValueError("query argument must be string or QueryStringGenerator")
@@ -391,7 +403,7 @@ class ServiceXClient:
             result_format=result_format,
             ignore_cache=ignore_cache,
             query_string_generator=query,
-            fail_if_incomplete=fail_if_incomplete
+            fail_if_incomplete=fail_if_incomplete,
         )
         return qobj
 

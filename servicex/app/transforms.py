@@ -88,9 +88,7 @@ def list(
     transforms = sx.get_transforms()
     for t in transforms:
         if transform_filter(t.status):
-            table.add_row(
-                t.request_id, t.title, t.status, str(t.files_completed)
-            )
+            table.add_row(t.request_id, t.title, t.status, str(t.files_completed))
 
     rich.print(table)
 
@@ -104,6 +102,7 @@ def files(
     """
     List the files that were produced by a transform.
     """
+
     async def list_files(sx: ServiceXClient, transform_id: str) -> List[ResultFile]:
         transform = await sx.get_transform_status_async(transform_id)
         minio = MinioAdapter.for_transform(transform)
@@ -126,11 +125,14 @@ def download(
     config_path: Optional[str] = config_file_option,
     transform_id: str = typer.Argument(help="Transform ID"),
     local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
-    concurrency: int = typer.Option(20, "--concurrency", help="Number of concurrent downloads"),
+    concurrency: int = typer.Option(
+        20, "--concurrency", help="Number of concurrent downloads"
+    ),
 ):
     """
     Download the files that were produced by a transform.
     """
+
     async def download_files(sx: ServiceXClient, transform_id: str, local_dir):
         s3_semaphore = asyncio.Semaphore(concurrency)
 
@@ -164,9 +166,9 @@ def download(
 
 @transforms_app.command(no_args_is_help=True)
 def delete(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option,
-        transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
 ):
     """
     Delete a completed transform along with the result files.
@@ -181,9 +183,9 @@ def delete(
 
 @transforms_app.command(no_args_is_help=True)
 def cancel(
-        backend: Optional[str] = backend_cli_option,
-        config_path: Optional[str] = config_file_option,
-        transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+    backend: Optional[str] = backend_cli_option,
+    config_path: Optional[str] = config_file_option,
+    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
 ):
     """
     Cancel a running transform request.
@@ -200,7 +202,7 @@ class TimeFrame(str, Enum):
     """
     day = ("day",)
     week = ("week",)
-    month = ("month")
+    month = ("month",)
 
 
 class LogLevel(str, Enum):
@@ -235,13 +237,17 @@ def select_time(time_frame=TimeFrame.day):
     return time_string
 
 
-def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, time_frame=None):
+def create_kibana_link_parameters(
+    log_url, transform_id=None, log_level=None, time_frame=None
+):
     """
     Create the _a and _g parameters for the kibana dashboard link
     """
     if log_level:
-        a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)},"\
-                      f"{add_query('level', log_level.value.lower())}))"
+        a_parameter = (
+            f"&_a=(filters:!({add_query('requestId', transform_id)},"
+            f"{add_query('level', log_level.value.lower())}))"
+        )
     else:
         a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)}))"
     g_parameter = f"&_g=({select_time(time_frame.value.lower())})"
@@ -253,12 +259,12 @@ def create_kibana_link_parameters(log_url, transform_id=None, log_level=None, ti
 def logs(
     backend: Optional[str] = backend_cli_option,
     transform_id: str = typer.Argument(help="Transform ID"),
-    log_level: Optional[LogLevel] = typer.Option("ERROR", "-l", "--log-level",
-                                                 help="Level of Logs",
-                                                 case_sensitive=False),
-    time_frame: Optional[TimeFrame] = typer.Option("month", "-f", "--time-frame",
-                                                   help="Time Frame",
-                                                   case_sensitive=False)
+    log_level: Optional[LogLevel] = typer.Option(
+        "ERROR", "-l", "--log-level", help="Level of Logs", case_sensitive=False
+    ),
+    time_frame: Optional[TimeFrame] = typer.Option(
+        "month", "-f", "--time-frame", help="Time Frame", case_sensitive=False
+    ),
 ):
     """
     Open the URL to the Kibana dashboard of the logs of a tranformer
@@ -266,10 +272,12 @@ def logs(
     sx = ServiceXClient(backend=backend)
     transforms = sx.get_transform_status(transform_id)
     if transforms and transforms.request_id == transform_id:
-        kibana_link = create_kibana_link_parameters(transforms.log_url,
-                                                    transform_id=transform_id,
-                                                    log_level=log_level,
-                                                    time_frame=time_frame)
+        kibana_link = create_kibana_link_parameters(
+            transforms.log_url,
+            transform_id=transform_id,
+            log_level=log_level,
+            time_frame=time_frame,
+        )
         print(kibana_link)
         webbrowser.open(kibana_link)
     else:

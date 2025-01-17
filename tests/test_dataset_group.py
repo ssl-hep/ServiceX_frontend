@@ -50,8 +50,9 @@ async def test_as_signed_urls(mocker, transformed_result):
     ds1.servicex._get_authorization = AsyncMock()
 
     ds2 = mocker.Mock()
-    ds2.as_signed_urls_async = AsyncMock(return_value=transformed_result.model_copy(
-        update={"request_id": "98-765-432"}))
+    ds2.as_signed_urls_async = AsyncMock(
+        return_value=transformed_result.model_copy(update={"request_id": "98-765-432"})
+    )
 
     group = DatasetGroup([ds1, ds2])
     results = await group.as_signed_urls_async()
@@ -68,8 +69,9 @@ async def test_as_files(mocker, transformed_result):
     ds1.servicex._get_authorization = AsyncMock()
 
     ds2 = mocker.Mock()
-    ds2.as_files_async = AsyncMock(return_value=transformed_result.model_copy(
-        update={"request_id": "98-765-432"}))
+    ds2.as_files_async = AsyncMock(
+        return_value=transformed_result.model_copy(update={"request_id": "98-765-432"})
+    )
 
     group = DatasetGroup([ds1, ds2])
     results = await group.as_files_async()

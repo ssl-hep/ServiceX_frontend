@@ -66,7 +66,7 @@ Expected output:
 .. code-block:: python
 
                 JetPt
-    entry            
+    entry
     0       36.319766
     1       34.331914
     2       16.590844
@@ -91,7 +91,7 @@ so we can access the files directly.
 
 .. code-block:: python
 
-    
+
     import ast
 
     import qastle

@@ -5,7 +5,7 @@ This page lists presentations and posters on the ServiceX client (frontend) libr
 The `Client version` stands for the ServiceX client version for the given presentation.
 A demo (or demo-like) talks are marked as `Notebook`.
 
-You can find more materials on the ServiceX backend or intergration into broader 
+You can find more materials on the ServiceX backend or intergration into broader
 python ecosystem at the `IRIS-HEP ServiceX page <https://iris-hep.org/projects/servicex.html>`_.
 
 
@@ -15,7 +15,7 @@ python ecosystem at the `IRIS-HEP ServiceX page <https://iris-hep.org/projects/s
    :align: center
    :header-rows: 1
 
-   * - Date     
+   * - Date
      - Event
      - Title
      - Speaker
@@ -33,13 +33,13 @@ python ecosystem at the `IRIS-HEP ServiceX page <https://iris-hep.org/projects/s
      - Peter Onyisi
      - 3.0.0
      - o
-   * - Mar 13, 2024     
+   * - Mar 13, 2024
      - `ACAT 2024 <https://indico.cern.ch/event/1330797/contributions/5796587/>`_
      - `ServiceX, the novel data delivery system, for physics analysis <https://indico.cern.ch/event/1330797/contributions/5796587/attachments/2817384/4918917/acat2024_ServiceX_Choi.pdf>`_
      - KyungEon Choi
      - \-
      - \-
-   * - May 11, 2023 
+   * - May 11, 2023
      - `CHEP 2023 <https://indico.jlab.org/event/459/contributions/11568/>`_
      - `Data Management Package for the novel data delivery system, ServiceX, and Applications to various physics analysis workflows <https://indico.jlab.org/event/459/contributions/11568/attachments/9720/14195/KyungEon_CHEP2023.pdf>`_
      - KyungEon Choi

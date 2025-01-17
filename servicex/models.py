@@ -38,13 +38,15 @@ def _get_typename(typeish) -> str:
 
 
 def _generate_model_docstring(model: type) -> str:
-    NL = '\n'
-    return '\n'.join([(model.__doc__ if model.__doc__ else model.__name__).strip(),
-                      '', 'Args:']
-                     + [f'    {field}: ({_get_typename(info.annotation)}) '
-                        f'{info.description.replace(NL, NL + " " * 8) if info.description else ""}'
-                        for field, info in model.model_fields.items()]
-                     )
+    NL = "\n"
+    return "\n".join(
+        [(model.__doc__ if model.__doc__ else model.__name__).strip(), "", "Args:"]
+        + [
+            f"    {field}: ({_get_typename(info.annotation)}) "
+            f'{info.description.replace(NL, NL + " " * 8) if info.description else ""}'
+            for field, info in model.model_fields.items()
+        ]
+    )
 
 
 class DocStringBaseModel(BaseModel):
@@ -134,7 +136,7 @@ class TransformStatus(DocStringBaseModel):
     r"""
     Status object returned by servicex
     """
-    model_config = {'use_attribute_docstrings': True}
+    model_config = {"use_attribute_docstrings": True}
 
     request_id: str
     did: str
@@ -150,13 +152,25 @@ class TransformStatus(DocStringBaseModel):
     files: int
     files_completed: int = Field(validation_alias="files-completed")
     files_failed: int = Field(validation_alias="files-failed")
-    files_remaining: Optional[int] = Field(validation_alias="files-remaining", default=0)
+    files_remaining: Optional[int] = Field(
+        validation_alias="files-remaining", default=0
+    )
     submit_time: datetime = Field(validation_alias="submit-time", default=None)
-    finish_time: Optional[datetime] = Field(validation_alias="finish-time", default=None)
-    minio_endpoint: Optional[str] = Field(validation_alias="minio-endpoint", default=None)
-    minio_secured: Optional[bool] = Field(validation_alias="minio-secured", default=None)
-    minio_access_key: Optional[str] = Field(validation_alias="minio-access-key", default=None)
-    minio_secret_key: Optional[str] = Field(validation_alias="minio-secret-key", default=None)
+    finish_time: Optional[datetime] = Field(
+        validation_alias="finish-time", default=None
+    )
+    minio_endpoint: Optional[str] = Field(
+        validation_alias="minio-endpoint", default=None
+    )
+    minio_secured: Optional[bool] = Field(
+        validation_alias="minio-secured", default=None
+    )
+    minio_access_key: Optional[str] = Field(
+        validation_alias="minio-access-key", default=None
+    )
+    minio_secret_key: Optional[str] = Field(
+        validation_alias="minio-secret-key", default=None
+    )
     log_url: Optional[str] = Field(validation_alias="log-url", default=None)
 
     @field_validator("finish_time", mode="before")
@@ -171,7 +185,7 @@ class ResultFile(DocStringBaseModel):
     r"""
     Record reporting the properties of a transformed file result
     """
-    model_config = {'use_attribute_docstrings': True}
+    model_config = {"use_attribute_docstrings": True}
 
     filename: str
     size: int
@@ -183,7 +197,7 @@ class TransformedResults(DocStringBaseModel):
     Returned for a submission. Gives you everything you need to know about a completed
     transform.
     """
-    model_config = {'use_attribute_docstrings': True}
+    model_config = {"use_attribute_docstrings": True}
 
     hash: str
     """Unique hash for transformation (used to look up results in cache)"""
@@ -213,6 +227,7 @@ class DatasetFile(BaseModel):
     """
     Model for a file in a cached dataset
     """
+
     id: int
     adler32: Optional[str]
     file_size: int
@@ -224,6 +239,7 @@ class CachedDataset(BaseModel):
     """
     Model for a cached dataset held by ServiceX server
     """
+
     id: int
     name: str
     did_finder: str

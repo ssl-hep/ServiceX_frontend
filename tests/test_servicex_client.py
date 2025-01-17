@@ -39,7 +39,7 @@ from servicex.servicex_client import ServiceXClient
 
 @fixture
 def servicex_adaptor(mocker):
-    adapter_mock = mocker.patch('servicex.servicex_client.ServiceXAdapter')
+    adapter_mock = mocker.patch("servicex.servicex_client.ServiceXAdapter")
     mock_adapter = MagicMock(spec=ServiceXAdapter)
 
     adapter_mock.return_value = mock_adapter
@@ -48,13 +48,10 @@ def servicex_adaptor(mocker):
 
 @fixture
 def mock_cache(mocker):
-    cache_mock = mocker.patch('servicex.servicex_client.QueryCache')
+    cache_mock = mocker.patch("servicex.servicex_client.QueryCache")
     mock_cache = MagicMock(spec=QueryCache)
     mock_cache.get_codegen_by_backend.return_value = {
-        "codegens": {
-            "ROOT": "my_root_generator",
-            "UPROOT": "my_uproot_generator"
-        }
+        "codegens": {"ROOT": "my_root_generator", "UPROOT": "my_uproot_generator"}
     }
     cache_mock.return_value = mock_cache
     return cache_mock
@@ -108,32 +105,35 @@ def transformed_results() -> TransformedResults:
         "data_dir": "/tmp/servicex/results",
         "file_list": [
             "/tmp/servicex/results/output1.parquet",
-            "/tmp/servicex/results/output2.parquet"
+            "/tmp/servicex/results/output2.parquet",
         ],
         "signed_url_list": [
             "https://example.com/signed-url-1",
-            "https://example.com/signed-url-2"
+            "https://example.com/signed-url-2",
         ],
         "files": 2,
         "result_format": ResultFormat.parquet,
-        "log_url": "https://logs.servicex.com/request-789"
+        "log_url": "https://logs.servicex.com/request-789",
     }
 
     return TransformedResults(**base_data)
 
 
 def test_delete_transform_from_cache(mock_cache, servicex_adaptor, transformed_results):
-    with patch('servicex.servicex_client.QueryCache') as mock_cache:
-        mock_cache.return_value.get_transform_by_request_id = \
-            MagicMock(return_value=transformed_results)
-        with patch('servicex.servicex_client.shutil.rmtree') as mock_rmtree:
+    with patch("servicex.servicex_client.QueryCache") as mock_cache:
+        mock_cache.return_value.get_transform_by_request_id = MagicMock(
+            return_value=transformed_results
+        )
+        with patch("servicex.servicex_client.shutil.rmtree") as mock_rmtree:
             sx = ServiceXClient(config_path="tests/example_config.yaml")
             sx.delete_transform_from_cache("servicex-request-789")
 
-            mock_cache.return_value.\
-                get_transform_by_request_id.\
-                assert_called_once_with("servicex-request-789")
-            mock_rmtree.assert_called_once_with('/tmp/servicex/results', ignore_errors=True)
-            mock_cache.return_value.\
-                delete_record_by_request_id.\
-                assert_called_once_with("servicex-request-789")
+            mock_cache.return_value.get_transform_by_request_id.assert_called_once_with(
+                "servicex-request-789"
+            )
+            mock_rmtree.assert_called_once_with(
+                "/tmp/servicex/results", ignore_errors=True
+            )
+            mock_cache.return_value.delete_record_by_request_id.assert_called_once_with(
+                "servicex-request-789"
+            )

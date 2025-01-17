@@ -26,11 +26,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from ..dataset_identifier import (RucioDatasetIdentifier as Rucio,  # noqa: F401
-                                  FileListDataset as FileList,
-                                  CERNOpenDataDatasetIdentifier as CERNOpenData,
-                                  DataSetIdentifier as GenericDataSet,
-                                  XRootDDatasetIdentifier as XRootD)
+from ..dataset_identifier import (  # noqa: F401
+    RucioDatasetIdentifier as Rucio,
+    FileListDataset as FileList,
+    CERNOpenDataDatasetIdentifier as CERNOpenData,
+    DataSetIdentifier as GenericDataSet,
+    XRootDDatasetIdentifier as XRootD,
+)
 
 
-__any__ = ['Rucio', 'FileList', 'CERNOpenData', 'GenericDataSet', 'XRootD']
+__any__ = ["Rucio", "FileList", "CERNOpenData", "GenericDataSet", "XRootD"]

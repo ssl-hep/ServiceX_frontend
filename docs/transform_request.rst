@@ -4,7 +4,7 @@ Transformation Request
 Specify a Request
 -----------------
 Transform requests are specified with one or more Sample specifications, and
-optionally a General section and one or more definitions which are substituted 
+optionally a General section and one or more definitions which are substituted
 into the Sample specifications.
 
 These requests can be defined as:
@@ -36,7 +36,7 @@ The General section of the request includes the following fields:
 * (Optional) ``Delivery``: Can be ``LocalCache`` (default) to download the results to the system on which you are running the client, or ``URLs`` to provide HTTPS URLs to the output on the ServiceX storage (you can also use the enums ``servicex.Delivery.LocalCache`` and ``servicex.Delivery.URLs``). The output files on the ServiceX storage will periodically get cleaned, so if you need to keep the results for long term use it is recommended that you download the output to local cache, but for transient use the URLs will be faster.
 
 In general, if you are running on your laptop away from the ServiceX site and are working with a small amount of
-data, select ``LocalCache`` for ``Delivery``. If you are located at an analysis facility, please select ``URLs``. 
+data, select ``LocalCache`` for ``Delivery``. If you are located at an analysis facility, please select ``URLs``.
 
 The Definitions Sections
 ^^^^^^^^^^^^^^^^^^^^^^^^

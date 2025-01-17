@@ -29,31 +29,40 @@ from __future__ import annotations
 
 from typing import Optional
 
-from rich.progress import Progress, TextColumn, BarColumn, MofNCompleteColumn, \
-    TimeRemainingColumn, TaskID
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    MofNCompleteColumn,
+    TimeRemainingColumn,
+    TaskID,
+)
 
 
-DEFAULT_STYLE = [TextColumn("[progress.description]{task.description}"),
-                 BarColumn(complete_style="rgb(114,156,31)",
-                           finished_style="rgb(0,255,0)"),
-                 MofNCompleteColumn(),
-                 TimeRemainingColumn(compact=True, elapsed_when_finished=True)
-                 ]
+DEFAULT_STYLE = [
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(complete_style="rgb(114,156,31)", finished_style="rgb(0,255,0)"),
+    MofNCompleteColumn(),
+    TimeRemainingColumn(compact=True, elapsed_when_finished=True),
+]
 
-BROKEN_STYLE = [TextColumn("[progress.description]{task.description}"),
-                BarColumn(complete_style="rgb(255,0,0)"),
-                MofNCompleteColumn(),
-                TimeRemainingColumn(compact=True, elapsed_when_finished=True)
-                ]
+BROKEN_STYLE = [
+    TextColumn("[progress.description]{task.description}"),
+    BarColumn(complete_style="rgb(255,0,0)"),
+    MofNCompleteColumn(),
+    TimeRemainingColumn(compact=True, elapsed_when_finished=True),
+]
 
 
 class ProgressCounts:
-    def __init__(self,
-                 description: str,
-                 task_id: TaskID,
-                 start: Optional[int] = None,
-                 total: Optional[int] = None,
-                 completed: Optional[int] = None):
+    def __init__(
+        self,
+        description: str,
+        task_id: TaskID,
+        start: Optional[int] = None,
+        total: Optional[int] = None,
+        completed: Optional[int] = None,
+    ):
 
         self.description = description
         self.taskId = task_id
@@ -63,10 +72,12 @@ class ProgressCounts:
 
 
 class ExpandableProgress:
-    def __init__(self,
-                 display_progress: bool = True,
-                 provided_progress: Optional[Progress | ExpandableProgress] = None,
-                 overall_progress: bool = False):
+    def __init__(
+        self,
+        display_progress: bool = True,
+        provided_progress: Optional[Progress | ExpandableProgress] = None,
+        overall_progress: bool = False,
+    ):
         """
         We want to be able to use rich progress bars in the async code, but there are
         some situtations where the user doesn't want them. Also we might be running
@@ -91,8 +102,11 @@ class ExpandableProgress:
                 self.progress = TranformStatusProgress(*DEFAULT_STYLE)
 
             if provided_progress:
-                self.progress = provided_progress if isinstance(provided_progress, Progress) \
+                self.progress = (
+                    provided_progress
+                    if isinstance(provided_progress, Progress)
                     else provided_progress.progress
+                )
         else:
             self.progress = None
 
@@ -123,14 +137,16 @@ class ExpandableProgress:
                 not self.overall_progress_download_task
                 and not self.overall_progress_transform_task
             ):
-                self.overall_progress_transform_task = self.progress.add_task("Transform",
-                                                                              start=False,
-                                                                              total=None)
-                self.overall_progress_download_task = self.progress.add_task("Download/URLs",
-                                                                             start=False,
-                                                                             total=None)
+                self.overall_progress_transform_task = self.progress.add_task(
+                    "Transform", start=False, total=None
+                )
+                self.overall_progress_download_task = self.progress.add_task(
+                    "Download/URLs", start=False, total=None
+                )
 
-            task_id = self.progress.add_task(param, start=start, total=total, visible=False)
+            task_id = self.progress.add_task(
+                param, start=start, total=total, visible=False
+            )
             new_task = ProgressCounts(param, task_id, start=start, total=total)
             self.progress_counts[task_id] = new_task
             return task_id
@@ -164,16 +180,22 @@ class ExpandableProgress:
                     overall_total += self.progress_counts[task].total
 
             if task_type == "Transform":
-                return self.progress.update(self.overall_progress_transform_task,
-                                            completed=overall_completed,
-                                            total=overall_total)
+                return self.progress.update(
+                    self.overall_progress_transform_task,
+                    completed=overall_completed,
+                    total=overall_total,
+                )
             else:
-                return self.progress.update(self.overall_progress_download_task,
-                                            completed=overall_completed,
-                                            total=overall_total)
+                return self.progress.update(
+                    self.overall_progress_download_task,
+                    completed=overall_completed,
+                    total=overall_total,
+                )
 
         if self.display_progress and not self.overall_progress:
-            return self.progress.update(task_id, completed=completed, total=total, **fields)
+            return self.progress.update(
+                task_id, completed=completed, total=total, **fields
+            )
 
     def start_task(self, task_id, task_type):
         if self.display_progress and self.overall_progress:
