@@ -206,12 +206,7 @@ class Query:
                 )
                 self.cache.delete_record_by_request_id(self.request_id)
                 if download_files_task:
-                    import sys
-
-                    if sys.version_info < (3, 9):
-                        download_files_task.cancel()
-                    else:
-                        download_files_task.cancel("Transform failed")
+                    download_files_task.cancel("Transform failed")
                 raise task.exception()
 
             if self.current_status.status in DONE_STATUS:
