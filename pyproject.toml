@@ -49,8 +49,7 @@ dependencies = [
     "rich>=13.0.0",  # databinder
     "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
-    "ruamel.yaml>=0.18,<0.18.7",  # FIXME: ruamel-yaml v0.18.7 has a breaking API change relative to v0.18.6
-    "ccorp-yaml-include-relative-path>=0.0.4",
+    "ruamel.yaml>=0.18.7",
     "filelock>=3.12.0",
     "tenacity >= 9.0.0"
 ]
