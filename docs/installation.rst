@@ -4,7 +4,7 @@ Client Installation
 Prerequisites
 -------------
 
-- Python 3.8, or above
+- Python 3.9+
 - Member of the ATLAS or CMS collaborations
 
 Installation

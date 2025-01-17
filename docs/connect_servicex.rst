@@ -95,7 +95,7 @@ of outputs.
 Prerequisites
 ~~~~~~~~~~~~~
 
-- Python 3.8, or above
+- Python 3.9+
 - Access to ServiceX endpoint
 
 Installation
