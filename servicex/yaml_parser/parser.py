@@ -63,7 +63,7 @@ from ruamel.yaml.nodes import ScalarNode, MappingNode, SequenceNode
 
 class TextFileLike(Protocol):
     def read(self, size: int) -> Union[str, bytes]:
-        ...
+        """read function for a file-like object"""
 
 
 class CompositingComposer(ruamel.yaml.composer.Composer):
@@ -132,7 +132,7 @@ class YAML(ruamel.yaml.YAML):
         elif kwargs["typ"] not in ("safe", "unsafe") and kwargs["typ"] not in (
             ["safe"],
             ["unsafe"],
-        ):
+        ):  # pragma: no cover
             raise Exception(
                 "Can't do typ={} parsing w/ composition time directives!".format(
                     kwargs["typ"]
@@ -141,7 +141,7 @@ class YAML(ruamel.yaml.YAML):
 
         if "pure" not in kwargs:
             kwargs["pure"] = True
-        elif not kwargs["pure"]:
+        elif not kwargs["pure"]:  # pragma: no cover
             raise Exception(
                 "Can't do non-pure python parsing w/ composition time directives!"
             )
@@ -165,11 +165,11 @@ class YAML(ruamel.yaml.YAML):
             parser.dispose()
             try:
                 self._reader.reset_reader()
-            except AttributeError:
+            except AttributeError:  # pragma: no cover
                 pass
             try:
                 self._scanner.reset_scanner()
-            except AttributeError:
+            except AttributeError:  # pragma: no cover
                 pass
 
     def fork(self):
