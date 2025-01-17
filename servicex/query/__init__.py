@@ -27,11 +27,12 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import sys
+
 if sys.version_info < (3, 10):
     from importlib_metadata import entry_points
 else:
     from importlib.metadata import entry_points
 
-plugins = entry_points(group='servicex.query')
+plugins = entry_points(group="servicex.query")
 for _ in plugins:
     globals()[_.name] = _.load()

@@ -28,7 +28,9 @@
 import typer
 
 
-backend_cli_option = typer.Option(None, "-b", "--backend",
-                                  help="Name of backend server from .servicex file")
-config_file_option = typer.Option(None, "-c", "--config",
-                                  help="ServiceX client configuration file")
+backend_cli_option = typer.Option(
+    None, "-b", "--backend", help="Name of backend server from .servicex file"
+)
+config_file_option = typer.Option(
+    None, "-c", "--config", help="ServiceX client configuration file"
+)

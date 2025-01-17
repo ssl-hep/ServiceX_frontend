@@ -111,7 +111,9 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         source = a
         if top_function in self._execute_locally:
             # Request the default type here
-            default_format = self._ds.first_supported_datatype(["parquet", "root-ttree"])
+            default_format = self._ds.first_supported_datatype(
+                ["parquet", "root-ttree"]
+            )
             assert default_format is not None, "Unsupported ServiceX returned format"
             method_to_call = self._format_map[default_format]
 
@@ -206,8 +208,8 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
 
 
 class FuncADLQuery_Uproot(FuncADLQuery):
-    yaml_tag = '!FuncADL_Uproot'
-    default_codegen = 'uproot'
+    yaml_tag = "!FuncADL_Uproot"
+    default_codegen = "uproot"
 
     def __init__(
         self,
@@ -222,8 +224,10 @@ class FuncADLQuery_Uproot(FuncADLQuery):
 
     def generate_selection_string(self):
         if not self.tree_is_set:
-            raise ValueError('Uproot FuncADL query requires '
-                             'that you set a tree name with FromTree()')
+            raise ValueError(
+                "Uproot FuncADL query requires "
+                "that you set a tree name with FromTree()"
+            )
         return super().generate_selection_string()
 
     def set_provided_qastle(self, qastle_query: str):
@@ -244,15 +248,15 @@ class FuncADLQuery_Uproot(FuncADLQuery):
         tree_match = re.match(from_tree_re, node.value)
 
         if tree_match:
-            query_string = f"EventDataset('bogus.root', '{tree_match.group(1)}')." \
-                           + tree_match.group(2)
+            query_string = (
+                f"EventDataset('bogus.root', '{tree_match.group(1)}')."
+                + tree_match.group(2)
+            )
         else:
             query_string = "EventDataset('bogus.root', 'events')." + node.value
 
         qastle_query = qastle.python_ast_to_text_ast(
-            qastle.insert_linq_nodes(
-                ast.parse(query_string)
-            )
+            qastle.insert_linq_nodes(ast.parse(query_string))
         )
         query = cls()
         query.set_provided_qastle(qastle_query)
@@ -260,20 +264,20 @@ class FuncADLQuery_Uproot(FuncADLQuery):
 
 
 class FuncADLQuery_ATLASr21(FuncADLQuery):
-    yaml_tag = '!FuncADL_ATLASr21'
-    default_codegen = 'atlasr21'
+    yaml_tag = "!FuncADL_ATLASr21"
+    default_codegen = "atlasr21"
 
 
 class FuncADLQuery_ATLASr22(FuncADLQuery):
-    yaml_tag = '!FuncADL_ATLASr22'
-    default_codegen = 'atlasr22'
+    yaml_tag = "!FuncADL_ATLASr22"
+    default_codegen = "atlasr22"
 
 
 class FuncADLQuery_ATLASxAOD(FuncADLQuery):
-    yaml_tag = '!FuncADL_ATLASxAOD'
-    default_codegen = 'atlasxaod'
+    yaml_tag = "!FuncADL_ATLASxAOD"
+    default_codegen = "atlasxaod"
 
 
 class FuncADLQuery_CMS(FuncADLQuery):
-    yaml_tag = '!FuncADL_CMS'
-    default_codegen = 'cms'
+    yaml_tag = "!FuncADL_CMS"
+    default_codegen = "cms"

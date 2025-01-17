@@ -30,12 +30,16 @@ import hashlib
 from typing import Union, Optional, List
 from pydantic import (
     Field,
-    model_validator, field_validator,
+    model_validator,
+    field_validator,
 )
 import logging
 
-from servicex.dataset_identifier import (DataSetIdentifier, RucioDatasetIdentifier,
-                                         FileListDataset)
+from servicex.dataset_identifier import (
+    DataSetIdentifier,
+    RucioDatasetIdentifier,
+    FileListDataset,
+)
 from servicex.query_core import QueryStringGenerator
 from servicex.models import ResultFormat, DocStringBaseModel
 
@@ -46,7 +50,8 @@ class Sample(DocStringBaseModel):
     """
     Represents a single transform request within a larger submission.
     """
-    model_config = {'use_attribute_docstrings': True}
+
+    model_config = {"use_attribute_docstrings": True}
 
     Name: str
     """
@@ -120,7 +125,9 @@ class Sample(DocStringBaseModel):
         :param values:
         :return:
         """
-        count = sum(["RucioDID" in values, "XRootDFiles" in values, "Dataset" in values])
+        count = sum(
+            ["RucioDID" in values, "XRootDFiles" in values, "Dataset" in values]
+        )
         if count > 1:
             raise ValueError("Only specify one of Dataset, XRootDFiles, or RucioDID.")
         if count == 0:
@@ -155,9 +162,10 @@ class Sample(DocStringBaseModel):
                 [
                     self.dataset_identifier.hash,
                     self.NFiles,
-                    self.Query if (not self.Query or isinstance(self.Query, str))
+                    self.Query
+                    if (not self.Query or isinstance(self.Query, str))
                     else self.Query.generate_selection_string(),
-                    self.Codegen
+                    self.Codegen,
                 ]
             ).encode("utf-8")
         )
@@ -168,12 +176,14 @@ class General(DocStringBaseModel):
     """
     Represents a group of samples to be transformed together.
     """
-    model_config = {'use_attribute_docstrings': True}
+
+    model_config = {"use_attribute_docstrings": True}
 
     class OutputFormatEnum(str, Enum):
         """
         Specifies the output format for the transform request.
         """
+
         parquet = "parquet"
         """
         Save the output as
@@ -187,9 +197,9 @@ class General(DocStringBaseModel):
         """
 
         def to_ResultFormat(self) -> ResultFormat:
-            """ This method is used to convert the OutputFormatEnum enum to the ResultFormat enum,
-                which is what is actually used for the TransformRequest. This allows us to use
-                different string values in the two enum classes to maintain backend compatibility
+            """This method is used to convert the OutputFormatEnum enum to the ResultFormat enum,
+            which is what is actually used for the TransformRequest. This allows us to use
+            different string values in the two enum classes to maintain backend compatibility
             """
             if self == self.parquet:
                 return ResultFormat.parquet
@@ -230,7 +240,7 @@ class General(DocStringBaseModel):
     Directory to output a yaml file describing the output files.
     """
 
-    OutFilesetName: str = 'servicex_fileset'
+    OutFilesetName: str = "servicex_fileset"
     """
     Name of the yaml file that will be created in the output directory.
     """
@@ -250,7 +260,8 @@ class ServiceXSpec(DocStringBaseModel):
     """
     ServiceX Submission Specification - pass this into the ServiceX `deliver` function
     """
-    model_config = {'use_attribute_docstrings': True}
+
+    model_config = {"use_attribute_docstrings": True}
 
     General: _General = General()
     """

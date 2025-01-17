@@ -1,6 +1,6 @@
 # Error Handling
 
-Sometimes things go wrong in a ServiceX query, due to a badly-formed query, unavailable input files, server error, or something else. Issues can arise either before submission, during submission, after submission, or when retrieving results. 
+Sometimes things go wrong in a ServiceX query, due to a badly-formed query, unavailable input files, server error, or something else. Issues can arise either before submission, during submission, after submission, or when retrieving results.
 
 ## Errors before submission
 * If the request does not parse properly, a `ValidationError` will be raised and nothing will be submitted.

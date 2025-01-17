@@ -32,18 +32,18 @@ import pytest
 from servicex.configuration import Configuration
 
 
-@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
 def test_config_read(tempdir):
     # Windows style user name
-    os.environ['UserName'] = "p_higgs"
+    os.environ["UserName"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
 
     # Reset environment
-    del os.environ['UserName']
+    del os.environ["UserName"]
 
     # Linux style user name
-    os.environ['USER'] = "p_higgs2"
+    os.environ["USER"] = "p_higgs2"
     c = Configuration.read(config_path="tests/example_config.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs2"
 
@@ -52,17 +52,17 @@ def test_config_read(tempdir):
         Configuration.read(config_path="invalid.yaml")
 
 
-@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
 def test_default_cache_path(tempdir):
 
     # Windows style user name
-    os.environ['UserName'] = "p_higgs"
+    os.environ["UserName"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
-    del os.environ['UserName']
+    del os.environ["UserName"]
 
     # Linux style user name
-    os.environ['USER'] = "p_higgs"
+    os.environ["USER"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
-    del os.environ['USER']
+    del os.environ["USER"]

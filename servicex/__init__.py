@@ -43,5 +43,5 @@ __all__ = [
     "ServiceXSpec",
     "deliver",
     "dataset",
-    "query"
+    "query",
 ]

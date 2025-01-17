@@ -46,24 +46,26 @@ def test_requires_tree():
 
 def test_a_query():
     query = FuncADLQuery_Uproot()
-    query = query.FromTree("nominal") \
-                 .Select(lambda e: {"lep_pt": e["lep_pt"]})
+    query = query.FromTree("nominal").Select(lambda e: {"lep_pt": e["lep_pt"]})
 
-    assert (query.generate_selection_string()
-            == "(call Select (call EventDataset 'bogus.root' 'nominal') "
-               "(lambda (list e) (dict (list 'lep_pt') "
-               "(list (subscript e 'lep_pt')))))"
-            )
+    assert (
+        query.generate_selection_string()
+        == "(call Select (call EventDataset 'bogus.root' 'nominal') "
+        "(lambda (list e) (dict (list 'lep_pt') "
+        "(list (subscript e 'lep_pt')))))"
+    )
 
 
 def test_set_query():
-    qastle = "(call Select (call EventDataset 'bogus.root' 'nominal') " \
-             "(lambda (list e) (dict (list 'lep_pt') " \
-             "(list (subscript e 'lep_pt')))))"
+    qastle = (
+        "(call Select (call EventDataset 'bogus.root' 'nominal') "
+        "(lambda (list e) (dict (list 'lep_pt') "
+        "(list (subscript e 'lep_pt')))))"
+    )
     query = FuncADLQuery_Uproot()
     query.set_provided_qastle(qastle)
 
-    assert (query.generate_selection_string() == qastle)
+    assert query.generate_selection_string() == qastle
 
 
 def test_type():
@@ -75,9 +77,7 @@ def test_type():
         def fork_it_over(self) -> int:
             ...
 
-    datasource = FuncADLQuery[my_type_info](
-        item_type=my_type_info
-    )
+    datasource = FuncADLQuery[my_type_info](item_type=my_type_info)
 
     assert datasource.item_type == my_type_info
 

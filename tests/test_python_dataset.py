@@ -60,7 +60,9 @@ def test_function_as_string():
             print("Greetings from your query")
             return []
     """
-    selection = datasource.with_uproot_function(string_function).generate_selection_string()
+    selection = datasource.with_uproot_function(
+        string_function
+    ).generate_selection_string()
     print(selection)
     print("==============")
     print(b64decode(selection))

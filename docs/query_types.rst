@@ -117,7 +117,7 @@ code, or uproot python code.
 An example that fetches the :math:`p_T, \eta` and EM fraction of jets from an ATLAS PHYSLITE file is as follows:
 
 .. code-block:: python
-  
+
   from func_adl_servicex_xaodr22 import FuncADLQueryPHYSLITE, cpp_float
 
   query = FuncADLQueryPHYSLITE()

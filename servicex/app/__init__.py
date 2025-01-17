@@ -26,8 +26,10 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+
 def is_terminal_output():
     import sys
+
     return sys.stdout.isatty()
 
 
@@ -39,8 +41,10 @@ def pipeable_table(title: str):
     from rich.table import Table
     import rich.box
 
-    table = Table(title=title if is_terminal_output() else None,
-                  show_header=is_terminal_output(),
-                  box=rich.box.HEAVY_HEAD if is_terminal_output() else None)
+    table = Table(
+        title=title if is_terminal_output() else None,
+        show_header=is_terminal_output(),
+        box=rich.box.HEAVY_HEAD if is_terminal_output() else None,
+    )
 
     return table

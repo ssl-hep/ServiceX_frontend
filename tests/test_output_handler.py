@@ -9,7 +9,7 @@ def test_output_directory(tmp_path):
         "General": {
             "Codegen": "python",
             "Delivery": "LocalCache",
-            "OutputDirectory": str(tmp_path)
+            "OutputDirectory": str(tmp_path),
         },
         "Sample": [
             {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Query": "a"},

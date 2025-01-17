@@ -7,24 +7,24 @@ as a typed Python object.
 
 Examples For Each Query Type
 -----------------------------
-Examples for each query type (``Uproot-Raw``, ``Func_ADL Uproot``, ``Python Function``) 
+Examples for each query type (``Uproot-Raw``, ``Func_ADL Uproot``, ``Python Function``)
 and three different representations (``Python Dictionary``, ``Python Typed Object``, and ``YAML``).
-Note that all examples extract the same branch of the same tree (``ROOT TTree``) from 
+Note that all examples extract the same branch of the same tree (``ROOT TTree``) from
 the same :ref:`dataset <label_dataset>`.
 
 
 Uproot-Raw Query Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-This example uses the raw uproot query type to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
+This example uses the raw uproot query type to extract the ``AnalysisElectronsAuxDyn.pt`` branch
 from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset.
 
 .. tabs::
-    
+
     .. tab:: *Python Dict*
 
         .. literalinclude:: ../examples/UprootRaw_Dict.py
             :language: python
-    
+
     .. tab:: *Python Typed Object*
 
         .. literalinclude:: ../examples/UprootRaw_Typed.py
@@ -38,8 +38,8 @@ from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset.
 
 Func_ADL Uproot Query Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This example uses an Func_ADL to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
-from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset. 
+This example uses an Func_ADL to extract the ``AnalysisElectronsAuxDyn.pt`` branch
+from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset.
 
 .. tabs::
 
@@ -89,8 +89,8 @@ For this second example, make sure the extra package ``func_adl_servicex_xaodr22
 
 Python Function Query Example
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This example uses an uproot python function to extract the ``AnalysisElectronsAuxDyn.pt`` branch 
-from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset. 
+This example uses an uproot python function to extract the ``AnalysisElectronsAuxDyn.pt`` branch
+from the ``CollectionTree`` tree in ATLAS PHYSLITE OpenData Dataset.
 Note that you can specify a python function even in a yaml file.
 
 .. tabs::
@@ -114,8 +114,8 @@ Note that you can specify a python function even in a yaml file.
 The ServiceX Deliver Function
 ------------------------------
 The ``deliver`` function is used to submit a request to ServiceX. It takes a request in one of the
-three formats and returns a python dictionary with the name of the sample as a key 
-and a list of URLs or local file paths as a value. 
+three formats and returns a python dictionary with the name of the sample as a key
+and a list of URLs or local file paths as a value.
 
 
 How to Use YAML Specification
@@ -132,9 +132,9 @@ You can use the following code:
     )
 
 .. _label_dataset:
-    
+
 The Dataset in Examples
 -----------------------
 The dataset in the examples is publically accessible ATLAS Open Data
-(`ATLAS DAOD PHYSLITE format Run 2 2016 proton-proton collision data 
+(`ATLAS DAOD PHYSLITE format Run 2 2016 proton-proton collision data
 <https://opendata.cern.ch/record/80001>`_).

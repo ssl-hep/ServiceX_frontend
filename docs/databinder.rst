@@ -22,5 +22,3 @@ This page documents the classes used to describe a DataBinder request.
    :model-show-validator-summary: False
    :model-show-field-summary: False
    :undoc-members:
-
-

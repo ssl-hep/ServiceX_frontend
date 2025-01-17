@@ -7,7 +7,7 @@ Overview
 --------
 
 The ``servicex`` frontend code uses standard python packaging and open-source development methodologies. The code is hosted on GitHub,
-and we use the GitHub issue tracker to manage bugs and feature requests. We also use GitHub pull requests for code review and merging. 
+and we use the GitHub issue tracker to manage bugs and feature requests. We also use GitHub pull requests for code review and merging.
 
 - `ServiceX_frontend <https://github.com/ssl-hep/ServiceX_frontend>`_ - The ServiceX Python library, which enables users to send requests to ServiceX. Currently, this is the only ServiceX frontend client.
 
@@ -37,7 +37,7 @@ Development Workflow
 1. Set up a local development environment:
     - Fork the ``ServiceX_frontend``
     - Clone the (forked) repository to your local machine:
-    
+
     - Set up a new environment via ``conda`` or ``virtualenv``.
     - Install dependencies, including test dependencies:
 
@@ -52,15 +52,15 @@ Development Workflow
 
         git checkout master
         git pull upstream master
-        
+
     - Create a branch for the feature you want to work on:
 
     .. code-block:: bash
 
         git checkout -b fix-issue-99
-        
+
     - Commit locally as you progress with ``git add`` and ``git commit``.
-    
+
 3. Test your changes:
     - Run the full test suite with ``python -m pytest``, or target specific test files with ``python -m pytest tests/path/to/file.py``.
     - Please write new unit tests to cover any changes you make.
