@@ -550,37 +550,39 @@ class Query:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
             if self.minio:
-                files = await self.minio.list_bucket()
-                for file in files:
-                    if file.filename not in files_seen:
-                        if signed_urls_only:
-                            download_tasks.append(
-                                loop.create_task(
-                                    get_signed_url(
-                                        self.minio,
-                                        file.filename,
-                                        progress,
-                                        download_progress,
+                # if self.minio exists, self.current_status will too
+                if self.current_status.files_completed > len(files_seen):
+                    files = await self.minio.list_bucket()
+                    for file in files:
+                        if file.filename not in files_seen:
+                            if signed_urls_only:
+                                download_tasks.append(
+                                    loop.create_task(
+                                        get_signed_url(
+                                            self.minio,
+                                            file.filename,
+                                            progress,
+                                            download_progress,
+                                        )
                                     )
                                 )
-                            )
-                        else:
-                            download_tasks.append(
-                                loop.create_task(
-                                    download_file(
-                                        self.minio,
-                                        file.filename,
-                                        progress,
-                                        download_progress,
-                                        shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
+                            else:
+                                download_tasks.append(
+                                    loop.create_task(
+                                        download_file(
+                                            self.minio,
+                                            file.filename,
+                                            progress,
+                                            download_progress,
+                                            shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
+                                        )
                                     )
-                                )
-                            )  # NOQA 501
-                        files_seen.add(file.filename)
+                                )  # NOQA 501
+                            files_seen.add(file.filename)
 
-            # Once the transform is complete we can stop polling since all the files
-            # are guaranteed to be in the bucket. Also, if we are just downloading or
-            # signing urls for a previous transform then we know it is complete as well
+            # Once the transform is complete and all files are seen we can stop polling.
+            # Also, if we are just downloading or signing urls for a previous transform
+            # then we know it is complete as well
             if cached_record or (
                 self.current_status
                 and (
