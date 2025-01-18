@@ -2,7 +2,7 @@
 
 # [Choice] Python version
 ARG VARIANT="3.13"
-FROM mcr.microsoft.com/vscode/devcontainers/python:0-${VARIANT}
+FROM mcr.microsoft.com/vscode/devcontainers/python:1-${VARIANT}
 
 # [Option] Install Node.js
 ARG INSTALL_NODE="false"
