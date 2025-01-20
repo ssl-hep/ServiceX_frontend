@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
 
       - name: Save secret
-        run: 'echo "$SERVICEX_YAML" > servicex.yaml'
+        run: 'echo "$SERVICEX_YAML" > servicex.yaml && grep name servicex.yaml'
         shell: bash
         env:
           SERVICEX_YAML: ${{ secrets.SERVICEX_YAML }}
