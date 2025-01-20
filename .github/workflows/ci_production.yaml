@@ -25,7 +25,7 @@ jobs:
           SERVICEX_YAML: ${{ secrets.SERVICEX_YAML }}
 
       - name: ServiceX target info
-        run: grep name servicex.yaml
+        run: grep name servicex.yaml | xxd -ps
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
