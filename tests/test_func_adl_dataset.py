@@ -74,8 +74,7 @@ def test_type():
     class my_type_info:
         "typespec for possible event type"
 
-        def fork_it_over(self) -> int:
-            ...
+        def fork_it_over(self) -> int: ...
 
     datasource = FuncADLQuery[my_type_info](item_type=my_type_info)
 

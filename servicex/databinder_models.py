@@ -162,9 +162,11 @@ class Sample(DocStringBaseModel):
                 [
                     self.dataset_identifier.hash,
                     self.NFiles,
-                    self.Query
-                    if (not self.Query or isinstance(self.Query, str))
-                    else self.Query.generate_selection_string(),
+                    (
+                        self.Query
+                        if (not self.Query or isinstance(self.Query, str))
+                        else self.Query.generate_selection_string()
+                    ),
                     self.Codegen,
                 ]
             ).encode("utf-8")
