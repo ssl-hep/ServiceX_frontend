@@ -147,7 +147,12 @@ class ExpandableProgress:
             task_id = self.progress.add_task(
                 param, start=start, total=total, visible=False
             )
-            new_task = ProgressCounts(param, task_id, start=start, total=total)
+            new_task = ProgressCounts(
+                "Transform" if param.endswith("Transform") else param,
+                task_id,
+                start=start,
+                total=total,
+            )
             self.progress_counts[task_id] = new_task
             return task_id
         if self.display_progress and not self.overall_progress:
@@ -156,13 +161,15 @@ class ExpandableProgress:
     def update(self, task_id, task_type, total=None, completed=None, **fields):
 
         if self.display_progress and self.overall_progress:
+            if task_type.endswith("Transform"):
+                task_type = "Transform"
             # Calculate and update
             overall_completed = 0
             overall_total = 0
             if completed:
                 self.progress_counts[task_id].completed = completed
 
-            elif total:
+            if total:
                 self.progress_counts[task_id].total = total
 
             for task in self.progress_counts:
@@ -199,7 +206,7 @@ class ExpandableProgress:
 
     def start_task(self, task_id, task_type):
         if self.display_progress and self.overall_progress:
-            if task_type == "Transform":
+            if task_type.endswith("Transform"):
                 self.progress.start_task(task_id=self.overall_progress_transform_task)
             else:
                 self.progress.start_task(task_id=self.overall_progress_download_task)
@@ -208,7 +215,11 @@ class ExpandableProgress:
 
     def advance(self, task_id, task_type):
         if self.display_progress and self.overall_progress:
-            if task_type == "Transform":
+            if self.progress_counts[task_id].completed is not None:
+                self.progress_counts[task_id].completed += 1
+            else:
+                self.progress_counts[task_id].completed = 1
+            if task_type.endswith("Transform"):
                 self.progress.advance(task_id=self.overall_progress_transform_task)
             else:
                 self.progress.advance(task_id=self.overall_progress_download_task)
