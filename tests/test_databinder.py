@@ -898,6 +898,12 @@ def test_deliver_progress_options(transformed_result, codegen_list):
             config_path="tests/example_config.yaml",
             progress_bar=ProgressBarFormat.none,
         )
+        with pytest.raises(ValueError):
+            deliver(
+                spec,
+                config_path="tests/example_config.yaml",
+                progress_bar="garbage",
+            )
 
 
 def test_entrypoint_import():

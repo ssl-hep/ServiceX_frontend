@@ -176,3 +176,8 @@ def test_progress_advance():
         progress.update(d_id, "Download", total, completed)
         progress.advance(d_id, "Download")
         assert progress.progress.tasks[1].completed - 1 == completed
+
+    with ExpandableProgress(overall_progress=True) as progress:
+        d_id = progress.add_task("Download", True, 100)
+        progress.advance(d_id, "Download")
+        assert progress.progress.tasks[1].completed == 1
