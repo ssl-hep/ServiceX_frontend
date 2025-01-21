@@ -881,12 +881,15 @@ def test_deliver_progress_options(transformed_result, codegen_list):
             ]
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         deliver(
             spec,
