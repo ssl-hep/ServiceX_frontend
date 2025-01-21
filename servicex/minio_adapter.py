@@ -98,6 +98,10 @@ class MinioAdapter:
             )
         )
 
+        # Don't download the file if it already exists
+        if path.exists():
+            return path.resolve()
+
         _ = await self.minio.fget_object(
             bucket_name=self.bucket, object_name=object_name, file_path=path.as_posix()
         )
