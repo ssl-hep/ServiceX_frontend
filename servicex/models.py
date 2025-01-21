@@ -136,6 +136,7 @@ class TransformStatus(DocStringBaseModel):
     r"""
     Status object returned by servicex
     """
+
     model_config = {"use_attribute_docstrings": True}
 
     request_id: str
@@ -185,6 +186,7 @@ class ResultFile(DocStringBaseModel):
     r"""
     Record reporting the properties of a transformed file result
     """
+
     model_config = {"use_attribute_docstrings": True}
 
     filename: str
@@ -197,6 +199,7 @@ class TransformedResults(DocStringBaseModel):
     Returned for a submission. Gives you everything you need to know about a completed
     transform.
     """
+
     model_config = {"use_attribute_docstrings": True}
 
     hash: str

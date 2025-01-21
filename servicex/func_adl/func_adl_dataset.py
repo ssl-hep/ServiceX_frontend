@@ -51,6 +51,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
     r"""
     ServiceX Dataset class that uses func_adl query syntax.
     """
+
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
     default_codegen = None
