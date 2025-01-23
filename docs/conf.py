@@ -29,6 +29,7 @@ extensions = [
     "sphinxcontrib.autodoc_pydantic",
     "sphinx_tabs.tabs",
     "sphinx_copybutton",
+    "enum_tools.autoenum",
 ]
 
 templates_path = ["_templates"]

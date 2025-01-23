@@ -1,4 +1,4 @@
-servicex.func\_adl package
+``servicex.func_adl`` package
 ==========================
 
 Submodules
