@@ -897,6 +897,49 @@ def test_generic_query(codegen_list):
             )
 
 
+def test_deliver_progress_options(transformed_result, codegen_list):
+    from servicex import deliver, ProgressBarFormat
+    from servicex.query import UprootRaw  # type: ignore
+
+    spec = ServiceXSpec.model_validate(
+        {
+            "Sample": [
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Query": UprootRaw([{"treename": "nominal"}]),
+                }
+            ]
+        }
+    )
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
+    ):
+        deliver(
+            spec,
+            config_path="tests/example_config.yaml",
+            progress_bar=ProgressBarFormat.compact,
+        )
+        deliver(
+            spec,
+            config_path="tests/example_config.yaml",
+            progress_bar=ProgressBarFormat.none,
+        )
+        with pytest.raises(ValueError):
+            deliver(
+                spec,
+                config_path="tests/example_config.yaml",
+                progress_bar="garbage",
+            )
+
+
 def test_entrypoint_import():
     """This will check that we have at least the Python transformer defined in servicex.query"""
     from servicex.query import PythonFunction  # type: ignore # noqa: F401

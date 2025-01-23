@@ -65,13 +65,16 @@ class DatasetGroup:
         display_progress: bool = True,
         provided_progress: Optional[Progress] = None,
         return_exceptions: bool = False,
+        overall_progress: bool = False,
     ) -> List[Union[TransformedResults, BaseException]]:
         # preflight auth
         if self.datasets:
             await self.datasets[0].servicex._get_authorization()
-        with ExpandableProgress(display_progress, provided_progress) as progress:
+        with ExpandableProgress(
+            display_progress, provided_progress, overall_progress=overall_progress
+        ) as progress:
             self.tasks = [
-                d.as_signed_urls_async(provided_progress=progress)
+                d.as_signed_urls_async(provided_progress=progress, dataset_group=True)
                 for d in self.datasets
             ]
             return await asyncio.gather(
@@ -85,11 +88,14 @@ class DatasetGroup:
         display_progress: bool = True,
         provided_progress: Optional[Progress] = None,
         return_exceptions: bool = False,
+        overall_progress: bool = False,
     ) -> List[Union[TransformedResults, BaseException]]:
         # preflight auth
         if self.datasets:
             await self.datasets[0].servicex._get_authorization()
-        with ExpandableProgress(display_progress, provided_progress) as progress:
+        with ExpandableProgress(
+            display_progress, provided_progress, overall_progress=overall_progress
+        ) as progress:
             self.tasks = [
                 d.as_files_async(provided_progress=progress) for d in self.datasets
             ]

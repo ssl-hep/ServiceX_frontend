@@ -154,7 +154,7 @@ def test_get_renderables_with_failure():
 
 def test_progress_advance():
     with ExpandableProgress() as progress:
-        t_id = progress.add_task("Transformation", True, 100)
+        t_id = progress.add_task("Transform", True, 100)
         d_id = progress.add_task("Download", True, 100)
         completed = 12
         total = 100
@@ -173,6 +173,11 @@ def test_progress_advance():
         d_id = progress.add_task("Download", True, 100)
         completed = 12
         total = 100
-        progress.update(d_id, "Transform", total, completed)
-        progress.advance(d_id, "Transform")
-        assert progress.progress.tasks[0].completed - 1 == completed
+        progress.update(d_id, "Download", total, completed)
+        progress.advance(d_id, "Download")
+        assert progress.progress.tasks[1].completed - 1 == completed
+
+    with ExpandableProgress(overall_progress=True) as progress:
+        d_id = progress.add_task("Download", True, 100)
+        progress.advance(d_id, "Download")
+        assert progress.progress.tasks[1].completed == 1

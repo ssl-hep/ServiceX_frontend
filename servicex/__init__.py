@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from servicex.databinder_models import Sample, General, ServiceXSpec
-from servicex.servicex_client import deliver
+from servicex.servicex_client import deliver, ProgressBarFormat
 from .models import ResultDestination
 import servicex.dataset as dataset
 import servicex.query as query
@@ -44,4 +44,5 @@ __all__ = [
     "deliver",
     "dataset",
     "query",
+    "ProgressBarFormat",
 ]

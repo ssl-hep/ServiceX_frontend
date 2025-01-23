@@ -45,10 +45,17 @@ from servicex.dataset_group import DatasetGroup
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
 from collections.abc import Sequence
+from enum import Enum
 import traceback
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
+
+
+class ProgressBarFormat(str, Enum):
+    default = "default"
+    compact = "compact"
+    none = "none"
 
 
 class ReturnValueException(Exception):
@@ -213,6 +220,7 @@ def deliver(
     return_exceptions: bool = True,
     fail_if_incomplete: bool = True,
     ignore_local_cache: bool = False,
+    progress_bar: ProgressBarFormat = ProgressBarFormat.default,
 ):
     config = _load_ServiceXSpec(config)
 
@@ -224,12 +232,25 @@ def deliver(
 
     group = DatasetGroup(datasets)
 
+    if progress_bar == ProgressBarFormat.default:
+        progress_options = {}
+    elif progress_bar == ProgressBarFormat.compact:
+        progress_options = {"overall_progress": True}
+    elif progress_bar == ProgressBarFormat.none:
+        progress_options = {"display_progress": False}
+    else:
+        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+
     if config.General.Delivery == General.DeliveryEnum.URLs:
-        results = group.as_signed_urls(return_exceptions=return_exceptions)
+        results = group.as_signed_urls(
+            return_exceptions=return_exceptions, **progress_options
+        )
         return _output_handler(config, datasets, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files(return_exceptions=return_exceptions)
+        results = group.as_files(
+            return_exceptions=return_exceptions, **progress_options
+        )
         return _output_handler(config, datasets, results)
 
 
