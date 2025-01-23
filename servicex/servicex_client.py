@@ -53,9 +53,10 @@ logger = logging.getLogger(__name__)
 
 
 class ProgressBarFormat(str, Enum):
-    default = "default"
+    expanded = "expanded"
     compact = "compact"
     none = "none"
+    default = "expanded"
 
 
 class ReturnValueException(Exception):
@@ -232,7 +233,7 @@ def deliver(
 
     group = DatasetGroup(datasets)
 
-    if progress_bar == ProgressBarFormat.default:
+    if progress_bar == ProgressBarFormat.expanded:
         progress_options = {}
     elif progress_bar == ProgressBarFormat.compact:
         progress_options = {"overall_progress": True}
