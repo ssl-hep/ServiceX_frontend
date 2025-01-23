@@ -34,14 +34,11 @@ from typing import (
     Any,
     Type,
     TypeVar,
-    cast,
-    List,
 )
 from qastle import python_ast_to_text_ast
 
 from func_adl import EventDataset, find_EventDataset
 from servicex.query_core import QueryStringGenerator
-from servicex.func_adl.util import has_tuple
 from abc import ABC
 
 T = TypeVar("T")
@@ -51,6 +48,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
     r"""
     ServiceX Dataset class that uses func_adl query syntax.
     """
+
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
     default_codegen = None
@@ -107,95 +105,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         Returns:
             str: Qastle that should be sent to servicex
         """
-        top_function = cast(ast.Name, a.func).id
-        source = a
-        if top_function in self._execute_locally:
-            # Request the default type here
-            default_format = self._ds.first_supported_datatype(
-                ["parquet", "root-ttree"]
-            )
-            assert default_format is not None, "Unsupported ServiceX returned format"
-            method_to_call = self._format_map[default_format]
-
-            stream = a.args[0]
-            col_names = a.args[1]
-            if method_to_call == "get_data_rootfiles_async":
-                # If we have no column names, then we must be using a dictionary to
-                # set them - so just pass that
-                # directly.
-                assert isinstance(
-                    col_names, (ast.List, ast.Constant, ast.Str)
-                ), f"Programming error - type name not known {type(col_names).__name__}"
-                if isinstance(col_names, ast.List) and len(col_names.elts) == 0:
-                    source = stream
-                else:
-                    source = ast.Call(
-                        func=ast.Name(id="ResultTTree", ctx=ast.Load()),
-                        args=[
-                            stream,
-                            col_names,
-                            ast.Str("treeme"),
-                            ast.Str("junk.root"),
-                        ],
-                    )
-            elif method_to_call == "get_data_parquet_async":
-                source = stream
-                # See #32 for why this is commented out
-                # source = ast.Call(
-                #     func=ast.Name(id='ResultParquet', ctx=ast.Load()),
-                #     args=[stream, col_names, ast.Str('junk.parquet')])
-            else:  # pragma: no cover
-                # This indicates a programming error
-                assert False, f"Do not know how to call {method_to_call}"
-
-        elif top_function == "ResultParquet":
-            # Strip off the Parquet function, do a select if there are arguments for column names
-            source = a.args[0]
-            col_names = cast(ast.List, a.args[1]).elts
-
-            def encode_as_tuple_reference(c_names: List) -> List[ast.AST]:
-                # Encode each column ref as a index into the tuple we are being passed
-                return [
-                    ast.Subscript(
-                        value=ast.Name(id="x", ctx=ast.Load()),
-                        slice=ast.Constant(idx),
-                        ctx=ast.Load(),
-                    )
-                    for idx, _ in enumerate(c_names)
-                ]
-
-            def encode_as_single_reference():
-                # Single reference for a bare (non-col) variable
-                return [
-                    ast.Name(id="x", ctx=ast.Load()),
-                ]
-
-            if len(col_names) > 0:
-                # Add a select on top to set the column names
-                if len(col_names) == 1:
-                    # Determine if they built a tuple or not
-                    values = (
-                        encode_as_tuple_reference(col_names)
-                        if has_tuple(source)
-                        else encode_as_single_reference()
-                    )
-                elif len(col_names) > 1:
-                    values = encode_as_tuple_reference(col_names)
-                else:
-                    assert False, "make sure that type checkers can figure this out"
-
-                d = ast.Dict(keys=col_names, values=values)
-                tup_func = ast.Lambda(
-                    args=ast.arguments(args=[ast.arg(arg="x")]), body=d
-                )
-                c = ast.Call(
-                    func=ast.Name(id="Select", ctx=ast.Load()),
-                    args=[source, tup_func],
-                    keywords=[],
-                )
-                source = c
-
-        return python_ast_to_text_ast(source)
+        return python_ast_to_text_ast(a)
 
     def as_qastle(self):
         r"""

@@ -302,12 +302,15 @@ def test_submit_mapping(transformed_result, codegen_list):
             }
         ],
     }
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
         assert list(results["sampleA"]) == ["1.parquet"]
@@ -327,12 +330,15 @@ def test_submit_mapping_signed_urls(transformed_result_signed_url, codegen_list)
             }
         ],
     }
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_signed_urls",
-        return_value=[transformed_result_signed_url],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_signed_urls",
+            return_value=[transformed_result_signed_url],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
         assert list(results["sampleA"]) == [
@@ -354,12 +360,15 @@ def test_submit_mapping_failure(transformed_result, codegen_list):
             }
         ]
     }
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[ServiceXException("dummy")],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[ServiceXException("dummy")],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
         assert len(results) == 1
@@ -383,12 +392,15 @@ def test_submit_mapping_failure_signed_urls(codegen_list):
             }
         ],
     }
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_signed_urls",
-        return_value=[ServiceXException("dummy")],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_signed_urls",
+            return_value=[ServiceXException("dummy")],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         results = deliver(
             spec, config_path="tests/example_config.yaml", return_exceptions=False
@@ -591,9 +603,10 @@ def test_yaml_include(tmp_path):
     from servicex.servicex_client import _load_ServiceXSpec
 
     # Create two files, one has definitions for the other and is included by it
-    with open(tmp_path / "definitions.yaml", "w") as f1, open(
-        path2 := (tmp_path / "parent.yaml"), "w"
-    ) as f2:
+    with (
+        open(tmp_path / "definitions.yaml", "w") as f1,
+        open(path2 := (tmp_path / "parent.yaml"), "w") as f2,
+    ):
         f1.write(
             """
 - &DEF_query !PythonFunction |
@@ -638,12 +651,15 @@ def test_funcadl_query(transformed_result, codegen_list):
             ]
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
@@ -667,12 +683,15 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
             ],
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         with pytest.raises(NameError) as excinfo:
             deliver(spec, config_path="tests/example_config.yaml")
@@ -694,12 +713,15 @@ def test_query_with_codegen_override(transformed_result, codegen_list):
             ]
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         with pytest.raises(NameError) as excinfo:
             deliver(spec, config_path="tests/example_config.yaml")
@@ -747,12 +769,15 @@ def test_python_query(transformed_result, codegen_list):
             ]
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
@@ -772,12 +797,15 @@ def test_uproot_raw_query(transformed_result, codegen_list):
             ]
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
@@ -799,12 +827,15 @@ def test_uproot_raw_query_parquet(transformed_result, codegen_list):
         }
     )
     print(spec)
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ), patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 

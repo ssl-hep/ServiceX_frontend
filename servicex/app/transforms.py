@@ -200,6 +200,7 @@ class TimeFrame(str, Enum):
     r"""
     Time Frame levels: 'day', 'week' & 'month'
     """
+
     day = ("day",)
     week = ("week",)
     month = ("month",)
@@ -209,6 +210,7 @@ class LogLevel(str, Enum):
     r"""
     Level of the log messages: INFO & ERROR
     """
+
     info = ("INFO",)
     error = ("ERROR",)
 
