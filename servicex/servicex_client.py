@@ -53,10 +53,16 @@ logger = logging.getLogger(__name__)
 
 
 class ProgressBarFormat(str, Enum):
+    """Specify the way progress bars are displayed."""
+
     expanded = "expanded"
+    """Show progress bars for each `Sample`"""
     compact = "compact"
+    """Show one overall summary set of progress bars"""
     none = "none"
+    """Show no progress bars at all"""
     default = "expanded"
+    """Default (currently the same as "expanded")"""
 
 
 class ReturnValueException(Exception):
@@ -215,7 +221,7 @@ def _output_handler(
 
 
 def deliver(
-    config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
+    spec: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
     return_exceptions: bool = True,
@@ -223,7 +229,30 @@ def deliver(
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
 ):
-    config = _load_ServiceXSpec(config)
+    r"""
+    Execute a ServiceX query.
+
+    :param spec: The specification of the ServiceX query, either in a dictionary or a
+            :py:class:`~servicex.ServiceXSpec` object.
+    :param config_path: The filesystem path to search for the `servicex.yaml` or `.servicex` file.
+    :param servicex_name: The name of the ServiceX instance, as specified in the configuration
+            YAML file (None will give the default backend).
+    :param return_exceptions: If something goes wrong, bubble up the underlying exception for
+            debugging (as opposed to just having a generic error).
+    :param fail_if_incomplete: If :py:const:`True`: if not all input files are transformed, the
+            transformation will be marked as a failure and no outputs will be available. If
+            :py:const:`False`, a partial file list will be returned.
+    :param ignore_local_cache: If :py:const:`True`, ignore the local query cache and always run
+            the query on the remote ServiceX instance.
+    :param progress_bar: specify the kind of progress bar to show.
+            :py:const:`ProgressBarFormat.expanded` (the default) means every :py:class:`Sample`
+            will have its own progress bars; :py:const:`ProgressBarFormat.compact` gives one
+            summary progress bar for all transformations; :py:const:`ProgressBarFormat.none`
+            switches off progress bars completely.
+    :return: A dictionary mapping the name of each :py:class:`Sample` to a :py:class:`.GuardList`
+            with the file names or URLs for the outputs.
+    """
+    config = _load_ServiceXSpec(spec)
 
     if ignore_local_cache or config.General.IgnoreLocalCache:
         for sample in config.Sample:
@@ -271,7 +300,7 @@ class ServiceXClient:
         :param url: Direct URL of a serviceX deployment instead of using .servicex.
                     Can only work with hosts without auth, or the token is found
                     in a file pointed to by the environment variable BEARER_TOKEN_FILE
-        :param config_path: Optional path te the `.servicex` file. If not specified,
+        :param config_path: Optional path to the `.servicex` file. If not specified,
                     will search in local directory and up in enclosing directories
         """
         self.config = Configuration.read(config_path)

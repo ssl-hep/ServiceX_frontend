@@ -1,6 +1,16 @@
 servicex package
 ================
 
+
+Module contents
+---------------
+
+.. automodule:: servicex
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Subpackages
 -----------
 
@@ -8,7 +18,6 @@ Subpackages
    :maxdepth: 4
 
    servicex.app
-   servicex.databinder
    servicex.func_adl
 
 Submodules
@@ -114,14 +123,6 @@ servicex.types module
 ---------------------
 
 .. automodule:: servicex.types
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: servicex
    :members:
    :undoc-members:
    :show-inheritance:
