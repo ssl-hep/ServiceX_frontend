@@ -39,22 +39,26 @@ from servicex.servicex_client import ServiceXClient
 from rich.table import Table
 
 datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
+did_finder_opt = typer.Option(
+    None,
+    help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
+    show_default=False,
+)
+show_deleted_opt = typer.Option(
+    False,
+    help="Show deleted datasets",
+    show_default=True,
+)
+dataset_id_get_arg = typer.Argument(..., help="The ID of the dataset to get")
+dataset_id_delete_arg = typer.Argument(..., help="The ID of the dataset to delete")
 
 
 @datasets_app.command(no_args_is_help=False)
 def list(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    did_finder: Optional[str] = typer.Option(
-        None,
-        help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
-        show_default=False,
-    ),
-    show_deleted: Optional[bool] = typer.Option(
-        False,
-        help="Show deleted datasets",
-        show_default=True,
-    ),
+    did_finder: Optional[str] = did_finder_opt,
+    show_deleted: Optional[bool] = show_deleted_opt,
 ):
     """
     List the datasets. Use fancy formatting if printing to a terminal.
@@ -99,7 +103,7 @@ def list(
 def get(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    dataset_id: int = typer.Argument(..., help="The ID of the dataset to get"),
+    dataset_id: int = dataset_id_get_arg,
 ):
     """
     Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
@@ -143,7 +147,7 @@ def get(
 def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    dataset_id: int = typer.Argument(..., help="The ID of the dataset to delete"),
+    dataset_id: int = dataset_id_delete_arg,
 ):
     sx = ServiceXClient(backend=backend, config_path=config_path)
     result = asyncio.run(sx.delete_dataset(dataset_id))

@@ -35,6 +35,8 @@ from servicex.app import pipeable_table
 from servicex.servicex_client import ServiceXClient
 
 cache_app = typer.Typer(name="cache", no_args_is_help=True)
+force_opt = typer.Option(False, "-y", help="Force, don't ask for permission")
+transform_id_arg = typer.Argument(help="Transform ID")
 
 
 @cache_app.callback()
@@ -73,9 +75,7 @@ def list():
 
 
 @cache_app.command()
-def clear(
-    force: bool = typer.Option(False, "-y", help="Force, don't ask for permission")
-):
+def clear(force: bool = force_opt):
     """
     Clear the local query cache
     """
@@ -87,7 +87,7 @@ def clear(
 
 
 @cache_app.command(no_args_is_help=True)
-def delete(transform_id: str = typer.Argument(help="Transform ID")):
+def delete(transform_id: str = transform_id_arg):
     """
     Delete a cached query. Use -t to specify the transform ID
     """
