@@ -9,6 +9,7 @@
 # import os, sys
 
 # sys.path.insert(0, os.path.abspath(".."))
+import servicex
 
 # the following is to propagate down to the pydantic class docstring builder
 import os
@@ -18,7 +19,7 @@ os.environ["IN_SPHINX_BUILD"] = "1"
 project = "ServiceX"
 copyright = "2024 Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"  # NOQA 501
 author = "Ben Galewsky, Gordon Watts, KyongEon Choi, Ketan Mahajan, Peter Onyisi"
-release = "3.0.0"
+release = servicex.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

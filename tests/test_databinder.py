@@ -932,6 +932,11 @@ def test_deliver_progress_options(transformed_result, codegen_list):
             config_path="tests/example_config.yaml",
             progress_bar=ProgressBarFormat.none,
         )
+        deliver(
+            spec,
+            config_path="tests/example_config.yaml",
+            progress_bar=ProgressBarFormat.expanded,
+        )
         with pytest.raises(ValueError):
             deliver(
                 spec,
