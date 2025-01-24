@@ -45,6 +45,11 @@ app.add_typer(cache_app)
 app.add_typer(codegen_app)
 app.add_typer(datasets_app)
 
+spec_file_arg = typer.Argument(..., help="Spec file to submit to serviceX")
+ignore_cache_opt = typer.Option(
+    None, "--ignore-cache", help="Ignore local cache and always submit to ServiceX"
+)
+
 
 def show_version(show: bool):
     """Display the installed version and quit."""
@@ -53,12 +58,11 @@ def show_version(show: bool):
         raise typer.Exit()
 
 
+version_opt = typer.Option(None, "--version", callback=show_version, is_eager=True)
+
+
 @app.callback()
-def main_info(
-    version: Optional[bool] = typer.Option(
-        None, "--version", callback=show_version, is_eager=True
-    )
-):
+def main_info(version: Optional[bool] = version_opt):
     """
     ServiceX Client
     """
@@ -69,10 +73,8 @@ def main_info(
 def deliver(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    spec_file: str = typer.Argument(..., help="Spec file to submit to serviceX"),
-    ignore_cache: Optional[bool] = typer.Option(
-        None, "--ignore-cache", help="Ignore local cache and always submit to ServiceX"
-    ),
+    spec_file: str = spec_file_arg,
+    ignore_cache: Optional[bool] = ignore_cache_opt,
 ):
     """
     Deliver a file to the ServiceX cache.
