@@ -55,7 +55,12 @@ class DocStringBaseModel(BaseModel):
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any):
         super().__pydantic_init_subclass__(**kwargs)
-        cls.__doc__ = _generate_model_docstring(cls)
+        # There is currently no good way of knowing we are building within Sphinx.
+        # Use a hacky workaround but monitor https://github.com/sphinx-doc/sphinx/issues/9805
+        import os
+
+        if "IN_SPHINX_BUILD" not in os.environ:
+            cls.__doc__ = _generate_model_docstring(cls)
 
 
 class ResultDestination(str, Enum):
