@@ -30,9 +30,12 @@ from servicex.servicex_client import deliver, ProgressBarFormat
 from .models import ResultDestination
 import servicex.dataset as dataset
 import servicex.query as query
+import importlib.metadata
 
 OutputFormat = General.OutputFormatEnum
 Delivery = General.DeliveryEnum
+
+__version__ = importlib.metadata.version("servicex")
 
 __all__ = [
     "OutputFormat",
@@ -45,4 +48,5 @@ __all__ = [
     "dataset",
     "query",
     "ProgressBarFormat",
+    "__version__",
 ]
