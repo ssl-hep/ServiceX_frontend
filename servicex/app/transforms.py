@@ -44,6 +44,23 @@ from servicex.models import Status, ResultFile
 from servicex.servicex_client import ServiceXClient
 
 transforms_app = typer.Typer(name="transforms", no_args_is_help=True)
+complete_opt = typer.Option(
+    None, "--complete", help="Only show successfully completed transforms"
+)
+running_opt = typer.Option(
+    None, "--running", help="Only show transforms that are currently running"
+)
+transform_id_arg = typer.Argument(help="Transform ID")
+local_dir_opt = typer.Option(".", "-d", help="Local dir to download to")
+concurrency_opt = typer.Option(
+    20, "--concurrency", help="Number of concurrent downloads"
+)
+log_level_opt = typer.Option(
+    "ERROR", "-l", "--log-level", help="Level of Logs", case_sensitive=False
+)
+time_frame_opt = typer.Option(
+    "month", "-f", "--time-frame", help="Time Frame", case_sensitive=False
+)
 
 
 @transforms_app.callback()
@@ -58,12 +75,8 @@ def transforms():
 def list(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    complete: Optional[bool] = typer.Option(
-        None, "--complete", help="Only show successfully completed transforms"
-    ),
-    running: Optional[bool] = typer.Option(
-        None, "--running", help="Only show transforms that are currently running"
-    ),
+    complete: Optional[bool] = complete_opt,
+    running: Optional[bool] = running_opt,
 ):
     """
     List the transforms that have been run.
@@ -97,7 +110,7 @@ def list(
 def files(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    transform_id: str = typer.Argument(help="Transform ID"),
+    transform_id: str = transform_id_arg,
 ):
     """
     List the files that were produced by a transform.
@@ -123,11 +136,9 @@ def files(
 def download(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    transform_id: str = typer.Argument(help="Transform ID"),
-    local_dir: str = typer.Option(".", "-d", help="Local dir to download to"),
-    concurrency: int = typer.Option(
-        20, "--concurrency", help="Number of concurrent downloads"
-    ),
+    transform_id: str = transform_id_arg,
+    local_dir: str = local_dir_opt,
+    concurrency: int = concurrency_opt,
 ):
     """
     Download the files that were produced by a transform.
@@ -168,7 +179,7 @@ def download(
 def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+    transform_id_list: List[str] = transform_id_arg,
 ):
     """
     Delete a completed transform along with the result files.
@@ -185,7 +196,7 @@ def delete(
 def cancel(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    transform_id_list: List[str] = typer.Argument(help="Transform ID"),
+    transform_id_list: List[str] = transform_id_arg,
 ):
     """
     Cancel a running transform request.
@@ -260,13 +271,9 @@ def create_kibana_link_parameters(
 @transforms_app.command(no_args_is_help=True)
 def logs(
     backend: Optional[str] = backend_cli_option,
-    transform_id: str = typer.Argument(help="Transform ID"),
-    log_level: Optional[LogLevel] = typer.Option(
-        "ERROR", "-l", "--log-level", help="Level of Logs", case_sensitive=False
-    ),
-    time_frame: Optional[TimeFrame] = typer.Option(
-        "month", "-f", "--time-frame", help="Time Frame", case_sensitive=False
-    ),
+    transform_id: str = transform_id_arg,
+    log_level: Optional[LogLevel] = log_level_opt,
+    time_frame: Optional[TimeFrame] = time_frame_opt,
 ):
     """
     Open the URL to the Kibana dashboard of the logs of a tranformer

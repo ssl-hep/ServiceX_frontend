@@ -235,8 +235,8 @@ def test_delete_codegen_by_backend_nonexistent():
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
         cache.delete_codegen_by_backend("backend_1")
-        with pytest.raises(Exception):
-            assert False
+        with pytest.raises(AssertionError):
+            raise AssertionError()
         cache.close()
 
 
