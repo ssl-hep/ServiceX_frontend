@@ -10,6 +10,10 @@
 
 # sys.path.insert(0, os.path.abspath(".."))
 
+# the following is to propagate down to the pydantic class docstring builder
+import os
+
+os.environ["IN_SPHINX_BUILD"] = "1"
 
 project = "ServiceX"
 copyright = "2024 Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"  # NOQA 501
