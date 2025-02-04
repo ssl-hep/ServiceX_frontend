@@ -1,4 +1,4 @@
-servicex.app package
+``servicex.app`` package
 ====================
 
 Submodules
