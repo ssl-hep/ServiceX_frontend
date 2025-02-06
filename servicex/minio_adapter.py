@@ -29,6 +29,8 @@ import os.path
 from hashlib import sha1
 from pathlib import Path
 from typing import List
+
+import aiohttp
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 from miniopy_async import Minio
@@ -101,9 +103,15 @@ class MinioAdapter:
             )
         )
 
-        _ = await self.minio.fget_object(
-            bucket_name=self.bucket, object_name=object_name, file_path=path.as_posix()
-        )
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=10 * 60)
+        ) as session:
+            _ = await self.minio.fget_object(
+                bucket_name=self.bucket,
+                object_name=object_name,
+                file_path=path.as_posix(),
+                session=session,
+            )
         return path.resolve()
 
     @retry(
