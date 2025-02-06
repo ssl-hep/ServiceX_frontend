@@ -41,6 +41,14 @@ def minio_adapter() -> MinioAdapter:
     return MinioAdapter("localhost", False, "access_key", "secret_key", "bucket")
 
 
+@fixture
+def session(mocker):
+    mock_session = mocker.MagicMock()
+    mock_ctor = mocker.patch("servicex.minio_adapter.aiohttp.ClientSession")
+    mock_ctor.return_value.__enter__ = mock_session
+    return mock_ctor
+
+
 @pytest.mark.asyncio
 async def test_initialize_from_status(completed_status):
     minio = MinioAdapter.for_transform(completed_status)
@@ -65,39 +73,49 @@ async def test_list_bucket(minio_adapter):
 
 
 @pytest.mark.asyncio
-async def test_download_file(minio_adapter):
+async def test_download_file(minio_adapter, session):
     minio_adapter.minio.fget_object = AsyncMock(return_value="test.txt")
     result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
     assert str(result).endswith("test.txt")
+    assert session.call_args.kwargs["timeout"].total == 600
     minio_adapter.minio.fget_object.assert_called_with(
-        bucket_name="bucket", file_path="/tmp/foo/test.txt", object_name="test.txt"
+        bucket_name="bucket",
+        file_path="/tmp/foo/test.txt",
+        object_name="test.txt",
+        session=session.return_value.__aenter__.return_value,
     )
 
 
 @pytest.mark.asyncio
-async def test_download_bad_filename(minio_adapter):
+async def test_download_bad_filename(minio_adapter, session):
     minio_adapter.minio.fget_object = AsyncMock(return_value="t::est.txt")
     result = await minio_adapter.download_file("t::est.txt", local_dir="/tmp/foo")
     assert str(result).endswith("t__est.txt")
     minio_adapter.minio.fget_object.assert_called_with(
-        bucket_name="bucket", file_path="/tmp/foo/t__est.txt", object_name="t::est.txt"
+        bucket_name="bucket",
+        file_path="/tmp/foo/t__est.txt",
+        object_name="t::est.txt",
+        session=session.return_value.__aenter__.return_value,
     )
 
 
 @pytest.mark.asyncio
-async def test_download_short_filename_no_change(minio_adapter):
+async def test_download_short_filename_no_change(minio_adapter, session):
     minio_adapter.minio.fget_object = AsyncMock(return_value="test.txt")
     result = await minio_adapter.download_file(
         "test.txt", local_dir="/tmp/foo", shorten_filename=True
     )
     assert str(result).endswith("test.txt")
     minio_adapter.minio.fget_object.assert_called_with(
-        bucket_name="bucket", file_path="/tmp/foo/test.txt", object_name="test.txt"
+        bucket_name="bucket",
+        file_path="/tmp/foo/test.txt",
+        object_name="test.txt",
+        session=session.return_value.__aenter__.return_value,
     )
 
 
 @pytest.mark.asyncio
-async def test_download_short_filename_change(minio_adapter):
+async def test_download_short_filename_change(minio_adapter, session):
     minio_adapter.minio.fget_object = AsyncMock(
         return_value="test12345678901234567890123456789012345678901234567898012345678901234567890.txt"  # noqa: E501
     )
@@ -118,6 +136,7 @@ async def test_download_short_filename_change(minio_adapter):
         bucket_name="bucket",
         file_path="/tmp/foo/_7405534c58a3f71e5d01cdd2f59356bda6f50a06678901234567890.txt",
         object_name="test123456789012345678901234567890k12345678901234567898012345678901234567890.txt",  # noqa: E501
+        session=session.return_value.__aenter__.return_value,
     )
 
 
