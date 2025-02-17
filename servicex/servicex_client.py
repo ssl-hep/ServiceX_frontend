@@ -116,7 +116,7 @@ class GuardList(Sequence):
 
 
 def _load_ServiceXSpec(
-    config: Union[ServiceXSpec, Mapping[str, Any], str, Path]
+    config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
 ) -> ServiceXSpec:
     if isinstance(config, Mapping):
         logger.debug("Config from dictionary")
