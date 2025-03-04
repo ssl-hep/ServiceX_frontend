@@ -31,7 +31,7 @@
 import pydantic
 from pathlib import Path
 # from servicex.models import DocStringBaseModel
-from typing import Optional
+from typing import Optional, Union
 from ..query_core import QueryStringGenerator
 
 
@@ -40,11 +40,11 @@ class TopCPQuery(QueryStringGenerator):
     yaml_tag = "!TopCP"
     default_codegen = "topcp"
 
-    reco_yaml: Optional[Path] = None
+    reco_yaml: Optional[Union[Path, str]] = None
     """Path to the reco.yaml"""
-    parton_yaml: Optional[Path] = None
+    parton_yaml: Optional[Union[Path, str]] = None
     """Path to the parton.yaml"""
-    particle_yaml: Optional[Path] = None
+    particle_yaml: Optional[Union[Path, str]] = None
     """Path to the particle.yaml"""
     max_events: Optional[int] = -1
     """Number of events to process"""
@@ -92,23 +92,27 @@ class TopCPQuery(QueryStringGenerator):
 
     def generate_selection_string(self):
         import yaml
+        import json
 
+        recoYaml = None
         if self.reco_yaml:
             with open(self.reco_yaml, 'r') as reco_file:
-                self.reco_yaml = yaml.safe_load(reco_file)
+                recoYaml = yaml.safe_load(reco_file)
 
+        partonYaml = None
         if self.parton_yaml:
             with open(self.parton_yaml, 'r') as parton_file:
-                self.parton_yaml = yaml.safe_load(parton_file)
+                partonYaml = yaml.safe_load(parton_file)
 
+        particleYaml = None
         if self.particle_yaml:
             with open(self.particle_yaml, 'r') as particle_file:
-                self.particle_yaml = yaml.safe_load(particle_file)
+                particleYaml = yaml.safe_load(particle_file)
 
         query = {
-            "RecoYAML": self.reco_yaml,
-            "PartonYAML": self.parton_yaml,
-            "ParticleYAML": self.particle_yaml,
+            "RecoYAML": recoYaml,
+            "PartonYAML": partonYaml,
+            "ParticleYAML": particleYaml,
             "NEvents": self.max_events,
             "RunParton": self.parton,
             "RunParticle": self.particle,
@@ -117,7 +121,7 @@ class TopCPQuery(QueryStringGenerator):
             "NoFilter": self.no_filter
         }
 
-        return query
+        return json.dumps(query)
 
     @classmethod
     def from_yaml(cls, _, node):
