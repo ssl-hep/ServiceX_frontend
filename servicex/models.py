@@ -104,9 +104,7 @@ class TransformRequest(DocStringBaseModel):
     did: Optional[str] = None
     file_list: Optional[List[str]] = Field(default=None, alias="file-list")
     selection: str
-    image: Optional[str] = None
     codegen: str
-    tree_name: Optional[str] = Field(default=None, alias="tree-name")
     result_destination: ResultDestination = Field(
         serialization_alias="result-destination"
     )
@@ -126,9 +124,9 @@ class TransformRequest(DocStringBaseModel):
                 [
                     self.did,
                     self.selection,
-                    self.tree_name,
+                    None,  # was tree_name
                     self.codegen,
-                    self.image,
+                    None,  # was image
                     self.result_format.name,
                     sorted(self.file_list) if self.file_list else None,
                 ]
