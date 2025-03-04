@@ -31,7 +31,7 @@
 import pydantic
 from pathlib import Path
 # from servicex.models import DocStringBaseModel
-from typing import List, Union, Mapping, Optional
+from typing import Optional
 from ..query_core import QueryStringGenerator
 
 
@@ -103,7 +103,7 @@ class TopCPQuery(QueryStringGenerator):
 
         if self.particle_yaml:
             with open(self.particle_yaml, 'r') as particle_file:
-                self.particle_yaml = yaml.safe_load(particle_file)        
+                self.particle_yaml = yaml.safe_load(particle_file)
 
         query = {
             "RecoYAML": self.reco_yaml,
