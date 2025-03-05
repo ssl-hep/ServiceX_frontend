@@ -30,6 +30,7 @@
 
 import pydantic
 from pathlib import Path
+
 # from servicex.models import DocStringBaseModel
 from typing import Optional, Union
 from ..query_core import QueryStringGenerator
@@ -59,35 +60,38 @@ class TopCPQuery(QueryStringGenerator):
     no_filter: Optional[bool] = False
     """Save all events regardless of analysis filters (still saves the decision)"""
 
-    @pydantic.model_validator(mode='after')
+    @pydantic.model_validator(mode="after")
     def check_reco_yaml(self):
         if self.reco_yaml is None and self.no_reco is False:
-            raise ValueError('reco is enabled but reco.yaml is missing!')
+            raise ValueError("reco is enabled but reco.yaml is missing!")
         return self
 
-    @pydantic.model_validator(mode='after')
+    @pydantic.model_validator(mode="after")
     def no_input_yaml(self):
-        if self.reco_yaml is None and self.parton_yaml is None \
-                and self.particle_yaml is None:
-            raise ValueError('No yaml provided!')
+        if (
+            self.reco_yaml is None
+            and self.parton_yaml is None
+            and self.particle_yaml is None
+        ):
+            raise ValueError("No yaml provided!")
         return self
 
-    @pydantic.model_validator(mode='after')
+    @pydantic.model_validator(mode="after")
     def no_parton_yaml(self):
         if self.parton_yaml is None and self.parton is True:
-            raise ValueError('parton is set to True but no parton.yaml provided!')
+            raise ValueError("parton is set to True but no parton.yaml provided!")
         return self
 
-    @pydantic.model_validator(mode='after')
+    @pydantic.model_validator(mode="after")
     def no_paricle_yaml(self):
         if self.particle_yaml is None and self.particle is True:
-            raise ValueError('particle is set to True but no particle.yaml provided!')
+            raise ValueError("particle is set to True but no particle.yaml provided!")
         return self
 
-    @pydantic.model_validator(mode='after')
+    @pydantic.model_validator(mode="after")
     def no_run(self):
         if self.no_reco is True and self.particle is False and self.parton is False:
-            raise ValueError('Wrong configuration - no reco, no particle, no parton!')
+            raise ValueError("Wrong configuration - no reco, no particle, no parton!")
         return self
 
     def generate_selection_string(self):
@@ -96,17 +100,17 @@ class TopCPQuery(QueryStringGenerator):
 
         recoYaml = None
         if self.reco_yaml:
-            with open(self.reco_yaml, 'r') as reco_file:
+            with open(self.reco_yaml, "r") as reco_file:
                 recoYaml = yaml.safe_load(reco_file)
 
         partonYaml = None
         if self.parton_yaml:
-            with open(self.parton_yaml, 'r') as parton_file:
+            with open(self.parton_yaml, "r") as parton_file:
                 partonYaml = yaml.safe_load(parton_file)
 
         particleYaml = None
         if self.particle_yaml:
-            with open(self.particle_yaml, 'r') as particle_file:
+            with open(self.particle_yaml, "r") as particle_file:
                 particleYaml = yaml.safe_load(particle_file)
 
         query = {
@@ -118,7 +122,7 @@ class TopCPQuery(QueryStringGenerator):
             "RunParticle": self.particle,
             "NoReco": self.no_reco,
             "RunSystematics": self.no_systematics,
-            "NoFilter": self.no_filter
+            "NoFilter": self.no_filter,
         }
 
         return json.dumps(query)
