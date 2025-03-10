@@ -68,11 +68,7 @@ class TopCPQuery(QueryStringGenerator):
 
     @pydantic.model_validator(mode="after")
     def no_input_yaml(self):
-        if (
-            self.reco is None
-            and self.parton is None
-            and self.particle is None
-        ):
+        if self.reco is None and self.parton is None and self.particle is None:
             raise ValueError("No yaml provided!")
         return self
 
@@ -90,7 +86,11 @@ class TopCPQuery(QueryStringGenerator):
 
     @pydantic.model_validator(mode="after")
     def no_run(self):
-        if self.no_reco is True and self.run_particle is False and self.run_parton is False:
+        if (
+            self.no_reco is True
+            and self.run_particle is False
+            and self.run_parton is False
+        ):
             raise ValueError("Wrong configuration - no reco, no particle, no parton!")
         return self
 
@@ -130,6 +130,7 @@ class TopCPQuery(QueryStringGenerator):
     def from_yaml(cls, _, node):
         code = node.value
         import ast
+
         print(code)
         print(type(code))
         queries = dict(ast.literal_eval(f"dict({code})"))

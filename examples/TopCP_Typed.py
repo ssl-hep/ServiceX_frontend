@@ -12,10 +12,7 @@ spec = ServiceXSpec(
                     "root://eospublic.cern.ch//eos/opendata/atlas/rucio/data16_13TeV/DAOD_PHYSLITE.37019878._000003.pool.root.1",  # noqa: E501
                 ]
             ),
-            Query=query.TopCP(
-                reco="reco.yaml",
-                max_events=1000
-            ),
+            Query=query.TopCP(reco="reco.yaml", max_events=1000),
         )
     ]
 )
