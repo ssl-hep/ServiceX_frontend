@@ -129,10 +129,15 @@ class TopCPQuery(QueryStringGenerator):
     @classmethod
     def from_yaml(cls, _, node):
         code = node.value
-        import ast
+        import re
 
-        print(code)
-        print(type(code))
-        queries = dict(ast.literal_eval(f"dict({code})"))
-        q = cls(**queries)
+        # Use regex to split key-value pairs
+        matches = re.findall(r'(\w+)="?(.*?)"?(?:,|$)', code)
+
+        # Convert to dictionary
+        result = {key: value for key, value in matches}
+
+        print(result)
+        print(type(result))
+        q = cls(**result)
         return q
