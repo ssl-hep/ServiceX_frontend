@@ -125,3 +125,6 @@ packages = ["servicex"]
 
 [tool.coverage.run]
 dynamic_context = "test_function"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
