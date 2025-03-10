@@ -41,17 +41,17 @@ class TopCPQuery(QueryStringGenerator):
     yaml_tag = "!TopCP"
     default_codegen = "topcp"
 
-    reco_yaml: Optional[Union[Path, str]] = None
+    reco: Optional[Union[Path, str]] = None
     """Path to the reco.yaml"""
-    parton_yaml: Optional[Union[Path, str]] = None
+    parton: Optional[Union[Path, str]] = None
     """Path to the parton.yaml"""
-    particle_yaml: Optional[Union[Path, str]] = None
+    particle: Optional[Union[Path, str]] = None
     """Path to the particle.yaml"""
     max_events: Optional[int] = -1
     """Number of events to process"""
-    parton: Optional[bool] = False
+    run_parton: Optional[bool] = False
     """Toggles the parton-level analysis"""
-    particle: Optional[bool] = False
+    run_particle: Optional[bool] = False
     """Toggles the particle-level analysis"""
     no_reco: Optional[bool] = False
     """Toggles off the detector-level analysis"""
@@ -61,36 +61,36 @@ class TopCPQuery(QueryStringGenerator):
     """Save all events regardless of analysis filters (still saves the decision)"""
 
     @pydantic.model_validator(mode="after")
-    def check_reco_yaml(self):
-        if self.reco_yaml is None and self.no_reco is False:
+    def check_reco(self):
+        if self.reco is None and self.no_reco is False:
             raise ValueError("reco is enabled but reco.yaml is missing!")
         return self
 
     @pydantic.model_validator(mode="after")
     def no_input_yaml(self):
         if (
-            self.reco_yaml is None
-            and self.parton_yaml is None
-            and self.particle_yaml is None
+            self.reco is None
+            and self.parton is None
+            and self.particle is None
         ):
             raise ValueError("No yaml provided!")
         return self
 
     @pydantic.model_validator(mode="after")
-    def no_parton_yaml(self):
-        if self.parton_yaml is None and self.parton is True:
+    def no_parton(self):
+        if self.parton is None and self.run_parton is True:
             raise ValueError("parton is set to True but no parton.yaml provided!")
         return self
 
     @pydantic.model_validator(mode="after")
     def no_paricle_yaml(self):
-        if self.particle_yaml is None and self.particle is True:
+        if self.particle is None and self.run_particle is True:
             raise ValueError("particle is set to True but no particle.yaml provided!")
         return self
 
     @pydantic.model_validator(mode="after")
     def no_run(self):
-        if self.no_reco is True and self.particle is False and self.parton is False:
+        if self.no_reco is True and self.run_particle is False and self.run_parton is False:
             raise ValueError("Wrong configuration - no reco, no particle, no parton!")
         return self
 
@@ -99,39 +99,39 @@ class TopCPQuery(QueryStringGenerator):
         import json
 
         recoYaml = None
-        if self.reco_yaml:
-            with open(self.reco_yaml, "r") as reco_file:
+        if self.reco:
+            with open(Path(self.reco), "r") as reco_file:
                 recoYaml = yaml.safe_load(reco_file)
 
         partonYaml = None
-        if self.parton_yaml:
-            with open(self.parton_yaml, "r") as parton_file:
+        if self.parton:
+            with open(Path(self.parton), "r") as parton_file:
                 partonYaml = yaml.safe_load(parton_file)
 
         particleYaml = None
-        if self.particle_yaml:
-            with open(self.particle_yaml, "r") as particle_file:
+        if self.particle:
+            with open(Path(self.particle), "r") as particle_file:
                 particleYaml = yaml.safe_load(particle_file)
 
         query = {
-            "RecoYAML": recoYaml,
-            "PartonYAML": partonYaml,
-            "ParticleYAML": particleYaml,
-            "NEvents": self.max_events,
-            "RunParton": self.parton,
-            "RunParticle": self.particle,
-            "NoReco": self.no_reco,
-            "RunSystematics": self.no_systematics,
-            "NoFilter": self.no_filter,
+            "reco": recoYaml,
+            "parton": partonYaml,
+            "particle": particleYaml,
+            "max_events": self.max_events,
+            "run_parton": self.run_parton,
+            "run_particle": self.run_particle,
+            "no_reco": self.no_reco,
+            "no_systematics": self.no_systematics,
+            "no_filter": self.no_filter,
         }
-
         return json.dumps(query)
 
     @classmethod
     def from_yaml(cls, _, node):
         code = node.value
-        import json
-
-        queries = json.loads(code)
-        q = cls(queries)
+        import ast
+        print(code)
+        print(type(code))
+        queries = dict(ast.literal_eval(f"dict({code})"))
+        q = cls(**queries)
         return q
