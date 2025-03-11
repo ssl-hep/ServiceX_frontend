@@ -326,12 +326,16 @@ class ServiceXClient:
                 raise ValueError(f"Backend {backend} not defined in .servicex file")
             ep = self.endpoints[backend]
             self.servicex = (
-                ep.adapter if ep.adapter is not None else ServiceXAdapter(
+                ep.adapter
+                if ep.adapter is not None
+                else ServiceXAdapter(
                     self.endpoints[backend].endpoint,
                     refresh_token=self.endpoints[backend].token,
                 )
             )
-            self.minio_generator = MinioAdapter.for_transform if ep.minio is None else ep.minio
+            self.minio_generator = (
+                MinioAdapter.for_transform if ep.minio is None else ep.minio
+            )
 
         self.query_cache = QueryCache(self.config)
         self.code_generators = set(self.get_code_generators(backend).keys())

@@ -162,6 +162,7 @@ def test_minio_created_and_used(mock_cache, mocker):
     class my_minio:
         def __init__(self, x):
             self.x = x
+
         pass
 
     def my_ctor_func(x):
@@ -176,17 +177,13 @@ def test_minio_created_and_used(mock_cache, mocker):
     )
 
     # Mock the Query class
-    mock_query = mocker.patch('servicex.servicex_client.Query', autospec=True)
+    mock_query = mocker.patch("servicex.servicex_client.Query", autospec=True)
 
     # Make sure externally accessible property is correct.
     sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
     assert sx.minio_generator == my_ctor_func
 
     # Call generic_query and verify the minio_generator argument
-    sx.generic_query(
-        dataset_identifier="some-did",
-        query="some-query",
-        codegen="ROOT"
-    )
+    sx.generic_query(dataset_identifier="some-did", query="some-query", codegen="ROOT")
     mock_query.assert_called_once()
-    assert mock_query.call_args[1]['minio_generator'] == my_ctor_func
+    assert mock_query.call_args[1]["minio_generator"] == my_ctor_func

@@ -31,6 +31,7 @@ from pathlib import Path, PurePath
 from typing import Callable, List, Optional, Dict
 
 from pydantic import BaseModel, Field, AliasChoices, model_validator
+
 # TODO: allow including this, but current import loop
 # from servicex.models import TransformResult
 from servicex.protocols import MinioAdapterProtocol
@@ -159,11 +160,11 @@ class Configuration(BaseModel):
 
     @classmethod
     def register_endpoint(cls, ep: Endpoint):
-        '''Store this endpoint registration
+        """Store this endpoint registration
 
         Args:
             ep: Endpoint object to register
-        '''
+        """
         # TODO: This requires exposing Endpoint
         # There is no check in this setup that the adaptor is a valid ServiceXAdapterProtocol
         # because I couldn't figure out how to make pydantic handle a protocol object.
@@ -172,7 +173,6 @@ class Configuration(BaseModel):
 
     @classmethod
     def clear_registered_endpoints(cls):
-        '''Clear the list of registered endpoints.
-        '''
+        """Clear the list of registered endpoints."""
         global g_registered_endpoints
         g_registered_endpoints = []
