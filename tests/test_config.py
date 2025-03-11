@@ -52,9 +52,9 @@ def test_config_read(tempdir):
         Configuration.read(config_path="invalid.yaml")
 
 
-@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
 def test_config_endpoint_dict(tempdir):
-    os.environ['UserName'] = "p_higgs"
+    os.environ["UserName"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config.yaml")
     endpoints = c.endpoint_dict()
     assert len(endpoints) == 3
@@ -67,7 +67,7 @@ def test_config_endpoint_dict(tempdir):
     assert ep.token == "notreallyatoken"
 
 
-@patch('servicex.configuration.tempfile.gettempdir', return_value="./mytemp")
+@patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
 def test_default_cache_path(tempdir):
 
     # Windows style user name
@@ -80,7 +80,7 @@ def test_default_cache_path(tempdir):
     os.environ["USER"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
-    del os.environ['USER']
+    del os.environ["USER"]
 
 
 @patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
@@ -106,7 +106,8 @@ def test_config_register(tempdir):
 
 @patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
 def test_config_register_adaptor(tempdir):
-    'Make sure we can do this with an adaptor'
+    "Make sure we can do this with an adaptor"
+
     class MyAdaptor:
         pass
 

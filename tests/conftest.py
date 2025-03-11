@@ -214,17 +214,20 @@ def dummy_parquet_file():
 
 @fixture
 def codegen_list():
-    return {'atlasr21': 'http://servicex-code-gen-atlasr21:8000',
-            'atlasr22': 'http://servicex-code-gen-atlasr22:8000',
-            'atlasxaod': 'http://servicex-code-gen-atlasxaod:8000',
-            'cms': 'http://servicex-code-gen-cms:8000',
-            'cmssw-5-3-32': 'http://servicex-code-gen-cmssw-5-3-32:8000',
-            'python': 'http://servicex-code-gen-python:8000',
-            'uproot': 'http://servicex-code-gen-uproot:8000',
-            'uproot-raw': 'http://servicex-code-gen-uproot-raw:8000'}
+    return {
+        "atlasr21": "http://servicex-code-gen-atlasr21:8000",
+        "atlasr22": "http://servicex-code-gen-atlasr22:8000",
+        "atlasxaod": "http://servicex-code-gen-atlasxaod:8000",
+        "cms": "http://servicex-code-gen-cms:8000",
+        "cmssw-5-3-32": "http://servicex-code-gen-cmssw-5-3-32:8000",
+        "python": "http://servicex-code-gen-python:8000",
+        "uproot": "http://servicex-code-gen-uproot:8000",
+        "uproot-raw": "http://servicex-code-gen-uproot-raw:8000",
+    }
 
 
 @fixture(autouse=True)
 def clear_registered_endpoints():
     from servicex.configuration import Configuration
+
     Configuration.clear_registered_endpoints()
