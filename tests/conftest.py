@@ -40,7 +40,6 @@ from servicex.models import (
 from servicex.minio_adapter import MinioAdapter
 
 from servicex.dataset_identifier import FileListDataset
-from servicex.minio_adapter import MinioAdapter
 
 import pandas as pd
 import os
