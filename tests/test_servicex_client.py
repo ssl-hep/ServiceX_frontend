@@ -35,6 +35,7 @@ from servicex.models import TransformedResults, ResultFormat
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.servicex_client import ServiceXClient
+from servicex.configuration import Configuration, Endpoint
 
 
 @fixture
@@ -54,7 +55,7 @@ def mock_cache(mocker):
         "codegens": {"ROOT": "my_root_generator", "UPROOT": "my_uproot_generator"}
     }
     cache_mock.return_value = mock_cache
-    return cache_mock
+    return mock_cache
 
 
 def test_get_datasets(mock_cache, servicex_adaptor):
@@ -137,3 +138,51 @@ def test_delete_transform_from_cache(mock_cache, servicex_adaptor, transformed_r
             mock_cache.return_value.delete_record_by_request_id.assert_called_once_with(
                 "servicex-request-789"
             )
+
+
+def test_adaptor_created(mock_cache):
+    class my_adaptor:
+        pass
+
+    my_backend = my_adaptor()
+    Configuration.register_endpoint(
+        Endpoint(
+            name="my-backend",
+            adapter=my_backend,
+            endpoint="",
+        )
+    )
+
+    sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
+    assert sx.servicex == my_backend
+
+
+def test_minio_created_and_used(mock_cache, mocker):
+    class my_minio:
+        def __init__(self, x):
+            self.x = x
+
+        pass
+
+    def my_ctor_func(x):
+        return my_minio(x)
+
+    Configuration.register_endpoint(
+        Endpoint(
+            name="my-backend",
+            endpoint="fork-it-over",
+            minio=my_ctor_func,
+        )
+    )
+
+    # Mock the Query class
+    mock_query = mocker.patch("servicex.servicex_client.Query", autospec=True)
+
+    # Make sure externally accessible property is correct.
+    sx = ServiceXClient(config_path="tests/example_config.yaml", backend="my-backend")
+    assert sx.minio_generator == my_ctor_func
+
+    # Call generic_query and verify the minio_generator argument
+    sx.generic_query(dataset_identifier="some-did", query="some-query", codegen="ROOT")
+    mock_query.assert_called_once()
+    assert mock_query.call_args[1]["minio_generator"] == my_ctor_func

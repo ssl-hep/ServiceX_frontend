@@ -56,6 +56,7 @@ async def test_as_signed_urls_happy(transformed_result):
         config=None,
         sx_adapter=None,
         query_cache=None,
+        minio_generator=MinioAdapter.for_transform,
     )
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
@@ -75,6 +76,7 @@ async def test_as_signed_urls_happy_dataset_group(transformed_result):
         config=None,
         sx_adapter=None,
         query_cache=None,
+        minio_generator=MinioAdapter.for_transform,
     )
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
@@ -95,6 +97,7 @@ async def test_as_files_happy(transformed_result):
         config=None,
         sx_adapter=None,
         query_cache=None,
+        minio_generator=MinioAdapter.for_transform,
     )
     dataset.submit_and_download = AsyncMock()
     dataset.submit_and_download.return_value = transformed_result
