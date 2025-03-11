@@ -36,7 +36,6 @@ from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.servicex_client import ServiceXClient
 from servicex.configuration import Configuration, Endpoint
-from servicex.query_core import Query
 
 
 @fixture
