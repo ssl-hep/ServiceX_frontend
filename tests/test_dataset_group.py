@@ -119,8 +119,8 @@ async def test_as_files_no_progress(mocker, transformed_result):
     await group.as_files_async(display_progress=False)
 
     ds1.as_files_async.assert_called_once()
-    assert 'display_progress' in ds1.as_files_async.call_args_list[0].kwargs
-    assert not ds1.as_files_async.call_args_list[0].kwargs['display_progress']
+    assert "display_progress" in ds1.as_files_async.call_args_list[0].kwargs
+    assert not ds1.as_files_async.call_args_list[0].kwargs["display_progress"]
 
 
 @pytest.mark.asyncio
