@@ -74,7 +74,8 @@ class DatasetGroup:
             display_progress, provided_progress, overall_progress=overall_progress
         ) as progress:
             self.tasks = [
-                d.as_signed_urls_async(provided_progress=progress, dataset_group=True)
+                d.as_signed_urls_async(provided_progress=progress, dataset_group=True,
+                                       display_progress=display_progress)
                 for d in self.datasets
             ]
             return await asyncio.gather(
@@ -97,7 +98,8 @@ class DatasetGroup:
             display_progress, provided_progress, overall_progress=overall_progress
         ) as progress:
             self.tasks = [
-                d.as_files_async(provided_progress=progress) for d in self.datasets
+                d.as_files_async(provided_progress=progress, display_progress=display_progress)
+                for d in self.datasets
             ]
             return await asyncio.gather(
                 *self.tasks, return_exceptions=return_exceptions
