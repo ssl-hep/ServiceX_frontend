@@ -86,62 +86,61 @@ def run_query(input_filenames=None):
     # Return str in an array
     return ak.Array([final_str])
 
+def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, do_print=False):
+    """
+    Converts dataset file structures to a formatted string.
 
-def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False ):
-    """
-    Helper. Takes the structure strings for all samples from servicex.deliver output 
-    and prints them in a friendly formatted view.
-    
-    The expected structure string format is:
-    
-      Tree: TreeName1; TBranch: Branchname1 ; dtype: BranchType1, TBranch: Branchname2 ; dtype: BranchType2, ...
-      Tree: TreeName2; TBranch: Branchname1 ; dtype: BranchType1, ...
-    
     Parameters:
-      deliver_dict (dict): The return dictionary of servicex.deliver
-                          (keys are sample names, values are file paths or URLs)
-      filter_branch (str): Optional. Only Branch names containing it are printed.
-      save_to_txt (bool): Optional. Select if file structure is printed or dumped to .txt
+      deliver_dict (dict): ServiceX deliver output (keys: sample names, values: file paths or URLs).
+      filter_branch (str): If provided, only branches containing this string are included.
+      save_to_txt (bool): If True, saves output to a text file instead of returning it.
+
+    Returns:
+      str: The formatted file structure.
     """
-    print(f"File structure of all samples with branch filter {filter_branch}:")
+    output_lines = []
+    output_lines.append(f"\nFile structure of all samples with branch filter '{filter_branch}':")
 
     for sample_name, path in deliver_dict.items():
-        #Sample name with icon and bands
-        print(
+        output_lines.append(
             f"\n---------------------------\n"
             f"\U0001F4C1 Sample: {sample_name}\n"
             f"---------------------------"
         )
 
         with uproot.open(path[0]) as f:
-            #Expected position of structure_str from servicex.deliver
-            structure_str=f["servicex"]["branch"].array()[0]
-        
-        # Split at each \n each new line represents one tree.
+            structure_str = f["servicex"]["branch"].array()[0]
+
         tree_lines = structure_str.split("\n")
-        
         for line in tree_lines:
             if not line.strip():
                 continue  # Skip empty lines
             
-            # First part before ';' is the tree header.
             parts = line.split(";", 1)
-            tree_header = parts[0] 
-            print(f"\n\U0001F333 {tree_header}")  # Print tree header with icon
-            
-            # Check for branches
+            tree_header = parts[0]
+            output_lines.append(f"\n\U0001F333 {tree_header}")
+
             if len(parts) > 1:
-                # branch info separated by ','
-                branch_info_str = parts[1]
-                branch_infos = branch_info_str.split(",")
-                print("   ├── Branches:")
+                branch_infos = parts[1].split(",")
+                output_lines.append("   ├── Branches:")
                 for b in branch_infos:
                     branch_line = b.strip()
                     if filter_branch not in branch_line:
                         continue
-                    # Only print lines that start with "TBranch:"
                     if branch_line.startswith("TBranch:"):
-                        print(f"   │   ├── {branch_line[8:]}")
+                        output_lines.append(f"   │   ├── {branch_line[8:]}")
+    
+    result_str = "\n".join(output_lines)
+
+    if save_to_txt:
+        with open("samples_structure.txt", "w") as f:
+            f.write(result_str)
+        return "File structure saved to 'samples_structure.txt'."
+    if do_print:
+        print(result_str)
+        return 
+    else:
+        return result_str
 
 
 def get_structure(dataset, **kwargs):
@@ -171,24 +170,21 @@ def get_structure(dataset, **kwargs):
         dataset_dict=dataset
     else:
         raise ValueError(f"Unsupported dataset input type: {user_in}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str")
+        return 0
     
-    sample_list=[]
-
-    for name, did in dataset_dict.items():
-        tmp_dict={
-            "NFiles":1,
+    sample_list = [
+        {
+            "NFiles": 1,
             "Name": name,
             "Dataset": servicex.dataset.Rucio(did),
             "Query": query_PythonFunction,
         }
-        sample_list.append(tmp_dict)
+        for name, did in dataset_dict.items()
+    ]
     
-    spec_python = {
-    "Sample": sample_list
-    }
+    spec_python = {"Sample": sample_list}
 
     output=servicex.deliver(spec_python)
 
-    print_structure_from_str(output,**kwargs)
-    
+    return print_structure_from_str(output, **kwargs) 
     
