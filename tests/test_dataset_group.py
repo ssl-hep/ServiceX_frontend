@@ -60,6 +60,27 @@ async def test_as_signed_urls(mocker, transformed_result):
     assert len(results) == 2
     assert results[0].request_id == "123-45-6789"
     assert results[1].request_id == "98-765-432"
+    assert "display_progress" in ds1.as_signed_urls_async.call_args_list[0].kwargs
+    assert ds1.as_signed_urls_async.call_args_list[0].kwargs["display_progress"]
+
+
+@pytest.mark.asyncio
+async def test_as_signed_urls_no_progress(mocker, transformed_result):
+    ds1 = mocker.Mock()
+    ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
+    ds1.servicex._get_authorization = AsyncMock()
+
+    ds2 = mocker.Mock()
+    ds2.as_signed_urls_async = AsyncMock(
+        return_value=transformed_result.model_copy(update={"request_id": "98-765-432"})
+    )
+
+    group = DatasetGroup([ds1, ds2])
+    await group.as_signed_urls_async(display_progress=False)
+
+    ds1.as_signed_urls_async.assert_called_once()
+    assert "display_progress" in ds1.as_signed_urls_async.call_args_list[0].kwargs
+    assert not ds1.as_signed_urls_async.call_args_list[0].kwargs["display_progress"]
 
 
 @pytest.mark.asyncio
@@ -79,6 +100,27 @@ async def test_as_files(mocker, transformed_result):
     assert len(results) == 2
     assert results[0].request_id == "123-45-6789"
     assert results[1].request_id == "98-765-432"
+    assert "display_progress" in ds1.as_files_async.call_args_list[0].kwargs
+    assert ds1.as_files_async.call_args_list[0].kwargs["display_progress"]
+
+
+@pytest.mark.asyncio
+async def test_as_files_no_progress(mocker, transformed_result):
+    ds1 = mocker.Mock()
+    ds1.as_files_async = AsyncMock(return_value=transformed_result)
+    ds1.servicex._get_authorization = AsyncMock()
+
+    ds2 = mocker.Mock()
+    ds2.as_files_async = AsyncMock(
+        return_value=transformed_result.model_copy(update={"request_id": "98-765-432"})
+    )
+
+    group = DatasetGroup([ds1, ds2])
+    await group.as_files_async(display_progress=False)
+
+    ds1.as_files_async.assert_called_once()
+    assert 'display_progress' in ds1.as_files_async.call_args_list[0].kwargs
+    assert not ds1.as_files_async.call_args_list[0].kwargs['display_progress']
 
 
 @pytest.mark.asyncio
