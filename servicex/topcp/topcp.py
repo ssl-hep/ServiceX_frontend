@@ -31,7 +31,6 @@
 import pydantic
 from pathlib import Path
 
-# from servicex.models import DocStringBaseModel
 from typing import Optional, Union
 from ..query_core import QueryStringGenerator
 
@@ -49,22 +48,10 @@ class TopCPQuery(QueryStringGenerator):
     """Path to the particle.yaml"""
     max_events: Optional[int] = -1
     """Number of events to process"""
-    run_parton: Optional[bool] = False
-    """Toggles the parton-level analysis"""
-    run_particle: Optional[bool] = False
-    """Toggles the particle-level analysis"""
-    no_reco: Optional[bool] = False
-    """Toggles off the detector-level analysis"""
     no_systematics: Optional[bool] = True
     """Toggles off the computation of systematics"""
     no_filter: Optional[bool] = False
     """Save all events regardless of analysis filters (still saves the decision)"""
-
-    @pydantic.model_validator(mode="after")
-    def check_reco(self):
-        if self.reco is None and self.no_reco is False:
-            raise ValueError("reco is enabled but reco.yaml is missing!")
-        return self
 
     @pydantic.model_validator(mode="after")
     def no_input_yaml(self):
@@ -72,30 +59,7 @@ class TopCPQuery(QueryStringGenerator):
             raise ValueError("No yaml provided!")
         return self
 
-    @pydantic.model_validator(mode="after")
-    def no_parton(self):
-        if self.parton is None and self.run_parton is True:
-            raise ValueError("parton is set to True but no parton.yaml provided!")
-        return self
-
-    @pydantic.model_validator(mode="after")
-    def no_paricle_yaml(self):
-        if self.particle is None and self.run_particle is True:
-            raise ValueError("particle is set to True but no particle.yaml provided!")
-        return self
-
-    @pydantic.model_validator(mode="after")
-    def no_run(self):
-        if (
-            self.no_reco is True
-            and self.run_particle is False
-            and self.run_parton is False
-        ):
-            raise ValueError("Wrong configuration - no reco, no particle, no parton!")
-        return self
-
     def generate_selection_string(self):
-        import yaml
         import json
 
         recoYaml = None
@@ -118,9 +82,9 @@ class TopCPQuery(QueryStringGenerator):
             "parton": partonYaml,
             "particle": particleYaml,
             "max_events": self.max_events,
-            "run_parton": self.run_parton,
-            "run_particle": self.run_particle,
-            "no_reco": self.no_reco,
+            "run_parton": None,
+            "run_particle": None,
+            "no_reco": None,
             "no_systematics": self.no_systematics,
             "no_filter": self.no_filter,
         }
@@ -137,7 +101,5 @@ class TopCPQuery(QueryStringGenerator):
         # Convert to dictionary
         result = {key: value for key, value in matches}
 
-        print(result)
-        print(type(result))
         q = cls(**result)
         return q
