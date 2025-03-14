@@ -101,17 +101,17 @@ class TopCPQuery(QueryStringGenerator):
         recoYaml = None
         if self.reco:
             with open(Path(self.reco), "r") as reco_file:
-                recoYaml = yaml.safe_load(reco_file)
+                recoYaml = reco_file.read()
 
         partonYaml = None
         if self.parton:
             with open(Path(self.parton), "r") as parton_file:
-                partonYaml = yaml.safe_load(parton_file)
+                partonYaml = parton_file.read()
 
         particleYaml = None
         if self.particle:
             with open(Path(self.particle), "r") as particle_file:
-                particleYaml = yaml.safe_load(particle_file)
+                particleYaml = particle_file.read()
 
         query = {
             "reco": recoYaml,
