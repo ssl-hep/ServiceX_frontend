@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, DEFAULT
+from unittest.mock import patch
 from pydantic import ValidationError
 
 from servicex import ServiceXSpec, dataset, OutputFormat
@@ -897,7 +897,7 @@ def test_generic_query(codegen_list):
             )
 
 
-def test_deliver_progress_options(transformed_result, codegen_list):
+def test_deliver_progress_options(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver, ProgressBarFormat
     from servicex.query import UprootRaw  # type: ignore
 
@@ -913,9 +913,9 @@ def test_deliver_progress_options(transformed_result, codegen_list):
         }
     )
 
-    def fake_submit(signed_urls_only, expandable_progress):
+    async def fake_submit(signed_urls_only, expandable_progress):
         expandable_progress.add_task("zip", start=False, total=None)
-        return DEFAULT
+        return transformed_result
 
     with (
         patch(
@@ -928,15 +928,17 @@ def test_deliver_progress_options(transformed_result, codegen_list):
         ),
         patch(
             "servicex.query_core.Query.submit_and_download",
-            return_value=transformed_result,
             side_effect=fake_submit,
         ),
     ):
+        import servicex.query_core
+
         rv = deliver(
             spec,
             config_path="tests/example_config.yaml",
             progress_bar=ProgressBarFormat.compact,
         )
+        servicex.query_core.Query.submit_and_download.assert_called_once()
         assert rv is not None
         assert rv["sampleA"].valid()
         rv = deliver(
