@@ -82,9 +82,6 @@ class TopCPQuery(QueryStringGenerator):
             "parton": partonYaml,
             "particle": particleYaml,
             "max_events": self.max_events,
-            "run_parton": None,
-            "run_particle": None,
-            "no_reco": None,
             "no_systematics": self.no_systematics,
             "no_filter": self.no_filter,
         }
