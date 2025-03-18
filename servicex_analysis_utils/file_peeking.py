@@ -142,35 +142,24 @@ def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, 
     else:
         return result_str
 
-
-def get_structure(dataset, **kwargs):
-    """
-    Utility function. 
-    Creates and sends the ServiceX request from user inputed datasets to retrieve file stucture.
-    Calls print_structure_from_str()
-
-    Parameters:
-      dataset_dict (dict,str,[str]): The datasets from which to print the file structures.
-                                     A custom sample name per dataset can be given in a dict form: {'sample_name':'dataset_id'}
-      kwargs : Arguments to be propagated to print_structure_from_str 
-    """
+def build_deliver_spec(dataset):
     #Servicex query using the PythonFunction backend
     query_PythonFunction = servicex.query.PythonFunction().with_uproot_function(run_query)
     
     #Create a dict with sample name for ServiceX query & datasetID
     dataset_dict={}
     user_in=type(dataset)
+    
     if user_in == str:
         dataset_dict.update({"Sample":dataset})
     elif user_in == list and type(dataset[0]) is str:
         for i in range(len(dataset)):
-            name="Sample"+str(i+1) #write for humans
+            name="Sample"+str(i+1) #write number for humans
             dataset_dict.update({name:dataset[i]})
     elif user_in == dict:
         dataset_dict=dataset
     else:
         raise ValueError(f"Unsupported dataset input type: {user_in}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str")
-        return 0
     
     sample_list = [
         {
@@ -181,10 +170,24 @@ def get_structure(dataset, **kwargs):
         }
         for name, did in dataset_dict.items()
     ]
-    
     spec_python = {"Sample": sample_list}
+
+    return spec_python
+    
+
+def get_structure(dataset, **kwargs):
+    """
+    Utility function. 
+    Creates and sends the ServiceX request from user inputed datasets to retrieve file stucture.
+    Calls print_structure_from_str()
+
+    Parameters:
+      dataset (dict,str,[str]): The datasets from which to print the file structures.
+                                A custom sample name per dataset can be given in a dict form: {'sample_name':'dataset_id'}
+      kwargs : Arguments to be propagated to print_structure_from_str 
+    """
+    spec_python=build_deliver_spec(dataset)
 
     output=servicex.deliver(spec_python)
 
-    return print_structure_from_str(output, **kwargs) 
-    
+    return print_structure_from_str(output, **kwargs)
