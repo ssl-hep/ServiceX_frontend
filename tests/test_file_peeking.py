@@ -29,12 +29,11 @@ import pytest
 import uproot 
 import awkward as ak
 import os
-import sys
 import numpy as np
 from servicex_analysis_utils import file_peeking
 import types
-import servicex 
 import filecmp
+import re
 
 
 @pytest.fixture
@@ -57,7 +56,7 @@ def build_test_samples(tmp_path):
 
     return test_path
 
-# Test helper functions: run_query, print_structure_from_str
+# Test run_query and print_structure_from_str
 def test_encoding(build_test_samples,tmp_path, capsys):
 
     path=build_test_samples
@@ -110,6 +109,51 @@ def test_encoding(build_test_samples,tmp_path, capsys):
     filtered_str=file_peeking.print_structure_from_str(deliver_dict,filter_branch="branch2")
     assert "branch1" not in filtered_str, "filter_branch argument is not removing branch1"
 
+# Test spec builder for deliver
+def test_spec_builder():
+    #Get spec
+    test_did_str="random_space:did"
+    spec=file_peeking.build_deliver_spec(test_did_str)
+    
+    #Check return type
+    assert isinstance(spec, dict), "build_deliver_spec does not return a dict"
+    assert "Sample" in spec, "Key 'Sample' is missing in the returned dict"
+    assert isinstance(spec["Sample"], list), "'Sample' should be a list"
 
-# Test user-facing function errors:
+    #Get return size 
+    size=len(spec["Sample"])
+    assert size == 1, f"Only one did given but sample item of spec is not len 1: {size}"
+
+    #Check first sample
+    first_entry = spec["Sample"][0]
+    assert isinstance(first_entry, dict), "Each entry in 'Sample' should be a dict"
+    
+    #Check each key type
+    assert isinstance(first_entry["NFiles"], int), "'NFiles' should be an integer"
+    assert isinstance(first_entry["Name"], str), "'Name' should be a string"
+    
+    from servicex.dataset_identifier import RucioDatasetIdentifier
+    assert isinstance(first_entry["Dataset"], RucioDatasetIdentifier), "'Dataset' should be a RucioDatasetIdentifier"
+
+    from servicex.python_dataset import PythonFunction
+    assert isinstance(first_entry["Query"], PythonFunction), "'Query' should be a PythonFunction"
+    
+    ##Different input types
+    #list with two DID
+    test_did_list= [test_did_str, test_did_str+"2"]
+    spec_from_list=file_peeking.build_deliver_spec(test_did_list)
+    assert len(spec_from_list["Sample"])==2, "Wrong number of samples in deliver configuration"
+
+    #dict with sample name
+    test_did_dict={"Custom-Name":test_did_str}
+    spec_from_dict=file_peeking.build_deliver_spec(test_did_dict)
+    assert spec_from_dict["Sample"][0]["Name"]=="Custom-Name"
+
+    #wrong input type
+    wrong_did=1234
+    with pytest.raises(ValueError, match=re.escape(f"Unsupported dataset input type: {type(wrong_did)}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str")):
+        file_peeking.build_deliver_spec(wrong_did)
+
+
+
 
