@@ -1,40 +1,22 @@
 CommonServices:
-  systematicsHistogram: 'listOfSystematics'
+  runSystematics: False
 
-PileupReweighting: {}
-
-EventCleaning:
-    runEventCleaning: False
-    runGRL: False
-
-Electrons:
-  - containerName: 'AnaElectrons'
-    crackVeto: True
-    IFFClassification: {}
+Muons:
+  - containerName: AnaMuons
     WorkingPoint:
-      - selectionName: 'loose'
-        identificationWP: 'TightLH'
-        isolationWP: 'NonIso'
-        noEffSF: True
-      - selectionName: 'tight'
-        identificationWP: 'TightLH'
-        isolationWP: 'Tight_VarRad'
-        noEffSF: True
-    PtEtaSelection:
-        minPt: 25000.0
-        maxEta: 2.47
-        useClusterEta: True
+      - selectionName: loose
+        quality: Loose
+        isolation: NonIso
+      - selectionName: medium
+        quality: Medium
+        isolation: NonIso
 
-# After configuring each container, many variables will be saved automatically.
 Output:
   treeName: 'reco'
   vars: []
   metVars: []
   containers:
       # Format should follow: '<suffix>:<output container>'
-      el_: 'AnaElectrons'
+      mu_: 'AnaMuons'
       '': 'EventInfo'
-  commands:
-    # Turn output branches on and off with 'enable' and 'disable'
-
-AddConfigBlocks: []
+  commands: []
