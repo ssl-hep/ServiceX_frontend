@@ -189,7 +189,7 @@ def build_deliver_spec(dataset):
 
     return spec_python   
 
-def get_structure(dataset, **kwargs, raw=False):
+def get_structure(dataset, **kwargs):
     """
     Utility function. 
     Creates and sends the ServiceX request from user inputed datasets to retrieve file stucture.
