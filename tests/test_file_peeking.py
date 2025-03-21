@@ -86,7 +86,7 @@ def test_encoding(build_test_samples,tmp_path, capsys):
     # save_to_txt
     file_peeking.print_structure_from_str(deliver_dict,save_to_txt=True)
     out_txt="samples_structure.txt"
-    assert os.path.exists(out_txt), "save_to_txt arg not producing files"
+    assert os.path.exists(out_txt), f"save_to_txt arg not producing {out_txt}"
 
     with open(out_txt, "r", encoding="utf-8") as f:
         written_str = f.read()
@@ -99,7 +99,7 @@ def test_encoding(build_test_samples,tmp_path, capsys):
     captured = capsys.readouterr()
     
     # Check if all returns match 
-    assert captured.out[0:-1] == written_str == output_str , "saved, printed and direct return formats are different"
+    assert captured.out[0:-1] == written_str == output_str , "saved, printed and direct return formats should not be different"
     
     # Compare with expected return
     test_txt="tests/data/expected_structure.txt"
@@ -139,7 +139,7 @@ def test_spec_builder():
     assert isinstance(first_entry["Query"], PythonFunction), "'Query' should be a PythonFunction"
     
     ##Different input types
-    #list with two DID
+    #list with two DIDs
     test_did_list= [test_did_str, test_did_str+"2"]
     spec_from_list=file_peeking.build_deliver_spec(test_did_list)
     assert len(spec_from_list["Sample"])==2, "Wrong number of samples in deliver configuration"
@@ -153,7 +153,3 @@ def test_spec_builder():
     wrong_did=1234
     with pytest.raises(ValueError, match=re.escape(f"Unsupported dataset input type: {type(wrong_did)}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str")):
         file_peeking.build_deliver_spec(wrong_did)
-
-
-
-

@@ -33,9 +33,9 @@ def run_query(input_filenames=None):
     import uproot
     import awkward as ak
     """
-    Helper. Open a file and return one array containing a single string that describes the DataSet root file structure.
     Sent to ServiceX python transformers.
-
+    Open a file and return one array containing a single string that describes the DataSet root file structure.
+    
     The string will be formatted like:
     "Tree: TreeName1; TBranch: Branchname1 ; dtype: BranchType1, TBranch: Branchname2 ; dtype: BranchType2, ...
      Tree: TreeName2; TBranch: Branchname1 ; dtype: BranchType1, ..."
@@ -92,11 +92,12 @@ def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, 
 
     Parameters:
       deliver_dict (dict): ServiceX deliver output (keys: sample names, values: file paths or URLs).
-      filter_branch (str): If provided, only branches containing this string are included.
+      filter_branch (str): If provided, only branches containing this string are included in the output.
       save_to_txt (bool): If True, saves output to a text file instead of returning it.
+      do_print (bool): If True, dumps the ouput to the terminal and returns None. Not called if save_to_txt is True
 
     Returns:
-      str: The formatted file structure.
+      result_str (str): The formatted file structure.
     """
     output_lines = []
     output_lines.append(f"\nFile structure of all samples with branch filter '{filter_branch}':")
@@ -139,13 +140,24 @@ def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, 
         with open("samples_structure.txt", "w") as f:
             f.write(result_str)
         return "File structure saved to 'samples_structure.txt'."
-    if do_print:
+    elif do_print:
         print(result_str)
         return 
     else:
         return result_str
 
 def build_deliver_spec(dataset):
+    """
+    Helper to build the servicex.deliver dict configuration.
+    Supports multiple inputs for multiple sample queries.
+
+    Parameters:
+    dataset (str, [str], or dict): Rucio DIDs to be checked by the servicex workers. 
+                                   If dict, custom names can be inputed
+
+    Returns:
+    spec_python (dict): The specification for the python function query containing Name, Query, Dataset, NFiles
+    """
     #Servicex query using the PythonFunction backend
     query_PythonFunction = servicex.query.PythonFunction().with_uproot_function(run_query)
     
@@ -175,14 +187,13 @@ def build_deliver_spec(dataset):
     ]
     spec_python = {"Sample": sample_list}
 
-    return spec_python
-    
+    return spec_python   
 
 def get_structure(dataset, **kwargs, raw=False):
     """
     Utility function. 
     Creates and sends the ServiceX request from user inputed datasets to retrieve file stucture.
-    Calls print_structure_from_str()
+    Calls print_structure_from_str() to get the structure in a user-friendly format
 
     Parameters:
       dataset (dict,str,[str]): The datasets from which to print the file structures.
@@ -192,8 +203,5 @@ def get_structure(dataset, **kwargs, raw=False):
     spec_python=build_deliver_spec(dataset)
 
     output=servicex.deliver(spec_python)
-
-    if raw:
-        return array_from_str(output)
 
     return print_structure_from_str(output, **kwargs)
