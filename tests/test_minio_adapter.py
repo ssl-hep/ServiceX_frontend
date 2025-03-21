@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2022-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -136,6 +136,21 @@ async def test_download_short_filename_change(minio_adapter, session):
         bucket_name="bucket",
         file_path="/tmp/foo/_7405534c58a3f71e5d01cdd2f59356bda6f50a06678901234567890.txt",
         object_name="test123456789012345678901234567890k12345678901234567898012345678901234567890.txt",  # noqa: E501
+        session=session.return_value.__aenter__.return_value,
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_file_retry(minio_adapter, session):
+    minio_adapter.minio.fget_object = AsyncMock(side_effect=[None, "test.txt"])
+    result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
+    assert str(result).endswith("test.txt")
+    assert session.call_args.kwargs["timeout"].total == 600
+    assert len(minio_adapter.minio.fget_object.call_args_list) == 2
+    minio_adapter.minio.fget_object.assert_called_with(
+        bucket_name="bucket",
+        file_path="/tmp/foo/test.txt",
+        object_name="test.txt",
         session=session.return_value.__aenter__.return_value,
     )
 

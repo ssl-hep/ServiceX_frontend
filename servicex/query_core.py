@@ -1,4 +1,4 @@
-# Copyright (c) 2024, IRIS-HEP
+# Copyright (c) 2024-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -204,14 +204,14 @@ class Query:
                     f'ServiceX Exception for request ID {self.request_id} ({self.title})"',
                     exc_info=task.exception(),
                 )
-                self.cache.delete_record_by_request_id(self.request_id)
-                if download_files_task:
-                    download_files_task.cancel("Transform failed")
+                if self.fail_if_incomplete:
+                    self.cache.delete_record_by_request_id(self.request_id)
+                    if download_files_task:
+                        download_files_task.cancel("Transform failed")
                 raise task.exception()
 
             if self.current_status.status in DONE_STATUS:
                 if self.current_status.files_failed:
-                    self.cache.delete_record_by_request_id(self.request_id)
                     titlestr = (
                         f'"{self.current_status.title}" '
                         if self.current_status.title is not None
@@ -220,7 +220,8 @@ class Query:
                     errorstr = (
                         f"Transform {titlestr}completed with failures: "
                         f"{self.current_status.files_failed}/"
-                        f"{self.current_status.files} files failed. Will not cache."
+                        f"{self.current_status.files} files failed."
+                        f"{'Will not cache.' if self.fail_if_incomplete else ''}"
                     )
                     failedfiles = (
                         self.servicex.url
@@ -231,6 +232,7 @@ class Query:
                         "A list of failed files is at [bold red on white]"
                         f"[link={failedfiles}]this link[/link][/bold red on white]"
                     )
+                    logger.error(errorstr)
                     logger.error(errorstr2)
                     logger.error(
                         f"Transform Request id: {self.current_status.request_id}"
@@ -246,7 +248,10 @@ class Query:
                             f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
                         )
                     if self.fail_if_incomplete:
+                        self.cache.delete_record_by_request_id(self.request_id)
                         raise ServiceXException(errorstr)
+                    else:
+                        logger.error("Will continue to download what is available")
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
