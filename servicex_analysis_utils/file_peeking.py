@@ -111,20 +111,23 @@ def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, 
         with uproot.open(path[0]) as f:
             structure_str = f["servicex"]["branch"].array()[0]
 
+        # Trees separated by \n
         tree_lines = structure_str.split("\n")
         for line in tree_lines:
             if not line.strip():
                 continue  # Skip empty lines
             
+            #Separate Tree header from branches
             parts = line.split(";", 1)
             tree_header = parts[0]
             output_lines.append(f"\n\U0001F333 {tree_header}")
 
             if len(parts) > 1:
-                branch_infos = parts[1].split(",")
+                branch_infos = parts[1].split(",") # Branches separated by ,
                 output_lines.append("   ├── Branches:")
                 for b in branch_infos:
-                    branch_line = b.strip()
+                    branch_line = b.strip() 
+                    # Removes lines w/o filter str
                     if filter_branch not in branch_line:
                         continue
                     if branch_line.startswith("TBranch:"):
@@ -175,7 +178,7 @@ def build_deliver_spec(dataset):
     return spec_python
     
 
-def get_structure(dataset, **kwargs):
+def get_structure(dataset, **kwargs, raw=False):
     """
     Utility function. 
     Creates and sends the ServiceX request from user inputed datasets to retrieve file stucture.
@@ -189,5 +192,8 @@ def get_structure(dataset, **kwargs):
     spec_python=build_deliver_spec(dataset)
 
     output=servicex.deliver(spec_python)
+
+    if raw:
+        return array_from_str(output)
 
     return print_structure_from_str(output, **kwargs)
