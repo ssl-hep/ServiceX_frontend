@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2022-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,11 +31,20 @@ from pathlib import Path
 from typing import List
 
 import aiohttp
+import asyncio
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 from miniopy_async import Minio
 
 from servicex.models import ResultFile, TransformStatus
+
+_semaphore = asyncio.Semaphore(8)
+
+
+def init_download_semaphore(concurrency: int = 8):
+    "Update the number of concurrent connections"
+    global _semaphore
+    _semaphore = asyncio.Semaphore(concurrency)
 
 
 def _sanitize_filename(fname: str):
@@ -103,24 +112,42 @@ class MinioAdapter:
             )
         )
 
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=10 * 60)
-        ) as session:
-            _ = await self.minio.fget_object(
-                bucket_name=self.bucket,
-                object_name=object_name,
-                file_path=path.as_posix(),
-                session=session,
-            )
+        async with _semaphore:
+            async with aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=10 * 60)
+            ) as session:
+                remotesize = (
+                    await self.minio.stat_object(
+                        bucket_name=self.bucket,
+                        object_name=object_name,
+                    )
+                ).size
+                if path.exists():
+                    # if file size is the same, let's not download anything
+                    # maybe move to a better verification mechanism with e-tags in the future
+                    localsize = path.stat().st_size
+                    if localsize == remotesize:
+                        print(f"skipping {localsize} {remotesize}")
+                        return path.resolve()
+                _ = await self.minio.fget_object(
+                    bucket_name=self.bucket,
+                    object_name=object_name,
+                    file_path=path.as_posix(),
+                    session=session,
+                )
+                localsize = path.stat().st_size
+                if _ is None or localsize != remotesize:
+                    raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
     async def get_signed_url(self, object_name: str) -> str:
-        return await self.minio.get_presigned_url(
-            bucket_name=self.bucket, object_name=object_name, method="GET"
-        )
+        async with _semaphore:
+            return await self.minio.get_presigned_url(
+                bucket_name=self.bucket, object_name=object_name, method="GET"
+            )
 
     @classmethod
     def hash_path(cls, file_name):
