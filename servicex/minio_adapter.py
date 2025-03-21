@@ -30,11 +30,10 @@ from hashlib import sha1
 from pathlib import Path
 from typing import List
 
-import aiohttp
 import asyncio
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
-from miniopy_async import Minio
+import aioboto3
 
 from servicex.models import ResultFile, TransformStatus
 
@@ -65,10 +64,11 @@ class MinioAdapter:
         secret_key: str,
         bucket: str,
     ):
-        self.minio = Minio(
-            endpoint_host, access_key=access_key, secret_key=secret_key, secure=secure
+        self.minio = aioboto3.Session(
+            aws_access_key_id=access_key, aws_secret_access_key=secret_key
         )
 
+        self.endpoint_host = ("https://" if secure else "http://") + endpoint_host
         self.bucket = bucket
 
     @classmethod
@@ -85,16 +85,18 @@ class MinioAdapter:
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
     async def list_bucket(self) -> List[ResultFile]:
-        objects = await self.minio.list_objects(self.bucket)
-        return [
-            ResultFile(
-                filename=obj.object_name,
-                size=obj.size,
-                extension=obj.object_name.split(".")[-1],
-            )
-            for obj in objects
-            if not obj.is_dir
-        ]
+        async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
+            bucket = await s3.Bucket(self.bucket)
+            objects = bucket.objects.all()
+            return [
+                ResultFile(
+                    filename=obj.key,
+                    size=await obj.size,
+                    extension=obj.key.split(".")[-1],
+                )
+                async for obj in objects
+                if not obj.key.endswith("/")
+            ]
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
@@ -113,30 +115,18 @@ class MinioAdapter:
         )
 
         async with _semaphore:
-            async with aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=10 * 60)
-            ) as session:
-                remotesize = (
-                    await self.minio.stat_object(
-                        bucket_name=self.bucket,
-                        object_name=object_name,
-                    )
-                ).size
+            async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
+                obj = await s3.Object(self.bucket, object_name)
+                remotesize = await obj.content_length
                 if path.exists():
                     # if file size is the same, let's not download anything
                     # maybe move to a better verification mechanism with e-tags in the future
                     localsize = path.stat().st_size
                     if localsize == remotesize:
-                        print(f"skipping {localsize} {remotesize}")
                         return path.resolve()
-                _ = await self.minio.fget_object(
-                    bucket_name=self.bucket,
-                    object_name=object_name,
-                    file_path=path.as_posix(),
-                    session=session,
-                )
+                await obj.download_file(path.as_posix())
                 localsize = path.stat().st_size
-                if _ is None or localsize != remotesize:
+                if localsize != remotesize:
                     raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()
 
@@ -145,9 +135,10 @@ class MinioAdapter:
     )
     async def get_signed_url(self, object_name: str) -> str:
         async with _semaphore:
-            return await self.minio.get_presigned_url(
-                bucket_name=self.bucket, object_name=object_name, method="GET"
-            )
+            async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
+                return await s3.generate_presigned_url(
+                    "get_object", Params={"Bucket": self.bucket, "Key": object_name}
+                )
 
     @classmethod
     def hash_path(cls, file_name):

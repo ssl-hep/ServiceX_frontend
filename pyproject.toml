@@ -38,7 +38,7 @@ dependencies = [
     "pydantic>=2.6.0",
     "aiohttp-retry>=2.8.3",
     "httpx>=0.24",
-    "miniopy-async>=1.20.1",
+    "aioboto3>=14.1.0",
     "tinydb>=4.7",
     "google-auth>=2.17",
     "typer>=0.12.1",
@@ -47,7 +47,6 @@ dependencies = [
     "importlib_metadata; python_version <= '3.9'",
     "typing_extensions; python_version <= '3.10'", # compatible versions controlled through pydantic
     "rich>=13.0.0",  # databinder
-    "aiofile",  # compatible versions controlled through miniopy-async
     "make-it-sync",  # compatible versions controlled through func_adl
     "ruamel.yaml>=0.18.7",
     "filelock>=3.12.0",
