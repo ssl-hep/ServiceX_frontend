@@ -127,7 +127,6 @@ class MinioAdapter:
                     # maybe move to a better verification mechanism with e-tags in the future
                     localsize = path.stat().st_size
                     if localsize == remotesize:
-                        print(f"skipping {localsize} {remotesize}")
                         return path.resolve()
                 _ = await self.minio.fget_object(
                     bucket_name=self.bucket,
