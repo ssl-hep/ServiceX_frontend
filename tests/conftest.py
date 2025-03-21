@@ -222,3 +222,9 @@ def codegen_list():
         "uproot": "http://servicex-code-gen-uproot:8000",
         "uproot-raw": "http://servicex-code-gen-uproot-raw:8000",
     }
+
+
+# This exists to force an async event loop to be created
+@fixture
+async def with_event_loop():
+    pass

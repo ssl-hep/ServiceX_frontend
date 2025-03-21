@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2022-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -228,6 +228,7 @@ def deliver(
     fail_if_incomplete: bool = True,
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
+    concurrency: int = 8,
 ):
     r"""
     Execute a ServiceX query.
@@ -249,9 +250,13 @@ def deliver(
             will have its own progress bars; :py:const:`ProgressBarFormat.compact` gives one
             summary progress bar for all transformations; :py:const:`ProgressBarFormat.none`
             switches off progress bars completely.
+    :param concurrency: specify how many downloads to run in parallel (default is 8).
     :return: A dictionary mapping the name of each :py:class:`Sample` to a :py:class:`.GuardList`
             with the file names or URLs for the outputs.
     """
+    from .minio_adapter import init_download_semaphore
+
+    init_download_semaphore(concurrency)
     config = _load_ServiceXSpec(spec)
 
     if ignore_local_cache or config.General.IgnoreLocalCache:
