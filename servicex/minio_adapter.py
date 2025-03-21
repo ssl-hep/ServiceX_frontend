@@ -135,7 +135,7 @@ class MinioAdapter:
                     file_path=path.as_posix(),
                     session=session,
                 )
-                localsize = path.stat().st_size
+                localsize = path.stat().st_size if _ is not None else 0
                 if _ is None or localsize != remotesize:
                     raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()

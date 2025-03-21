@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from pathlib import Path
 from unittest.mock import AsyncMock
+import os
 
 import pytest
 from miniopy_async.datatypes import Object
@@ -74,7 +75,11 @@ async def test_list_bucket(minio_adapter):
 
 @pytest.mark.asyncio
 async def test_download_file(minio_adapter, session):
-    minio_adapter.minio.fget_object = AsyncMock(return_value="test.txt")
+    minio_adapter.minio.fget_object = AsyncMock(
+        return_value="test.txt",
+        side_effect=lambda **kwargs: open("/tmp/foo/test.txt", "w").write(""),
+    )
+    minio_adapter.minio.stat_object = AsyncMock(return_value=Object("a", "b", size=0))
     result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
     assert str(result).endswith("test.txt")
     assert session.call_args.kwargs["timeout"].total == 600
@@ -84,11 +89,17 @@ async def test_download_file(minio_adapter, session):
         object_name="test.txt",
         session=session.return_value.__aenter__.return_value,
     )
+    if os.path.exists("/tmp/foo/test.txt"):
+        os.remove("/tmp/foo/test.txt")
 
 
 @pytest.mark.asyncio
 async def test_download_bad_filename(minio_adapter, session):
-    minio_adapter.minio.fget_object = AsyncMock(return_value="t::est.txt")
+    minio_adapter.minio.fget_object = AsyncMock(
+        return_value="t::est.txt",
+        side_effect=lambda **kwargs: open("/tmp/foo/t__est.txt", "w").write(""),
+    )
+    minio_adapter.minio.stat_object = AsyncMock(return_value=Object("a", "b", size=0))
     result = await minio_adapter.download_file("t::est.txt", local_dir="/tmp/foo")
     assert str(result).endswith("t__est.txt")
     minio_adapter.minio.fget_object.assert_called_with(
@@ -97,11 +108,17 @@ async def test_download_bad_filename(minio_adapter, session):
         object_name="t::est.txt",
         session=session.return_value.__aenter__.return_value,
     )
+    if os.path.exists("/tmp/foo/t__est.txt"):
+        os.remove("/tmp/foo/t__est.txt")
 
 
 @pytest.mark.asyncio
 async def test_download_short_filename_no_change(minio_adapter, session):
-    minio_adapter.minio.fget_object = AsyncMock(return_value="test.txt")
+    minio_adapter.minio.fget_object = AsyncMock(
+        return_value="test.txt",
+        side_effect=lambda **kwargs: open("/tmp/foo/test.txt", "w").write(""),
+    )
+    minio_adapter.minio.stat_object = AsyncMock(return_value=Object("a", "b", size=0))
     result = await minio_adapter.download_file(
         "test.txt", local_dir="/tmp/foo", shorten_filename=True
     )
@@ -112,13 +129,21 @@ async def test_download_short_filename_no_change(minio_adapter, session):
         object_name="test.txt",
         session=session.return_value.__aenter__.return_value,
     )
+    if os.path.exists("/tmp/foo/test.txt"):
+        os.remove("/tmp/foo/test.txt")
 
 
 @pytest.mark.asyncio
 async def test_download_short_filename_change(minio_adapter, session):
     minio_adapter.minio.fget_object = AsyncMock(
-        return_value="test12345678901234567890123456789012345678901234567898012345678901234567890.txt"  # noqa: E501
+        return_value="test12345678901234567890123456789012345678901234567898012345678901234567890.txt",  # noqa: E501
+        side_effect=lambda **kwargs: open(
+            "/tmp/foo/_7405534c58a3f71e5d01cdd2f59356bda6f50a06678901234567890.txt", "w"
+        ).write(
+            ""
+        ),  # noqa: E501
     )
+    minio_adapter.minio.stat_object = AsyncMock(return_value=Object("a", "b", size=0))
     result = await minio_adapter.download_file(
         "test123456789012345678901234567890k12345678901234567898012345678901234567890.txt",
         local_dir="/tmp/foo",
@@ -138,11 +163,24 @@ async def test_download_short_filename_change(minio_adapter, session):
         object_name="test123456789012345678901234567890k12345678901234567898012345678901234567890.txt",  # noqa: E501
         session=session.return_value.__aenter__.return_value,
     )
+    if os.path.exists(
+        "/tmp/foo/_7405534c58a3f71e5d01cdd2f59356bda6f50a06678901234567890.txt"
+    ):
+        os.remove(
+            "/tmp/foo/_7405534c58a3f71e5d01cdd2f59356bda6f50a06678901234567890.txt"
+        )
 
 
 @pytest.mark.asyncio
 async def test_download_file_retry(minio_adapter, session):
-    minio_adapter.minio.fget_object = AsyncMock(side_effect=[None, "test.txt"])
+    def side_effect():
+        for rv in [None, "test.txt"]:
+            if rv:
+                open(f"/tmp/foo/{rv}", "w").write("")
+            yield rv
+
+    minio_adapter.minio.fget_object = AsyncMock(side_effect=side_effect())
+    minio_adapter.minio.stat_object = AsyncMock(return_value=Object("a", "b", size=0))
     result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
     assert str(result).endswith("test.txt")
     assert session.call_args.kwargs["timeout"].total == 600
@@ -153,6 +191,8 @@ async def test_download_file_retry(minio_adapter, session):
         object_name="test.txt",
         session=session.return_value.__aenter__.return_value,
     )
+    if os.path.exists("/tmp/foo/test.txt"):
+        os.remove("/tmp/foo/test.txt")
 
 
 @pytest.mark.asyncio
