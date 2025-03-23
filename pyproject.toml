@@ -79,6 +79,7 @@ test = [
     "pandas>=2.0.2",
     "pyarrow>=12.0.0",
     "pre-commit>=4.0.1",
+    "pytest-aioboto3>=0.6.0",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",

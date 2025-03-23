@@ -135,7 +135,7 @@ class MinioAdapter:
     )
     async def get_signed_url(self, object_name: str) -> str:
         async with _semaphore:
-            async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
+            async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
                 return await s3.generate_presigned_url(
                     "get_object", Params={"Bucket": self.bucket, "Key": object_name}
                 )
