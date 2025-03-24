@@ -75,6 +75,7 @@ def test_encoding(build_test_samples,tmp_path, capsys):
     assert encoded_result == expected_result
 
     # Produce servicex.deliver() like dict
+    # i.e {"Sample Name":"Path"}
     tree_data= {"branch" : query_output}
     with uproot.create(tmp_path / "encoded.root") as file:
         file["servicex"]= tree_data
@@ -82,7 +83,7 @@ def test_encoding(build_test_samples,tmp_path, capsys):
     deliver_dict={"test_file":[str(tmp_path / "encoded.root")]}
 
     
-    ## Test decoding structure formating
+    ## Test str formating on the deliver-like dict
     # save_to_txt
     file_peeking.print_structure_from_str(deliver_dict,save_to_txt=True)
     out_txt="samples_structure.txt"
@@ -153,3 +154,15 @@ def test_spec_builder():
     wrong_did=1234
     with pytest.raises(ValueError, match=re.escape(f"Unsupported dataset input type: {type(wrong_did)}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str")):
         file_peeking.build_deliver_spec(wrong_did)
+
+def test_decoding_to_array(build_test_samples,array_out=True):
+    path=build_test_samples
+    query_output=file_peeking.run_query(path)
+    encoded_result=query_output[0]
+
+    result=file_peeking.str_to_array(encoded_result)
+
+    #Test type
+    assert isinstance(result, ak.Array), "str_to_array does not return an awkward array"
+    expected_type_str="1 * {background: {branch1: var * float64, branch2: var * float64}, signal: {branch1: var * float64}}"
+    assert str(result.type) == expected_type_str
