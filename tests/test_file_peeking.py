@@ -163,6 +163,6 @@ def test_decoding_to_array(build_test_samples,array_out=True):
     result=file_peeking.str_to_array(encoded_result)
 
     #Test type
-    assert isinstance(result, ak.Array), "str_to_array does not return an awkward array"
+    assert isinstance(result, ak.types.arraytype.ArrayType), "str_to_array does not return an awkward array type"
     expected_type_str="1 * {background: {branch1: var * float64, branch2: var * float64}, signal: {branch1: var * float64}}"
-    assert str(result.type) == expected_type_str
+    assert str(result) == expected_type_str

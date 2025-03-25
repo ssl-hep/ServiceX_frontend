@@ -289,7 +289,7 @@ def str_to_array(encoded_str):
             # Each tree becomes a record array with 1 entry (dict of branch arrays)
             reconstructed_data[treename] = ak.Array([branches])
 
-    return ak.Array(reconstructed_data)
+    return ak.Array(reconstructed_data).type
 
 def get_structure(dataset, array_out=False, **kwargs):
     """
