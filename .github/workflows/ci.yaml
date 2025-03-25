@@ -44,8 +44,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --system --upgrade '.[test,docs]'
-          uv pip list --system
+          uv pip install --upgrade '.[test,docs]'
+          uv pip list
 
       - name: Test with pytest
         run: |
