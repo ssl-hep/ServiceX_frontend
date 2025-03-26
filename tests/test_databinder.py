@@ -286,7 +286,7 @@ def test_invalid_dataset_identifier():
         )
 
 
-def test_submit_mapping(transformed_result, codegen_list):
+def test_submit_mapping(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
 
     spec = {
@@ -316,7 +316,9 @@ def test_submit_mapping(transformed_result, codegen_list):
         assert list(results["sampleA"]) == ["1.parquet"]
 
 
-def test_submit_mapping_signed_urls(transformed_result_signed_url, codegen_list):
+def test_submit_mapping_signed_urls(
+    transformed_result_signed_url, codegen_list, with_event_loop
+):
     from servicex import deliver
 
     spec = {
@@ -347,7 +349,7 @@ def test_submit_mapping_signed_urls(transformed_result_signed_url, codegen_list)
         ]
 
 
-def test_submit_mapping_failure(transformed_result, codegen_list):
+def test_submit_mapping_failure(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
 
     spec = {
@@ -378,7 +380,7 @@ def test_submit_mapping_failure(transformed_result, codegen_list):
                 pass
 
 
-def test_submit_mapping_failure_signed_urls(codegen_list):
+def test_submit_mapping_failure_signed_urls(codegen_list, with_event_loop):
     from servicex import deliver
 
     spec = {
@@ -638,7 +640,7 @@ Sample:
         _load_ServiceXSpec(path2)
 
 
-def test_funcadl_query(transformed_result, codegen_list):
+def test_funcadl_query(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
     from servicex.query import FuncADL_Uproot  # type: ignore
 
@@ -668,7 +670,7 @@ def test_funcadl_query(transformed_result, codegen_list):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_query_with_codegen_override(transformed_result, codegen_list):
+def test_query_with_codegen_override(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
     from servicex.query import FuncADL_Uproot  # type: ignore
 
@@ -752,7 +754,7 @@ def test_databinder_load_dict():
     )
 
 
-def test_python_query(transformed_result, codegen_list):
+def test_python_query(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
     from servicex.query import PythonFunction  # type: ignore
 
@@ -786,7 +788,7 @@ def test_python_query(transformed_result, codegen_list):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_uproot_raw_query(transformed_result, codegen_list):
+def test_uproot_raw_query(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
     from servicex.query import UprootRaw  # type: ignore
 
@@ -814,7 +816,7 @@ def test_uproot_raw_query(transformed_result, codegen_list):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_uproot_raw_query_parquet(transformed_result, codegen_list):
+def test_uproot_raw_query_parquet(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver
     from servicex.query import UprootRaw  # type: ignore
 
@@ -901,7 +903,7 @@ def test_generic_query(codegen_list):
             )
 
 
-def test_deliver_progress_options(transformed_result, codegen_list):
+def test_deliver_progress_options(transformed_result, codegen_list, with_event_loop):
     from servicex import deliver, ProgressBarFormat
     from servicex.query import UprootRaw  # type: ignore
 
