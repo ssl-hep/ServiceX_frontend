@@ -914,31 +914,49 @@ def test_deliver_progress_options(transformed_result, codegen_list, with_event_l
             ]
         }
     )
+
+    async def fake_submit(signed_urls_only, expandable_progress):
+        expandable_progress.add_task("zip", start=False, total=None)
+        return transformed_result
+
     with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
         patch(
             "servicex.servicex_client.ServiceXClient.get_code_generators",
             return_value=codegen_list,
         ),
+        patch(
+            "servicex.servicex_adapter.ServiceXAdapter._get_authorization",
+            return_value={"Authorization": "Bearer aaa"},
+        ),
+        patch(
+            "servicex.query_core.Query.submit_and_download",
+            side_effect=fake_submit,
+        ),
     ):
-        deliver(
+        import servicex.query_core
+
+        rv = deliver(
             spec,
             config_path="tests/example_config.yaml",
             progress_bar=ProgressBarFormat.compact,
         )
-        deliver(
+        servicex.query_core.Query.submit_and_download.assert_called_once()
+        assert rv is not None
+        assert rv["sampleA"].valid()
+        rv = deliver(
             spec,
             config_path="tests/example_config.yaml",
             progress_bar=ProgressBarFormat.none,
         )
+        assert rv is not None
+        assert rv["sampleA"].valid()
         deliver(
             spec,
             config_path="tests/example_config.yaml",
             progress_bar=ProgressBarFormat.expanded,
         )
+        assert rv is not None
+        assert rv["sampleA"].valid()
         with pytest.raises(ValueError):
             deliver(
                 spec,
