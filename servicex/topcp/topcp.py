@@ -62,6 +62,7 @@ class TopCPQuery(QueryStringGenerator):
     def generate_selection_string(self):
         import json
         from ruamel.yaml import YAML
+
         yaml = YAML()
 
         recoYaml = None
