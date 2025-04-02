@@ -61,21 +61,23 @@ class TopCPQuery(QueryStringGenerator):
 
     def generate_selection_string(self):
         import json
+        from ruamel.yaml import YAML
+        yaml = YAML()
 
         recoYaml = None
         if self.reco:
             with open(Path(self.reco), "r") as reco_file:
-                recoYaml = reco_file.read()
+                recoYaml = yaml.load(reco_file)
 
         partonYaml = None
         if self.parton:
             with open(Path(self.parton), "r") as parton_file:
-                partonYaml = parton_file.read()
+                partonYaml = yaml.load(parton_file)
 
         particleYaml = None
         if self.particle:
             with open(Path(self.particle), "r") as particle_file:
-                particleYaml = particle_file.read()
+                particleYaml = yaml.load(particle_file)
 
         query = {
             "reco": recoYaml,
