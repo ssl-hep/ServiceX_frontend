@@ -34,29 +34,41 @@ import pytest
 
 
 def test_default_keys():
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as fp:
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as fp:
         test_logfile_path = Path(fp.name)
-        fp.write("""
+        fp.write(
+            """
 CommonServices:
   runSystematics: False
-        """)
+        """
+        )
         fp.close()
 
         topcp_query = TopCPQuery(reco=test_logfile_path)
         query_string = topcp_query.generate_selection_string()
         query = json.loads(query_string)
 
-        query_keys = ['reco', 'parton', 'particle', 'max_events', 'no_systematics', 'no_filter']
+        query_keys = [
+            "reco",
+            "parton",
+            "particle",
+            "max_events",
+            "no_systematics",
+            "no_filter",
+        ]
         for key in query_keys:
             assert key in query, f"Missing key: {key}"
         os.remove(test_logfile_path)
 
 
 def test_yaml_serialization():
-    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f1, \
-         tempfile.NamedTemporaryFile(mode='w', delete=False) as f2:
+    with (
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as f1,
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as f2,
+    ):
         test_parton_yaml = Path(f1.name)
-        f1.write("""
+        f1.write(
+            """
 CommonServices:
   systematicsHistogram: 'listOfSystematicsPartonLevel'
   runSystematics: True
@@ -65,10 +77,12 @@ GeneratorLevelAnalysis: {}
 
 PartonHistory:
   - histories: 'Ttbar'
-        """)
+        """
+        )
         f1.close()
         test_particle_yaml = Path(f2.name)
-        f2.write("""
+        f2.write(
+            """
 CommonServices:
   systematicsHistogram: 'listOfSystematicsParticleLevel'
   runSystematics: True
@@ -81,14 +95,14 @@ PL_Electrons:
     useDressedProperties: True
     minPt: 25000.0
     maxEta: 2.5
-        """)
+        """
+        )
         f2.close()
 
-        topcp_query = TopCPQuery(parton=test_parton_yaml,
-                                 particle=test_particle_yaml)
+        topcp_query = TopCPQuery(parton=test_parton_yaml, particle=test_particle_yaml)
         query_string = topcp_query.generate_selection_string()
         query = json.loads(query_string)
-        assert query['particle']['PL_Electrons']['notFromTau'] is False
+        assert query["particle"]["PL_Electrons"]["notFromTau"] is False
         os.remove(test_parton_yaml)
         os.remove(test_particle_yaml)
 
