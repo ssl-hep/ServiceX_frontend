@@ -228,7 +228,7 @@ def deliver(
     fail_if_incomplete: bool = True,
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
-    concurrency: int = 8,
+    concurrency: int = 10,
 ):
     r"""
     Execute a ServiceX query.

@@ -30,20 +30,20 @@ from hashlib import sha1
 from pathlib import Path
 from typing import List
 
-import asyncio
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 import aioboto3
+from boto3.s3.transfer import TransferConfig
 
 from servicex.models import ResultFile, TransformStatus
 
-_semaphore = asyncio.Semaphore(8)
+_transferconfig = TransferConfig(max_concurrency=10)
 
 
-def init_download_semaphore(concurrency: int = 8):
+def init_download_semaphore(concurrency: int = 10):
     "Update the number of concurrent connections"
-    global _semaphore
-    _semaphore = asyncio.Semaphore(concurrency)
+    global _transferconfig
+    _transferconfig = TransferConfig(max_concurrency=concurrency)
 
 
 def _sanitize_filename(fname: str):
@@ -114,31 +114,29 @@ class MinioAdapter:
             )
         )
 
-        async with _semaphore:
-            async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
-                obj = await s3.Object(self.bucket, object_name)
-                remotesize = await obj.content_length
-                if path.exists():
-                    # if file size is the same, let's not download anything
-                    # maybe move to a better verification mechanism with e-tags in the future
-                    localsize = path.stat().st_size
-                    if localsize == remotesize:
-                        return path.resolve()
-                await obj.download_file(path.as_posix())
+        async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
+            obj = await s3.Object(self.bucket, object_name)
+            remotesize = await obj.content_length
+            if path.exists():
+                # if file size is the same, let's not download anything
+                # maybe move to a better verification mechanism with e-tags in the future
                 localsize = path.stat().st_size
-                if localsize != remotesize:
-                    raise RuntimeError(f"Download of {object_name} failed")
+                if localsize == remotesize:
+                    return path.resolve()
+            await obj.download_file(path.as_posix(), Config=_transferconfig)
+            localsize = path.stat().st_size
+            if localsize != remotesize:
+                raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
     async def get_signed_url(self, object_name: str) -> str:
-        async with _semaphore:
-            async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
-                return await s3.generate_presigned_url(
-                    "get_object", Params={"Bucket": self.bucket, "Key": object_name}
-                )
+        async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
+            return await s3.generate_presigned_url(
+                "get_object", Params={"Bucket": self.bucket, "Key": object_name}
+            )
 
     @classmethod
     def hash_path(cls, file_name):
