@@ -40,7 +40,7 @@ from servicex.models import ResultFile, TransformStatus
 _transferconfig = TransferConfig(max_concurrency=10)
 
 
-def init_download_semaphore(concurrency: int = 10):
+def init_s3_config(concurrency: int = 10):
     "Update the number of concurrent connections"
     global _transferconfig
     _transferconfig = TransferConfig(max_concurrency=concurrency)
