@@ -162,6 +162,25 @@ async def test_download_short_filename_change(minio_adapter, populate_bucket):
 
 @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
 @pytest.mark.asyncio
+async def test_download_repeat(minio_adapter, populate_bucket):
+    import asyncio
+
+    print(await minio_adapter.list_bucket())
+    result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
+    assert str(result).endswith("test.txt")
+    assert result.exists()
+    t0 = result.stat().st_mtime_ns
+    await asyncio.sleep(4)  # hopefully long enough for Windows/FAT32 ... ?
+
+    result2 = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
+    assert result2.exists()
+    assert result2 == result
+    assert t0 == result2.stat().st_mtime_ns
+    result.unlink()  # it should exist, from above ...
+
+
+@pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
+@pytest.mark.asyncio
 async def test_download_file_retry(download_patch, minio_adapter, populate_bucket):
     result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
     assert str(result).endswith("test.txt")
@@ -174,25 +193,3 @@ async def test_download_file_retry(download_patch, minio_adapter, populate_bucke
 async def test_get_signed_url(minio_adapter, moto_services):
     result = await minio_adapter.get_signed_url("test.txt")
     assert result.startswith(moto_services["s3"])
-
-
-@pytest.mark.parametrize("populate_bucket", ["testn.txt"], indirect=True)
-@pytest.mark.asyncio
-async def test_download_repeat(minio_adapter, populate_bucket):
-    import asyncio
-
-    result = await minio_adapter.download_file(
-        "testn.txt", local_dir="/tmp/foo", shorten_filename=True
-    )
-    assert str(result).endswith("testn.txt")
-    assert result.exists()
-    t0 = result.stat().st_mtime_ns
-    await asyncio.sleep(4)  # hopefully long enough for Windows/FAT32 ... ?
-
-    result2 = await minio_adapter.download_file(
-        "testn.txt", local_dir="/tmp/foo", shorten_filename=True
-    )
-    assert result2.exists()
-    assert result2 == result
-    assert t0 == result2.stat().st_mtime_ns
-    result.unlink()  # it should exist, from above ...
