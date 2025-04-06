@@ -1,4 +1,4 @@
-# Copyright (c) 2024, IRIS-HEP
+# Copyright (c) 2024-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,8 @@ class TreeSubQuery(DocStringBaseModel):
     """Expression to filter the list of considered input variables by type name"""
     aliases: Optional[Mapping[str, str]] = None
     """Define aliases to use in computation and expressions"""
+    fail_on_missing_trees: Optional[bool] = None
+    """Make queries fail if input trees are missing (default False)"""
 
 
 class CopyHistogramSubQuery(DocStringBaseModel):
