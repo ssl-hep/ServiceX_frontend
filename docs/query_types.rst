@@ -89,6 +89,8 @@ Each dictionary either has a ``treename`` key (indicating that it is a query on 
 
   * ``expressions``, ``cut``, ``filter_name``, ``aliases``: have the same meaning as for `TTree.arrays()`_ in ``uproot``, except that functions aren't permitted (but *glob*\s and *regular expressions*, which are special kinds of strings, are).
 
+  * ``fail_on_missing_trees``: if set to ``True``, will cause the transformation to fail if a tree specified in the query is not present in any of the input files. By default if a requested tree is not present, it will just be ignored and the corresponding output will not be in the output.
+
   Other keys will be ignored.
 
   Most queries will probably use ``filter_names``, which selects specific branches, and ``cut``, which selects specific rows. The ``expressions`` argument permits new values to be computed from the branches in the tree, and ``aliases`` can be used to introduce shorthand to make these expressions cleaner.
