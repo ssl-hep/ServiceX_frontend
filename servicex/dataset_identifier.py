@@ -143,9 +143,9 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
 class XRootDDatasetIdentifier(DataSetIdentifier):
     def __init__(self, pattern: str, num_files: Optional[int] = None):
         r"""
-        CERN Open Data Dataset - this will be looked up using the CERN Open Data DID finder.
+        XRootD pattern Dataset - this will be looked up using the XRootD protocol using wildcards.
 
-        :param dataset: The dataset ID - this is an integer.
+        :param pattern: The wildcard pattern to be evaluated.
         :param num_files: Maximum number of files to return. This is useful during development
             to perform quick runs. ServiceX is careful to make sure it always
             returns the same subset of files.
