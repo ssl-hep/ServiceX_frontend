@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import servicex
+from servicex import deliver, query, dataset
 import uproot
 import numpy as np
 import awkward as ak
@@ -78,35 +78,33 @@ def run_query(input_filenames):
     return ak.Array([json_str])
 
 
-def build_deliver_spec(dataset):
+def build_deliver_spec(datasets):
     """
     Helper to build the servicex.deliver configuration.
     Supports multiple inputs for multiple sample queries.
 
     Parameters:
-    dataset (str, [str], or dict): Rucio DIDs to be checked by the servicex workers.
+    datasets (str, [str], or dict): Rucio DIDs to be checked by the servicex workers.
                                    If dict, custom names can be inputed
 
     Returns:
     spec_python (dict): The specification for the python function query containing Name, Query, Dataset, NFiles
     """
     # Servicex query using the PythonFunction backend
-    query_PythonFunction = servicex.query.PythonFunction().with_uproot_function(
-        run_query
-    )
+    query_PythonFunction = query.PythonFunction().with_uproot_function(run_query)
 
     # Create a dict with sample name for ServiceX query & datasetID
     dataset_dict = {}
-    user_in = type(dataset)
+    user_in = type(datasets)
 
     if user_in == str:
-        dataset_dict.update({"Sample": dataset})
-    elif user_in == list and type(dataset[0]) is str:
-        for i in range(len(dataset)):
+        dataset_dict.update({"Sample": datasets})
+    elif user_in == list and type(datasets[0]) is str:
+        for i in range(len(datasets)):
             name = "Sample" + str(i + 1)  # write number for humans
-            dataset_dict.update({name: dataset[i]})
+            dataset_dict.update({name: datasets[i]})
     elif user_in == dict:
-        dataset_dict = dataset
+        dataset_dict = datasets
     else:
         raise ValueError(
             f"Unsupported dataset input type: {user_in}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str"
@@ -116,7 +114,7 @@ def build_deliver_spec(dataset):
         {
             "NFiles": 1,
             "Name": name,
-            "Dataset": servicex.dataset.Rucio(did),
+            "Dataset": dataset.Rucio(did),
             "Query": query_PythonFunction,
         }
         for name, did in dataset_dict.items()
@@ -257,20 +255,20 @@ def str_to_array(encoded_json_str):
     return ak.Array(reconstructed_data).type
 
 
-def get_structure(dataset, array_out=False, **kwargs):
+def get_structure(datasets, array_out=False, **kwargs):
     """
     Utility function.
     Creates and sends the ServiceX request from user inputed datasets to retrieve file stucture.
     Calls print_structure_from_str() to dump the structure in a user-friendly format
 
     Parameters:
-      dataset (dict,str,[str]): The datasets from which to print the file structures.
+      datasets (dict,str,[str]): The datasets from which to print the file structures.
                                 A custom sample name per dataset can be given in a dict form: {'sample_name':'dataset_id'}
       kwargs : Arguments to be propagated to print_structure_from_str
     """
-    spec_python = build_deliver_spec(dataset)
+    spec_python = build_deliver_spec(datasets)
 
-    output = servicex.deliver(spec_python)
+    output = deliver(spec_python)
 
     if array_out == True:
         all_arrays = {}
