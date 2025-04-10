@@ -6,26 +6,20 @@ import logging
 from .file_peeking import get_structure
 
 
-def run_from_command():
-    parser = argparse.ArgumentParser(
-        description="CLI tool for retrieving ROOT file structures."
-    )
+def make_dataset_list(dataset_arg):
+    """
+    Helper to handle the user input daset argument.
+    Loads to dict if input is .json else returns default input
+    Output is given to get_structure()
 
-    parser.add_argument(
-        "dataset",
-        nargs="+",
-        help="Input datasets (Rucio DID) or a JSON file containing datasets in a dict.",
-    )
-    parser.add_argument(
-        "--filter-branch",
-        default="",
-        help="Only display branches containing this string.",
-    )
+    Parameters:
+    dataset_arg (str, [str]): Single DS identifier, list of multiple identifiers or path/to/.json containig identifiers and sample names.
 
-    args = parser.parse_args()
-
-    if len(args.dataset) == 1 and args.dataset[0].endswith(".json"):
-        dataset_file = args.dataset[0]
+    Returns:
+    dataset (str, [str], dict): dictionary loaded from the json
+    """
+    if len(dataset_arg) == 1 and dataset_arg[0].endswith(".json"):
+        dataset_file = dataset_arg[0]
 
         if not os.path.isfile(dataset_file):
             logging.error(f"Error: JSON file '{dataset_file}' not found.")
@@ -46,9 +40,36 @@ def run_from_command():
             sys.exit(1)
 
     else:
-        # If dataset is provided directly in CLI, use it as a list
-        dataset = args.dataset
+        # If DS is provided in CLI instead of json, use it as a list (default)
+        dataset = dataset_arg
 
-    result = get_structure(dataset, filter_branch=args.filter_branch, do_print=False)
+    return dataset
+
+
+def run_from_command():
+    """
+    Calls the get_structure function and sends results to stdout.
+    To run on command line: servicex-get-structure -dataset --fileter-branch
+    """
+    parser = argparse.ArgumentParser(
+        description="CLI tool for retrieving ROOT file structures."
+    )
+
+    parser.add_argument(
+        "dataset",
+        nargs="+",
+        help="Input datasets (Rucio DID) or a JSON file containing datasets in a dict.",
+    )
+    parser.add_argument(
+        "--filter-branch",
+        default="",
+        help="Only display branches containing this string.",
+    )
+
+    args = parser.parse_args()
+
+    ds_format = make_dataset_list(args.dataset)
+
+    result = get_structure(ds_format, filter_branch=args.filter_branch, do_print=False)
 
     print(result)
