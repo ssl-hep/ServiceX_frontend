@@ -2,6 +2,7 @@ import argparse
 import sys
 import json
 import os
+import logging
 from .file_peeking import get_structure
 
 
@@ -27,10 +28,7 @@ def run_from_command():
         dataset_file = args.dataset[0]
 
         if not os.path.isfile(dataset_file):
-            print(
-                f"\033[91mError: JSON file '{dataset_file}' not found.\033[0m",
-                file=sys.stderr,
-            )
+            logging.error(f"Error: JSON file '{dataset_file}' not found.")
             sys.exit(1)
 
         try:
@@ -38,16 +36,12 @@ def run_from_command():
                 dataset = json.load(f)
 
                 if not isinstance(dataset, dict):
-                    print(
-                        f"\033[91mError: The JSON file must contain a dictionary.\033[0m",
-                        file=sys.stderr,
-                    )
+                    logging.error(f"Error: The JSON file must contain a dictionary.")
                     sys.exit(1)
 
         except json.JSONDecodeError:
-            print(
-                f"\033[91mError: '{dataset_file}' is not a valid JSON file.\033[0m",
-                file=sys.stderr,
+            logging.error(
+                f"Error: '{dataset_file}' is not a valid JSON file.", exc_info=True
             )
             sys.exit(1)
 
