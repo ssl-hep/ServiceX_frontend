@@ -98,11 +98,10 @@ def build_deliver_spec(datasets):
     user_in = type(datasets)
 
     if user_in == str:
-        dataset_dict.update({"Sample": datasets})
+        dataset_dict.update({datasets: datasets})
     elif user_in == list and type(datasets[0]) is str:
-        for i in range(len(datasets)):
-            name = "Sample" + str(i + 1)  # write number for humans
-            dataset_dict.update({name: datasets[i]})
+        for ds in datasets:
+            dataset_dict.update({ds: ds})
     elif user_in == dict:
         dataset_dict = datasets
     else:

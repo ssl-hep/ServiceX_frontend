@@ -1,9 +1,12 @@
-import argparse
 import sys
 import json
 import os
 import logging
 from .file_peeking import get_structure
+import typer
+from typing import List
+
+app = typer.Typer()
 
 
 def make_dataset_list(dataset_arg):
@@ -46,30 +49,25 @@ def make_dataset_list(dataset_arg):
     return dataset
 
 
-def run_from_command():
+@app.command()
+def run_from_command(
+    dataset: List[str] = typer.Argument(
+        ...,
+        help="Input datasets (Rucio DID) or path to JSON file containing datasets in a dict.",
+    ),
+    filter_branch: str = typer.Option(
+        "", "--filter-branch", help="Only display branches containing this string."
+    ),
+):
     """
     Calls the get_structure function and sends results to stdout.
-    To run on command line: servicex-get-structure -dataset --fileter-branch
+    To run on command line: servicex-get-structure -dataset --filter-branch
     """
-    parser = argparse.ArgumentParser(
-        description="CLI tool for retrieving ROOT file structures."
-    )
-
-    parser.add_argument(
-        "dataset",
-        nargs="+",
-        help="Input datasets (Rucio DID) or a JSON file containing datasets in a dict.",
-    )
-    parser.add_argument(
-        "--filter-branch",
-        default="",
-        help="Only display branches containing this string.",
-    )
-
-    args = parser.parse_args()
-
-    ds_format = make_dataset_list(args.dataset)
-
-    result = get_structure(ds_format, filter_branch=args.filter_branch, do_print=False)
+    ds_format = make_dataset_list(dataset)
+    result = get_structure(ds_format, filter_branch=filter_branch, do_print=False)
 
     print(result)
+
+
+if __name__ == "__main__":
+    app()
