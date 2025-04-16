@@ -102,7 +102,10 @@ PL_Electrons:
         topcp_query = TopCPQuery(parton=test_parton_yaml, particle=test_particle_yaml)
         query_string = topcp_query.generate_selection_string()
         query = json.loads(query_string)
-        assert "systematicsHistogram: 'listOfSystematicsParticleLevel'\n" in query["particle"]
+        assert (
+            "systematicsHistogram: 'listOfSystematicsParticleLevel'\n"
+            in query["particle"]
+        )
         os.remove(test_parton_yaml)
         os.remove(test_particle_yaml)
 
