@@ -104,6 +104,7 @@ FuncADL_ATLASxAOD = "servicex.func_adl.func_adl_dataset:FuncADLQuery_ATLASxAOD"
 FuncADL_CMS = "servicex.func_adl.func_adl_dataset:FuncADLQuery_CMS"
 PythonFunction = "servicex.python_dataset:PythonFunction"
 UprootRaw = "servicex.uproot_raw.uproot_raw:UprootRawQuery"
+TopCP = "servicex.topcp.topcp:TopCPQuery"
 
 [project.entry-points.'servicex.dataset']
 Rucio = "servicex.dataset_identifier:RucioDatasetIdentifier"
@@ -124,3 +125,6 @@ packages = ["servicex"]
 
 [tool.coverage.run]
 dynamic_context = "test_function"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
