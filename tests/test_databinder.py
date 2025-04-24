@@ -453,6 +453,9 @@ Sample:
     Query: !UprootRaw '[{"treename": "nominal"}]'
   - Name: ttH7
     Dataset: !XRootD root://eosatlas.cern.ch//eos/atlas/path/*/file.root
+  - Name: ttH8
+    Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v113
+    Query: !TopCP 'reco="examples/reco.yaml"'
 """
         )
         f.flush()
@@ -460,6 +463,7 @@ Sample:
         assert type(result.Sample[0].Query).__name__ == "PythonFunction"
         assert type(result.Sample[1].Query).__name__ == "FuncADLQuery_Uproot"
         assert type(result.Sample[2].Query).__name__ == "UprootRawQuery"
+        assert type(result.Sample[7].Query).__name__ == "TopCPQuery"
         assert isinstance(result.Sample[3].dataset_identifier, Rucio)
         assert (
             result.Sample[3].dataset_identifier.did
