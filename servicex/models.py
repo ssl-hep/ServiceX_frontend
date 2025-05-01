@@ -79,6 +79,7 @@ class ResultFormat(str, Enum):
 
     parquet = "parquet"
     root_ttree = "root-file"
+    root_rntuple = "root-rntuple"
 
 
 class Status(str, Enum):

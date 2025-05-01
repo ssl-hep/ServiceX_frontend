@@ -97,9 +97,13 @@ def test_output_format():
     spec = basic_spec()
     spec["General"] = {"OutputFormat": "root-ttree"}
     ServiceXSpec.model_validate(spec)
+    spec["General"] = {"OutputFormat": "root-rntuple"}
+    ServiceXSpec.model_validate(spec)
     spec["General"] = {"OutputFormat": "parquet"}
     ServiceXSpec.model_validate(spec)
     spec["General"] = {"OutputFormat": OutputFormat.root_ttree}
+    ServiceXSpec.model_validate(spec)
+    spec["General"] = {"OutputFormat": OutputFormat.root_rntuple}
     ServiceXSpec.model_validate(spec)
     spec["General"] = {"OutputFormat": OutputFormat.parquet}
     ServiceXSpec.model_validate(spec)
@@ -833,6 +837,35 @@ def test_uproot_raw_query_parquet(transformed_result, codegen_list, with_event_l
         }
     )
     print(spec)
+    with (
+        patch(
+            "servicex.dataset_group.DatasetGroup.as_files",
+            return_value=[transformed_result],
+        ),
+        patch(
+            "servicex.servicex_client.ServiceXClient.get_code_generators",
+            return_value=codegen_list,
+        ),
+    ):
+        deliver(spec, config_path="tests/example_config.yaml")
+
+
+def test_uproot_raw_query_rntuple(transformed_result, codegen_list, with_event_loop):
+    from servicex import deliver
+    from servicex.query import UprootRaw  # type: ignore
+
+    spec = ServiceXSpec.model_validate(
+        {
+            "General": {"OutputFormat": "root-rntuple"},
+            "Sample": [
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Query": UprootRaw([{"treename": "nominal"}]),
+                }
+            ],
+        }
+    )
     with (
         patch(
             "servicex.dataset_group.DatasetGroup.as_files",

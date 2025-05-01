@@ -33,7 +33,7 @@ In brief, here are the currently supported combinations:
 
 ### Uproot-Raw
 
-The Uproot-Raw query language can be thought of as essentially calling the [`TTree.arrays()`](https://uproot.readthedocs.io/en/latest/uproot.behaviors.TTree.TTree.html#arrays) function of `uproot` with the possibility to specify several of the arguments, and returning the result. Multiple queries can be bundled into one request. It is also possible to copy objects from the input file.
+The Uproot-Raw query language can be thought of as essentially calling the [`TTree.arrays()`](https://uproot.readthedocs.io/en/latest/uproot.behaviors.TTree.TTree.html#arrays) function of `uproot` with the possibility to specify several of the arguments, and returning the result. (Tree here should be understood to also include `RNtuple` objects; nothing needs to be changed to read those.) Multiple queries can be bundled into one request. It is also possible to copy objects from the input file.
 
 Let's look at the structure of an Uproot-Raw query.
 
@@ -56,7 +56,7 @@ Each dictionary either has a `treename` key (indicating that it is a query on a 
 
 * **Query dictionaries**: these dictionaries contain a `treename` key, which specifies the tree(s) to be queried. The keys are:
   * `treename`: either a string, a list of strings, or a dictionary. This selects the names of the tree(s) to which the query will be applied. In the case that a dictionary is passed, the keys will be used to choose the input trees, and the values will be used as the name of the tree that results from the query - this allows the user to run multiple queries on the same tree, saving the output to a different tree each time.
-  * `expressions`, `cut`, `filter_name`, `aliases`: have the same meaning as for [`TTree.arrays()`](https://uproot.readthedocs.io/en/latest/uproot.behaviors.TTree.TTree.html#arrays) in `uproot`, except that functions aren't permitted (but *glob*s and _regular expressions_, which are special kinds of strings, are).
+  * `expressions`, `cut`, `filter_name`, `aliases`: have the same meaning as for [`TTree.arrays()`](https://uproot.readthedocs.io/en/latest/uproot.behaviors.TTree.TTree.html#arrays)/[`RNTuple.arrays()`](https://uproot.readthedocs.io/en/stable/uproot.models.RNTuple.Model_ROOT_3a3a_RNTuple.html#arrays) in `uproot`, except that functions aren't permitted (but *glob*s and _regular expressions_, which are special kinds of strings, are).
 
   Other keys will be ignored.
 
