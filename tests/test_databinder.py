@@ -97,9 +97,13 @@ def test_output_format():
     spec = basic_spec()
     spec["General"] = {"OutputFormat": "root-ttree"}
     ServiceXSpec.model_validate(spec)
+    spec["General"] = {"OutputFormat": "root-rntuple"}
+    ServiceXSpec.model_validate(spec)
     spec["General"] = {"OutputFormat": "parquet"}
     ServiceXSpec.model_validate(spec)
     spec["General"] = {"OutputFormat": OutputFormat.root_ttree}
+    ServiceXSpec.model_validate(spec)
+    spec["General"] = {"OutputFormat": OutputFormat.root_rntuple}
     ServiceXSpec.model_validate(spec)
     spec["General"] = {"OutputFormat": OutputFormat.parquet}
     ServiceXSpec.model_validate(spec)
