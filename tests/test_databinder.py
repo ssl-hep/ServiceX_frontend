@@ -862,7 +862,6 @@ def test_uproot_raw_query_rntuple(transformed_result, codegen_list, with_event_l
             ],
         }
     )
-    print(spec)
     with (
         patch(
             "servicex.dataset_group.DatasetGroup.as_files",
