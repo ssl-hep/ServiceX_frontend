@@ -230,7 +230,7 @@ class ServiceXAdapter:
 
     async def get_transformation_results(self, request_id: str):
         headers = await self._get_authorization()
-        url = self.url + f'/servicex/internal/transformation/{request_id}/results'
+        url = self.url + f"/servicex/internal/transformation/{request_id}/results"
 
         async with ClientSession() as session:
             async with session.get(headers=headers, url=url) as r:
@@ -244,11 +244,9 @@ class ServiceXAdapter:
 
                 if r.status != 200:
                     msg = await _extract_message(r)
-                    raise RuntimeError(
-                        f"Failed with message: {msg}"
-                    )
+                    raise RuntimeError(f"Failed with message: {msg}")
 
-                return (await r.json())['results']
+                return (await r.json())["results"]
 
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()

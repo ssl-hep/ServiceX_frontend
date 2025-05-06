@@ -558,13 +558,15 @@ class Query:
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    files = await self.servicex.get_transformation_results(self.current_status.request_id)
+                    files = await self.servicex.get_transformation_results(
+                        self.current_status.request_id
+                    )
 
                     for file in files:
-                        if 'file-path' not in file:
+                        if "file-path" not in file:
                             continue
 
-                        file_path = file['file-path'].replace('/', ':')
+                        file_path = file["file-path"].replace("/", ":")
                         if file_path not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
