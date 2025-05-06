@@ -228,6 +228,28 @@ class ServiceXAdapter:
                         f"Failed to delete transform {transform_id} - {msg}"
                     )
 
+    async def get_transformation_results(self, request_id: str):
+        headers = await self._get_authorization()
+        url = self.url + f'/servicex/internal/transformation/{request_id}/results'
+
+        async with ClientSession() as session:
+            async with session.get(headers=headers, url=url) as r:
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}"
+                    )
+
+                if r.status == 404:
+                    raise ValueError(f"Request {request_id} not found")
+
+                if r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(
+                        f"Failed with message: {msg}"
+                    )
+
+                return (await r.json())['results']
+
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}/cancel"
@@ -235,7 +257,6 @@ class ServiceXAdapter:
 
         async with ClientSession() as session:
             async with session.get(headers=headers, url=url) as r:
-
                 if r.status == 403:
                     raise AuthorizationError(
                         f"Not authorized to access serviceX at {self.url}"

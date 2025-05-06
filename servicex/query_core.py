@@ -522,6 +522,7 @@ class Query:
         Task to monitor the list of files in the transform output's bucket. Any new files
         will be downloaded.
         """
+
         files_seen = set()
         result_uris = []
         download_tasks = []
@@ -557,15 +558,19 @@ class Query:
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    files = await self.minio.list_bucket()
+                    files = await self.servicex.get_transformation_results(self.current_status.request_id)
+
                     for file in files:
-                        if file.filename not in files_seen:
+                        if 'file-path' not in file:
+                            continue
+
+                        file_path = file['file-path'].replace('/', ':')
+                        if file_path not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
                                     loop.create_task(
                                         get_signed_url(
-                                            self.minio,
-                                            file.filename,
+                                            file_path,
                                             progress,
                                             download_progress,
                                         )
@@ -576,14 +581,14 @@ class Query:
                                     loop.create_task(
                                         download_file(
                                             self.minio,
-                                            file.filename,
+                                            file_path,
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
                                         )
                                     )
                                 )  # NOQA 501
-                            files_seen.add(file.filename)
+                            files_seen.add(file_path)
 
             # Once the transform is complete and all files are seen we can stop polling.
             # Also, if we are just downloading or signing urls for a previous transform
