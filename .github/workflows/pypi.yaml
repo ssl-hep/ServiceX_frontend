@@ -12,7 +12,9 @@ jobs:
     permissions:
       id-token: write
       contents: write # required to push with GITHUB_TOKEN
-
+    env:
+      BRANCH: ${{ github.event.release.target_commitish }}
+      
     steps:
     - uses: actions/checkout@v4
       with:
