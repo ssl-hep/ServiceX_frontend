@@ -43,8 +43,8 @@ jobs:
 
     - name: Update Version
       run: |
-        sed -i '/version =/ s/= "[^"][^"]*"/ = "${{ env.RELEASE_VERSION }}"/' pyproject.toml
-
+        sed -i "/version =/ s/= \"[^\"]*\"/= \"${{ env.RELEASE_VERSION }}\"/" pyproject.toml
+        
     - name: commit version-bump
       run: |
         git config --local user.name "github-actions[bot]"
