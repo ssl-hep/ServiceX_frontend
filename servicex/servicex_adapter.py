@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import time
+import datetime
 from typing import Optional, Dict, List
 
 from aiohttp import ClientSession
@@ -228,12 +229,16 @@ class ServiceXAdapter:
                         f"Failed to delete transform {transform_id} - {msg}"
                     )
 
-    async def get_transformation_results(self, request_id: str):
+    async def get_transformation_results(self, request_id: str, begin_at: datetime.datetime):
         headers = await self._get_authorization()
-        url = self.url + f"/servicex/internal/transformation/{request_id}/results"
+        url = self.url + f"/servicex/transformation/{request_id}/results"
+
+        params = {}
+        if begin_at:
+            params["begin_at"] = begin_at.isoformat()
 
         async with ClientSession() as session:
-            async with session.get(headers=headers, url=url) as r:
+            async with session.get(headers=headers, url=url, params=params) as r:
                 if r.status == 403:
                     raise AuthorizationError(
                         f"Not authorized to access serviceX at {self.url}"
@@ -246,7 +251,8 @@ class ServiceXAdapter:
                     msg = await _extract_message(r)
                     raise RuntimeError(f"Failed with message: {msg}")
 
-                return (await r.json())["results"]
+                data = await r.json()
+                return data.get("results")
 
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()
