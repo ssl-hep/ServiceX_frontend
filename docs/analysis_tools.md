@@ -12,4 +12,3 @@ $ pip install servicex-analysis-utils
 ## Analysis utils documentation
 
 A documentation of the available tools with example usages can be found in [readthedocs](https://servicex-analysis-utils.readthedocs.io/en/latest/index.html#)
-
