@@ -229,7 +229,9 @@ class ServiceXAdapter:
                         f"Failed to delete transform {transform_id} - {msg}"
                     )
 
-    async def get_transformation_results(self, request_id: str, begin_at: datetime.datetime):
+    async def get_transformation_results(
+        self, request_id: str, begin_at: datetime.datetime
+    ):
         headers = await self._get_authorization()
         url = self.url + f"/servicex/transformation/{request_id}/results"
 
