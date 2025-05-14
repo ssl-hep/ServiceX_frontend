@@ -344,7 +344,11 @@ class Query:
 
         download_files_task = loop.create_task(
             self.download_files(
-                signed_urls_only, expandable_progress, download_progress, cached_record, begin_at
+                signed_urls_only,
+                expandable_progress,
+                download_progress,
+                cached_record,
+                begin_at,
             )
         )
 
@@ -564,8 +568,7 @@ class Query:
                 if self.current_status.files_completed > len(files_seen):
                     new_begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
                     files = await self.servicex.get_transformation_results(
-                        self.current_status.request_id,
-                        begin_at
+                        self.current_status.request_id, begin_at
                     )
                     begin_at = new_begin_at
 
