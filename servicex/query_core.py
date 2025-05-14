@@ -319,7 +319,7 @@ class Query:
             else None
         )
 
-        begin_at = datetime.datetime.now(datetime.UTC)
+        begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
         if not cached_record:
 
             if self.cache.is_transform_request_submitted(sx_request_hash):
@@ -562,7 +562,7 @@ class Query:
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    new_begin_at = datetime.datetime.now(datetime.UTC)
+                    new_begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
                     files = await self.servicex.get_transformation_results(
                         self.current_status.request_id,
                         begin_at
