@@ -28,6 +28,7 @@
 import pytest
 import tempfile
 import os
+import datetime
 
 from unittest.mock import AsyncMock, Mock, patch
 from servicex.dataset_identifier import FileListDataset
@@ -120,16 +121,21 @@ async def test_as_files_cached(transformed_result, python_dataset):
 @pytest.mark.asyncio
 async def test_download_files(python_dataset):
     signed_urls_only = False
+    begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
     download_progress = "download_task_id"
     minio_mock = AsyncMock()
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
     python_dataset.configuration = config
+    python_dataset.servicex = AsyncMock()
+    python_dataset.servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [{"file-path": "file1.txt"}],
+            [{"file-path": "file2.txt"}],
+        ]
+    )
+
     minio_mock.download_file.return_value = Path("/path/to/downloaded_file")
     minio_mock.get_signed_url.return_value = Path("http://example.com/signed_url")
-    minio_mock.list_bucket.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
-    ]
 
     progress_mock = Mock()
     python_dataset.minio_polling_interval = 0
@@ -138,7 +144,7 @@ async def test_download_files(python_dataset):
     python_dataset.configuration.shortened_downloaded_filename = False
 
     result_uris = await python_dataset.download_files(
-        signed_urls_only, progress_mock, download_progress, None
+        signed_urls_only, progress_mock, download_progress, None, begin_at
     )
     minio_mock.download_file.assert_awaited()
     minio_mock.get_signed_url.assert_not_awaited()
@@ -148,25 +154,29 @@ async def test_download_files(python_dataset):
 @pytest.mark.asyncio
 async def test_download_files_with_signed_urls(python_dataset):
     signed_urls_only = True
+    begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
     download_progress = "download_task_id"
     minio_mock = AsyncMock()
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
     python_dataset.configuration = config
     minio_mock.download_file.return_value = "/path/to/downloaded_file"
     minio_mock.get_signed_url.return_value = "http://example.com/signed_url"
-    minio_mock.list_bucket.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
-    ]
     progress_mock = Mock()
 
+    python_dataset.servicex = AsyncMock()
+    python_dataset.servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [{"file-path": "file1.txt"}],
+            [{"file-path": "file2.txt"}],
+        ]
+    )
     python_dataset.minio_polling_interval = 0
     python_dataset.minio = minio_mock
     python_dataset.current_status = Mock(status="Complete", files_completed=2)
     python_dataset.configuration.shortened_downloaded_filename = False
 
     result_uris = await python_dataset.download_files(
-        signed_urls_only, progress_mock, download_progress, None
+        signed_urls_only, progress_mock, download_progress, None, begin_at
     )
     minio_mock.download_file.assert_not_called()
     minio_mock.get_signed_url.assert_called()

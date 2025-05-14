@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
+import datetime
 import abc
 import asyncio
 from abc import ABC
@@ -318,6 +319,7 @@ class Query:
             else None
         )
 
+        begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
         if not cached_record:
 
             if self.cache.is_transform_request_submitted(sx_request_hash):
@@ -342,13 +344,18 @@ class Query:
 
         download_files_task = loop.create_task(
             self.download_files(
-                signed_urls_only, expandable_progress, download_progress, cached_record
+                signed_urls_only,
+                expandable_progress,
+                download_progress,
+                cached_record,
+                begin_at,
             )
         )
 
         try:
             signed_urls = []
             downloaded_files = []
+
             download_result = await download_files_task
             if signed_urls_only:
                 signed_urls = download_result
@@ -517,11 +524,13 @@ class Query:
         progress: ExpandableProgress,
         download_progress: TaskID,
         cached_record: Optional[TransformedResults],
+        begin_at: datetime.datetime,
     ) -> List[str]:
         """
         Task to monitor the list of files in the transform output's bucket. Any new files
         will be downloaded.
         """
+
         files_seen = set()
         result_uris = []
         download_tasks = []
@@ -557,15 +566,25 @@ class Query:
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    files = await self.minio.list_bucket()
+                    new_begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
+                    files = await self.servicex.get_transformation_results(
+                        self.current_status.request_id, begin_at
+                    )
+                    begin_at = new_begin_at
+
                     for file in files:
-                        if file.filename not in files_seen:
+                        if "file-path" not in file:
+                            continue
+
+                        file_path = file["file-path"].replace("/", ":")
+
+                        if file_path not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
                                     loop.create_task(
                                         get_signed_url(
                                             self.minio,
-                                            file.filename,
+                                            file_path,
                                             progress,
                                             download_progress,
                                         )
@@ -576,14 +595,14 @@ class Query:
                                     loop.create_task(
                                         download_file(
                                             self.minio,
-                                            file.filename,
+                                            file_path,
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
                                         )
                                     )
                                 )  # NOQA 501
-                            files_seen.add(file.filename)
+                            files_seen.add(file_path)
 
             # Once the transform is complete and all files are seen we can stop polling.
             # Also, if we are just downloading or signing urls for a previous transform
