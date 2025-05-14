@@ -70,6 +70,7 @@ re-running queries that have already been executed.
    errors
    yaml
    command_line
+   analysis_tools
    contribute
    about
    modules
