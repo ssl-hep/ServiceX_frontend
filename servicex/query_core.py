@@ -560,23 +560,30 @@ class Query:
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
 
+        transformation_results_enabled = "transformationresults" in await self.servicex.get_resources()
+
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    new_begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
-                    files = await self.servicex.get_transformation_results(
-                        self.current_status.request_id, begin_at
-                    )
-                    begin_at = new_begin_at
+                    if transformation_results_enabled:
+                        new_begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
+                        files = await self.servicex.get_transformation_results(
+                            self.current_status.request_id, begin_at
+                        )
+                        begin_at = new_begin_at
+                    else:
+                        files = await self.minio.list_bucket()
 
                     for file in files:
-                        if "file-path" not in file:
-                            continue
-
-                        file_path = file["file-path"].replace("/", ":")
+                        if transformation_results_enabled:
+                            if "file-path" not in file:
+                                continue
+                            file_path = file.get("file-path", '').replace("/", ":")
+                        else:
+                            file_path = file.filename
 
                         if file_path not in files_seen:
                             if signed_urls_only:

@@ -28,7 +28,9 @@
 import os
 import time
 import datetime
-from typing import Optional, Dict, List
+import asyncio
+from typing import Optional, Dict, List, Any, TypeVar, Callable, cast
+from functools import wraps
 
 from aiohttp import ClientSession
 import httpx
@@ -44,6 +46,78 @@ from tenacity import (
 
 from servicex.models import TransformRequest, TransformStatus, CachedDataset
 
+T = TypeVar('T')
+
+def requires_resource(resource_name: str) -> Callable[[Callable[..., T]], Callable[..., T]]:
+    """
+    Decorator to check if a specific API resource is available on the server before executing the method.
+
+    Args:
+        resource_name: The name of the resource that needs to be available
+
+    Returns:
+        A decorator function that wraps around class methods
+
+    Raises:
+        ResourceNotAvailableError: If the required resource is not available on the server
+    """
+
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        # Determine if function is async at decoration time (not runtime)
+        is_async = asyncio.iscoroutinefunction(func)
+        func_name = func.__name__
+
+        # Class-level cache for sync method resources
+        sync_cache_key = f'_sync_resources_for_{resource_name}'
+
+        if is_async:
+            @wraps(func)
+            async def async_wrapper(self, *args: Any, **kwargs: Any) -> T:
+                # Get resources and check availability in one operation
+                if resource_name not in await self.get_resources():
+                    raise ResourceNotAvailableError(
+                        f"Resource '{resource_name}' required for '{func_name}' is unavailable"
+                    )
+                return await func(self, *args, **kwargs)
+
+            return cast(Callable[..., T], async_wrapper)
+        else:
+            @wraps(func)
+            def sync_wrapper(self, *args: Any, **kwargs: Any) -> T:
+                # Initialize class-level cache attributes if needed
+                cls = self.__class__
+                if not hasattr(cls, sync_cache_key):
+                    setattr(cls, sync_cache_key, (None, 0))  # (resources, timestamp)
+
+                cache_ttl = getattr(self, '_resources_cache_ttl', 300)
+                cached_resources, timestamp = getattr(cls, sync_cache_key)
+                current_time = time.time()
+
+                # Check if cache needs refresh
+                if cached_resources is None or (current_time - timestamp) >= cache_ttl:
+                    loop = asyncio.new_event_loop()
+                    try:
+                        cached_resources = loop.run_until_complete(self.get_resources())
+                        setattr(cls, sync_cache_key, (cached_resources, current_time))
+                    finally:
+                        loop.close()
+
+                # Check resource availability
+                if resource_name not in cached_resources:
+                    raise ResourceNotAvailableError(
+                        f"Resource '{resource_name}' required for '{func_name}' is unavailable"
+                    )
+
+                return func(self, *args, **kwargs)
+
+            return cast(Callable[..., T], sync_wrapper)
+
+    return decorator
+
+
+class ResourceNotAvailableError(Exception):
+    """Exception raised when a required resource is not available on the server."""
+    pass
 
 class AuthorizationError(BaseException):
     pass
@@ -63,6 +137,45 @@ class ServiceXAdapter:
         self.url = url
         self.refresh_token = refresh_token
         self.token = None
+
+        self._available_resources: Optional[Dict[str, Any]] = None
+        self._resources_last_updated: Optional[float] = None
+        self._resources_cache_ttl = 60*5
+
+    async def get_resources(self) -> Dict[str, Any]:
+        """
+        Fetches the list of available resources from the server.
+        Caches the result for 5 minutes to avoid excessive API calls.
+
+        Returns:
+            A dictionary of available resources with their properties
+        """
+        current_time = time.time()
+
+        # Return cached resources if they exist and are not expired
+        if (self._available_resources is not None and
+                self._resources_last_updated is not None and
+                current_time - self._resources_last_updated < self._resources_cache_ttl):
+            return self._available_resources
+
+        # Fetch resources from server
+        headers = await self._get_authorization()
+        async with ClientSession() as session:
+            async with session.get(
+                    headers=headers, url=f"{self.url}/servicex/resources"
+            ) as r:
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}"
+                    )
+                elif r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed to get resources: {r.status} - {msg}")
+
+                self._available_resources = await r.json()
+                self._resources_last_updated = current_time
+
+                return self._available_resources
 
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
@@ -229,6 +342,7 @@ class ServiceXAdapter:
                         f"Failed to delete transform {transform_id} - {msg}"
                     )
 
+    @requires_resource("transformationresults")
     async def get_transformation_results(
         self, request_id: str, begin_at: datetime.datetime
     ):
