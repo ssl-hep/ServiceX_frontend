@@ -560,7 +560,9 @@ class Query:
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
 
-        transformation_results_enabled = "transformationresults" in await self.servicex.get_resources()
+        transformation_results_enabled = (
+            "transformationresults" in await self.servicex.get_resources()
+        )
 
         while True:
             if not cached_record:
@@ -581,7 +583,7 @@ class Query:
                         if transformation_results_enabled:
                             if "file-path" not in file:
                                 continue
-                            file_path = file.get("file-path", '').replace("/", ":")
+                            file_path = file.get("file-path", "").replace("/", ":")
                         else:
                             file_path = file.filename
 

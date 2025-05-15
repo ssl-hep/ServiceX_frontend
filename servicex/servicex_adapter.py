@@ -46,9 +46,12 @@ from tenacity import (
 
 from servicex.models import TransformRequest, TransformStatus, CachedDataset
 
-T = TypeVar('T')
+T = TypeVar("T")
 
-def requires_resource(resource_name: str) -> Callable[[Callable[..., T]], Callable[..., T]]:
+
+def requires_resource(
+    resource_name: str,
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
     Decorator to check if a specific API resource is available on the server before executing the method.
 
@@ -68,9 +71,10 @@ def requires_resource(resource_name: str) -> Callable[[Callable[..., T]], Callab
         func_name = func.__name__
 
         # Class-level cache for sync method resources
-        sync_cache_key = f'_sync_resources_for_{resource_name}'
+        sync_cache_key = f"_sync_resources_for_{resource_name}"
 
         if is_async:
+
             @wraps(func)
             async def async_wrapper(self, *args: Any, **kwargs: Any) -> T:
                 # Get resources and check availability in one operation
@@ -82,6 +86,7 @@ def requires_resource(resource_name: str) -> Callable[[Callable[..., T]], Callab
 
             return cast(Callable[..., T], async_wrapper)
         else:
+
             @wraps(func)
             def sync_wrapper(self, *args: Any, **kwargs: Any) -> T:
                 # Initialize class-level cache attributes if needed
@@ -89,7 +94,7 @@ def requires_resource(resource_name: str) -> Callable[[Callable[..., T]], Callab
                 if not hasattr(cls, sync_cache_key):
                     setattr(cls, sync_cache_key, (None, 0))  # (resources, timestamp)
 
-                cache_ttl = getattr(self, '_resources_cache_ttl', 300)
+                cache_ttl = getattr(self, "_resources_cache_ttl", 300)
                 cached_resources, timestamp = getattr(cls, sync_cache_key)
                 current_time = time.time()
 
@@ -117,7 +122,9 @@ def requires_resource(resource_name: str) -> Callable[[Callable[..., T]], Callab
 
 class ResourceNotAvailableError(Exception):
     """Exception raised when a required resource is not available on the server."""
+
     pass
+
 
 class AuthorizationError(BaseException):
     pass
@@ -140,7 +147,7 @@ class ServiceXAdapter:
 
         self._available_resources: Optional[Dict[str, Any]] = None
         self._resources_last_updated: Optional[float] = None
-        self._resources_cache_ttl = 60*5
+        self._resources_cache_ttl = 60 * 5
 
     async def get_resources(self) -> Dict[str, Any]:
         """
@@ -153,16 +160,18 @@ class ServiceXAdapter:
         current_time = time.time()
 
         # Return cached resources if they exist and are not expired
-        if (self._available_resources is not None and
-                self._resources_last_updated is not None and
-                current_time - self._resources_last_updated < self._resources_cache_ttl):
+        if (
+            self._available_resources is not None
+            and self._resources_last_updated is not None
+            and current_time - self._resources_last_updated < self._resources_cache_ttl
+        ):
             return self._available_resources
 
         # Fetch resources from server
         headers = await self._get_authorization()
         async with ClientSession() as session:
             async with session.get(
-                    headers=headers, url=f"{self.url}/servicex/resources"
+                headers=headers, url=f"{self.url}/servicex/resources"
             ) as r:
                 if r.status == 403:
                     raise AuthorizationError(
