@@ -53,7 +53,7 @@ def requires_resource(
     resource_name: str,
 ) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """
-    Decorator to check if a specific API resource is available on the server before executing the method.
+    Decorator to check if a specific API resource is available on the server.
 
     Args:
         resource_name: The name of the resource that needs to be available
