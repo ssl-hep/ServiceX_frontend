@@ -38,15 +38,18 @@ import asyncio
 
 from servicex.models import ResultFile, TransformStatus
 
+# Maximum five simultaneous streams per individual file download
 _transferconfig = TransferConfig(max_concurrency=5)
-_sem = asyncio.Semaphore(10)
+# Maximum ten files simultaneously being downloaded (configurable with init_s3_config)
+_file_transfer_sem = asyncio.Semaphore(10)
+# Maximum five buckets being queried at once
 _bucket_list_sem = asyncio.Semaphore(5)
 
 
 def init_s3_config(concurrency: int = 10):
     "Update the number of concurrent connections"
-    global _sem
-    _sem = asyncio.Semaphore(concurrency)
+    global _file_transfer_sem
+    _file_transfer_sem = asyncio.Semaphore(concurrency)
 
 
 def _sanitize_filename(fname: str):
@@ -128,7 +131,7 @@ class MinioAdapter:
             if expected_size is not None:
                 remotesize = expected_size
             else:
-                async with _sem:
+                async with _file_transfer_sem:
                     info = await s3.head_object(Bucket=self.bucket, Key=object_name)
                     remotesize = info["ContentLength"]
             if path.exists():
@@ -137,7 +140,7 @@ class MinioAdapter:
                 localsize = path.stat().st_size
                 if localsize == remotesize:
                     return path.resolve()
-            async with _sem:
+            async with _file_transfer_sem:
                 await s3.download_file(
                     Bucket=self.bucket,
                     Key=object_name,
