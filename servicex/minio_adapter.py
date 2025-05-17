@@ -28,22 +28,25 @@
 import os.path
 from hashlib import sha1
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 import aioboto3
 from boto3.s3.transfer import TransferConfig
+import asyncio
 
 from servicex.models import ResultFile, TransformStatus
 
-_transferconfig = TransferConfig(max_concurrency=10)
+_transferconfig = TransferConfig(max_concurrency=5)
+_sem = asyncio.Semaphore(10)
+_bucket_list_sem = asyncio.Semaphore(5)
 
 
 def init_s3_config(concurrency: int = 10):
     "Update the number of concurrent connections"
-    global _transferconfig
-    _transferconfig = TransferConfig(max_concurrency=concurrency)
+    global _sem
+    _sem = asyncio.Semaphore(concurrency)
 
 
 def _sanitize_filename(fname: str):
@@ -85,24 +88,31 @@ class MinioAdapter:
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
     async def list_bucket(self) -> List[ResultFile]:
-        async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
-            bucket = await s3.Bucket(self.bucket)
-            objects = bucket.objects.all()
-            return [
-                ResultFile(
-                    filename=obj.key,
-                    size=await obj.size,
-                    extension=obj.key.split(".")[-1],
-                )
-                async for obj in objects
-                if not obj.key.endswith("/")
-            ]
+        async with _bucket_list_sem:
+            async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
+                paginator = s3.get_paginator("list_objects_v2")
+                pagination = paginator.paginate(Bucket=self.bucket)
+                listing = await pagination.build_full_result()
+                rv = [
+                    ResultFile(
+                        filename=_["Key"],
+                        size=_["Size"],
+                        extension=_["Key"].split(".")[-1],
+                    )
+                    for _ in listing["Contents"]
+                    if not _["Key"].endswith("/")
+                ]
+                return rv
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
     async def download_file(
-        self, object_name: str, local_dir: str, shorten_filename: bool = False
+        self,
+        object_name: str,
+        local_dir: str,
+        shorten_filename: bool = False,
+        expected_size: Optional[int] = None,
     ) -> Path:
         os.makedirs(local_dir, exist_ok=True)
         path = Path(
@@ -114,16 +124,26 @@ class MinioAdapter:
             )
         )
 
-        async with self.minio.resource("s3", endpoint_url=self.endpoint_host) as s3:
-            obj = await s3.Object(self.bucket, object_name)
-            remotesize = await obj.content_length
+        async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
+            if expected_size is not None:
+                remotesize = expected_size
+            else:
+                async with _sem:
+                    info = await s3.head_object(Bucket=self.bucket, Key=object_name)
+                    remotesize = info["ContentLength"]
             if path.exists():
                 # if file size is the same, let's not download anything
                 # maybe move to a better verification mechanism with e-tags in the future
                 localsize = path.stat().st_size
                 if localsize == remotesize:
                     return path.resolve()
-            await obj.download_file(path.as_posix(), Config=_transferconfig)
+            async with _sem:
+                await s3.download_file(
+                    Bucket=self.bucket,
+                    Key=object_name,
+                    Filename=path.as_posix(),
+                    Config=_transferconfig,
+                )
             localsize = path.stat().st_size
             if localsize != remotesize:
                 raise RuntimeError(f"Download of {object_name} failed")

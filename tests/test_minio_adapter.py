@@ -112,6 +112,19 @@ async def test_download_file(minio_adapter, populate_bucket):
     result.unlink()  # it should exist, from above ...
 
 
+@pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
+@pytest.mark.asyncio
+async def test_download_file_with_expected_size(minio_adapter, populate_bucket):
+    info = await minio_adapter.list_bucket()
+    result = await minio_adapter.download_file(
+        "test.txt", local_dir="/tmp/foo", expected_size=info[0].size
+    )
+    assert str(result).endswith("test.txt")
+    assert result.exists()
+    assert result.read_bytes() == (b"\x01" * 10)
+    result.unlink()  # it should exist, from above ...
+
+
 @pytest.mark.parametrize("populate_bucket", ["t::est.txt"], indirect=True)
 @pytest.mark.asyncio
 async def test_download_bad_filename(minio_adapter, populate_bucket):

@@ -216,7 +216,7 @@ async def test_submit(mocker):
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
     mock_minio.download_file = AsyncMock(
-        side_effect=lambda a, _, shorten_filename: PurePath(a)
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
     )
 
     mock_cache = mocker.MagicMock(QueryCache)
@@ -260,7 +260,7 @@ async def test_submit_partial_success(mocker):
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
-        side_effect=lambda a, _, shorten_filename: PurePath(a)
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
     )
 
     mock_cache = mocker.MagicMock(QueryCache)
@@ -303,7 +303,7 @@ async def test_use_of_cache(mocker):
     mock_minio = AsyncMock()
     mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
     mock_minio.download_file = AsyncMock(
-        side_effect=lambda a, _, shorten_filename: PurePath(a)
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
     )
     mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
 
