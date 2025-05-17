@@ -198,6 +198,11 @@ class General(DocStringBaseModel):
         a ROOT TTree https://root.cern.ch/doc/master/classTTree.html
         """
 
+        root_rntuple = "root-rntuple"
+        """
+        Save the output as an RNtuple https://root.cern/doc/master/classROOT_1_1RNTuple.html
+        """
+
         def to_ResultFormat(self) -> ResultFormat:
             """This method is used to convert the OutputFormatEnum enum to the ResultFormat enum,
             which is what is actually used for the TransformRequest. This allows us to use
@@ -207,6 +212,8 @@ class General(DocStringBaseModel):
                 return ResultFormat.parquet
             elif self == self.root_ttree:
                 return ResultFormat.root_ttree
+            elif self == self.root_rntuple:
+                return ResultFormat.root_rntuple
             else:  # pragma: no cover
                 raise RuntimeError(f"Bad OutputFormatEnum {self}")
 
