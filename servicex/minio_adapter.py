@@ -99,7 +99,7 @@ class MinioAdapter:
                         size=_["Size"],
                         extension=_["Key"].split(".")[-1],
                     )
-                    for _ in listing["Contents"]
+                    for _ in listing.get("Contents", [])
                     if not _["Key"].endswith("/")
                 ]
                 return rv
