@@ -136,6 +136,10 @@ async def test_download_files(python_dataset):
 
     minio_mock.download_file.return_value = Path("/path/to/downloaded_file")
     minio_mock.get_signed_url.return_value = Path("http://example.com/signed_url")
+    minio_mock.list_bucket.return_value = [
+        Mock(filename="file1.txt"),
+        Mock(filename="file2.txt"),
+    ]
 
     progress_mock = Mock()
     python_dataset.minio_polling_interval = 0
@@ -161,6 +165,10 @@ async def test_download_files_with_signed_urls(python_dataset):
     python_dataset.configuration = config
     minio_mock.download_file.return_value = "/path/to/downloaded_file"
     minio_mock.get_signed_url.return_value = "http://example.com/signed_url"
+    minio_mock.list_bucket.return_value = [
+        Mock(filename="file1.txt"),
+        Mock(filename="file2.txt"),
+    ]
     progress_mock = Mock()
 
     python_dataset.servicex = AsyncMock()

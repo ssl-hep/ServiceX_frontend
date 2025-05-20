@@ -226,6 +226,7 @@ async def test_submit(mocker):
     ]
 
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -278,6 +279,7 @@ async def test_submit_partial_success(mocker):
     ]
 
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -323,6 +325,7 @@ async def test_use_of_cache(mocker):
         transform_status3,
     ]
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -357,6 +360,7 @@ async def test_use_of_cache(mocker):
         # second round, should hit the cache (and not call the sx_adapter, minio, or update_record)
         with ExpandableProgress(display_progress=False) as progress:
             servicex2 = AsyncMock()
+            mock_minio.list_bucket.reset_mock()
             servicex.get_transformation_results.reset_mock()
             mock_minio.get_signed_url.reset_mock()
             datasource2 = Query(
@@ -375,6 +379,7 @@ async def test_use_of_cache(mocker):
                 signed_urls_only=True, expandable_progress=progress
             )
             servicex2.assert_not_awaited()
+            mock_minio.list_bucket.assert_not_awaited()
             servicex.get_transformation_results.assert_not_awaited()
             mock_minio.get_signed_url.assert_not_awaited()
         upd.assert_not_called()
@@ -399,6 +404,7 @@ async def test_use_of_cache(mocker):
                 signed_urls_only=False, expandable_progress=progress
             )
         servicex.assert_not_awaited()
+        mock_minio.list_bucket.assert_not_awaited()
         servicex.get_transformation_results.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         upd.assert_called_once()
@@ -417,6 +423,7 @@ async def test_submit_cancel(mocker):
     ]
 
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -457,6 +464,7 @@ async def test_submit_fatal(mocker):
     ]
 
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -501,6 +509,7 @@ async def test_submit_generic(mocker, codegen_list):
     ]
 
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
@@ -549,6 +558,7 @@ async def test_submit_cancelled(mocker, codegen_list):
     sx.get_transform_status.side_effect = [transform_status4]
 
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
@@ -623,6 +633,7 @@ async def test_use_of_ignore_cache(mocker, servicex):
     )
     # Prepare Minio
     mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
@@ -698,6 +709,7 @@ async def test_use_of_ignore_cache(mocker, servicex):
             res = await datasource_without_ignore_cache.submit_and_download(
                 signed_urls_only=True, expandable_progress=progress
             )  # noqa
+        mock_minio.list_bucket.assert_not_awaited()
         servicex.get_transformation_results.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         assert len(res.signed_url_list) == 2
