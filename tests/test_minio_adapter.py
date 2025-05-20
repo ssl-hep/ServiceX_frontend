@@ -34,11 +34,7 @@ from pytest_asyncio import fixture
 from servicex.minio_adapter import MinioAdapter
 from servicex.models import ResultFile
 
-import asyncio
-
 DOWNLOAD_PATCH_COUNTER = 0
-
-_semaphore = asyncio.Semaphore(1)
 
 
 def mock_downloader(**args):
@@ -70,16 +66,15 @@ def minio_adapter(moto_services, moto_patch_session) -> MinioAdapter:
 
 @fixture
 async def populate_bucket(request, minio_adapter):
-    async with _semaphore:
-        async with minio_adapter.minio.client(
-            "s3", endpoint_url=minio_adapter.endpoint_host
-        ) as s3:
-            await s3.create_bucket(Bucket=minio_adapter.bucket)
-            await s3.put_object(
-                Bucket=minio_adapter.bucket, Key=request.param, Body=b"\x01" * 10
-            )
-            yield
-            await s3.delete_object(Bucket=minio_adapter.bucket, Key=request.param)
+    async with minio_adapter.minio.client(
+        "s3", endpoint_url=minio_adapter.endpoint_host
+    ) as s3:
+        await s3.create_bucket(Bucket=minio_adapter.bucket)
+        await s3.put_object(
+            Bucket=minio_adapter.bucket, Key=request.param, Body=b"\x01" * 10
+        )
+        yield
+        await s3.delete_object(Bucket=minio_adapter.bucket, Key=request.param)
 
 
 @fixture
@@ -180,31 +175,31 @@ async def test_download_short_filename_change(minio_adapter, populate_bucket):
 
 @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
 @pytest.mark.asyncio
-async def test_download_repeat(minio_adapter, populate_bucket):
-    import asyncio
-
-    print(await minio_adapter.list_bucket())
-    result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
-    assert str(result).endswith("test.txt")
-    assert result.exists()
-    t0 = result.stat().st_mtime_ns
-    await asyncio.sleep(4)  # hopefully long enough for Windows/FAT32 ... ?
-
-    result2 = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
-    assert result2.exists()
-    assert result2 == result
-    assert t0 == result2.stat().st_mtime_ns
-    result.unlink()  # it should exist, from above ...
-
-
-@pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
-@pytest.mark.asyncio
 async def test_download_file_retry(download_patch, minio_adapter, populate_bucket):
     result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
     assert str(result).endswith("test.txt")
     assert result.exists()
     assert len(download_patch.call_args_list) == 3
     result.unlink()
+
+
+@pytest.mark.parametrize("populate_bucket", ["test2.txt"], indirect=True)
+@pytest.mark.asyncio
+async def test_download_repeat(minio_adapter, populate_bucket):
+    import asyncio
+
+    print(await minio_adapter.list_bucket())
+    result = await minio_adapter.download_file("test2.txt", local_dir="/tmp/foo")
+    assert str(result).endswith("test2.txt")
+    assert result.exists()
+    t0 = result.stat().st_mtime_ns
+    await asyncio.sleep(4)  # hopefully long enough for Windows/FAT32 ... ?
+
+    result2 = await minio_adapter.download_file("test2.txt", local_dir="/tmp/foo")
+    assert result2.exists()
+    assert result2 == result
+    assert t0 == result2.stat().st_mtime_ns
+    result.unlink()  # it should exist, from above ...
 
 
 @pytest.mark.asyncio
