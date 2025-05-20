@@ -25,7 +25,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from unittest.mock import AsyncMock
 import urllib.parse
 
 import pytest
@@ -49,14 +48,6 @@ def mock_downloader(**args):
 
 
 @fixture
-def download_patch():
-    import aioboto3.s3.inject
-
-    aioboto3.s3.inject.download_file = AsyncMock(side_effect=mock_downloader)
-    return aioboto3.s3.inject.download_file
-
-
-@fixture
 def minio_adapter(moto_services, moto_patch_session) -> MinioAdapter:
     urlinfo = urllib.parse.urlparse(moto_services["s3"])
     return MinioAdapter(
@@ -64,7 +55,7 @@ def minio_adapter(moto_services, moto_patch_session) -> MinioAdapter:
     )
 
 
-@fixture
+@fixture(scope="function")
 async def populate_bucket(request, minio_adapter):
     async with minio_adapter.minio.client(
         "s3", endpoint_url=minio_adapter.endpoint_host
@@ -173,16 +164,6 @@ async def test_download_short_filename_change(minio_adapter, populate_bucket):
     result.unlink()  # it should exist, from above ...
 
 
-@pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
-@pytest.mark.asyncio
-async def test_download_file_retry(download_patch, minio_adapter, populate_bucket):
-    result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
-    assert str(result).endswith("test.txt")
-    assert result.exists()
-    assert len(download_patch.call_args_list) == 3
-    result.unlink()
-
-
 @pytest.mark.parametrize("populate_bucket", ["test2.txt"], indirect=True)
 @pytest.mark.asyncio
 async def test_download_repeat(minio_adapter, populate_bucket):
@@ -202,7 +183,21 @@ async def test_download_repeat(minio_adapter, populate_bucket):
     result.unlink()  # it should exist, from above ...
 
 
+@pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
 @pytest.mark.asyncio
-async def test_get_signed_url(minio_adapter, moto_services):
+async def test_get_signed_url(minio_adapter, moto_services, populate_bucket):
     result = await minio_adapter.get_signed_url("test.txt")
     assert result.startswith(moto_services["s3"])
+
+
+@pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
+@pytest.mark.asyncio
+async def test_download_file_retry(minio_adapter, populate_bucket, mocker):
+    download_patch = mocker.patch(
+        "aioboto3.s3.inject.download_file", side_effect=mock_downloader
+    )
+    result = await minio_adapter.download_file("test.txt", local_dir="/tmp/foo")
+    assert str(result).endswith("test.txt")
+    assert result.exists()
+    assert download_patch.call_count == 3
+    result.unlink()
