@@ -28,6 +28,8 @@
 import os
 import tempfile
 import time
+import datetime
+import unittest
 from unittest.mock import patch
 
 import httpx
@@ -502,3 +504,74 @@ async def test_get_authorization(servicex):
         with patch("google.auth.jwt.decode", return_value={"exp": time.time() - 90}):
             r = await servicex._get_authorization()
             get_token.assert_called_once()
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_transformation_results_success(get_transformation_results, servicex):
+    get_transformation_results.return_value.__aenter__.return_value.status = 200
+
+    request_id = "123-45-6789"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    await servicex.get_transformation_results(request_id, now)
+
+    get_transformation_results.assert_called_with(
+        url=f"https://servicex.org/servicex/transformation/{request_id}/results",
+        headers={},
+        params={
+            "begin_at": now.isoformat(),
+        }
+    )
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_transformation_results_not_found(get_transformation_results, servicex):
+    get_transformation_results.return_value.__aenter__.return_value.status = 404
+    request_id = "123-45-6789"
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    with pytest.raises(ValueError):
+        await servicex.get_transformation_results(request_id, now)
+
+    get_transformation_results.assert_called_with(
+        url=f"https://servicex.org/servicex/transformation/{request_id}/results",
+        headers={},
+        params={
+            "begin_at": now.isoformat(),
+        }
+    )
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_transformation_results_not_authorized(get_transformation_results, servicex):
+    get_transformation_results.return_value.__aenter__.return_value.status = 403
+    request_id = "123-45-6789"
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    with pytest.raises(AuthorizationError):
+        await servicex.get_transformation_results(request_id, now)
+
+    get_transformation_results.assert_called_with(
+        url=f"https://servicex.org/servicex/transformation/{request_id}/results",
+        headers={},
+        params={
+            "begin_at": now.isoformat(),
+        }
+    )
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_transformation_results_server_error(get_transformation_results, servicex):
+    get_transformation_results.return_value.__aenter__.return_value.status = 500
+    request_id = "123-45-6789"
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    with pytest.raises(RuntimeError):
+        await servicex.get_transformation_results(request_id, now)
+
+    get_transformation_results.assert_called_with(
+        url=f"https://servicex.org/servicex/transformation/{request_id}/results",
+        headers={},
+        params={
+            "begin_at": now.isoformat(),
+        }
+    )

@@ -234,10 +234,9 @@ class ServiceXAdapter:
     ):
         headers = await self._get_authorization()
         url = self.url + f"/servicex/transformation/{request_id}/results"
-
-        params = {}
-        if begin_at:
-            params["begin_at"] = begin_at.isoformat()
+        params = {
+            "begin_at": begin_at.isoformat(),
+        }
 
         async with ClientSession() as session:
             async with session.get(headers=headers, url=url, params=params) as r:
