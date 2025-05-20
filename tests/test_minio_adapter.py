@@ -34,7 +34,11 @@ from pytest_asyncio import fixture
 from servicex.minio_adapter import MinioAdapter
 from servicex.models import ResultFile
 
+import asyncio
+
 DOWNLOAD_PATCH_COUNTER = 0
+
+_semaphore = asyncio.Semaphore(1)
 
 
 def mock_downloader(**args):
@@ -66,15 +70,16 @@ def minio_adapter(moto_services, moto_patch_session) -> MinioAdapter:
 
 @fixture
 async def populate_bucket(request, minio_adapter):
-    async with minio_adapter.minio.client(
-        "s3", endpoint_url=minio_adapter.endpoint_host
-    ) as s3:
-        await s3.create_bucket(Bucket=minio_adapter.bucket)
-        await s3.put_object(
-            Bucket=minio_adapter.bucket, Key=request.param, Body=b"\x01" * 10
-        )
-        yield
-        await s3.delete_object(Bucket=minio_adapter.bucket, Key=request.param)
+    async with _semaphore:
+        async with minio_adapter.minio.client(
+            "s3", endpoint_url=minio_adapter.endpoint_host
+        ) as s3:
+            await s3.create_bucket(Bucket=minio_adapter.bucket)
+            await s3.put_object(
+                Bucket=minio_adapter.bucket, Key=request.param, Body=b"\x01" * 10
+            )
+            yield
+            await s3.delete_object(Bucket=minio_adapter.bucket, Key=request.param)
 
 
 @fixture
