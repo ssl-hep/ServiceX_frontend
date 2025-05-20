@@ -505,6 +505,7 @@ async def test_get_authorization(servicex):
             r = await servicex._get_authorization()
             get_token.assert_called_once()
 
+
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_transformation_results_success(get_transformation_results, servicex):
@@ -519,12 +520,15 @@ async def test_get_transformation_results_success(get_transformation_results, se
         headers={},
         params={
             "begin_at": now.isoformat(),
-        }
+        },
     )
+
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.ClientSession.get")
-async def test_get_transformation_results_not_found(get_transformation_results, servicex):
+async def test_get_transformation_results_not_found(
+    get_transformation_results, servicex
+):
     get_transformation_results.return_value.__aenter__.return_value.status = 404
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -537,12 +541,15 @@ async def test_get_transformation_results_not_found(get_transformation_results, 
         headers={},
         params={
             "begin_at": now.isoformat(),
-        }
+        },
     )
+
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.ClientSession.get")
-async def test_get_transformation_results_not_authorized(get_transformation_results, servicex):
+async def test_get_transformation_results_not_authorized(
+    get_transformation_results, servicex
+):
     get_transformation_results.return_value.__aenter__.return_value.status = 403
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -555,12 +562,15 @@ async def test_get_transformation_results_not_authorized(get_transformation_resu
         headers={},
         params={
             "begin_at": now.isoformat(),
-        }
+        },
     )
+
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.ClientSession.get")
-async def test_get_transformation_results_server_error(get_transformation_results, servicex):
+async def test_get_transformation_results_server_error(
+    get_transformation_results, servicex
+):
     get_transformation_results.return_value.__aenter__.return_value.status = 500
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -573,5 +583,5 @@ async def test_get_transformation_results_server_error(get_transformation_result
         headers={},
         params={
             "begin_at": now.isoformat(),
-        }
+        },
     )
