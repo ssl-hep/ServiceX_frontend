@@ -573,12 +573,9 @@ class Query:
                     begin_at = new_begin_at
 
                     for file in files:
-                        if "file-path" not in file:
-                            continue
+                        file_path = file.get("file-path", '').replace("/", ":")
 
-                        file_path = file["file-path"].replace("/", ":")
-
-                        if file_path not in files_seen:
+                        if file_path != '' and file_path not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
                                     loop.create_task(
