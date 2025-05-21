@@ -107,7 +107,6 @@ async def test_get_transforms_wlcg_bearer_token(
     token_file.close()
 
     with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}, clear=True):
-        print(os.environ)
 
         # Try with an expired token
         with pytest.raises(AuthorizationError) as err:
