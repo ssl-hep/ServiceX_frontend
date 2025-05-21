@@ -85,11 +85,21 @@ class ServiceXAdapter:
                 bearer_token = f.read().strip()
         return bearer_token
 
+    @staticmethod
+    def _effective_expiration(tok) -> float:
+        import sys
+
+        decoded_tok = jwt.decode(tok, verify=False)
+        if "exp" not in decoded_tok:
+            # Token is missing an expiration. Return the maximum float
+            return sys.float_info.max
+        return float(decoded_tok["exp"])
+
     async def _get_authorization(self, force_reauth: bool = False) -> Dict[str, str]:
         now = time.time()
         if (
             self.token
-            and jwt.decode(self.token, verify=False)["exp"] - now > 60
+            and self._effective_expiration(self.token) - now > 60
             and not force_reauth
         ):
             # if less than one minute validity, renew
@@ -105,7 +115,7 @@ class ServiceXAdapter:
             if (
                 not self.token
                 or force_reauth
-                or float(jwt.decode(self.token, verify=False)["exp"]) - now < 60
+                or self._effective_expiration(self.token) - now < 60
             ):
                 await self._get_token()
             return {"Authorization": f"Bearer {self.token}"}

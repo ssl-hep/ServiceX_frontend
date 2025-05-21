@@ -106,16 +106,16 @@ async def test_get_transforms_wlcg_bearer_token(
     )
     token_file.close()
 
-    os.environ["BEARER_TOKEN_FILE"] = token_file.name
+    with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}, clear=True):
+        print(os.environ)
 
-    # Try with an expired token
-    with pytest.raises(AuthorizationError) as err:
-        decode.return_value = {"exp": 0.0}
-        await servicex.get_transforms()
-        assert "ServiceX access token request rejected:" in str(err.value)
+        # Try with an expired token
+        with pytest.raises(AuthorizationError) as err:
+            decode.return_value = {"exp": 0.0}
+            await servicex.get_transforms()
+            assert "ServiceX access token request rejected:" in str(err.value)
 
     os.remove(token_file.name)
-    del os.environ["BEARER_TOKEN_FILE"]
 
 
 @pytest.mark.asyncio
