@@ -49,6 +49,7 @@ from servicex.models import TransformRequest, TransformStatus, CachedDataset
 class AuthorizationError(BaseException):
     pass
 
+
 @dataclass
 class ServiceXFile:
     filename: str

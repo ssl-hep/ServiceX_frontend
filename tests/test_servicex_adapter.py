@@ -509,12 +509,14 @@ async def test_get_authorization(servicex):
 @patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_transformation_results_success(get, servicex):
     get.return_value.__aenter__.return_value.status = 200
-    get.return_value.__aenter__.return_value.json = AsyncMock(return_value={
-        "results": [
-            {"file-path": "file1.txt"},
-            {"file-path": "file2.txt"},
-        ]
-    })
+    get.return_value.__aenter__.return_value.json = AsyncMock(
+        return_value={
+            "results": [
+                {"file-path": "file1.txt"},
+                {"file-path": "file2.txt"},
+            ]
+        }
+    )
 
     print(get)
 

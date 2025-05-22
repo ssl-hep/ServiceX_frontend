@@ -208,7 +208,9 @@ async def test_submit(mocker):
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
 
-    servicex.get_transformation_results = AsyncMock(side_effect=[[file1], [file1, file2]])
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[[file1], [file1, file2]]
+    )
 
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
