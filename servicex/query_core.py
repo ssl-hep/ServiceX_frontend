@@ -573,15 +573,15 @@ class Query:
                     begin_at = new_begin_at
 
                     for file in files:
-                        file_path = file.get("file-path", '').replace("/", ":")
+                        filename = file.filename
 
-                        if file_path != '' and file_path not in files_seen:
+                        if filename != '' and filename not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
                                     loop.create_task(
                                         get_signed_url(
                                             self.minio,
-                                            file_path,
+                                            filename,
                                             progress,
                                             download_progress,
                                         )
@@ -592,14 +592,14 @@ class Query:
                                     loop.create_task(
                                         download_file(
                                             self.minio,
-                                            file_path,
+                                            filename,
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
                                         )
                                     )
                                 )  # NOQA 501
-                            files_seen.add(file_path)
+                            files_seen.add(filename)
 
             # Once the transform is complete and all files are seen we can stop polling.
             # Also, if we are just downloading or signing urls for a previous transform

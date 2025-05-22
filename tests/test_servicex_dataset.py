@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import tempfile
 from typing import List
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, Mock
 from pathlib import PurePath
 import pytest
 from itertools import cycle
@@ -208,15 +208,7 @@ async def test_submit(mocker):
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
 
-    servicex.get_transformation_results = AsyncMock(
-        side_effect=[
-            [{"file-path": file1.filename}],
-            [
-                {"file-path": file1.filename},
-                {"file-path": file2.filename},
-            ],
-        ]
-    )
+    servicex.get_transformation_results = AsyncMock(side_effect=[[file1], [file1, file2]])
 
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
@@ -262,13 +254,7 @@ async def test_submit_partial_success(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
-
-    servicex.get_transformation_results = AsyncMock(
-        side_effect=[
-            [{"file-path": file1.filename}],
-            [{"file-path": file1.filename}],
-        ]
-    )
+    servicex.get_transformation_results = AsyncMock(side_effect=[[file1], [file1]])
 
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
@@ -314,9 +300,11 @@ async def test_use_of_cache(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
-    servicex.get_transformation_results = AsyncMock(
-        return_value=[{"file-path": file1.filename}, {"file-path": file2.filename}]
-    )
+    servicex.get_transformation_results = AsyncMock()
+    servicex.get_transformation_results.return_value = [
+        Mock(filename="file1.txt"),
+        Mock(filename="file2.txt"),
+    ]
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
@@ -618,9 +606,11 @@ async def test_use_of_ignore_cache(mocker, servicex):
             transform_status3,
         ]
     )
-    servicex.get_transformation_results = AsyncMock(
-        return_value=[{"file-path": file1.filename}, {"file-path": file2.filename}]
-    )
+    servicex.get_transformation_results = AsyncMock()
+    servicex.get_transformation_results.return_value = [
+        Mock(filename="file1.txt"),
+        Mock(filename="file2.txt"),
+    ]
     # Prepare Minio
     mock_minio = AsyncMock()
     mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])

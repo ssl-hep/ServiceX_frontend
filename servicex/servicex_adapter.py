@@ -29,6 +29,7 @@ import os
 import time
 import datetime
 from typing import Optional, Dict, List
+from dataclasses import dataclass
 
 from aiohttp import ClientSession
 import httpx
@@ -47,6 +48,10 @@ from servicex.models import TransformRequest, TransformStatus, CachedDataset
 
 class AuthorizationError(BaseException):
     pass
+
+@dataclass
+class ServiceXFile:
+    filename: str
 
 
 async def _extract_message(r: ClientResponse):
@@ -253,7 +258,11 @@ class ServiceXAdapter:
                     raise RuntimeError(f"Failed with message: {msg}")
 
                 data = await r.json()
-                return data.get("results")
+                response = list()
+                for result in data.get("results", []):
+                    file = ServiceXFile(filename=result["file-path"].replace("/", ":"))
+                    response.append(file)
+                return response
 
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()

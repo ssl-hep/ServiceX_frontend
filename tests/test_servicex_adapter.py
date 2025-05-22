@@ -29,7 +29,7 @@ import os
 import tempfile
 import time
 import datetime
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import httpx
 import pytest
@@ -507,14 +507,22 @@ async def test_get_authorization(servicex):
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.ClientSession.get")
-async def test_get_transformation_results_success(get_transformation_results, servicex):
-    get_transformation_results.return_value.__aenter__.return_value.status = 200
+async def test_get_transformation_results_success(get, servicex):
+    get.return_value.__aenter__.return_value.status = 200
+    get.return_value.__aenter__.return_value.json = AsyncMock(return_value={
+        "results": [
+            {"file-path": "file1.txt"},
+            {"file-path": "file2.txt"},
+        ]
+    })
+
+    print(get)
 
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
     await servicex.get_transformation_results(request_id, now)
 
-    get_transformation_results.assert_called_with(
+    get.assert_called_with(
         url=f"https://servicex.org/servicex/transformation/{request_id}/results",
         headers={},
         params={
