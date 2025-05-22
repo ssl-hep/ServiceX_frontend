@@ -237,7 +237,7 @@ class ServiceXAdapter:
                     )
 
     async def get_transformation_results(
-        self, request_id: str, later_than: datetime.datetime | None = None
+        self, request_id: str, later_than: Optional[datetime.datetime] = None
     ):
         headers = await self._get_authorization()
         url = self.url + f"/servicex/transformation/{request_id}/results"
