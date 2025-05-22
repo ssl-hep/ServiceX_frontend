@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import datetime
 import tempfile
 from typing import List
 from unittest.mock import AsyncMock, patch
@@ -46,6 +47,7 @@ from servicex.models import (
 )
 from servicex.query_cache import QueryCache
 from servicex.query_core import ServiceXException, Query
+from servicex.servicex_adapter import ServiceXFile
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
@@ -204,8 +206,30 @@ def cache_transform(record: TransformedResults):
 @pytest.mark.asyncio
 async def test_submit(mocker):
     servicex = AsyncMock()
+
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+                ServiceXFile(
+                    filename="file2",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+        ]
+    )
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
@@ -214,7 +238,6 @@ async def test_submit(mocker):
     ]
 
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -235,6 +258,7 @@ async def test_submit(mocker):
         config=Configuration(api_endpoints=[]),
     )
     datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+
     with ExpandableProgress(display_progress=False) as progress:
         datasource.result_format = ResultFormat.parquet
         result = await datasource.submit_and_download(
@@ -250,6 +274,23 @@ async def test_submit_partial_success(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+        ]
+    )
+
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
@@ -258,7 +299,6 @@ async def test_submit_partial_success(mocker):
     ]
 
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -295,13 +335,23 @@ async def test_use_of_cache(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_transformation_results = AsyncMock()
+    servicex.get_transformation_results.return_value = [
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+    ]
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
         transform_status3,
     ]
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -336,7 +386,7 @@ async def test_use_of_cache(mocker):
         # second round, should hit the cache (and not call the sx_adapter, minio, or update_record)
         with ExpandableProgress(display_progress=False) as progress:
             servicex2 = AsyncMock()
-            mock_minio.list_bucket.reset_mock()
+            servicex.get_transformation_results.reset_mock()
             mock_minio.get_signed_url.reset_mock()
             datasource2 = Query(
                 dataset_identifier=did,
@@ -354,14 +404,14 @@ async def test_use_of_cache(mocker):
                 signed_urls_only=True, expandable_progress=progress
             )
             servicex2.assert_not_awaited()
-            mock_minio.list_bucket.assert_not_awaited()
+            servicex.get_transformation_results.assert_not_awaited()
             mock_minio.get_signed_url.assert_not_awaited()
         upd.assert_not_called()
         assert result1 == result2
         upd.reset_mock()
         servicex.get_transform_status.reset_mock(side_effect=True)
         servicex.get_transform_status.return_value = transform_status3
-        mock_minio.list_bucket.reset_mock(side_effect=True)
+        servicex.get_transformation_results.reset_mock(side_effect=True)
         # third round, should hit the cache and download files (and call update_record)
         with ExpandableProgress(display_progress=False) as progress:
             await datasource.submit_and_download(
@@ -371,14 +421,14 @@ async def test_use_of_cache(mocker):
         assert mock_minio.download_file.await_count == 2
         upd.assert_called_once()
         # fourth round, should hit the cache (and nothing else)
-        mock_minio.list_bucket.reset_mock()
+        servicex.get_transformation_results.reset_mock()
         mock_minio.download_file.reset_mock()
         with ExpandableProgress(display_progress=False) as progress:
             await datasource.submit_and_download(
                 signed_urls_only=False, expandable_progress=progress
             )
         servicex.assert_not_awaited()
-        mock_minio.list_bucket.assert_not_awaited()
+        servicex.get_transformation_results.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         upd.assert_called_once()
         cache.close()
@@ -396,7 +446,6 @@ async def test_submit_cancel(mocker):
     ]
 
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -437,7 +486,6 @@ async def test_submit_fatal(mocker):
     ]
 
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
     mock_minio.download_file = AsyncMock(
         side_effect=lambda a, _, shorten_filename: PurePath(a)
     )
@@ -482,7 +530,6 @@ async def test_submit_generic(mocker, codegen_list):
     ]
 
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
@@ -531,7 +578,6 @@ async def test_submit_cancelled(mocker, codegen_list):
     sx.get_transform_status.side_effect = [transform_status4]
 
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
     mock_minio.download_file = AsyncMock()
 
     mock_cache = mocker.MagicMock(QueryCache)
@@ -601,10 +647,19 @@ async def test_use_of_ignore_cache(mocker, servicex):
             transform_status3,
         ]
     )
-
+    servicex.get_transformation_results = AsyncMock()
+    servicex.get_transformation_results.return_value = [
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+    ]
     # Prepare Minio
     mock_minio = AsyncMock()
-    mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
     mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
     mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
     did = FileListDataset("/foo/bar/baz.root")
@@ -674,13 +729,13 @@ async def test_use_of_ignore_cache(mocker, servicex):
             transform_status1,
             transform_status3,
         ]
-        mock_minio.list_bucket.reset_mock()
+        servicex.get_transformation_results.reset_mock()
         mock_minio.download_file.reset_mock()
         with ExpandableProgress(display_progress=False) as progress:
             res = await datasource_without_ignore_cache.submit_and_download(
                 signed_urls_only=True, expandable_progress=progress
             )  # noqa
-        mock_minio.list_bucket.assert_not_awaited()
+        servicex.get_transformation_results.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         assert len(res.signed_url_list) == 2
         cache.close()
