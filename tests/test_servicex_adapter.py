@@ -106,7 +106,7 @@ async def test_get_transforms_wlcg_bearer_token(
     )
     token_file.close()
 
-    with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}, clear=True):
+    with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}):
         # Try with no expiration at all
         with pytest.raises(RuntimeError):
             await servicex.get_transforms()
