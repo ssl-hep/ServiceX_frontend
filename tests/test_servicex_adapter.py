@@ -528,8 +528,6 @@ async def test_get_transformation_results_success(get, servicex):
         }
     )
 
-    print(get)
-
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
     await servicex.get_transformation_results(request_id, now)
