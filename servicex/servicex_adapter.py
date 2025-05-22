@@ -308,4 +308,6 @@ class ServiceXAdapter:
                 raise RuntimeError(
                     "ServiceX WebAPI Error " f"while getting transform status: {e}"
                 )
-        raise RuntimeError("ServiceX WebAPI: unable to retrieve transform status")
+        raise RuntimeError(
+            "ServiceX WebAPI: unable to retrieve transform status"
+        )  # pragma: no cover

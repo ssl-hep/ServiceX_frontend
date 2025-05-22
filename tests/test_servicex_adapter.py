@@ -220,6 +220,15 @@ async def test_get_datasets_auth_error(get, servicex):
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_datasets_miscellaneous_error(get, servicex):
+    get.return_value.status_code = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.get_datasets()
+    assert "Failed to get datasets" in str(err.value)
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
 async def test_get_dataset(get, servicex, dataset):
     get.return_value.json.return_value = dataset
     get.return_value.status_code = 200
