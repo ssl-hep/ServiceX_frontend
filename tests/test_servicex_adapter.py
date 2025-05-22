@@ -29,7 +29,6 @@ import os
 import tempfile
 import time
 import datetime
-from unittest import result
 from unittest.mock import patch, AsyncMock
 
 import httpx
