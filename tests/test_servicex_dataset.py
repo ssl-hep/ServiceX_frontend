@@ -28,7 +28,7 @@
 import datetime
 import tempfile
 from typing import List
-from unittest.mock import AsyncMock, patch, Mock
+from unittest.mock import AsyncMock, patch
 from pathlib import PurePath
 import pytest
 from itertools import cycle
