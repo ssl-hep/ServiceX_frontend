@@ -29,7 +29,6 @@ import os
 import tempfile
 import time
 import datetime
-from unittest import result
 from unittest.mock import patch, AsyncMock
 
 import httpx
@@ -513,8 +512,10 @@ async def test_get_transformation_results_success(get, servicex):
     get.return_value.__aenter__.return_value.json = AsyncMock(
         return_value={
             "results": [
-                {"file-path": "file1.txt", "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()},
-                {"file-path": "file2.txt", "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()},
+                {"file-path": "file1.txt", "created_at":
+                    datetime.datetime.now(datetime.timezone.utc).isoformat()},
+                {"file-path": "file2.txt", "created_at":
+                    datetime.datetime.now(datetime.timezone.utc).isoformat()},
             ]
         }
     )
