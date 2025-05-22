@@ -44,13 +44,14 @@ jobs:
 
       - name: Install dependencies
         run: |
+          uv venv
           uv pip install --upgrade '.[test,docs]'
           uv pip list
 
       - name: Test with pytest
         run: |
-          coverage run --source servicex/ -m pytest tests
-          coverage xml
+          uv run coverage run --source servicex/ -m pytest tests
+          uv run coverage xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
