@@ -264,7 +264,9 @@ class ServiceXAdapter:
                 for result in data.get("results", []):
                     file = ServiceXFile(
                         filename=result["file-path"].replace("/", ":"),
-                        created_at=datetime.datetime.fromisoformat(result["created_at"]),
+                        created_at=datetime.datetime.fromisoformat(
+                            result["created_at"]
+                        ),
                     )
                     response.append(file)
                 return response

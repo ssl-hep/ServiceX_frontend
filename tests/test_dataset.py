@@ -130,8 +130,14 @@ async def test_download_files(python_dataset):
     python_dataset.servicex = AsyncMock()
     python_dataset.servicex.get_transformation_results = AsyncMock()
     python_dataset.servicex.get_transformation_results.return_value = [
-        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
-        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
     ]
 
     minio_mock.download_file.return_value = Path("/path/to/downloaded_file")
@@ -165,8 +171,14 @@ async def test_download_files_with_signed_urls(python_dataset):
     python_dataset.servicex = AsyncMock()
     python_dataset.servicex.get_transformation_results = AsyncMock()
     python_dataset.servicex.get_transformation_results.return_value = [
-        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
-        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
     ]
 
     python_dataset.minio_polling_interval = 0

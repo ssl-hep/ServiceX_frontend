@@ -210,15 +210,26 @@ async def test_submit(mocker):
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
 
-    servicex.get_transformation_results = AsyncMock(side_effect=[
-        [
-            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
-        ],
-        [
-            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
-            ServiceXFile(filename="file2", created_at=datetime.datetime.now(datetime.timezone.utc)),
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+                ServiceXFile(
+                    filename="file2",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
         ]
-    ])
+    )
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
@@ -263,14 +274,22 @@ async def test_submit_partial_success(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
-    servicex.get_transformation_results = AsyncMock(side_effect=[
-        [
-            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
-        ],
-        [
-            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+            [
+                ServiceXFile(
+                    filename="file1",
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
         ]
-    ])
+    )
 
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
@@ -318,8 +337,14 @@ async def test_use_of_cache(mocker):
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
     servicex.get_transformation_results = AsyncMock()
     servicex.get_transformation_results.return_value = [
-        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
-        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
     ]
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
@@ -624,8 +649,14 @@ async def test_use_of_ignore_cache(mocker, servicex):
     )
     servicex.get_transformation_results = AsyncMock()
     servicex.get_transformation_results.return_value = [
-        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
-        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+        ),
     ]
     # Prepare Minio
     mock_minio = AsyncMock()
