@@ -52,6 +52,7 @@ class AuthorizationError(BaseException):
 
 @dataclass
 class ServiceXFile:
+    created_at: datetime.datetime
     filename: str
 
 
@@ -236,13 +237,13 @@ class ServiceXAdapter:
                     )
 
     async def get_transformation_results(
-        self, request_id: str, begin_at: datetime.datetime
+        self, request_id: str, later_than: datetime.datetime | None = None
     ):
         headers = await self._get_authorization()
         url = self.url + f"/servicex/transformation/{request_id}/results"
-        params = {
-            "begin_at": begin_at.isoformat(),
-        }
+        params = {}
+        if later_than:
+            params["later_than"] = later_than.isoformat()
 
         async with ClientSession() as session:
             async with session.get(headers=headers, url=url, params=params) as r:
@@ -261,7 +262,10 @@ class ServiceXAdapter:
                 data = await r.json()
                 response = list()
                 for result in data.get("results", []):
-                    file = ServiceXFile(filename=result["file-path"].replace("/", ":"))
+                    file = ServiceXFile(
+                        filename=result["file-path"].replace("/", ":"),
+                        created_at=datetime.datetime.fromisoformat(result["created_at"]),
+                    )
                     response.append(file)
                 return response
 

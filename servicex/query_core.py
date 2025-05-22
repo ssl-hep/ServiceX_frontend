@@ -319,7 +319,6 @@ class Query:
             else None
         )
 
-        begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
         if not cached_record:
 
             if self.cache.is_transform_request_submitted(sx_request_hash):
@@ -348,7 +347,6 @@ class Query:
                 expandable_progress,
                 download_progress,
                 cached_record,
-                begin_at,
             )
         )
 
@@ -524,7 +522,6 @@ class Query:
         progress: ExpandableProgress,
         download_progress: TaskID,
         cached_record: Optional[TransformedResults],
-        begin_at: datetime.datetime,
     ) -> List[str]:
         """
         Task to monitor the list of files in the transform output's bucket. Any new files
@@ -560,17 +557,16 @@ class Query:
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
 
+        later_than: datetime.datetime | None = None
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    new_begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
                     files = await self.servicex.get_transformation_results(
-                        self.current_status.request_id, begin_at
+                        self.current_status.request_id, later_than
                     )
-                    begin_at = new_begin_at
 
                     for file in files:
                         filename = file.filename
@@ -600,6 +596,9 @@ class Query:
                                     )
                                 )  # NOQA 501
                             files_seen.add(filename)
+
+                            if later_than is None or file.created_at > later_than:
+                                later_than = file.created_at
 
             # Once the transform is complete and all files are seen we can stop polling.
             # Also, if we are just downloading or signing urls for a previous transform

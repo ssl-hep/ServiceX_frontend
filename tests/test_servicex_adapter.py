@@ -29,6 +29,7 @@ import os
 import tempfile
 import time
 import datetime
+from unittest import result
 from unittest.mock import patch, AsyncMock
 
 import httpx
@@ -512,8 +513,8 @@ async def test_get_transformation_results_success(get, servicex):
     get.return_value.__aenter__.return_value.json = AsyncMock(
         return_value={
             "results": [
-                {"file-path": "file1.txt"},
-                {"file-path": "file2.txt"},
+                {"file-path": "file1.txt", "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()},
+                {"file-path": "file2.txt", "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat()},
             ]
         }
     )
@@ -528,7 +529,7 @@ async def test_get_transformation_results_success(get, servicex):
         url=f"https://servicex.org/servicex/transformation/{request_id}/results",
         headers={},
         params={
-            "begin_at": now.isoformat(),
+            "later_than": now.isoformat(),
         },
     )
 
@@ -549,7 +550,7 @@ async def test_get_transformation_results_not_found(
         url=f"https://servicex.org/servicex/transformation/{request_id}/results",
         headers={},
         params={
-            "begin_at": now.isoformat(),
+            "later_than": now.isoformat(),
         },
     )
 
@@ -570,7 +571,7 @@ async def test_get_transformation_results_not_authorized(
         url=f"https://servicex.org/servicex/transformation/{request_id}/results",
         headers={},
         params={
-            "begin_at": now.isoformat(),
+            "later_than": now.isoformat(),
         },
     )
 
@@ -591,6 +592,6 @@ async def test_get_transformation_results_server_error(
         url=f"https://servicex.org/servicex/transformation/{request_id}/results",
         headers={},
         params={
-            "begin_at": now.isoformat(),
+            "later_than": now.isoformat(),
         },
     )

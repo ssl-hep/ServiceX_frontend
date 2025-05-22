@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import datetime
 import tempfile
 from typing import List
 from unittest.mock import AsyncMock, patch, Mock
@@ -46,6 +47,7 @@ from servicex.models import (
 )
 from servicex.query_cache import QueryCache
 from servicex.query_core import ServiceXException, Query
+from servicex.servicex_adapter import ServiceXFile
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
@@ -208,10 +210,15 @@ async def test_submit(mocker):
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
 
-    servicex.get_transformation_results = AsyncMock(
-        side_effect=[[file1], [file1, file2]]
-    )
-
+    servicex.get_transformation_results = AsyncMock(side_effect=[
+        [
+            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ],
+        [
+            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
+            ServiceXFile(filename="file2", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ]
+    ])
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
         transform_status1,
@@ -256,7 +263,14 @@ async def test_submit_partial_success(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
-    servicex.get_transformation_results = AsyncMock(side_effect=[[file1], [file1]])
+    servicex.get_transformation_results = AsyncMock(side_effect=[
+        [
+            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ],
+        [
+            ServiceXFile(filename="file1", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ]
+    ])
 
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
@@ -304,8 +318,8 @@ async def test_use_of_cache(mocker):
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
     servicex.get_transformation_results = AsyncMock()
     servicex.get_transformation_results.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
+        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
     ]
     servicex.get_transform_status = AsyncMock()
     servicex.get_transform_status.side_effect = [
@@ -610,8 +624,8 @@ async def test_use_of_ignore_cache(mocker, servicex):
     )
     servicex.get_transformation_results = AsyncMock()
     servicex.get_transformation_results.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
+        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
     ]
     # Prepare Minio
     mock_minio = AsyncMock()

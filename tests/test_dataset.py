@@ -45,6 +45,8 @@ from servicex.models import (
 )
 from rich.progress import Progress
 
+from servicex.servicex_adapter import ServiceXFile
+
 
 @pytest.mark.asyncio
 async def test_as_signed_urls_happy(transformed_result):
@@ -121,7 +123,6 @@ async def test_as_files_cached(transformed_result, python_dataset):
 @pytest.mark.asyncio
 async def test_download_files(python_dataset):
     signed_urls_only = False
-    begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
     download_progress = "download_task_id"
     minio_mock = AsyncMock()
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
@@ -129,8 +130,8 @@ async def test_download_files(python_dataset):
     python_dataset.servicex = AsyncMock()
     python_dataset.servicex.get_transformation_results = AsyncMock()
     python_dataset.servicex.get_transformation_results.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
+        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
     ]
 
     minio_mock.download_file.return_value = Path("/path/to/downloaded_file")
@@ -143,7 +144,7 @@ async def test_download_files(python_dataset):
     python_dataset.configuration.shortened_downloaded_filename = False
 
     result_uris = await python_dataset.download_files(
-        signed_urls_only, progress_mock, download_progress, None, begin_at
+        signed_urls_only, progress_mock, download_progress, None
     )
     minio_mock.download_file.assert_awaited()
     minio_mock.get_signed_url.assert_not_awaited()
@@ -153,7 +154,6 @@ async def test_download_files(python_dataset):
 @pytest.mark.asyncio
 async def test_download_files_with_signed_urls(python_dataset):
     signed_urls_only = True
-    begin_at = datetime.datetime.now(tz=datetime.timezone.utc)
     download_progress = "download_task_id"
     minio_mock = AsyncMock()
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
@@ -165,8 +165,8 @@ async def test_download_files_with_signed_urls(python_dataset):
     python_dataset.servicex = AsyncMock()
     python_dataset.servicex.get_transformation_results = AsyncMock()
     python_dataset.servicex.get_transformation_results.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
+        ServiceXFile(filename="file1.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
+        ServiceXFile(filename="file2.txt", created_at=datetime.datetime.now(datetime.timezone.utc)),
     ]
 
     python_dataset.minio_polling_interval = 0
@@ -175,7 +175,7 @@ async def test_download_files_with_signed_urls(python_dataset):
     python_dataset.configuration.shortened_downloaded_filename = False
 
     result_uris = await python_dataset.download_files(
-        signed_urls_only, progress_mock, download_progress, None, begin_at
+        signed_urls_only, progress_mock, download_progress, None
     )
     minio_mock.download_file.assert_not_called()
     minio_mock.get_signed_url.assert_called()
