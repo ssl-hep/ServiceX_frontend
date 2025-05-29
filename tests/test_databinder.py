@@ -16,7 +16,7 @@ def basic_spec(samples=None):
 
 
 def test_long_sample_name():
-    long_sample_name="a_16_char_string"*50 #800 chars
+    long_sample_name = "a_16_char_string" * 50
     config = {
         "Sample": [
             {
