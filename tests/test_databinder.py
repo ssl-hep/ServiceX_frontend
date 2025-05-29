@@ -16,19 +16,18 @@ def basic_spec(samples=None):
 
 
 def test_long_sample_name():
+    long_sample_name="a_16_char_string"*50 #800 chars
     config = {
         "Sample": [
             {
-                "Name": "long_sample_name_long_sample_name_long_sample_name_\
-                         long_sample_name_long_sample_name_long_sample_name_\
-                         long_sample_name_long_sample_name_long_sample_name",
+                "Name": long_sample_name,
                 "XRootDFiles": "root://a.root",
                 "Query": "a",
             },
         ],
     }
     new_config = ServiceXSpec.model_validate(config)
-    assert len(new_config.Sample[0].Name) == 128
+    assert len(new_config.Sample[0].Name) == 512
 
 
 def test_load_config():
