@@ -147,12 +147,12 @@ class Sample(DocStringBaseModel):
     @classmethod
     def truncate_long_sample_name(cls, v):
         """
-        Truncate sample name to 128 characters if exceed
+        Truncate sample name to 512 characters if exceed
         Print warning message
         """
-        if len(v) > 128:
-            logger.warning(f"Truncating Sample name to 128 characters for {v}")
-            v = v[0:128]
+        if len(v) > 512:
+            logger.warning(f"Truncating Sample name to 512 characters for {v}")
+            v = v[0:512]
         return v
 
     @property
