@@ -31,6 +31,7 @@ import uproot
 import numpy as np
 import awkward as ak
 import json
+import logging
 
 
 def run_query(input_filenames):
@@ -123,6 +124,30 @@ def build_deliver_spec(datasets):
     return spec_python
 
 
+def open_delivered_file(sample, path):
+    """
+    Opens the first file delivered by ServiceX for a given sample and returns the
+    structure encoded in the "servicex/branch" branch.
+    If no files are found, logs a warning and returns None.
+    Parameters:
+      sample (str): The sample name for which to open the file.
+      path (list): List of file paths delivered by ServiceX for the sample.
+    """
+
+    if not path:
+        logging.warning(
+            f"Warning: No files found for sample '{sample}' in delivered results. Skipping."
+        )
+        return None
+
+    try:
+        with uproot.open(path[0]) as f:
+            return f["servicex"]["branch"].array()[0]
+    except Exception as e:
+        logging.error(f"Error opening file for sample '{sample}': {e}")
+        return None
+
+
 def print_structure_from_str(
     deliver_dict, filter_branch="", save_to_txt=False, do_print=False
 ):
@@ -147,15 +172,17 @@ def print_structure_from_str(
     )
 
     for sample_name, path in deliver_dict.items():
+        structure_str = open_delivered_file(sample_name, path)
+        if structure_str is None:
+            continue
+        # Parse the JSON string into a dictionary
+        structure_dict = json.loads(structure_str)
+
         output_lines.append(
             f"\n---------------------------\n"
             f"\U0001f4c1 Sample: {sample_name}\n"
             f"---------------------------"
         )
-
-        with uproot.open(path[0]) as f:
-            json_str = f["servicex"]["branch"].array()[0]
-            structure_dict = json.loads(json_str)
 
         for tree_name, branches in structure_dict.items():
             output_lines.append(f"\n\U0001f333 Tree: {tree_name}")
@@ -272,8 +299,9 @@ def get_structure(datasets, array_out=False, **kwargs):
     if array_out == True:
         all_arrays = {}
         for sample, path in output.items():
-            with uproot.open(path[0]) as f:
-                structure_str = f["servicex"]["branch"].array()[0]
+            structure_str = open_delivered_file(sample, path)
+            if structure_str is None:
+                continue
             sample_array = str_to_array(structure_str)
             all_arrays[sample] = sample_array
         return all_arrays
