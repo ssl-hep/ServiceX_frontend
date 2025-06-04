@@ -64,7 +64,6 @@ def dataset():
     return cached_dataset
 
 
-@pytest.mark.asyncio
 def test_datasets_list(script_runner, dataset):
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_datasets = AsyncMock(return_value=[dataset])
