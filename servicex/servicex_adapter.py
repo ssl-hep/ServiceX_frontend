@@ -27,7 +27,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import time
+import datetime
 from typing import Optional, Dict, List
+from dataclasses import dataclass
 
 from aiohttp import ClientSession
 import httpx
@@ -46,6 +48,12 @@ from servicex.models import TransformRequest, TransformStatus, CachedDataset
 
 class AuthorizationError(BaseException):
     pass
+
+
+@dataclass
+class ServiceXFile:
+    created_at: datetime.datetime
+    filename: str
 
 
 async def _extract_message(r: ClientResponse):
@@ -238,6 +246,41 @@ class ServiceXAdapter:
                         f"Failed to delete transform {transform_id} - {msg}"
                     )
 
+    async def get_transformation_results(
+        self, request_id: str, later_than: Optional[datetime.datetime] = None
+    ):
+        headers = await self._get_authorization()
+        url = self.url + f"/servicex/transformation/{request_id}/results"
+        params = {}
+        if later_than:
+            params["later_than"] = later_than.isoformat()
+
+        async with ClientSession() as session:
+            async with session.get(headers=headers, url=url, params=params) as r:
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}"
+                    )
+
+                if r.status == 404:
+                    raise ValueError(f"Request {request_id} not found")
+
+                if r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed with message: {msg}")
+
+                data = await r.json()
+                response = list()
+                for result in data.get("results", []):
+                    file = ServiceXFile(
+                        filename=result["file-path"].replace("/", ":"),
+                        created_at=datetime.datetime.fromisoformat(
+                            result["created_at"]
+                        ),
+                    )
+                    response.append(file)
+                return response
+
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}/cancel"
@@ -245,7 +288,6 @@ class ServiceXAdapter:
 
         async with ClientSession() as session:
             async with session.get(headers=headers, url=url) as r:
-
                 if r.status == 403:
                     raise AuthorizationError(
                         f"Not authorized to access serviceX at {self.url}"
