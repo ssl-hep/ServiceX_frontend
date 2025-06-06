@@ -30,7 +30,7 @@ import time
 from typing import Optional, Dict, List
 
 import httpx
-from httpx import AsyncClient as ClientSession, Response
+from httpx import AsyncClient, Response
 from json import JSONDecodeError
 from httpx_retries import RetryTransport, Retry
 from google.auth import jwt
@@ -66,7 +66,7 @@ class ServiceXAdapter:
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
         headers = {"Authorization": f"Bearer {self.refresh_token}"}
-        async with ClientSession() as client:
+        async with AsyncClient() as client:
             r = await client.post(url, headers=headers, json=None)
             if r.status_code == 200:
                 o = await r.json()
@@ -113,9 +113,7 @@ class ServiceXAdapter:
     async def get_transforms(self) -> List[TransformStatus]:
         headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=10)
-        async with ClientSession(
-            transport=RetryTransport(retry=retry_options)
-        ) as client:
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             r = await client.get(
                 url=f"{self.url}/servicex/transformation", headers=headers
             )
@@ -151,7 +149,7 @@ class ServiceXAdapter:
         if show_deleted:
             params["show-deleted"] = True
 
-        async with ClientSession() as session:
+        async with AsyncClient() as session:
             r = await session.get(
                 headers=headers, url=f"{self.url}/servicex/datasets", params=params
             )
@@ -172,7 +170,7 @@ class ServiceXAdapter:
         headers = await self._get_authorization()
         path_template = "/servicex/datasets/{dataset_id}"
         url = self.url + path_template.format(dataset_id=dataset_id)
-        async with ClientSession() as session:
+        async with AsyncClient() as session:
             r = await session.get(headers=headers, url=url)
             if r.status_code == 403:
                 raise AuthorizationError(
@@ -193,7 +191,7 @@ class ServiceXAdapter:
         path_template = "/servicex/datasets/{dataset_id}"
         url = self.url + path_template.format(dataset_id=dataset_id)
 
-        async with ClientSession() as session:
+        async with AsyncClient() as session:
             r = await session.delete(headers=headers, url=url)
             if r.status_code == 403:
                 raise AuthorizationError(
@@ -212,7 +210,7 @@ class ServiceXAdapter:
         path_template = f"/servicex/transformation/{transform_id}"
         url = self.url + path_template.format(transform_id=transform_id)
 
-        async with ClientSession() as session:
+        async with AsyncClient() as session:
             r = await session.delete(headers=headers, url=url)
             if r.status_code == 403:
                 raise AuthorizationError(
@@ -229,7 +227,7 @@ class ServiceXAdapter:
         path_template = f"/servicex/transformation/{transform_id}/cancel"
         url = self.url + path_template.format(transform_id=transform_id)
 
-        async with ClientSession() as session:
+        async with AsyncClient() as session:
             r = await session.get(headers=headers, url=url)
             if r.status_code == 403:
                 raise AuthorizationError(
@@ -244,9 +242,7 @@ class ServiceXAdapter:
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=30)
-        async with ClientSession(
-            transport=RetryTransport(retry=retry_options)
-        ) as client:
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             r = await client.post(
                 url=f"{self.url}/servicex/transformation",
                 headers=headers,
@@ -272,9 +268,7 @@ class ServiceXAdapter:
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()
         retry_options = Retry(total=5, backoff_factor=3)
-        async with ClientSession(
-            transport=RetryTransport(retry=retry_options)
-        ) as client:
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             try:
                 async for attempt in AsyncRetrying(
                     retry=retry_if_not_exception_type(ValueError),
