@@ -36,6 +36,7 @@ from pathlib import Path
 
 DOWNLOAD_PATCH_COUNTER = 0
 
+
 def make_mock_downloader(target: Path):
     def mock_downloader(**args):
         global DOWNLOAD_PATCH_COUNTER
@@ -46,6 +47,7 @@ def make_mock_downloader(target: Path):
             open(target, "wb").write(b"\x01" * 5)
         elif DOWNLOAD_PATCH_COUNTER == 3:
             open(target, "wb").write(b"\x01" * 10)
+
     return mock_downloader
 
 
@@ -106,7 +108,9 @@ async def test_download_file(minio_adapter, populate_bucket, tmp_path):
 
 @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
 @pytest.mark.asyncio
-async def test_download_file_with_expected_size(minio_adapter, populate_bucket, tmp_path):
+async def test_download_file_with_expected_size(
+    minio_adapter, populate_bucket, tmp_path
+):
     info = await minio_adapter.list_bucket()
     result = await minio_adapter.download_file(
         "test.txt", local_dir=tmp_path, expected_size=info[0].size
@@ -129,7 +133,9 @@ async def test_download_bad_filename(minio_adapter, populate_bucket, tmp_path):
 
 @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
 @pytest.mark.asyncio
-async def test_download_short_filename_no_change(minio_adapter, populate_bucket, tmp_path):
+async def test_download_short_filename_no_change(
+    minio_adapter, populate_bucket, tmp_path
+):
     result = await minio_adapter.download_file(
         "test.txt", local_dir=tmp_path, shorten_filename=True
     )
@@ -194,7 +200,8 @@ async def test_get_signed_url(minio_adapter, moto_services, populate_bucket):
 @pytest.mark.asyncio
 async def test_download_file_retry(minio_adapter, populate_bucket, mocker, tmp_path):
     download_patch = mocker.patch(
-        "aioboto3.s3.inject.download_file", side_effect=make_mock_downloader(tmp_path / "test.txt")
+        "aioboto3.s3.inject.download_file",
+        side_effect=make_mock_downloader(tmp_path / "test.txt"),
     )
     result = await minio_adapter.download_file("test.txt", local_dir=tmp_path)
     assert str(result).endswith("test.txt")
