@@ -125,7 +125,7 @@ class ServiceXAdapter:
                 error_message = await _extract_message(r)
                 raise RuntimeError(
                     "ServiceX WebAPI Error during transformation "
-                    f"submission: {r.status_code} - {error_message}"
+                    f"status retrieval: {r.status_code} - {error_message}"
                 )
             o = await r.json()
             statuses = [TransformStatus(**status) for status in o["requests"]]
