@@ -31,7 +31,12 @@ from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
 from servicex.configuration import Configuration
-from servicex.models import ResultFormat, TransformStatus, TransformedResults
+from servicex.models import (
+    ResultFormat,
+    TransformStatus,
+    TransformedResults,
+    CachedDataset,
+)
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.query_core import (
@@ -362,7 +367,7 @@ class ServiceXClient:
 
     get_transform_status = make_sync(get_transform_status_async)
 
-    def get_datasets(self, did_finder=None, show_deleted=False):
+    def get_datasets(self, did_finder=None, show_deleted=False) -> List[CachedDataset]:
         r"""
         Retrieve all datasets you have run on the server
         :return: List of Query objects
@@ -371,31 +376,29 @@ class ServiceXClient:
             self.servicex.get_datasets(did_finder, show_deleted)
         )
 
-    def get_dataset(self, dataset_id):
+    def get_dataset(self, dataset_id) -> CachedDataset:
         r"""
         Retrieve a dataset by its ID
         :return: A Query object
         """
         return _async_execute_and_wait(self.servicex.get_dataset(dataset_id))
 
-    def delete_dataset(self, dataset_id):
+    def delete_dataset(self, dataset_id) -> bool:
         r"""
         Delete a dataset by its ID
-        :return: A Query object
+        :return: boolean showing whether the dataset has been deleted
         """
         return _async_execute_and_wait(self.servicex.delete_dataset(dataset_id))
 
-    def delete_transform(self, transform_id):
+    def delete_transform(self, transform_id) -> None:
         r"""
         Delete a Transform by its request ID
-        :return: A Query object
         """
         return _async_execute_and_wait(self.servicex.delete_transform(transform_id))
 
-    def cancel_transform(self, transform_id):
+    def cancel_transform(self, transform_id) -> None:
         r"""
         Cancel a Transform by its request ID
-        :return: A Query object
         """
         return _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
 
