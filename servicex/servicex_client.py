@@ -44,7 +44,7 @@ from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
-from collections.abc import Sequence
+from collections.abc import Sequence, Coroutine
 from enum import Enum
 import traceback
 
@@ -113,6 +113,16 @@ class GuardList(Sequence):
         else:
             data = cast(ReturnValueException, self._data)
             return f"Invalid GuardList: {repr(data._exc)}"
+
+
+def _async_execute_and_wait(coro: Coroutine) -> Any:
+    import asyncio
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    return loop.run_until_complete(coro)
 
 
 def _load_ServiceXSpec(
@@ -358,35 +368,37 @@ class ServiceXClient:
         Retrieve all datasets you have run on the server
         :return: List of Query objects
         """
-        return self.servicex.get_datasets(did_finder, show_deleted)
+        return _async_execute_and_wait(
+            self.servicex.get_datasets(did_finder, show_deleted)
+        )
 
     def get_dataset(self, dataset_id):
         r"""
         Retrieve a dataset by its ID
         :return: A Query object
         """
-        return self.servicex.get_dataset(dataset_id)
+        return _async_execute_and_wait(self.servicex.get_dataset(dataset_id))
 
     def delete_dataset(self, dataset_id):
         r"""
         Delete a dataset by its ID
         :return: A Query object
         """
-        return self.servicex.delete_dataset(dataset_id)
+        return _async_execute_and_wait(self.servicex.delete_dataset(dataset_id))
 
     def delete_transform(self, transform_id):
         r"""
         Delete a Transform by its request ID
         :return: A Query object
         """
-        return self.servicex.delete_transform(transform_id)
+        return _async_execute_and_wait(self.servicex.delete_transform(transform_id))
 
     def cancel_transform(self, transform_id):
         r"""
         Cancel a Transform by its request ID
         :return: A Query object
         """
-        return self.servicex.cancel_transform(transform_id)
+        return _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
 
     def get_code_generators(self, backend=None):
         r"""
