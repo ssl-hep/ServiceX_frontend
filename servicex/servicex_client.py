@@ -119,10 +119,9 @@ def _async_execute_and_wait(coro: Coroutine) -> Any:
     import asyncio
 
     try:
-        loop = asyncio.get_running_loop()
+        return asyncio.create_task(coro).result()
     except RuntimeError:
-        loop = asyncio.new_event_loop()
-    return loop.run_until_complete(coro)
+        return asyncio.run(coro)
 
 
 def _load_ServiceXSpec(
