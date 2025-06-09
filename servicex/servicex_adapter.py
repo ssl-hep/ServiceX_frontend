@@ -50,7 +50,7 @@ class AuthorizationError(BaseException):
 
 async def _extract_message(r: Response):
     try:
-        o = await r.json()
+        o = r.json()
         error_message = o.get("message", str(r))
     except JSONDecodeError:
         error_message = r.text
@@ -69,7 +69,7 @@ class ServiceXAdapter:
         async with AsyncClient() as client:
             r = await client.post(url, headers=headers, json=None)
             if r.status_code == 200:
-                o = await r.json()
+                o = r.json()
                 self.token = o["access_token"]
             else:
                 raise AuthorizationError(
@@ -127,7 +127,7 @@ class ServiceXAdapter:
                     "ServiceX WebAPI Error during transformation "
                     f"status retrieval: {r.status_code} - {error_message}"
                 )
-            o = await r.json()
+            o = r.json()
             statuses = [TransformStatus(**status) for status in o["requests"]]
             return statuses
 
@@ -161,7 +161,7 @@ class ServiceXAdapter:
                 msg = await _extract_message(r)
                 raise RuntimeError(f"Failed to get datasets: {r.status_code} - {msg}")
 
-            result = await r.json()
+            result = r.json()
 
             datasets = [CachedDataset(**d) for d in result["datasets"]]
             return datasets
@@ -181,7 +181,7 @@ class ServiceXAdapter:
             elif r.status_code != 200:
                 msg = await _extract_message(r)
                 raise RuntimeError(f"Failed to get dataset {dataset_id} - {msg}")
-            result = await r.json()
+            result = r.json()
 
         dataset = CachedDataset(**result)
         return dataset
@@ -202,7 +202,7 @@ class ServiceXAdapter:
             elif r.status_code != 200:
                 msg = await _extract_message(r)
                 raise RuntimeError(f"Failed to delete dataset {dataset_id} - {msg}")
-            result = await r.json()
+            result = r.json()
             return result["stale"]
 
     async def delete_transform(self, transform_id=None):
@@ -262,7 +262,7 @@ class ServiceXAdapter:
                     f"submission: {r.status_code} - {error_message}"
                 )
             else:
-                o = await r.json()
+                o = r.json()
                 return o["request_id"]
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
@@ -296,7 +296,7 @@ class ServiceXAdapter:
                                 "ServiceX WebAPI Error during transformation: "
                                 f"{r.status_code} - {error_message}"
                             )
-                        o = await r.json()
+                        o = r.json()
                         return TransformStatus(**o)
             except RuntimeError as e:
                 raise RuntimeError(
