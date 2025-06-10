@@ -28,7 +28,7 @@
 import os
 import tempfile
 import time
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import httpx
 import pytest
@@ -57,6 +57,7 @@ def test_result_formats():
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms(mock_get, servicex, transform_status_response):
+    mock_get.return_value = MagicMock()
     mock_get.return_value.json.return_value = transform_status_response
     mock_get.return_value.status_code = 200
     t = await servicex.get_transforms()
@@ -70,6 +71,7 @@ async def test_get_transforms(mock_get, servicex, transform_status_response):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms_error(mock_get, servicex, transform_status_response):
+    mock_get.return_value = MagicMock()
     mock_get.return_value.json.return_value = {"message": "error_message"}
     mock_get.return_value.status_code = 500
     with pytest.raises(RuntimeError) as err:
@@ -119,8 +121,10 @@ async def test_get_transforms_wlcg_bearer_token(
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms_with_refresh(get, post, transform_status_response):
     servicex = ServiceXAdapter(url="https://servicex.org", refresh_token="refrescas")
+    post.return_value = MagicMock()
     post.return_value.json.return_value = {"access_token": "luckycharms"}
     post.return_value.status_code = 200
+    get.return_value = MagicMock()
     get.return_value.json.return_value = transform_status_response
     get.return_value.status_code = 200
     await servicex.get_transforms()
@@ -183,6 +187,7 @@ def dataset():
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_datasets(get, servicex, dataset):
+    get.return_value = MagicMock()
     get.return_value.json.return_value = {"datasets": [dataset]}
     get.return_value.status_code = 200
 
@@ -197,6 +202,7 @@ async def test_get_datasets(get, servicex, dataset):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_datasets_show_deleted(get, servicex, dataset):
+    get.return_value = MagicMock()
     get.return_value.json.return_value = {"datasets": [dataset]}
     get.return_value.status_code = 200
     c = await servicex.get_datasets(show_deleted=True)
@@ -221,6 +227,7 @@ async def test_get_datasets_auth_error(get, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_datasets_miscellaneous_error(get, servicex):
+    get.return_value = MagicMock()
     get.return_value.status_code = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.get_datasets()
@@ -230,6 +237,7 @@ async def test_get_datasets_miscellaneous_error(get, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_dataset(get, servicex, dataset):
+    get.return_value = MagicMock()
     get.return_value.json.return_value = dataset
     get.return_value.status_code = 200
     c = await servicex.get_dataset(123)
@@ -240,6 +248,7 @@ async def test_get_dataset(get, servicex, dataset):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_dataset_errors(get, servicex, dataset):
+    get.return_value = MagicMock()
     get.return_value.status_code = 403
     with pytest.raises(AuthorizationError) as err:
         await servicex.get_dataset(123)
@@ -261,6 +270,7 @@ async def test_get_dataset_errors(get, servicex, dataset):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.delete")
 async def test_delete_dataset(delete, servicex):
+    delete.return_value = MagicMock()
     delete.return_value.json.return_value = {
         "dataset-id": 123,
         "stale": True,
@@ -277,6 +287,7 @@ async def test_delete_dataset(delete, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.delete")
 async def test_delete_dataset_errors(delete, servicex):
+    delete.return_value = MagicMock()
     delete.return_value.status_code = 403
     with pytest.raises(AuthorizationError) as err:
         await servicex.delete_dataset(123)
@@ -308,6 +319,7 @@ async def test_delete_transform(delete, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.delete")
 async def test_delete_transform_errors(delete, servicex):
+    delete.return_value = MagicMock()
     delete.return_value.status_code = 403
     with pytest.raises(AuthorizationError) as err:
         await servicex.delete_transform("123-45-6789")
@@ -343,6 +355,7 @@ async def test_cancel_transform(get, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_cancel_transform_errors(get, servicex):
+    get.return_value = MagicMock()
     get.return_value.status_code = 403
     with pytest.raises(AuthorizationError) as err:
         await servicex.cancel_transform(123)
@@ -364,6 +377,7 @@ async def test_cancel_transform_errors(get, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.post")
 async def test_submit(post, servicex):
+    post.return_value = MagicMock()
     post.return_value.json.return_value = {"request_id": "123-456-789"}
     post.return_value.status_code = 200
     request = TransformRequest(
@@ -381,6 +395,7 @@ async def test_submit(post, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.post")
 async def test_submit_errors(post, servicex):
+    post.return_value = MagicMock()
     post.return_value.status_code = 401
     request = TransformRequest(
         title="Test submission",
@@ -424,6 +439,7 @@ async def test_submit_errors(post, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transform_status(get, servicex, transform_status_response):
+    get.return_value = MagicMock()
     get.return_value.json.return_value = transform_status_response["requests"][
         0
     ]  # NOQA: E501
@@ -435,6 +451,7 @@ async def test_get_transform_status(get, servicex, transform_status_response):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transform_status_errors(get, servicex):
+    get.return_value = MagicMock()
     with pytest.raises(AuthorizationError) as err:
         get.return_value.status_code = 401
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
@@ -449,11 +466,7 @@ async def test_get_transform_status_errors(get, servicex):
 
     with pytest.raises(RuntimeError) as err:
         get.return_value.status_code = 500
-
-        async def patch_json():
-            return {"message": "fifteen"}
-
-        get.return_value.json = patch_json
+        get.return_value.json = lambda: {"message": "fifteen"}
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
     assert "ServiceX WebAPI Error during transformation" in str(err.value)
 
@@ -465,6 +478,7 @@ async def test_get_tranform_status_retry_error(
     get, mock_transform_status, servicex, transform_status_response
 ):
     with pytest.raises(RuntimeError) as err:
+        get.return_value = MagicMock()
         get.return_value.json.return_value = transform_status_response["requests"][
             0
         ]  # NOQA: E501
