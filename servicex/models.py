@@ -230,6 +230,16 @@ class TransformedResults(DocStringBaseModel):
     """URL for looking up logs on the ServiceX server"""
 
 
+class ServiceXInfo(DocStringBaseModel):
+    r"""
+    Model for ServiceX Info properties
+    """
+
+    app_version: str = Field(alias="app-version")
+    code_gen_image: dict[str, str] = Field(alias="code-gen-image")
+    capabilities: list[str]
+
+
 class DatasetFile(BaseModel):
     """
     Model for a file in a cached dataset

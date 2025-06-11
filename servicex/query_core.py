@@ -564,9 +564,13 @@ class Query:
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    files = await self.servicex.get_transformation_results(
-                        self.current_status.request_id, later_than
-                    )
+                    capabilities = await self.servicex.get_servicex_capabilities()
+                    if "poll_local_transformation_results" in capabilities:
+                        files = await self.servicex.get_transformation_results(
+                            self.current_status.request_id, later_than
+                        )
+                    else:
+                        files = await self.minio.list_bucket()
 
                     for file in files:
                         filename = file.filename
@@ -597,8 +601,12 @@ class Query:
                                 )  # NOQA 501
                             files_seen.add(filename)
 
-                            if later_than is None or file.created_at > later_than:
-                                later_than = file.created_at
+                            if (
+                                "poll_local_transformation_results"
+                                in await self.servicex.get_servicex_capabilities()
+                            ):
+                                if file.created_at > later_than:
+                                    later_than = file.created_at
 
             # Once the transform is complete and all files are seen we can stop polling.
             # Also, if we are just downloading or signing urls for a previous transform
