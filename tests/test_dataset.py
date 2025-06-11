@@ -128,6 +128,10 @@ async def test_download_files(python_dataset):
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
     python_dataset.configuration = config
     python_dataset.servicex = AsyncMock()
+    python_dataset.servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+
     python_dataset.servicex.get_transformation_results = AsyncMock()
     python_dataset.servicex.get_transformation_results.return_value = [
         ServiceXFile(
@@ -169,6 +173,10 @@ async def test_download_files_with_signed_urls(python_dataset):
     progress_mock = Mock()
 
     python_dataset.servicex = AsyncMock()
+    python_dataset.servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+
     python_dataset.servicex.get_transformation_results = AsyncMock()
     python_dataset.servicex.get_transformation_results.return_value = [
         ServiceXFile(

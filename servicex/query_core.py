@@ -557,7 +557,7 @@ class Query:
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
 
-        later_than = datetime.datetime.min
+        later_than = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)

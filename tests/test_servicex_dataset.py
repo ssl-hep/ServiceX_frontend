@@ -209,6 +209,9 @@ async def test_submit(mocker):
 
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
 
     servicex.get_transformation_results = AsyncMock(
         side_effect=[
@@ -270,10 +273,61 @@ async def test_submit(mocker):
 
 
 @pytest.mark.asyncio
+async def test_submit_s3_polling(mocker):
+    servicex = AsyncMock()
+
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
+
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status3,
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1, file2]])
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = Query(
+        dataset_identifier=did,
+        title="ServiceX Client",
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+    )
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        result = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
+        print(mock_minio.download_file.call_args)
+    assert result.file_list == ["file1", "file2"]
+    mock_cache.cache_transform.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_submit_partial_success(mocker):
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
     servicex.get_transformation_results = AsyncMock(
         side_effect=[
             [
@@ -330,11 +384,60 @@ async def test_submit_partial_success(mocker):
 
 
 @pytest.mark.asyncio
+async def test_submit_partial_success_s3_polling(mocker):
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
+
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status6,
+    ]
+
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(side_effect=[[file1], [file1]])
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = Query(
+        dataset_identifier=did,
+        title="ServiceX Client",
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+    )
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        result = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
+        print(mock_minio.download_file.call_args)
+    assert result.file_list == ["file1"]
+    mock_cache.cache_transform.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_use_of_cache(mocker):
     """Do we pick up the cache on the second request for the same transform?"""
     servicex = AsyncMock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
     servicex.get_transformation_results = AsyncMock()
     servicex.get_transformation_results.return_value = [
         ServiceXFile(
@@ -429,6 +532,102 @@ async def test_use_of_cache(mocker):
             )
         servicex.assert_not_awaited()
         servicex.get_transformation_results.assert_not_awaited()
+        mock_minio.download_file.assert_not_awaited()
+        upd.assert_called_once()
+        cache.close()
+
+
+@pytest.mark.asyncio
+async def test_use_of_cache_s3_polling(mocker):
+    """Do we pick up the cache on the second request for the same transform?"""
+    servicex = AsyncMock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status3,
+    ]
+    mock_minio = AsyncMock()
+    mock_minio.list_bucket = AsyncMock(return_value=[file1, file2])
+    mock_minio.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename: PurePath(a)
+    )
+    mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
+
+    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=mock_minio)
+
+    did = FileListDataset("/foo/bar/baz.root")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        datasource = Query(
+            dataset_identifier=did,
+            title="ServiceX Client",
+            codegen="uproot",
+            sx_adapter=servicex,
+            query_cache=cache,
+            config=config,
+        )
+        datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+        datasource.result_format = ResultFormat.parquet
+        upd = mocker.patch.object(
+            cache, "update_record", side_effect=cache.update_record
+        )
+        with ExpandableProgress(display_progress=False) as progress:
+            result1 = await datasource.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )
+        upd.assert_not_called()
+        upd.reset_mock()
+        assert mock_minio.get_signed_url.await_count == 2
+        # second round, should hit the cache (and not call the sx_adapter, minio, or update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            servicex2 = AsyncMock()
+            mock_minio.list_bucket.reset_mock()
+            mock_minio.get_signed_url.reset_mock()
+            datasource2 = Query(
+                dataset_identifier=did,
+                title="ServiceX Client",
+                codegen="uproot",
+                sx_adapter=servicex2,
+                query_cache=cache,
+                config=config,
+            )
+            datasource2.query_string_generator = FuncADLQuery_Uproot().FromTree(
+                "nominal"
+            )
+            datasource2.result_format = ResultFormat.parquet
+            result2 = await datasource2.submit_and_download(
+                signed_urls_only=True, expandable_progress=progress
+            )
+            servicex2.assert_not_awaited()
+            mock_minio.list_bucket.assert_not_awaited()
+            mock_minio.get_signed_url.assert_not_awaited()
+        upd.assert_not_called()
+        assert result1 == result2
+        upd.reset_mock()
+        servicex.get_transform_status.reset_mock(side_effect=True)
+        servicex.get_transform_status.return_value = transform_status3
+        mock_minio.list_bucket.reset_mock(side_effect=True)
+        # third round, should hit the cache and download files (and call update_record)
+        with ExpandableProgress(display_progress=False) as progress:
+            await datasource.submit_and_download(
+                signed_urls_only=False, expandable_progress=progress
+            )
+        servicex.assert_not_awaited()
+        assert mock_minio.download_file.await_count == 2
+        upd.assert_called_once()
+        # fourth round, should hit the cache (and nothing else)
+        mock_minio.list_bucket.reset_mock()
+        mock_minio.download_file.reset_mock()
+        with ExpandableProgress(display_progress=False) as progress:
+            await datasource.submit_and_download(
+                signed_urls_only=False, expandable_progress=progress
+            )
+        servicex.assert_not_awaited()
+        mock_minio.list_bucket.assert_not_awaited()
         mock_minio.download_file.assert_not_awaited()
         upd.assert_called_once()
         cache.close()
@@ -646,6 +845,9 @@ async def test_use_of_ignore_cache(mocker, servicex):
             transform_status1,
             transform_status3,
         ]
+    )
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
     )
     servicex.get_transformation_results = AsyncMock()
     servicex.get_transformation_results.return_value = [
