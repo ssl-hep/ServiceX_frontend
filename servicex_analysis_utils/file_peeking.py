@@ -297,14 +297,14 @@ def get_structure(datasets, array_out=False, **kwargs):
     output = deliver(spec_python)
 
     if array_out == True:
-        all_arrays = {}
+        all_requests = {}
         for sample, path in output.items():
             structure_str = open_delivered_file(sample, path)
             if structure_str is None:
                 continue
             sample_array = str_to_array(structure_str)
-            all_arrays[sample] = sample_array
-        return all_arrays
+            all_requests[sample] = sample_array
+        return all_requests
 
     else:
         return print_structure_from_str(output, **kwargs)
