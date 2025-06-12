@@ -99,6 +99,7 @@ async def test_get_transforms_auth_error(mock_get, servicex):
 async def test_get_transforms_wlcg_bearer_token(
     decode, servicex, transform_status_response
 ):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
     token_file.write(
         """"
