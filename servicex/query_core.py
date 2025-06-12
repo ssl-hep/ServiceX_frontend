@@ -562,14 +562,18 @@ class Query:
                 progress.advance(task_id=download_progress, task_type="Download")
 
         later_than = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+        use_local_polling = (
+            "poll_local_transformation_results"
+            in await self.servicex.get_servicex_capabilities()
+        )
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    capabilities = await self.servicex.get_servicex_capabilities()
-                    if "poll_local_transformation_results" in capabilities:
+                    if use_local_polling:
                         files = await self.servicex.get_transformation_results(
                             self.current_status.request_id, later_than
                         )
@@ -592,6 +596,10 @@ class Query:
                                     )
                                 )
                             else:
+                                if use_local_polling:
+                                    expected_size = None
+                                else:
+                                    expected_size = file.size
                                 download_tasks.append(
                                     loop.create_task(
                                         download_file(
@@ -600,7 +608,7 @@ class Query:
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
-                                            expected_size=file.size,
+                                            expected_size=expected_size,
                                         )
                                     )
                                 )  # NOQA 501
