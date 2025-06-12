@@ -36,7 +36,12 @@ import pytest
 from aiohttp import ContentTypeError
 from pytest_asyncio import fixture
 
-from servicex.models import TransformRequest, ResultDestination, ResultFormat
+from servicex.models import (
+    TransformRequest,
+    ResultDestination,
+    ResultFormat,
+    ServiceXInfo,
+)
 from servicex.servicex_adapter import ServiceXAdapter, AuthorizationError
 
 
@@ -627,3 +632,122 @@ async def test_get_transformation_results_server_error(
             "later_than": now.isoformat(),
         },
     )
+
+
+def test_get_bearer_token_file(tmp_path, monkeypatch):
+    token_file = tmp_path / "btf"
+    token_file.write_text("bearer123")
+    monkeypatch.setenv("BEARER_TOKEN_FILE", str(token_file))
+    assert ServiceXAdapter._get_bearer_token_file() == "bearer123"
+    monkeypatch.delenv("BEARER_TOKEN_FILE", raising=False)
+    assert ServiceXAdapter._get_bearer_token_file() is None
+
+
+@patch("servicex.servicex_adapter.jwt.decode", return_value={"exp": 1600000000})
+def test_get_token_expiration_success(decode):
+    assert ServiceXAdapter._get_token_expiration("dummy") == 1600000000
+
+
+@patch("servicex.servicex_adapter.jwt.decode", return_value={"sub": "noexp"})
+def test_get_token_expiration_no_exp(decode):
+    with pytest.raises(RuntimeError):
+        ServiceXAdapter._get_token_expiration("dummy")
+
+
+@pytest.mark.asyncio
+async def test_get_authorization_no_token_no_refresh(servicex, monkeypatch):
+    monkeypatch.delenv("BEARER_TOKEN_FILE", raising=False)
+    headers = await servicex._get_authorization()
+    assert headers == {}
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.jwt.decode", return_value={"exp": time.time() + 120})
+async def test_get_authorization_with_valid_token(decode, servicex):
+    servicex.token = "tok123"
+    headers = await servicex._get_authorization()
+    assert headers == {"Authorization": "Bearer tok123"}
+
+
+@pytest.mark.asyncio
+async def test_get_authorization_with_refresh(monkeypatch):
+    s = ServiceXAdapter("https://servicex.org", refresh_token="rftok")
+    monkeypatch.delenv("BEARER_TOKEN_FILE", raising=False)
+
+    async def fake_get_token(self):
+        self.token = "newtoken"
+
+    monkeypatch.setattr(ServiceXAdapter, "_get_token", fake_get_token)
+    headers = await s._get_authorization()
+    assert headers == {"Authorization": "Bearer newtoken"}
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.RetryClient.get")
+async def test_get_servicex_info_success(mock_get, servicex):
+    mock_get.return_value.__aenter__.return_value.status = 200
+    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+        return_value={
+            "capabilities": ["a", "b"],
+            "app-version": "1.0",
+            "code-gen-image": {"func_adl": "image1", "uproot": "image2"},
+        }
+    )
+    info = await servicex.get_servicex_info()
+    assert isinstance(info, ServiceXInfo)
+    assert info.capabilities == ["a", "b"]
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.RetryClient.get")
+async def test_get_servicex_info_auth_error(mock_get, servicex):
+    mock_get.return_value.__aenter__.return_value.status = 401
+    with pytest.raises(AuthorizationError):
+        await servicex.get_servicex_info()
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.RetryClient.get")
+async def test_get_servicex_info_server_error(mock_get, servicex):
+    mock_get.return_value.__aenter__.return_value.status = 500
+    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+        return_value={"message": "oops"}
+    )
+    with pytest.raises(RuntimeError) as e:
+        await servicex.get_servicex_info()
+    assert "ServiceX WebAPI Error during transformation submission: 500 - oops" in str(
+        e.value
+    )
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_transformation_results_parsing(mock_get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+    msg_time = datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
+    mock_get.return_value.__aenter__.return_value.status = 200
+    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+        return_value={
+            "results": [
+                {"file-path": "dir1/file.txt", "created_at": msg_time.isoformat()}
+            ]
+        }
+    )
+    res = await servicex.get_transformation_results("id123", None)
+    assert len(res) == 1
+    assert res[0].filename == "dir1:file.txt"
+    assert res[0].created_at == msg_time
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.ClientSession.get")
+async def test_get_transformation_results_empty(mock_get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+    mock_get.return_value.__aenter__.return_value.status = 200
+    mock_get.return_value.__aenter__.return_value.json = AsyncMock(return_value={})
+    res = await servicex.get_transformation_results("id123", None)
+    assert res == []
