@@ -27,7 +27,9 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 import time
+import datetime
 from typing import Optional, Dict, List
+from dataclasses import dataclass
 
 from aiohttp import ClientSession
 import httpx
@@ -41,11 +43,22 @@ from tenacity import (
     retry_if_not_exception_type,
 )
 
-from servicex.models import TransformRequest, TransformStatus, CachedDataset
+from servicex.models import (
+    TransformRequest,
+    TransformStatus,
+    CachedDataset,
+    ServiceXInfo,
+)
 
 
 class AuthorizationError(BaseException):
     pass
+
+
+@dataclass
+class ServiceXFile:
+    created_at: datetime.datetime
+    filename: str
 
 
 async def _extract_message(r: ClientResponse):
@@ -62,6 +75,9 @@ class ServiceXAdapter:
         self.url = url
         self.refresh_token = refresh_token
         self.token = None
+
+        # interact with _servicex_info via get_servicex_info
+        self._servicex_info: Optional[ServiceXInfo] = None
 
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
@@ -119,6 +135,31 @@ class ServiceXAdapter:
             ):
                 await self._get_token()
             return {"Authorization": f"Bearer {self.token}"}
+
+    async def get_servicex_info(self) -> ServiceXInfo:
+        if self._servicex_info:
+            return self._servicex_info
+
+        headers = await self._get_authorization()
+        retry_options = ExponentialRetry(attempts=3, start_timeout=10)
+        async with RetryClient(retry_options=retry_options) as client:
+            async with client.get(url=f"{self.url}/servicex", headers=headers) as r:
+                if r.status == 401:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}"
+                    )
+                elif r.status > 400:
+                    error_message = await _extract_message(r)
+                    raise RuntimeError(
+                        "ServiceX WebAPI Error during transformation "
+                        f"submission: {r.status} - {error_message}"
+                    )
+                servicex_info = await r.json()
+            self._servicex_info = ServiceXInfo(**servicex_info)
+            return self._servicex_info
+
+    async def get_servicex_capabilities(self) -> List[str]:
+        return (await self.get_servicex_info()).capabilities
 
     async def get_transforms(self) -> List[TransformStatus]:
         headers = await self._get_authorization()
@@ -238,6 +279,47 @@ class ServiceXAdapter:
                         f"Failed to delete transform {transform_id} - {msg}"
                     )
 
+    async def get_transformation_results(
+        self, request_id: str, later_than: Optional[datetime.datetime] = None
+    ):
+        if (
+            "poll_local_transformation_results"
+            not in await self.get_servicex_capabilities()
+        ):
+            raise ValueError("ServiceX capabilities not found")
+
+        headers = await self._get_authorization()
+        url = self.url + f"/servicex/transformation/{request_id}/results"
+        params = {}
+        if later_than:
+            params["later_than"] = later_than.isoformat()
+
+        async with ClientSession() as session:
+            async with session.get(headers=headers, url=url, params=params) as r:
+                if r.status == 403:
+                    raise AuthorizationError(
+                        f"Not authorized to access serviceX at {self.url}"
+                    )
+
+                if r.status == 404:
+                    raise ValueError(f"Request {request_id} not found")
+
+                if r.status != 200:
+                    msg = await _extract_message(r)
+                    raise RuntimeError(f"Failed with message: {msg}")
+
+                data = await r.json()
+                response = list()
+                for result in data.get("results", []):
+                    file = ServiceXFile(
+                        filename=result["file-path"].replace("/", ":"),
+                        created_at=datetime.datetime.fromisoformat(
+                            result["created_at"]
+                        ),
+                    )
+                    response.append(file)
+                return response
+
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}/cancel"
@@ -245,7 +327,6 @@ class ServiceXAdapter:
 
         async with ClientSession() as session:
             async with session.get(headers=headers, url=url) as r:
-
                 if r.status == 403:
                     raise AuthorizationError(
                         f"Not authorized to access serviceX at {self.url}"
