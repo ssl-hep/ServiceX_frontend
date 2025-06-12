@@ -25,6 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import os
+import tempfile
 import time
 import datetime
 from unittest.mock import patch, AsyncMock
@@ -97,32 +99,37 @@ async def test_get_transforms_auth_error(mock_get, servicex):
         assert "Not authorized to access serviceX at" in str(err.value)
 
 
-# @pytest.mark.asyncio
-# @patch("servicex.servicex_adapter.jwt.decode")
-# async def test_get_transforms_wlcg_bearer_token(
-#     decode, servicex, transform_status_response
-# ):
-#     servicex.get_servicex_capabilities = AsyncMock(return_value=[])
-#     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
-#     token_file.write(
-#         """"
-#     eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-#     """
-#     )
-#     token_file.close()
-#
-#     with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}):
-#         # Try with no expiration at all
-#         with pytest.raises(RuntimeError):
-#             await servicex.get_transforms()
-#
-#         # Try with an expired token
-#         with pytest.raises(AuthorizationError) as err:
-#             decode.return_value = {"exp": 0.0}
-#             await servicex.get_transforms()
-#             assert "ServiceX access token request rejected:" in str(err.value)
-#
-#     os.remove(token_file.name)
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.RetryClient.get")
+@patch("servicex.servicex_adapter.jwt.decode")
+async def test_get_transforms_wlcg_bearer_token(
+    decode, http_get, servicex, transform_status_response
+):
+    http_get.return_value.__aenter__.return_value.json.return_value = (
+        transform_status_response
+    )
+    http_get.return_value.__aenter__.return_value.status = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
+    token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
+    token_file.write(
+        """"
+    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+    """
+    )
+    token_file.close()
+
+    with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}):
+        # Try with no expiration at all
+        with pytest.raises(RuntimeError):
+            await servicex.get_transforms()
+
+        # Try with an expired token
+        with pytest.raises(AuthorizationError) as err:
+            decode.return_value = {"exp": 0.0}
+            await servicex.get_transforms()
+            assert "ServiceX access token request rejected:" in str(err.value)
+
+    os.remove(token_file.name)
 
 
 @pytest.mark.asyncio
