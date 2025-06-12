@@ -539,9 +539,13 @@ class Query:
             progress: Progress,
             download_progress: TaskID,
             shorten_filename: bool = False,
+            expected_size: Optional[int] = None,
         ):
             downloaded_filename = await minio.download_file(
-                filename, self.download_path, shorten_filename=shorten_filename
+                filename,
+                self.download_path,
+                shorten_filename=shorten_filename,
+                expected_size=expected_size,
             )
             result_uris.append(downloaded_filename.as_posix())
             progress.advance(task_id=download_progress, task_type="Download")
@@ -596,6 +600,7 @@ class Query:
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
+                                            expected_size=file.size,
                                         )
                                     )
                                 )  # NOQA 501

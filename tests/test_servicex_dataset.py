@@ -245,7 +245,7 @@ async def test_submit(mocker, use_s3_polling):
 
     mock_minio = AsyncMock()
     mock_minio.download_file = AsyncMock(
-        side_effect=lambda a, _, shorten_filename: PurePath(a)
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
     )
 
     if use_s3_polling:
@@ -317,7 +317,7 @@ async def test_submit_partial_success(mocker, use_s3_polling):
 
     mock_minio = AsyncMock()
     mock_minio.download_file = AsyncMock(
-        side_effect=lambda a, _, shorten_filename: PurePath(a)
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
     )
 
     if use_s3_polling:
@@ -384,7 +384,7 @@ async def test_use_of_cache(mocker, use_s3_polling):
 
     mock_minio = AsyncMock()
     mock_minio.download_file = AsyncMock(
-        side_effect=lambda a, _, shorten_filename: PurePath(a)
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
     )
     mock_minio.get_signed_url = AsyncMock(side_effect=["http://file1", "http://file2"])
 
