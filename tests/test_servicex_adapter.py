@@ -745,7 +745,7 @@ async def test_get_transformation_results_parsing(mock_get, servicex):
             "results": [
                 {
                     "file-path": "dir1/file.txt",
-                    "s3-object-name": "dir1/file.txt",
+                    "s3-object-name": "dir1:file.txt",
                     "created_at": msg_time.isoformat(),
                 }
             ]
