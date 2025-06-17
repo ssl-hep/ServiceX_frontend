@@ -614,10 +614,7 @@ class Query:
                                 )  # NOQA 501
                             files_seen.add(filename)
 
-                            if (
-                                "poll_local_transformation_results"
-                                in await self.servicex.get_servicex_capabilities()
-                            ):
+                            if use_local_polling:
                                 if file.created_at > later_than:
                                     later_than = file.created_at
 

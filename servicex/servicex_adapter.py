@@ -312,10 +312,10 @@ class ServiceXAdapter:
                 response = list()
                 for result in data.get("results", []):
                     file = ServiceXFile(
-                        filename=result["file-path"].replace("/", ":"),
+                        filename=result["s3-object-name"],
                         created_at=datetime.datetime.fromisoformat(
                             result["created_at"]
-                        ),
+                        ).replace(tzinfo=datetime.timezone.utc),
                     )
                     response.append(file)
                 return response

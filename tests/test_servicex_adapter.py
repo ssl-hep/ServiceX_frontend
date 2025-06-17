@@ -100,16 +100,21 @@ async def test_get_transforms_auth_error(mock_get, servicex):
 
 
 @pytest.mark.asyncio
+@patch("servicex.servicex_adapter.RetryClient.post")
 @patch("servicex.servicex_adapter.RetryClient.get")
 @patch("servicex.servicex_adapter.jwt.decode")
 async def test_get_transforms_wlcg_bearer_token(
-    decode, http_get, servicex, transform_status_response
+    decode, http_get, post, servicex, transform_status_response
 ):
     http_get.return_value.__aenter__.return_value.json.return_value = (
         transform_status_response
     )
     http_get.return_value.__aenter__.return_value.status = 200
     servicex.get_servicex_capabilities = AsyncMock(return_value=[])
+    post.return_value.__aenter__.return_value.json.return_value = {
+        "access_token": "luckycharms"
+    }
+    post.return_value.__aenter__.return_value.status = 401
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
     token_file.write(
         """"
@@ -530,12 +535,14 @@ async def test_get_transformation_results_success(get, servicex):
             "results": [
                 {
                     "file-path": "file1.txt",
+                    "s3-object-name": "file1.txt",
                     "created_at": datetime.datetime.now(
                         datetime.timezone.utc
                     ).isoformat(),
                 },
                 {
                     "file-path": "file2.txt",
+                    "s3-object-name": "file2.txt",
                     "created_at": datetime.datetime.now(
                         datetime.timezone.utc
                     ).isoformat(),
@@ -736,7 +743,11 @@ async def test_get_transformation_results_parsing(mock_get, servicex):
     mock_get.return_value.__aenter__.return_value.json = AsyncMock(
         return_value={
             "results": [
-                {"file-path": "dir1/file.txt", "created_at": msg_time.isoformat()}
+                {
+                    "file-path": "dir1/file.txt",
+                    "s3-object-name": "dir1/file.txt",
+                    "created_at": msg_time.isoformat(),
+                }
             ]
         }
     )
