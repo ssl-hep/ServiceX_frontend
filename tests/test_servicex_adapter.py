@@ -97,9 +97,7 @@ async def test_get_transforms_auth_error(mock_get, servicex):
 async def test_get_transforms_wlcg_bearer_token(
     decode, post, servicex, transform_status_response
 ):
-    post.return_value.json.return_value = {
-        "access_token": "luckycharms"
-    }
+    post.return_value.json.return_value = {"access_token": "luckycharms"}
     post.return_value.status_code = 401
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
     token_file.write(
