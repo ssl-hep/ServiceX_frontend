@@ -56,6 +56,8 @@ class TreeSubQuery(DocStringBaseModel):
     """Define aliases to use in computation and expressions"""
     fail_on_missing_trees: Optional[bool] = None
     """Make queries fail if input trees are missing (default False)"""
+    use_standard_awkward_axis: Optional[bool] = None
+    """Do not override standard axis default arguments in awkward expressions (default False)"""
 
 
 class CopyHistogramSubQuery(DocStringBaseModel):
