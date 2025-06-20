@@ -72,7 +72,7 @@ Let's look at the structure of an Uproot-Raw query.
              {
               'treename': 'reco',
               'filter_name': ['/mu.*/', 'runNumber', 'lbn', 'jet_pt_*'],
-              'cut':'(count_nonzero(jet_pt_NOSYS>40e3, axis=1)>=4)'
+              'cut':'(count_nonzero(jet_pt_NOSYS>40e3)>=4)'
              },
              {
               'copy_histograms': ['CutBookkeeper*', '/cflow.*/', 'metadata', 'listOfSystematics']
@@ -89,13 +89,22 @@ Each dictionary either has a ``treename`` key (indicating that it is a query on 
 
   * ``expressions``, ``cut``, ``filter_name``, ``aliases``: have the same meaning as for `TTree.arrays()`_ in ``uproot``, except that functions aren't permitted (but *glob*\s and *regular expressions*, which are special kinds of strings, are).
 
+    The Uproot-Raw language extends the default ``uproot`` expression language by adding many functions from Awkward Array (the example above uses ``awkward.count_nonzero``). This permits very powerful expressions for cuts and expression evaluation. **See the warning below about an important difference between the implementation of Awkward functions in the Uproot-Raw query language and in the base awkward package.**
+
   * ``fail_on_missing_trees``: if set to ``True``, will cause the transformation to fail if a tree specified in the query is not present in any of the input files. By default if a requested tree is not present, it will just be ignored and the corresponding output will not be in the output.
+
+  * ``use_standard_awkward_axis``: if set to ``True`` will switch off the overrides of the default *axis* arguments to certain awkward functions, see the warning below. This will make the expression language fully compatible with Awkward Array, at the cost of probably counterintuitive behavior of a number of the functions.
 
   Other keys will be ignored.
 
   Most queries will probably use ``filter_names``, which selects specific branches, and ``cut``, which selects specific rows. The ``expressions`` argument permits new values to be computed from the branches in the tree, and ``aliases`` can be used to introduce shorthand to make these expressions cleaner.
 
-  The Uproot-Raw language extends the default ``uproot`` expression language by adding many functions from Awkward Array (the example above uses ``awkward.count_nonzero``). This permits very powerful expressions for cuts and expression evaluation.
+.. warning::
+  By default, the Uproot-Raw transformers redefine the default *axis* argument of a number of Awkward Array functions in the ``awkward`` package to be *axis=1* instead of *axis=0*. The reason for this choice is that *axis=0* is almost never what is actually desired when writing a particle physics cut expression, as this will evaluate over all rows (i.e. events) at once, whereas *axis=1* evaluates only within each row (event). As an explicit example, ``any(jet_pt>50)`` Uproot-Raw will select rows where some ``jet_pt`` is above 50; with the function defined in the ``awkward`` package, this expression will instead evaluate to a scalar if any jet in the input file, in any event, satisfies the criterion (and the mismatch of array shapes will cause the query to fail in a somewhat incomprehensible way).
+
+  This feature means that expressions using the affected functions will not evaluate the same way in Uproot-Raw expressions and in code that uses the ``awkward`` package unless *axis* arguments are explicitly specified. Users can still pass explicit *axis* specifications in their Uproot-Raw queries, which will override this default. In addition, if the ``use_standard_awkward_axis`` key is set to ``True``, the default ``awkward`` functions will be used without modification.
+
+  The modified functions are: ``concatenate``, ``count``, ``count_nonzero``, ``sum``, ``nansum``, ``prod``, ``nanprod``, ``any``, ``all``, ``min``, ``nanmin``, ``max``, ``nanmax``, ``argmin``, ``nanargmin``, ``argmax``, ``nanargmax``, ``moment``, ``mean``, ``nanmedian``, ``var``, ``nanvar``, ``std``, ``nanstd``, and ``softmax``. In addition, ``flatten`` is modified to a default *axis* of 2.
 
 * **Copy dictionaries**: these dictionaries contain the ``copy_histograms`` key, which specifies the object(s) to be copied. The one key is:
 
