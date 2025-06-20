@@ -237,7 +237,7 @@ class ServiceXInfo(DocStringBaseModel):
 
     app_version: str = Field(alias="app-version")
     code_gen_image: dict[str, str] = Field(alias="code-gen-image")
-    capabilities: list[str]
+    capabilities: list[str] = Field(default_factory=list)
 
 
 class DatasetFile(BaseModel):

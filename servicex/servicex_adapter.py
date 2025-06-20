@@ -31,10 +31,10 @@ import datetime
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 
-from aiohttp import ClientSession
 import httpx
-from aiohttp_retry import RetryClient, ExponentialRetry, ClientResponse
-from aiohttp import ContentTypeError
+from httpx import AsyncClient, Response
+from json import JSONDecodeError
+from httpx_retries import RetryTransport, Retry
 from google.auth import jwt
 from tenacity import (
     AsyncRetrying,
@@ -61,12 +61,12 @@ class ServiceXFile:
     filename: str
 
 
-async def _extract_message(r: ClientResponse):
+async def _extract_message(r: Response):
     try:
-        o = await r.json()
+        o = r.json()
         error_message = o.get("message", str(r))
-    except ContentTypeError:
-        error_message = await r.text()
+    except JSONDecodeError:
+        error_message = r.text
     return error_message
 
 
@@ -82,15 +82,15 @@ class ServiceXAdapter:
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
         headers = {"Authorization": f"Bearer {self.refresh_token}"}
-        async with RetryClient() as client:
-            async with client.post(url, headers=headers, json=None) as r:
-                if r.status == 200:
-                    o = await r.json()
-                    self.token = o["access_token"]
-                else:
-                    raise AuthorizationError(
-                        f"ServiceX access token request rejected [{r.status} {r.reason}]"
-                    )
+        async with AsyncClient() as client:
+            r = await client.post(url, headers=headers, json=None)
+            if r.status_code == 200:
+                o = r.json()
+                self.token = o["access_token"]
+            else:
+                raise AuthorizationError(
+                    f"ServiceX access token request rejected [{r.status_code} {r.reason_phrase}]"
+                )
 
     @staticmethod
     def _get_bearer_token_file():
@@ -141,20 +141,20 @@ class ServiceXAdapter:
             return self._servicex_info
 
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3, start_timeout=10)
-        async with RetryClient(retry_options=retry_options) as client:
-            async with client.get(url=f"{self.url}/servicex", headers=headers) as r:
-                if r.status == 401:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status > 400:
-                    error_message = await _extract_message(r)
-                    raise RuntimeError(
-                        "ServiceX WebAPI Error during transformation "
-                        f"submission: {r.status} - {error_message}"
-                    )
-                servicex_info = await r.json()
+        retry_options = Retry(total=3, backoff_factor=10)
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
+            r = await client.get(url=f"{self.url}/servicex", headers=headers)
+            if r.status_code == 401:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code > 400:
+                error_message = await _extract_message(r)
+                raise RuntimeError(
+                    "ServiceX WebAPI Error during transformation "
+                    f"submission: {r.status_code} - {error_message}"
+                )
+            servicex_info = r.json()
             self._servicex_info = ServiceXInfo(**servicex_info)
             return self._servicex_info
 
@@ -163,23 +163,23 @@ class ServiceXAdapter:
 
     async def get_transforms(self) -> List[TransformStatus]:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3, start_timeout=10)
-        async with RetryClient(retry_options=retry_options) as client:
-            async with client.get(
+        retry_options = Retry(total=3, backoff_factor=10)
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
+            r = await client.get(
                 url=f"{self.url}/servicex/transformation", headers=headers
-            ) as r:
-                if r.status == 401:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status > 400:
-                    error_message = await _extract_message(r)
-                    raise RuntimeError(
-                        "ServiceX WebAPI Error during transformation "
-                        f"submission: {r.status} - {error_message}"
-                    )
-                o = await r.json()
-                statuses = [TransformStatus(**status) for status in o["requests"]]
+            )
+            if r.status_code == 401:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code > 400:
+                error_message = await _extract_message(r)
+                raise RuntimeError(
+                    "ServiceX WebAPI Error during transformation "
+                    f"status retrieval: {r.status_code} - {error_message}"
+                )
+            o = r.json()
+            statuses = [TransformStatus(**status) for status in o["requests"]]
             return statuses
 
     def get_code_generators(self):
@@ -200,20 +200,19 @@ class ServiceXAdapter:
         if show_deleted:
             params["show-deleted"] = True
 
-        async with ClientSession() as session:
-            async with session.get(
+        async with AsyncClient() as session:
+            r = await session.get(
                 headers=headers, url=f"{self.url}/servicex/datasets", params=params
-            ) as r:
+            )
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code != 200:
+                msg = await _extract_message(r)
+                raise RuntimeError(f"Failed to get datasets: {r.status_code} - {msg}")
 
-                if r.status == 403:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status != 200:
-                    msg = await _extract_message(r)
-                    raise RuntimeError(f"Failed to get datasets: {r.status} - {msg}")
-
-                result = await r.json()
+            result = r.json()
 
             datasets = [CachedDataset(**d) for d in result["datasets"]]
             return datasets
@@ -222,62 +221,57 @@ class ServiceXAdapter:
         headers = await self._get_authorization()
         path_template = "/servicex/datasets/{dataset_id}"
         url = self.url + path_template.format(dataset_id=dataset_id)
-        async with ClientSession() as session:
-            async with session.get(headers=headers, url=url) as r:
+        async with AsyncClient() as session:
+            r = await session.get(headers=headers, url=url)
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code == 404:
+                raise ValueError(f"Dataset {dataset_id} not found")
+            elif r.status_code != 200:
+                msg = await _extract_message(r)
+                raise RuntimeError(f"Failed to get dataset {dataset_id} - {msg}")
+            result = r.json()
 
-                if r.status == 403:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status == 404:
-                    raise ValueError(f"Dataset {dataset_id} not found")
-                elif r.status != 200:
-                    msg = await _extract_message(r)
-                    raise RuntimeError(f"Failed to get dataset {dataset_id} - {msg}")
-                result = await r.json()
-
-            dataset = CachedDataset(**result)
-            return dataset
+        dataset = CachedDataset(**result)
+        return dataset
 
     async def delete_dataset(self, dataset_id=None) -> bool:
         headers = await self._get_authorization()
         path_template = "/servicex/datasets/{dataset_id}"
         url = self.url + path_template.format(dataset_id=dataset_id)
 
-        async with ClientSession() as session:
-            async with session.delete(headers=headers, url=url) as r:
-
-                if r.status == 403:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status == 404:
-                    raise ValueError(f"Dataset {dataset_id} not found")
-                elif r.status != 200:
-                    msg = await _extract_message(r)
-                    raise RuntimeError(f"Failed to delete dataset {dataset_id} - {msg}")
-                result = await r.json()
-                return result["stale"]
+        async with AsyncClient() as session:
+            r = await session.delete(headers=headers, url=url)
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code == 404:
+                raise ValueError(f"Dataset {dataset_id} not found")
+            elif r.status_code != 200:
+                msg = await _extract_message(r)
+                raise RuntimeError(f"Failed to delete dataset {dataset_id} - {msg}")
+            result = r.json()
+            return result["stale"]
 
     async def delete_transform(self, transform_id=None):
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}"
         url = self.url + path_template.format(transform_id=transform_id)
 
-        async with ClientSession() as session:
-            async with session.delete(headers=headers, url=url) as r:
-
-                if r.status == 403:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status == 404:
-                    raise ValueError(f"Transform {transform_id} not found")
-                elif r.status != 200:
-                    msg = await _extract_message(r)
-                    raise RuntimeError(
-                        f"Failed to delete transform {transform_id} - {msg}"
-                    )
+        async with AsyncClient() as session:
+            r = await session.delete(headers=headers, url=url)
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code == 404:
+                raise ValueError(f"Transform {transform_id} not found")
+            elif r.status_code != 200:
+                msg = await _extract_message(r)
+                raise RuntimeError(f"Failed to delete transform {transform_id} - {msg}")
 
     async def get_transformation_results(
         self, request_id: str, later_than: Optional[datetime.datetime] = None
@@ -294,81 +288,79 @@ class ServiceXAdapter:
         if later_than:
             params["later_than"] = later_than.isoformat()
 
-        async with ClientSession() as session:
-            async with session.get(headers=headers, url=url, params=params) as r:
-                if r.status == 403:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
+        async with AsyncClient() as session:
+            r = await session.get(headers=headers, url=url)
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
 
-                if r.status == 404:
-                    raise ValueError(f"Request {request_id} not found")
+            if r.status_code == 404:
+                raise ValueError(f"Request {request_id} not found")
 
-                if r.status != 200:
-                    msg = await _extract_message(r)
-                    raise RuntimeError(f"Failed with message: {msg}")
+            if r.status_code != 200:
+                msg = await _extract_message(r)
+                raise RuntimeError(f"Failed with message: {msg}")
 
-                data = await r.json()
-                response = list()
-                for result in data.get("results", []):
-                    file = ServiceXFile(
-                        filename=result["s3-object-name"],
-                        created_at=datetime.datetime.fromisoformat(
-                            result["created_at"]
-                        ).replace(tzinfo=datetime.timezone.utc),
-                    )
-                    response.append(file)
-                return response
+            data = r.json()
+            response = list()
+            for result in data.get("results", []):
+                file = ServiceXFile(
+                    filename=result["s3-object-name"],
+                    created_at=datetime.datetime.fromisoformat(
+                        result["created_at"]
+                    ).replace(tzinfo=datetime.timezone.utc),
+                )
+                response.append(file)
+            return response
 
     async def cancel_transform(self, transform_id=None):
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}/cancel"
         url = self.url + path_template.format(transform_id=transform_id)
 
-        async with ClientSession() as session:
-            async with session.get(headers=headers, url=url) as r:
-                if r.status == 403:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status == 404:
-                    raise ValueError(f"Transform {transform_id} not found")
-                elif r.status != 200:
-                    msg = await _extract_message(r)
-                    raise RuntimeError(
-                        f"Failed to cancel transform {transform_id} - {msg}"
-                    )
+        async with AsyncClient() as session:
+            r = await session.get(headers=headers, url=url)
+            if r.status_code == 403:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code == 404:
+                raise ValueError(f"Transform {transform_id} not found")
+            elif r.status_code != 200:
+                msg = await _extract_message(r)
+                raise RuntimeError(f"Failed to cancel transform {transform_id} - {msg}")
 
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=3, start_timeout=30)
-        async with RetryClient(retry_options=retry_options) as client:
-            async with client.post(
+        retry_options = Retry(total=3, backoff_factor=30)
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
+            r = await client.post(
                 url=f"{self.url}/servicex/transformation",
                 headers=headers,
                 json=transform_request.model_dump(by_alias=True, exclude_none=True),
-            ) as r:
-                if r.status == 401:
-                    raise AuthorizationError(
-                        f"Not authorized to access serviceX at {self.url}"
-                    )
-                elif r.status == 400:
-                    message = await _extract_message(r)
-                    raise ValueError(f"Invalid transform request: {message}")
-                elif r.status > 400:
-                    error_message = await _extract_message(r)
-                    raise RuntimeError(
-                        "ServiceX WebAPI Error during transformation "
-                        f"submission: {r.status} - {error_message}"
-                    )
-                else:
-                    o = await r.json()
-                    return o["request_id"]
+            )
+            if r.status_code == 401:
+                raise AuthorizationError(
+                    f"Not authorized to access serviceX at {self.url}"
+                )
+            elif r.status_code == 400:
+                message = await _extract_message(r)
+                raise ValueError(f"Invalid transform request: {message}")
+            elif r.status_code > 400:
+                error_message = await _extract_message(r)
+                raise RuntimeError(
+                    "ServiceX WebAPI Error during transformation "
+                    f"submission: {r.status_code} - {error_message}"
+                )
+            else:
+                o = r.json()
+                return o["request_id"]
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()
-        retry_options = ExponentialRetry(attempts=5, start_timeout=3)
-        async with RetryClient(retry_options=retry_options) as client:
+        retry_options = Retry(total=5, backoff_factor=3)
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             try:
                 async for attempt in AsyncRetrying(
                     retry=retry_if_not_exception_type(ValueError),
@@ -377,28 +369,31 @@ class ServiceXAdapter:
                     reraise=True,
                 ):
                     with attempt:
-                        async with client.get(
+                        r = await client.get(
                             url=f"{self.url}/servicex/" f"transformation/{request_id}",
                             headers=headers,
-                        ) as r:
-                            if r.status == 401:
-                                # perhaps we just ran out of auth validity the last time?
-                                # refetch auth then raise an error for retry
-                                headers = await self._get_authorization(True)
-                                raise AuthorizationError(
-                                    f"Not authorized to access serviceX at {self.url}"
-                                )
-                            if r.status == 404:
-                                raise ValueError(f"Transform ID {request_id} not found")
-                            elif r.status > 400:
-                                error_message = await _extract_message(r)
-                                raise RuntimeError(
-                                    "ServiceX WebAPI Error during transformation: "
-                                    f"{r.status} - {error_message}"
-                                )
-                            o = await r.json()
-                            return TransformStatus(**o)
+                        )
+                        if r.status_code == 401:
+                            # perhaps we just ran out of auth validity the last time?
+                            # refetch auth then raise an error for retry
+                            headers = await self._get_authorization(True)
+                            raise AuthorizationError(
+                                f"Not authorized to access serviceX at {self.url}"
+                            )
+                        if r.status_code == 404:
+                            raise ValueError(f"Transform ID {request_id} not found")
+                        elif r.status_code > 400:
+                            error_message = await _extract_message(r)
+                            raise RuntimeError(
+                                "ServiceX WebAPI Error during transformation: "
+                                f"{r.status_code} - {error_message}"
+                            )
+                        o = r.json()
+                        return TransformStatus(**o)
             except RuntimeError as e:
                 raise RuntimeError(
                     "ServiceX WebAPI Error " f"while getting transform status: {e}"
                 )
+        raise RuntimeError(
+            "ServiceX WebAPI: unable to retrieve transform status"
+        )  # pragma: no cover
