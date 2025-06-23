@@ -128,11 +128,14 @@ class MinioAdapter:
         )
 
         async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
+            sanitized_object_name = object_name.replace("/", ":")
             if expected_size is not None:
                 remotesize = expected_size
             else:
                 async with _file_transfer_sem:
-                    info = await s3.head_object(Bucket=self.bucket, Key=object_name)
+                    info = await s3.head_object(
+                        Bucket=self.bucket, Key=sanitized_object_name
+                    )
                     remotesize = info["ContentLength"]
             if path.exists():
                 # if file size is the same, let's not download anything
@@ -143,7 +146,7 @@ class MinioAdapter:
             async with _file_transfer_sem:
                 await s3.download_file(
                     Bucket=self.bucket,
-                    Key=object_name,
+                    Key=sanitized_object_name,
                     Filename=path.as_posix(),
                     Config=_transferconfig,
                 )

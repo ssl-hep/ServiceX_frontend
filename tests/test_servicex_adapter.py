@@ -98,11 +98,11 @@ async def test_get_transforms_auth_error(mock_get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.RetryClient.post")
-@patch("servicex.servicex_adapter.RetryClient.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
+@patch("servicex.servicex_adapter.AsyncClient.post")
 @patch("servicex.servicex_adapter.jwt.decode")
 async def test_get_transforms_wlcg_bearer_token(
-    decode, http_get, post, servicex, transform_status_response
+    decode, post, http_get, servicex, transform_status_response
 ):
     http_get.return_value.__aenter__.return_value.json.return_value = (
         transform_status_response
@@ -523,32 +523,29 @@ async def test_get_authorization(servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_success(get, servicex):
     servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
-    get.return_value.__aenter__.return_value.status = 200
-    get.return_value.__aenter__.return_value.json = AsyncMock(
-        return_value={
-            "results": [
-                {
-                    "file-path": "file1.txt",
-                    "s3-object-name": "file1.txt",
-                    "created_at": datetime.datetime.now(
-                        datetime.timezone.utc
-                    ).isoformat(),
-                },
-                {
-                    "file-path": "file2.txt",
-                    "s3-object-name": "file2.txt",
-                    "created_at": datetime.datetime.now(
-                        datetime.timezone.utc
-                    ).isoformat(),
-                },
-            ]
-        }
-    )
+    get.return_value = MagicMock()
+    get.return_value.json.return_value = {
+        "results": [
+            {
+                "file-path": "file1.txt",
+                "total-bytes": 100,
+                "s3-object-name": "file1.txt",
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            },
+            {
+                "file-path": "file2.txt",
+                "total-bytes": 100,
+                "s3-object-name": "file2.txt",
+                "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            },
+        ]
+    }
+    get.return_value.status_code = 200
 
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -564,7 +561,7 @@ async def test_get_transformation_results_success(get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_no_feature_flag(get, servicex):
     servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     request_id = "123-45-6789"
@@ -574,14 +571,16 @@ async def test_get_transformation_results_no_feature_flag(get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_not_found(
     get_transformation_results, servicex
 ):
     servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
-    get_transformation_results.return_value.__aenter__.return_value.status = 404
+    get_transformation_results.return_value = MagicMock()
+    get_transformation_results.return_value.status_code = 404
+
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -598,14 +597,15 @@ async def test_get_transformation_results_not_found(
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_not_authorized(
     get_transformation_results, servicex
 ):
     servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
-    get_transformation_results.return_value.__aenter__.return_value.status = 403
+    get_transformation_results.return_value = MagicMock()
+    get_transformation_results.return_value.status_code = 403
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -622,14 +622,15 @@ async def test_get_transformation_results_not_authorized(
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_server_error(
     get_transformation_results, servicex
 ):
     servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
-    get_transformation_results.return_value.__aenter__.return_value.status = 500
+    get_transformation_results.return_value = MagicMock()
+    get_transformation_results.return_value.status = 500
     request_id = "123-45-6789"
     now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -694,10 +695,10 @@ async def test_get_authorization_with_refresh(monkeypatch):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.RetryClient.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_servicex_info_success(mock_get, servicex):
-    mock_get.return_value.__aenter__.return_value.status = 200
-    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json = MagicMock(
         return_value={
             "capabilities": ["a", "b"],
             "app-version": "1.0",
@@ -710,20 +711,18 @@ async def test_get_servicex_info_success(mock_get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.RetryClient.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_servicex_info_auth_error(mock_get, servicex):
-    mock_get.return_value.__aenter__.return_value.status = 401
+    mock_get.return_value.status_code = 401
     with pytest.raises(AuthorizationError):
         await servicex.get_servicex_info()
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.RetryClient.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_servicex_info_server_error(mock_get, servicex):
-    mock_get.return_value.__aenter__.return_value.status = 500
-    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
-        return_value={"message": "oops"}
-    )
+    mock_get.return_value.status_code = 500
+    mock_get.return_value.json = MagicMock(return_value={"message": "oops"})
     with pytest.raises(RuntimeError) as e:
         await servicex.get_servicex_info()
     assert "ServiceX WebAPI Error during transformation submission: 500 - oops" in str(
@@ -732,19 +731,21 @@ async def test_get_servicex_info_server_error(mock_get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_parsing(mock_get, servicex):
     servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
     msg_time = datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
-    mock_get.return_value.__aenter__.return_value.status = 200
-    mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+    mock_get.return_value = MagicMock()
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json = MagicMock(
         return_value={
             "results": [
                 {
                     "file-path": "dir1/file.txt",
                     "s3-object-name": "dir1:file.txt",
+                    "total-bytes": 100,
                     "created_at": msg_time.isoformat(),
                 }
             ]
@@ -757,12 +758,12 @@ async def test_get_transformation_results_parsing(mock_get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.ClientSession.get")
+@patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_empty(mock_get, servicex):
     servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
-    mock_get.return_value.__aenter__.return_value.status = 200
-    mock_get.return_value.__aenter__.return_value.json = AsyncMock(return_value={})
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json = MagicMock(return_value={"results": []})
     res = await servicex.get_transformation_results("id123", None)
     assert res == []

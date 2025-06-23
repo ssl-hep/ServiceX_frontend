@@ -59,6 +59,7 @@ class AuthorizationError(BaseException):
 class ServiceXFile:
     created_at: datetime.datetime
     filename: str
+    total_bytes: int
 
 
 async def _extract_message(r: Response):
@@ -289,7 +290,7 @@ class ServiceXAdapter:
             params["later_than"] = later_than.isoformat()
 
         async with AsyncClient() as session:
-            r = await session.get(headers=headers, url=url)
+            r = await session.get(headers=headers, url=url, params=params)
             if r.status_code == 403:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}"
@@ -310,6 +311,7 @@ class ServiceXAdapter:
                     created_at=datetime.datetime.fromisoformat(
                         result["created_at"]
                     ).replace(tzinfo=datetime.timezone.utc),
+                    total_bytes=result["total-bytes"],
                 )
                 response.append(file)
             return response

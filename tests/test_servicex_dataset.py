@@ -220,16 +220,19 @@ async def test_submit(mocker, use_s3_polling):
                 [
                     ServiceXFile(
                         filename="file1",
+                        total_bytes=100,
                         created_at=datetime.datetime.now(datetime.timezone.utc),
                     )
                 ],
                 [
                     ServiceXFile(
                         filename="file1",
+                        total_bytes=100,
                         created_at=datetime.datetime.now(datetime.timezone.utc),
                     ),
                     ServiceXFile(
                         filename="file2",
+                        total_bytes=100,
                         created_at=datetime.datetime.now(datetime.timezone.utc),
                     ),
                 ],
@@ -297,12 +300,14 @@ async def test_submit_partial_success(mocker, use_s3_polling):
                     ServiceXFile(
                         filename="file1",
                         created_at=datetime.datetime.now(datetime.timezone.utc),
+                        total_bytes=100,
                     )
                 ],
                 [
                     ServiceXFile(
                         filename="file1",
                         created_at=datetime.datetime.now(datetime.timezone.utc),
+                        total_bytes=100,
                     )
                 ],
             ]
@@ -374,10 +379,12 @@ async def test_use_of_cache(mocker, use_s3_polling):
         servicex.get_transformation_results.return_value = [
             ServiceXFile(
                 filename="file1.txt",
+                total_bytes=100,
                 created_at=datetime.datetime.now(datetime.timezone.utc),
             ),
             ServiceXFile(
                 filename="file2.txt",
+                total_bytes=100,
                 created_at=datetime.datetime.now(datetime.timezone.utc),
             ),
         ]
@@ -704,10 +711,12 @@ async def test_use_of_ignore_cache(mocker, servicex):
     servicex.get_transformation_results.return_value = [
         ServiceXFile(
             filename="file1.txt",
+            total_bytes=100,
             created_at=datetime.datetime.now(datetime.timezone.utc),
         ),
         ServiceXFile(
             filename="file2.txt",
+            total_bytes=100,
             created_at=datetime.datetime.now(datetime.timezone.utc),
         ),
     ]
