@@ -583,9 +583,6 @@ class Query:
                     for file in files:
                         filename = file.filename
 
-                        if use_local_polling:
-                            filename = filename.replace("/", ":")
-
                         if filename != "" and filename not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
