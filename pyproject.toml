@@ -36,8 +36,8 @@ dependencies = [
     "func_adl>=3.2.6",
     "requests>=2.31",
     "pydantic>=2.6.0",
-    "aiohttp-retry>=2.8.3",
     "httpx>=0.24",
+    "httpx_retries>=0.3.2",
     "aioboto3>=14.1.0",
     "tinydb>=4.7",
     "google-auth>=2.17",
@@ -128,3 +128,10 @@ dynamic_context = "test_function"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+
+[tool.hatch.envs.test]
+features = ["test"]
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args}"
+cov = "pytest --cov=servicex {args}"
