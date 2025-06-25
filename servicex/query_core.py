@@ -567,6 +567,14 @@ class Query:
             "poll_local_transformation_results"
             in await self.servicex.get_servicex_capabilities()
         )
+
+        if not use_local_polling:
+            logger.warning(
+                "ServiceX is using legacy S3 bucket polling. Future versions of the "
+                "ServiceX client will not support this method. Please update your "
+                "ServiceX server to the latest version."
+            )
+
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)

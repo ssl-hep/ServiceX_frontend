@@ -733,6 +733,51 @@ async def test_get_servicex_info_server_error(mock_get, servicex):
 
 
 @pytest.mark.asyncio
+async def test_get_servicex_info_caching(servicex):
+    servicex_info_data = {
+        "capabilities": ["a", "b"],
+        "app-version": "1.0",
+        "code-gen-image": {"func_adl": "image1", "uproot": "image2"},
+    }
+
+    with patch("servicex.servicex_adapter.AsyncClient.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json = MagicMock(return_value=servicex_info_data)
+
+        info1 = await servicex.get_servicex_info()
+        assert isinstance(info1, ServiceXInfo)
+        assert info1.capabilities == ["a", "b"]
+        assert mock_get.call_count == 1
+
+        # Second call should use cached ServiceXInfo without additional HTTP request
+        info2 = await servicex.get_servicex_info()
+        assert info2 is info1
+        assert mock_get.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_get_servicex_capabilities(servicex):
+    servicex_info_data = {
+        "capabilities": ["feature1", "feature2", "feature3"],
+        "app-version": "1.0",
+        "code-gen-image": {"func_adl": "image1", "uproot": "image2"},
+    }
+
+    with patch("servicex.servicex_adapter.AsyncClient.get") as mock_get:
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json = MagicMock(return_value=servicex_info_data)
+
+        capabilities1 = await servicex.get_servicex_capabilities()
+        assert capabilities1 == ["feature1", "feature2", "feature3"]
+        assert mock_get.call_count == 1
+
+        # Second call should use cached ServiceXInfo without additional HTTP request
+        capabilities2 = await servicex.get_servicex_capabilities()
+        assert capabilities2 == ["feature1", "feature2", "feature3"]
+        assert mock_get.call_count == 1
+
+
+@pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transformation_results_parsing(mock_get, servicex):
     servicex.get_servicex_capabilities = AsyncMock(
