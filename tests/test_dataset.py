@@ -28,6 +28,7 @@
 import pytest
 import tempfile
 import os
+import datetime
 
 from unittest.mock import AsyncMock, Mock, patch
 from servicex.dataset_identifier import FileListDataset
@@ -43,6 +44,8 @@ from servicex.models import (
     Status,
 )
 from rich.progress import Progress
+
+from servicex.servicex_adapter import ServiceXFile
 
 
 @pytest.mark.asyncio
@@ -124,12 +127,27 @@ async def test_download_files(python_dataset):
     minio_mock = AsyncMock()
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
     python_dataset.configuration = config
+    python_dataset.servicex = AsyncMock()
+    python_dataset.servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+
+    python_dataset.servicex.get_transformation_results = AsyncMock()
+    python_dataset.servicex.get_transformation_results.return_value = [
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            total_bytes=100,
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            total_bytes=100,
+        ),
+    ]
+
     minio_mock.download_file.return_value = Path("/path/to/downloaded_file")
     minio_mock.get_signed_url.return_value = Path("http://example.com/signed_url")
-    minio_mock.list_bucket.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
-    ]
 
     progress_mock = Mock()
     python_dataset.minio_polling_interval = 0
@@ -154,11 +172,26 @@ async def test_download_files_with_signed_urls(python_dataset):
     python_dataset.configuration = config
     minio_mock.download_file.return_value = "/path/to/downloaded_file"
     minio_mock.get_signed_url.return_value = "http://example.com/signed_url"
-    minio_mock.list_bucket.return_value = [
-        Mock(filename="file1.txt"),
-        Mock(filename="file2.txt"),
-    ]
     progress_mock = Mock()
+
+    python_dataset.servicex = AsyncMock()
+    python_dataset.servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+
+    python_dataset.servicex.get_transformation_results = AsyncMock()
+    python_dataset.servicex.get_transformation_results.return_value = [
+        ServiceXFile(
+            filename="file1.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            total_bytes=100,
+        ),
+        ServiceXFile(
+            filename="file2.txt",
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            total_bytes=100,
+        ),
+    ]
 
     python_dataset.minio_polling_interval = 0
     python_dataset.minio = minio_mock

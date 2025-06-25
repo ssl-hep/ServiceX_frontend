@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
+import datetime
 import abc
 import asyncio
 from abc import ABC
@@ -342,13 +343,17 @@ class Query:
 
         download_files_task = loop.create_task(
             self.download_files(
-                signed_urls_only, expandable_progress, download_progress, cached_record
+                signed_urls_only,
+                expandable_progress,
+                download_progress,
+                cached_record,
             )
         )
 
         try:
             signed_urls = []
             downloaded_files = []
+
             download_result = await download_files_task
             if signed_urls_only:
                 signed_urls = download_result
@@ -522,6 +527,7 @@ class Query:
         Task to monitor the list of files in the transform output's bucket. Any new files
         will be downloaded.
         """
+
         files_seen = set()
         result_uris = []
         download_tasks = []
@@ -555,40 +561,70 @@ class Query:
             if progress:
                 progress.advance(task_id=download_progress, task_type="Download")
 
+        later_than = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+
+        use_local_polling = (
+            "poll_local_transformation_results"
+            in await self.servicex.get_servicex_capabilities()
+        )
+
+        if not use_local_polling:
+            logger.warning(
+                "ServiceX is using legacy S3 bucket polling. Future versions of the "
+                "ServiceX client will not support this method. Please update your "
+                "ServiceX server to the latest version."
+            )
+
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
             if self.minio:
                 # if self.minio exists, self.current_status will too
                 if self.current_status.files_completed > len(files_seen):
-                    files = await self.minio.list_bucket()
+                    if use_local_polling:
+                        files = await self.servicex.get_transformation_results(
+                            self.current_status.request_id, later_than
+                        )
+                    else:
+                        files = await self.minio.list_bucket()
+
                     for file in files:
-                        if file.filename not in files_seen:
+                        filename = file.filename
+
+                        if filename != "" and filename not in files_seen:
                             if signed_urls_only:
                                 download_tasks.append(
                                     loop.create_task(
                                         get_signed_url(
                                             self.minio,
-                                            file.filename,
+                                            filename,
                                             progress,
                                             download_progress,
                                         )
                                     )
                                 )
                             else:
+                                if use_local_polling:
+                                    expected_size = file.total_bytes
+                                else:
+                                    expected_size = file.size
                                 download_tasks.append(
                                     loop.create_task(
                                         download_file(
                                             self.minio,
-                                            file.filename,
+                                            filename,
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
-                                            expected_size=file.size,
+                                            expected_size=expected_size,
                                         )
                                     )
                                 )  # NOQA 501
-                            files_seen.add(file.filename)
+                            files_seen.add(filename)
+
+                            if use_local_polling:
+                                if file.created_at > later_than:
+                                    later_than = file.created_at
 
             # Once the transform is complete and all files are seen we can stop polling.
             # Also, if we are just downloading or signing urls for a previous transform
