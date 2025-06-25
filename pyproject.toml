@@ -128,10 +128,3 @@ dynamic_context = "test_function"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-
-[tool.hatch.envs.test]
-features = ["test"]
-
-[tool.hatch.envs.test.scripts]
-test = "pytest {args}"
-cov = "pytest --cov=servicex {args}"
