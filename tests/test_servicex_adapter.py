@@ -538,12 +538,14 @@ async def test_get_transformation_results_success(get, servicex):
                 "total-bytes": 100,
                 "s3-object-name": "file1.txt",
                 "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "transform_status": "success",
             },
             {
                 "file-path": "file2.txt",
                 "total-bytes": 100,
                 "s3-object-name": "file2.txt",
                 "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "transform_status": "success",
             },
         ]
     }
@@ -794,6 +796,7 @@ async def test_get_transformation_results_parsing(mock_get, servicex):
                     "s3-object-name": "dir1:file.txt",
                     "total-bytes": 100,
                     "created_at": msg_time.isoformat(),
+                    "transform_status": "success",
                 }
             ]
         }
@@ -814,3 +817,29 @@ async def test_get_transformation_results_empty(mock_get, servicex):
     mock_get.return_value.json = MagicMock(return_value={"results": []})
     res = await servicex.get_transformation_results("id123", None)
     assert res == []
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_get_transformation_results_failed_file(mock_get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+    msg_time = datetime.datetime(2025, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc)
+    mock_get.return_value = MagicMock()
+    mock_get.return_value.status_code = 200
+    mock_get.return_value.json = MagicMock(
+        return_value={
+            "results": [
+                {
+                    "file-path": "dir1/file.txt",
+                    "s3-object-name": "dir1:file.txt",
+                    "total-bytes": 100,
+                    "created_at": msg_time.isoformat(),
+                    "transform_status": "failure",
+                }
+            ]
+        }
+    )
+    res = await servicex.get_transformation_results("id123", None)
+    assert len(res) == 0

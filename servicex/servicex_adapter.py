@@ -306,14 +306,15 @@ class ServiceXAdapter:
             data = r.json()
             response = list()
             for result in data.get("results", []):
-                file = ServiceXFile(
-                    filename=result["s3-object-name"],
-                    created_at=datetime.datetime.fromisoformat(
-                        result["created_at"]
-                    ).replace(tzinfo=datetime.timezone.utc),
-                    total_bytes=result["total-bytes"],
-                )
-                response.append(file)
+                if result["transform_status"] == "success":
+                    _file = ServiceXFile(
+                        filename=result["s3-object-name"],
+                        created_at=datetime.datetime.fromisoformat(
+                            result["created_at"]
+                        ).replace(tzinfo=datetime.timezone.utc),
+                        total_bytes=result["total-bytes"],
+                    )
+                    response.append(_file)
             return response
 
     async def cancel_transform(self, transform_id=None):
