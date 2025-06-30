@@ -22,7 +22,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 from datetime import datetime
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, MagicMock
 
 import pytest
 
@@ -66,7 +66,7 @@ def dataset():
 
 def test_datasets_list(script_runner, dataset):
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
-        mock_get_datasets = AsyncMock(return_value=[dataset])
+        mock_get_datasets = MagicMock(return_value=[dataset])
         mock_servicex.return_value.get_datasets = mock_get_datasets
 
         result = script_runner.run(
@@ -106,7 +106,7 @@ def test_datasets_list(script_runner, dataset):
 
 def test_dataset_get(script_runner, dataset):
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
-        mock_get_dataset = AsyncMock(return_value=dataset)
+        mock_get_dataset = MagicMock(return_value=dataset)
         mock_servicex.return_value.get_dataset = mock_get_dataset
 
         result = script_runner.run(
@@ -123,7 +123,7 @@ def test_dataset_get(script_runner, dataset):
 
 def test_dataset_delete(script_runner):
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
-        mock_delete_dataset = AsyncMock(return_value=True)
+        mock_delete_dataset = MagicMock(return_value=True)
         mock_servicex.return_value.delete_dataset = mock_delete_dataset
 
         result = script_runner.run(
@@ -133,7 +133,7 @@ def test_dataset_delete(script_runner):
         assert result.stdout == "Dataset 42 deleted\n"
         mock_delete_dataset.assert_called_once_with(42)
 
-        mock_delete_dataset_not_found = AsyncMock(return_value=False)
+        mock_delete_dataset_not_found = MagicMock(return_value=False)
         mock_servicex.return_value.delete_dataset = mock_delete_dataset_not_found
         result = script_runner.run(
             ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
