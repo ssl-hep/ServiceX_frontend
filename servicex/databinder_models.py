@@ -143,7 +143,7 @@ class Sample(DocStringBaseModel):
             raise ValueError("NFiles cannot be set to zero for a dataset.")
         return self
 
-    def validate_title(self, length: int) -> None:
+    def validate_title(self, length: Optional[int]) -> None:
         """
         Logic for adjusting length of the title
         """
