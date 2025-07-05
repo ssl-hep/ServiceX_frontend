@@ -843,3 +843,18 @@ async def test_get_transformation_results_failed_file(mock_get, servicex):
     )
     res = await servicex.get_transformation_results("id123", None)
     assert len(res) == 0
+
+
+@pytest.mark.asyncio
+async def test_sample_title_limit(servicex):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=["irrelevant"])
+    assert await servicex.get_servicex_sample_title_limit() is None
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["long_sample_titles_10240"]
+    )
+    assert await servicex.get_servicex_sample_title_limit() == 10240
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["long_sample_titles_invalid"]
+    )
+    with pytest.raises(RuntimeError):
+        await servicex.get_servicex_sample_title_limit()

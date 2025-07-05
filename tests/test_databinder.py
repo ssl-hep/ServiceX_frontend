@@ -1,4 +1,5 @@
 import pytest
+from pytest_asyncio import fixture
 from unittest.mock import patch
 from pydantic import ValidationError
 
@@ -6,6 +7,36 @@ from servicex import ServiceXSpec, dataset, OutputFormat
 from servicex.query_core import ServiceXException
 from servicex.servicex_client import ReturnValueException
 from servicex.dataset import FileList, Rucio
+
+
+@fixture
+def network_patches(codegen_list):
+    import contextlib
+
+    with contextlib.ExitStack() as _fixture:
+        _fixture.enter_context(
+            patch(
+                "servicex.servicex_adapter.ServiceXAdapter.get_servicex_capabilities",
+                return_value=[
+                    "poll_local_transformation_results",
+                    "long_sample_titles_10240",
+                ],
+            )
+        )
+        _fixture.enter_context(
+            patch(
+                "servicex.servicex_client.ServiceXClient.get_code_generators",
+                return_value=codegen_list,
+            )
+        )
+        _fixture.enter_context(
+            patch(
+                "servicex.servicex_adapter.ServiceXAdapter._get_authorization",
+                return_value={"Authorization": "Bearer aaa"},
+            )
+        )
+
+        yield _fixture
 
 
 def basic_spec(samples=None):
@@ -27,7 +58,11 @@ def test_long_sample_name():
         ],
     }
     new_config = ServiceXSpec.model_validate(config)
-    assert len(new_config.Sample[0].Name) == 512
+    assert len(new_config.Sample[0].Name) == 800
+    with pytest.raises(ValueError):
+        new_config.Sample[0].validate_title(512)
+    new_config.Sample[0].validate_title(None)
+    assert len(new_config.Sample[0].Name) == 128
 
 
 def test_load_config():
@@ -289,7 +324,7 @@ def test_invalid_dataset_identifier():
         )
 
 
-def test_submit_mapping(transformed_result, codegen_list, with_event_loop):
+def test_submit_mapping(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
 
     spec = {
@@ -305,22 +340,16 @@ def test_submit_mapping(transformed_result, codegen_list, with_event_loop):
             }
         ],
     }
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
         assert list(results["sampleA"]) == ["1.parquet"]
 
 
 def test_submit_mapping_signed_urls(
-    transformed_result_signed_url, codegen_list, with_event_loop
+    transformed_result_signed_url, network_patches, with_event_loop
 ):
     from servicex import deliver
 
@@ -335,15 +364,9 @@ def test_submit_mapping_signed_urls(
             }
         ],
     }
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_signed_urls",
-            return_value=[transformed_result_signed_url],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_signed_urls",
+        return_value=[transformed_result_signed_url],
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
         assert list(results["sampleA"]) == [
@@ -352,7 +375,7 @@ def test_submit_mapping_signed_urls(
         ]
 
 
-def test_submit_mapping_failure(transformed_result, codegen_list, with_event_loop):
+def test_submit_mapping_failure(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
 
     spec = {
@@ -365,15 +388,9 @@ def test_submit_mapping_failure(transformed_result, codegen_list, with_event_loo
             }
         ]
     }
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[ServiceXException("dummy")],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[ServiceXException("dummy")],
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
         assert len(results) == 1
@@ -383,7 +400,7 @@ def test_submit_mapping_failure(transformed_result, codegen_list, with_event_loo
                 pass
 
 
-def test_submit_mapping_failure_signed_urls(codegen_list, with_event_loop):
+def test_submit_mapping_failure_signed_urls(network_patches, with_event_loop):
     from servicex import deliver
 
     spec = {
@@ -397,15 +414,9 @@ def test_submit_mapping_failure_signed_urls(codegen_list, with_event_loop):
             }
         ],
     }
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_signed_urls",
-            return_value=[ServiceXException("dummy")],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_signed_urls",
+        return_value=[ServiceXException("dummy")],
     ):
         results = deliver(
             spec, config_path="tests/example_config.yaml", return_exceptions=False
@@ -643,7 +654,7 @@ Sample:
         _load_ServiceXSpec(path2)
 
 
-def test_funcadl_query(transformed_result, codegen_list, with_event_loop):
+def test_funcadl_query(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
     from servicex.query import FuncADL_Uproot  # type: ignore
 
@@ -660,20 +671,16 @@ def test_funcadl_query(transformed_result, codegen_list, with_event_loop):
             ]
         }
     )
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_query_with_codegen_override(transformed_result, codegen_list, with_event_loop):
+def test_query_with_codegen_override(
+    transformed_result, network_patches, with_event_loop
+):
     from servicex import deliver
     from servicex.query import FuncADL_Uproot  # type: ignore
 
@@ -692,15 +699,9 @@ def test_query_with_codegen_override(transformed_result, codegen_list, with_even
             ],
         }
     )
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         with pytest.raises(NameError) as excinfo:
             deliver(spec, config_path="tests/example_config.yaml")
@@ -722,15 +723,9 @@ def test_query_with_codegen_override(transformed_result, codegen_list, with_even
             ]
         }
     )
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         with pytest.raises(NameError) as excinfo:
             deliver(spec, config_path="tests/example_config.yaml")
@@ -757,7 +752,7 @@ def test_databinder_load_dict():
     )
 
 
-def test_python_query(transformed_result, codegen_list, with_event_loop):
+def test_python_query(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
     from servicex.query import PythonFunction  # type: ignore
 
@@ -778,20 +773,14 @@ def test_python_query(transformed_result, codegen_list, with_event_loop):
             ]
         }
     )
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_uproot_raw_query(transformed_result, codegen_list, with_event_loop):
+def test_uproot_raw_query(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
     from servicex.query import UprootRaw  # type: ignore
 
@@ -806,20 +795,14 @@ def test_uproot_raw_query(transformed_result, codegen_list, with_event_loop):
             ]
         }
     )
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_uproot_raw_query_parquet(transformed_result, codegen_list, with_event_loop):
+def test_uproot_raw_query_parquet(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
     from servicex.query import UprootRaw  # type: ignore
 
@@ -836,20 +819,14 @@ def test_uproot_raw_query_parquet(transformed_result, codegen_list, with_event_l
         }
     )
     print(spec)
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_uproot_raw_query_rntuple(transformed_result, codegen_list, with_event_loop):
+def test_uproot_raw_query_rntuple(transformed_result, network_patches, with_event_loop):
     from servicex import deliver
     from servicex.query import UprootRaw  # type: ignore
 
@@ -865,20 +842,14 @@ def test_uproot_raw_query_rntuple(transformed_result, codegen_list, with_event_l
             ],
         }
     )
-    with (
-        patch(
-            "servicex.dataset_group.DatasetGroup.as_files",
-            return_value=[transformed_result],
-        ),
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
     ):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_generic_query(codegen_list):
+def test_generic_query(network_patches):
     from servicex.servicex_client import ServiceXClient
 
     spec = ServiceXSpec.model_validate(
@@ -895,47 +866,43 @@ def test_generic_query(codegen_list):
             ],
         }
     )
-    with patch(
-        "servicex.servicex_client.ServiceXClient.get_code_generators",
-        return_value=codegen_list,
-    ):
-        sx = ServiceXClient(config_path="tests/example_config.yaml")
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    query = sx.generic_query(
+        dataset_identifier=spec.Sample[0].RucioDID,
+        codegen=spec.General.Codegen,
+        query=spec.Sample[0].Query,
+    )
+    assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+    query = sx.generic_query(
+        dataset_identifier=spec.Sample[0].RucioDID,
+        result_format=spec.General.OutputFormat.to_ResultFormat(),
+        codegen=spec.General.Codegen,
+        query=spec.Sample[0].Query,
+    )
+    assert query.result_format == "root-file"
+    query.query_string_generator = None
+    with pytest.raises(RuntimeError):
+        query.generate_selection_string()
+    with pytest.raises(ValueError):
         query = sx.generic_query(
             dataset_identifier=spec.Sample[0].RucioDID,
             codegen=spec.General.Codegen,
-            query=spec.Sample[0].Query,
+            query=5,
         )
-        assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
+    with pytest.raises(NameError):
         query = sx.generic_query(
             dataset_identifier=spec.Sample[0].RucioDID,
-            result_format=spec.General.OutputFormat.to_ResultFormat(),
-            codegen=spec.General.Codegen,
+            codegen="nonsense",
             query=spec.Sample[0].Query,
         )
-        assert query.result_format == "root-file"
-        query.query_string_generator = None
-        with pytest.raises(RuntimeError):
-            query.generate_selection_string()
-        with pytest.raises(ValueError):
-            query = sx.generic_query(
-                dataset_identifier=spec.Sample[0].RucioDID,
-                codegen=spec.General.Codegen,
-                query=5,
-            )
-        with pytest.raises(NameError):
-            query = sx.generic_query(
-                dataset_identifier=spec.Sample[0].RucioDID,
-                codegen="nonsense",
-                query=spec.Sample[0].Query,
-            )
-        with pytest.raises(RuntimeError):
-            # no codegen specified by generic class
-            query = sx.generic_query(
-                dataset_identifier=spec.Sample[0].RucioDID, query=spec.Sample[0].Query
-            )
+    with pytest.raises(RuntimeError):
+        # no codegen specified by generic class
+        query = sx.generic_query(
+            dataset_identifier=spec.Sample[0].RucioDID, query=spec.Sample[0].Query
+        )
 
 
-def test_deliver_progress_options(transformed_result, codegen_list, with_event_loop):
+def test_deliver_progress_options(transformed_result, network_patches, with_event_loop):
     from servicex import deliver, ProgressBarFormat
     from servicex.query import UprootRaw  # type: ignore
 
@@ -955,19 +922,9 @@ def test_deliver_progress_options(transformed_result, codegen_list, with_event_l
         expandable_progress.add_task("zip", start=False, total=None)
         return transformed_result
 
-    with (
-        patch(
-            "servicex.servicex_client.ServiceXClient.get_code_generators",
-            return_value=codegen_list,
-        ),
-        patch(
-            "servicex.servicex_adapter.ServiceXAdapter._get_authorization",
-            return_value={"Authorization": "Bearer aaa"},
-        ),
-        patch(
-            "servicex.query_core.Query.submit_and_download",
-            side_effect=fake_submit,
-        ),
+    with patch(
+        "servicex.query_core.Query.submit_and_download",
+        side_effect=fake_submit,
     ):
         import servicex.query_core
 

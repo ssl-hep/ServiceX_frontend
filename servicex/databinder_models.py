@@ -143,17 +143,22 @@ class Sample(DocStringBaseModel):
             raise ValueError("NFiles cannot be set to zero for a dataset.")
         return self
 
-    @field_validator("Name", mode="before")
-    @classmethod
-    def truncate_long_sample_name(cls, v):
+    def validate_title(self, length: Optional[int]) -> None:
         """
-        Truncate sample name to 512 characters if exceed
-        Print warning message
+        Logic for adjusting length of the title
         """
-        if len(v) > 512:
-            logger.warning(f"Truncating Sample name to 512 characters for {v}")
-            v = v[0:512]
-        return v
+        if length is None:
+            # we adopt pre-3.2.0 behavior: truncate to 128 characters
+            if len(self.Name) > 128:
+                logger.warning(
+                    f"Truncating Sample name to 128 characters for {self.Name}"
+                )
+                self.Name = self.Name[:128]
+                logger.warning(f"New name is {self.Name}")
+        else:
+            if len(self.Name) > length:
+                logger.error(f"Sample name {self.Name} over the limit ({length})")
+                raise ValueError(f"Sample name {self.Name} length too long")
 
     @property
     def hash(self):

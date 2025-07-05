@@ -79,6 +79,7 @@ class ServiceXAdapter:
 
         # interact with _servicex_info via get_servicex_info
         self._servicex_info: Optional[ServiceXInfo] = None
+        self._sample_title_limit: Optional[int] = None
 
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
@@ -161,6 +162,22 @@ class ServiceXAdapter:
 
     async def get_servicex_capabilities(self) -> List[str]:
         return (await self.get_servicex_info()).capabilities
+
+    async def get_servicex_sample_title_limit(self) -> Optional[int]:
+        # check if the capability is defined
+        capabilities = await self.get_servicex_capabilities()
+        for capability in capabilities:
+            if capability.startswith("long_sample_titles_"):
+                try:
+                    # hope capability is of the form long_sample_titles_NNNN
+                    return int(capability[19:])
+                except ValueError:
+                    raise RuntimeError(
+                        "Unable to determine allowed sample title length\n"
+                        f"Server capability is: {capability}"
+                    )
+
+        return None
 
     async def get_transforms(self) -> List[TransformStatus]:
         headers = await self._get_authorization()
