@@ -183,7 +183,9 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
 
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     datasets = []
+    title_length_limit = make_sync(sx.servicex.get_servicex_sample_title_limit)()
     for sample in config.Sample:
+        sample.validate_title(title_length_limit)
         query = sx.generic_query(
             dataset_identifier=sample.dataset_identifier,
             title=sample.Name,
