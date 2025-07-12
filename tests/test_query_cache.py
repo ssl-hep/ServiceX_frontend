@@ -325,6 +325,9 @@ def test_get_transform_request_id(transform_request, completed_status):
         request_id = cache.get_transform_request_id(hash_value)
         assert request_id == "123456"
 
+        # assert that in this state that cached_queries does NOT crash and returns nothing
+        assert len(cache.cached_queries()) == 0
+
         cache.close()
 
 
