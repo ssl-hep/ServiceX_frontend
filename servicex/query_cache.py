@@ -197,7 +197,9 @@ class QueryCache:
         with self.lock:
             result = [
                 TransformedResults(**doc)
-                for doc in self.db.search(transforms.request_id.exists())
+                for doc in self.db.search(
+                    transforms.request_id.exists() & ~(transforms.status == "SUBMITTED")
+                )
             ]
         return result
 
