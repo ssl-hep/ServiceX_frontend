@@ -58,3 +58,24 @@ def test_codegen_flush(script_runner):
         )
         assert result.returncode == 0
         p.assert_called_once_with("localhost")
+
+
+def test_codegen_flush_default_backend(script_runner, codegen_list):
+    """Ensure the flush command uses the configured default backend when
+    none is specified on the command line."""
+    with patch(
+        "servicex.servicex_client.ServiceXClient.get_code_generators",
+        return_value=codegen_list,
+    ):
+        with patch("servicex.query_cache.QueryCache.delete_codegen_by_backend") as p:
+            result = script_runner.run(
+                [
+                    "servicex",
+                    "codegen",
+                    "flush",
+                    "-c",
+                    "tests/example_config_default_endpoint.yaml",
+                ]
+            )
+            assert result.returncode == 0
+            p.assert_called_once_with("servicex-uc-af")

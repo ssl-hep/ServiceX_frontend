@@ -46,7 +46,9 @@ def flush(
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
     cache = sx.query_cache
-    cache.delete_codegen_by_backend(backend)
+    # Use the backend resolved by the ServiceXClient so that the
+    # configured default is respected when no backend option is given.
+    cache.delete_codegen_by_backend(sx.backend)
     rich.print("Deleted cached code generators.")
 
 
