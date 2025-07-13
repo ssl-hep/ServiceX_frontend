@@ -41,6 +41,10 @@ from servicex.servicex_client import ServiceXClient
 def servicex_adaptor(mocker):
     adapter_mock = mocker.patch("servicex.servicex_client.ServiceXAdapter")
     mock_adapter = MagicMock(spec=ServiceXAdapter)
+    mock_adapter.get_code_generators.return_value = {
+        "uproot": "http://uproot-codegen",
+        "xaod": "http://xaod-codegen",
+    }
 
     adapter_mock.return_value = mock_adapter
     return mock_adapter
@@ -50,9 +54,6 @@ def servicex_adaptor(mocker):
 def mock_cache(mocker):
     cache_mock = mocker.patch("servicex.servicex_client.QueryCache")
     mock_cache = MagicMock(spec=QueryCache)
-    mock_cache.get_codegen_by_backend.return_value = {
-        "codegens": {"ROOT": "my_root_generator", "UPROOT": "my_uproot_generator"}
-    }
     cache_mock.return_value = mock_cache
     return cache_mock
 

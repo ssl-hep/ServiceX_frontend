@@ -162,21 +162,29 @@ async def test_get_transforms_with_refresh(get, post, transform_status_response)
     )
 
 
-@patch("servicex.servicex_adapter.httpx.Client.get")
-def test_get_codegens(get, servicex):
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_get_codegens(get, servicex):
     get.return_value = httpx.Response(
-        200, json={"uproot": "http://uproot-codegen", "xaod": "http://xaod-codegen"}
+        200,
+        json={
+            "app-version": "0.0.0",
+            "code-gen-image": {
+                "uproot": "http://uproot-codegen",
+                "xaod": "http://xaod-codegen",
+            },
+            "capabilities": [],
+        },
     )
-    c = servicex.get_code_generators()
+    c = await servicex.get_code_generators()
     assert len(c) == 2
     assert c["uproot"] == "http://uproot-codegen"
 
 
-@patch("servicex.servicex_adapter.httpx.Client.get")
-def test_get_codegens_error(get, servicex):
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_get_codegens_error(get, servicex):
     get.return_value = httpx.Response(403)
     with pytest.raises(AuthorizationError) as err:
-        servicex.get_code_generators()
+        await servicex.get_code_generators()
         assert "Not authorized to access serviceX at" in str(err.value)
 
 
