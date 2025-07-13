@@ -37,11 +37,6 @@ list
 
 List the available code generators for the selected backend.
 
-flush
-^^^^^
-
-Clear any cached code generator information for the selected backend.
-
 transforms
 ~~~~~~~~~~
 
