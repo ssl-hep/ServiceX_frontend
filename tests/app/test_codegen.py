@@ -41,20 +41,3 @@ def test_codegen_list(script_runner):
 }
 """
         )
-
-
-def test_codegen_flush(script_runner):
-    with patch("servicex.query_cache.QueryCache.delete_codegen_by_backend") as p:
-        result = script_runner.run(
-            [
-                "servicex",
-                "codegen",
-                "flush",
-                "-c",
-                "tests/example_config.yaml",
-                "-b",
-                "localhost",
-            ]
-        )
-        assert result.returncode == 0
-        p.assert_called_once_with("localhost")

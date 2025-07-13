@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2022-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,20 +34,6 @@ from servicex.servicex_client import ServiceXClient
 from typing import Optional
 
 codegen_app = typer.Typer(name="codegen", no_args_is_help=True)
-
-
-@codegen_app.command(no_args_is_help=False)
-def flush(
-    backend: Optional[str] = backend_cli_option,
-    config_path: Optional[str] = config_file_option,
-):
-    """
-    Flush the available code generators from the cache
-    """
-    sx = ServiceXClient(backend=backend, config_path=config_path)
-    cache = sx.query_cache
-    cache.delete_codegen_by_backend(backend)
-    rich.print("Deleted cached code generators.")
 
 
 @codegen_app.command(no_args_is_help=False)
