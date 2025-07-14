@@ -162,21 +162,29 @@ async def test_get_transforms_with_refresh(get, post, transform_status_response)
     )
 
 
-@patch("servicex.servicex_adapter.httpx.Client.get")
-def test_get_codegens(get, servicex):
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_get_codegens(get, servicex):
     get.return_value = httpx.Response(
-        200, json={"uproot": "http://uproot-codegen", "xaod": "http://xaod-codegen"}
+        200,
+        json={
+            "app-version": "0.0.0",
+            "code-gen-image": {
+                "uproot": "http://uproot-codegen",
+                "xaod": "http://xaod-codegen",
+            },
+            "capabilities": [],
+        },
     )
-    c = servicex.get_code_generators()
+    c = await servicex.get_code_generators()
     assert len(c) == 2
     assert c["uproot"] == "http://uproot-codegen"
 
 
-@patch("servicex.servicex_adapter.httpx.Client.get")
-def test_get_codegens_error(get, servicex):
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_get_codegens_error(get, servicex):
     get.return_value = httpx.Response(403)
     with pytest.raises(AuthorizationError) as err:
-        servicex.get_code_generators()
+        await servicex.get_code_generators()
         assert "Not authorized to access serviceX at" in str(err.value)
 
 
@@ -843,3 +851,18 @@ async def test_get_transformation_results_failed_file(mock_get, servicex):
     )
     res = await servicex.get_transformation_results("id123", None)
     assert len(res) == 0
+
+
+@pytest.mark.asyncio
+async def test_sample_title_limit(servicex):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=["irrelevant"])
+    assert await servicex.get_servicex_sample_title_limit() is None
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["long_sample_titles_10240"]
+    )
+    assert await servicex.get_servicex_sample_title_limit() == 10240
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["long_sample_titles_invalid"]
+    )
+    with pytest.raises(RuntimeError):
+        await servicex.get_servicex_sample_title_limit()

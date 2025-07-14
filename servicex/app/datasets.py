@@ -25,7 +25,6 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-import asyncio
 from typing import Optional
 
 import rich
@@ -75,9 +74,8 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    datasets = asyncio.run(
-        sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
-    )
+    datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
+
     for d in datasets:
         # Format the CachedDataset object into a table row
         # The last_updated field is what we should be displaying, but that is
@@ -116,7 +114,7 @@ def get(
     else:
         table = None
 
-    dataset = asyncio.run(sx.get_dataset(dataset_id))
+    dataset = sx.get_dataset(dataset_id)
 
     if table:
         for file in dataset.files:
@@ -150,7 +148,7 @@ def delete(
     dataset_id: int = dataset_id_delete_arg,
 ):
     sx = ServiceXClient(backend=backend, config_path=config_path)
-    result = asyncio.run(sx.delete_dataset(dataset_id))
+    result = sx.delete_dataset(dataset_id)
     if result:
         typer.echo(f"Dataset {dataset_id} deleted")
     else:

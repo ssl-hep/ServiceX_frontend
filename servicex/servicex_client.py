@@ -183,7 +183,9 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
 
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     datasets = []
+    title_length_limit = make_sync(sx.servicex.get_servicex_sample_title_limit)()
     for sample in config.Sample:
+        sample.validate_title(title_length_limit)
         query = sx.generic_query(
             dataset_identifier=sample.dataset_identifier,
             title=sample.Name,
@@ -346,7 +348,7 @@ class ServiceXClient:
             )
 
         self.query_cache = QueryCache(self.config)
-        self.code_generators = set(self.get_code_generators(backend).keys())
+        self.code_generators = set(self.get_code_generators().keys())
 
     async def get_transforms_async(self) -> List[TransformStatus]:
         r"""
@@ -402,21 +404,12 @@ class ServiceXClient:
         """
         return _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
 
-    def get_code_generators(self, backend=None):
+    def get_code_generators(self) -> dict[str, str]:
         r"""
         Retrieve the code generators deployed with the serviceX instance
         :return:  The list of code generators as json dictionary
         """
-        cached_backends = None
-        if backend:
-            cached_backends = self.query_cache.get_codegen_by_backend(backend)
-        if cached_backends:
-            logger.info("Returning code generators from cache")
-            return cached_backends["codegens"]
-        else:
-            code_generators = self.servicex.get_code_generators()
-            self.query_cache.update_codegen_by_backend(backend, code_generators)
-            return code_generators
+        return _async_execute_and_wait(self.servicex.get_code_generators())
 
     def generic_query(
         self,

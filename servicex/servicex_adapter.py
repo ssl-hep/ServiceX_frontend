@@ -1,4 +1,4 @@
-# Copyright (c) 2022, IRIS-HEP
+# Copyright (c) 2022-2025, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,6 @@ import datetime
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 
-import httpx
 from httpx import AsyncClient, Response
 from json import JSONDecodeError
 from httpx_retries import RetryTransport, Retry
@@ -79,6 +78,7 @@ class ServiceXAdapter:
 
         # interact with _servicex_info via get_servicex_info
         self._servicex_info: Optional[ServiceXInfo] = None
+        self._sample_title_limit: Optional[int] = None
 
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
@@ -145,7 +145,7 @@ class ServiceXAdapter:
         retry_options = Retry(total=3, backoff_factor=10)
         async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             r = await client.get(url=f"{self.url}/servicex", headers=headers)
-            if r.status_code == 401:
+            if r.status_code in (401, 403):
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}"
                 )
@@ -161,6 +161,22 @@ class ServiceXAdapter:
 
     async def get_servicex_capabilities(self) -> List[str]:
         return (await self.get_servicex_info()).capabilities
+
+    async def get_servicex_sample_title_limit(self) -> Optional[int]:
+        # check if the capability is defined
+        capabilities = await self.get_servicex_capabilities()
+        for capability in capabilities:
+            if capability.startswith("long_sample_titles_"):
+                try:
+                    # hope capability is of the form long_sample_titles_NNNN
+                    return int(capability[19:])
+                except ValueError:
+                    raise RuntimeError(
+                        "Unable to determine allowed sample title length\n"
+                        f"Server capability is: {capability}"
+                    )
+
+        return None
 
     async def get_transforms(self) -> List[TransformStatus]:
         headers = await self._get_authorization()
@@ -183,15 +199,8 @@ class ServiceXAdapter:
             statuses = [TransformStatus(**status) for status in o["requests"]]
             return statuses
 
-    def get_code_generators(self):
-        with httpx.Client() as client:
-            r = client.get(url=f"{self.url}/multiple-codegen-list")
-
-            if r.status_code == 403:
-                raise AuthorizationError(
-                    f"Not authorized to access serviceX at {self.url}"
-                )
-            return r.json()
+    async def get_code_generators(self) -> dict[str, str]:
+        return (await self.get_servicex_info()).code_gen_image
 
     async def get_datasets(
         self, did_finder=None, show_deleted=False

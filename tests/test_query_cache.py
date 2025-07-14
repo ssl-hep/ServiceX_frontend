@@ -33,7 +33,6 @@ import pytest
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
 from servicex.query_cache import QueryCache, CacheException
-from tinydb import Query
 
 file_uris = ["/tmp/foo1.root", "/tmp/foo2.root"]
 
@@ -185,83 +184,7 @@ def test_record_delete(transform_request, completed_status):
         cache.close()
 
 
-def test_get_codegen_by_backend_empty():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
-        cache = QueryCache(config)
-        result = cache.get_codegen_by_backend("non-existent")
-        assert result is None
-        cache.close()
-
-
-def test_update_codegen_by_backend_single():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
-        cache = QueryCache(config)
-        codegens = Query()
-        cache.update_codegen_by_backend("backend_1", ["codegen_1"])
-        result = cache.db.search(codegens.backend == "backend_1")
-        assert len(result) == 1
-        assert result[0] == {"backend": "backend_1", "codegens": ["codegen_1"]}
-        cache.close()
-
-
-def test_get_codegen_by_backend_single():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
-        cache = QueryCache(config)
-        cache.update_codegen_by_backend("backend_1", ["codegen_1"])
-        result = cache.get_codegen_by_backend("backend_1")
-        assert result == {"backend": "backend_1", "codegens": ["codegen_1"]}
-        cache.close()
-
-
-def test_delete_codegen_by_backend():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
-        cache = QueryCache(config)
-        cache.update_codegen_by_backend("backend_1", ["codegen_1"])
-        result = cache.get_codegen_by_backend("backend_1")
-        assert result == {"backend": "backend_1", "codegens": ["codegen_1"]}
-
-        cache.delete_codegen_by_backend("backend_1")
-        result = cache.get_codegen_by_backend("backend_1")
-        assert result is None
-        cache.close()
-
-
-def test_delete_codegen_by_backend_nonexistent():
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
-        cache = QueryCache(config)
-        cache.delete_codegen_by_backend("backend_1")
-        with pytest.raises(AssertionError):
-            raise AssertionError()
-        cache.close()
-
-
-def test_add_both_codegen_and_transform_to_cache(transform_request, completed_status):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
-        cache = QueryCache(config)
-        cache.cache_transform(
-            cache.transformed_results(
-                transform=transform_request,
-                completed_status=completed_status,
-                data_dir="/foo/bar",
-                file_list=file_uris,
-                signed_urls=[],
-            )
-        )
-
-        cache.update_codegen_by_backend("backend_1", ["codegen_1"])
-        result = cache.get_codegen_by_backend("backend_1")
-        assert result == {"backend": "backend_1", "codegens": ["codegen_1"]}
-        assert len(cache.cached_queries()) == 1
-        cache.close()
-
-
-def test_delete_codegen_by_hash(transform_request, completed_status):
+def test_delete_transform_by_hash(transform_request, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
@@ -324,6 +247,9 @@ def test_get_transform_request_id(transform_request, completed_status):
         cache.update_transform_request_id(hash_value, "123456")
         request_id = cache.get_transform_request_id(hash_value)
         assert request_id == "123456"
+
+        # assert that in this state that cached_queries does NOT crash and returns nothing
+        assert len(cache.cached_queries()) == 0
 
         cache.close()
 

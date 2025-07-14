@@ -197,7 +197,9 @@ class QueryCache:
         with self.lock:
             result = [
                 TransformedResults(**doc)
-                for doc in self.db.search(transforms.request_id.exists())
+                for doc in self.db.search(
+                    transforms.request_id.exists() & ~(transforms.status == "SUBMITTED")
+                )
             ]
         return result
 
@@ -209,28 +211,3 @@ class QueryCache:
         transforms = Query()
         with self.lock:
             self.db.remove(transforms.hash == hash)
-
-    def get_codegen_by_backend(self, backend: str) -> Optional[dict]:
-        codegens = Query()
-        with self.lock:
-            records = self.db.search(codegens.backend == backend)
-
-        if not records:
-            return None
-
-        if len(records) != 1:
-            raise CacheException("Multiple records found in db for same backend")
-        else:
-            return records[0]
-
-    def update_codegen_by_backend(self, backend: str, codegen_list: list):
-        transforms = Query()
-        with self.lock:
-            self.db.upsert(
-                {"backend": backend, "codegens": codegen_list},
-                transforms.backend == backend,
-            )
-
-    def delete_codegen_by_backend(self, backend: str):
-        with self.lock:
-            self.db.remove(where("backend") == backend)
