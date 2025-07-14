@@ -80,6 +80,7 @@ test = [
     "pyarrow>=12.0.0",
     "pre-commit>=4.0.1",
     "pytest-aioboto3>=0.6.0",
+    "coverage>=7.0.0",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",
@@ -91,9 +92,6 @@ docs = [
     "sphinx-tabs>=3.4.5",
     "sphinx-copybutton>=0.5.2",
     "enum-tools[sphinx]>=0.12.0",
-]
-develop = [
-    "servicex[test,docs]",
 ]
 
 [project.entry-points.'servicex.query']
@@ -124,7 +122,22 @@ include = [
 packages = ["servicex"]
 
 [tool.coverage.run]
-dynamic_context = "test_function"
+source = ["servicex"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+]
+show_missing = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.hatch.envs.test]
+features = ["test"]
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args}"
+cov = "coverage run --source servicex/ -m pytest tests && coverage report"
+cov-html = "coverage run --source servicex/ -m pytest tests && coverage html"
