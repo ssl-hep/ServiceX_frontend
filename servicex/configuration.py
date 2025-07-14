@@ -143,4 +143,18 @@ class Configuration(BaseModel):
 
             dir = dir.parent
 
+        # If nothing was found walking up the directory tree, look in the user's
+        # home directory as a final fallback. This mirrors the behaviour
+        # documented for the search path.
+        if config is None and not path:
+            home = Path.home()
+            # Look first for `.servicex` and then for `servicex.yaml` just as we
+            # did in the directory walk above.
+            for cfg_name in [name, alt_name] if alt_name else [name]:
+                f = home / cfg_name
+                if f.exists():
+                    with open(f) as config_file:
+                        config = yaml.safe_load(config_file)
+                    break
+
         return config
