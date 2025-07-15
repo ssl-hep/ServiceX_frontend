@@ -276,7 +276,9 @@ async def deliver_async(
         for sample in config.Sample:
             sample.IgnoreLocalCache = True
 
-    datasets = await _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
+    datasets = await _build_datasets(
+        config, config_path, servicex_name, fail_if_incomplete
+    )
 
     group = DatasetGroup(datasets)
 
@@ -291,14 +293,14 @@ async def deliver_async(
 
     if config.General.Delivery == General.DeliveryEnum.URLs:
         results = await group.as_signed_urls_async(
-                return_exceptions=return_exceptions, **progress_options
-            )
+            return_exceptions=return_exceptions, **progress_options
+        )
         return _output_handler(config, datasets, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
         results = await group.as_files_async(
-                return_exceptions=return_exceptions, **progress_options
-            )
+            return_exceptions=return_exceptions, **progress_options
+        )
         return _output_handler(config, datasets, results)
 
 
