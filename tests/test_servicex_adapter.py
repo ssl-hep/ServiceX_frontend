@@ -175,7 +175,7 @@ async def test_get_codegens(get, servicex):
             "capabilities": [],
         },
     )
-    c = await servicex.get_code_generators()
+    c = await servicex.get_code_generators_async()
     assert len(c) == 2
     assert c["uproot"] == "http://uproot-codegen"
 
