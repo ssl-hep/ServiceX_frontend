@@ -126,7 +126,6 @@ packages = ["servicex"]
 
 [tool.coverage.run]
 source = ["servicex"]
-branch = true
 omit = [
     "*/tests/*",
     "*/test_*",
