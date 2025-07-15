@@ -131,7 +131,6 @@ omit = [
     "*/tests/*",
     "*/test_*",
 ]
-show_missing = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
