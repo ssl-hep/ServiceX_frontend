@@ -341,7 +341,11 @@ class ServiceXClient:
             self.servicex = ServiceXAdapter(url)
         elif backend:
             if backend not in self.endpoints:
-                raise ValueError(f"Backend {backend} not defined in .servicex file")
+                valid_backends = ", ".join(self.endpoints.keys())
+                raise ValueError(
+                    f"Backend {backend} not defined in .servicex file. "
+                    f"Valid backend names: {valid_backends}"
+                )
             self.servicex = ServiceXAdapter(
                 self.endpoints[backend].endpoint,
                 refresh_token=self.endpoints[backend].token,
