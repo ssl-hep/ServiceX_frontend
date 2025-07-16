@@ -100,7 +100,9 @@ class Configuration(BaseModel):
         :return: Populated configuration object
         """
         if config_path:
-            yaml_config, cfg_path = cls._add_from_path(Path(config_path), walk_up_tree=False)
+            yaml_config, cfg_path = cls._add_from_path(
+                Path(config_path), walk_up_tree=False
+            )
         else:
             yaml_config, cfg_path = cls._add_from_path(walk_up_tree=True)
 
