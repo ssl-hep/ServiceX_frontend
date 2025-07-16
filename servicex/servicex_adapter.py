@@ -41,6 +41,7 @@ from tenacity import (
     wait_fixed,
     retry_if_not_exception_type,
 )
+from make_it_sync import make_sync
 
 from servicex.models import (
     TransformRequest,
@@ -199,8 +200,10 @@ class ServiceXAdapter:
             statuses = [TransformStatus(**status) for status in o["requests"]]
             return statuses
 
-    async def get_code_generators(self) -> dict[str, str]:
+    async def get_code_generators_async(self) -> dict[str, str]:
         return (await self.get_servicex_info()).code_gen_image
+
+    get_code_generators = make_sync(get_code_generators_async)
 
     async def get_datasets(
         self, did_finder=None, show_deleted=False

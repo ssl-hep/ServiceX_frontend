@@ -123,10 +123,7 @@ class GuardList(Sequence):
 def _async_execute_and_wait(coro: Coroutine) -> Any:
     import asyncio
 
-    try:
-        return asyncio.create_task(coro).result()
-    except RuntimeError:
-        return asyncio.run(coro)
+    return asyncio.run(coro)
 
 
 def _load_ServiceXSpec(
@@ -170,7 +167,7 @@ def _load_ServiceXSpec(
     return config
 
 
-def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
+async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -182,8 +179,8 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
             return _sample.Query.codegen
 
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
+    title_length_limit = await sx.servicex.get_servicex_sample_title_limit()
     datasets = []
-    title_length_limit = make_sync(sx.servicex.get_servicex_sample_title_limit)()
     for sample in config.Sample:
         sample.validate_title(title_length_limit)
         query = sx.generic_query(
@@ -236,7 +233,7 @@ def _output_handler(
     return out_dict
 
 
-def deliver(
+async def deliver_async(
     spec: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
@@ -279,7 +276,9 @@ def deliver(
         for sample in config.Sample:
             sample.IgnoreLocalCache = True
 
-    datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
+    datasets = await _build_datasets(
+        config, config_path, servicex_name, fail_if_incomplete
+    )
 
     group = DatasetGroup(datasets)
 
@@ -293,16 +292,19 @@ def deliver(
         raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
 
     if config.General.Delivery == General.DeliveryEnum.URLs:
-        results = group.as_signed_urls(
+        results = await group.as_signed_urls_async(
             return_exceptions=return_exceptions, **progress_options
         )
         return _output_handler(config, datasets, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files(
+        results = await group.as_files_async(
             return_exceptions=return_exceptions, **progress_options
         )
         return _output_handler(config, datasets, results)
+
+
+deliver = make_sync(deliver_async)
 
 
 class ServiceXClient:
@@ -348,7 +350,7 @@ class ServiceXClient:
             )
 
         self.query_cache = QueryCache(self.config)
-        self.code_generators = set(self.get_code_generators().keys())
+        self.code_generators = self.get_code_generators()
 
     async def get_transforms_async(self) -> List[TransformStatus]:
         r"""
@@ -409,7 +411,7 @@ class ServiceXClient:
         Retrieve the code generators deployed with the serviceX instance
         :return:  The list of code generators as json dictionary
         """
-        return _async_execute_and_wait(self.servicex.get_code_generators())
+        return self.servicex.get_code_generators()
 
     def generic_query(
         self,

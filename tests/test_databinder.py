@@ -25,7 +25,13 @@ def network_patches(codegen_list):
         )
         _fixture.enter_context(
             patch(
-                "servicex.servicex_client.ServiceXClient.get_code_generators",
+                "servicex.servicex_adapter.ServiceXAdapter.get_code_generators_async",
+                return_value=codegen_list,
+            )
+        )
+        _fixture.enter_context(
+            patch(
+                "servicex.servicex_adapter.ServiceXAdapter.get_code_generators",
                 return_value=codegen_list,
             )
         )
@@ -341,7 +347,7 @@ def test_submit_mapping(transformed_result, network_patches, with_event_loop):
         ],
     }
     with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
+        "servicex.dataset_group.DatasetGroup.as_files_async",
         return_value=[transformed_result],
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
@@ -365,7 +371,7 @@ def test_submit_mapping_signed_urls(
         ],
     }
     with patch(
-        "servicex.dataset_group.DatasetGroup.as_signed_urls",
+        "servicex.dataset_group.DatasetGroup.as_signed_urls_async",
         return_value=[transformed_result_signed_url],
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
@@ -389,7 +395,7 @@ def test_submit_mapping_failure(transformed_result, network_patches, with_event_
         ]
     }
     with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
+        "servicex.dataset_group.DatasetGroup.as_files_async",
         return_value=[ServiceXException("dummy")],
     ):
         results = deliver(spec, config_path="tests/example_config.yaml")
@@ -415,7 +421,7 @@ def test_submit_mapping_failure_signed_urls(network_patches, with_event_loop):
         ],
     }
     with patch(
-        "servicex.dataset_group.DatasetGroup.as_signed_urls",
+        "servicex.dataset_group.DatasetGroup.as_signed_urls_async",
         return_value=[ServiceXException("dummy")],
     ):
         results = deliver(
@@ -849,7 +855,7 @@ def test_uproot_raw_query_rntuple(transformed_result, network_patches, with_even
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_generic_query(network_patches):
+async def test_generic_query(network_patches):
     from servicex.servicex_client import ServiceXClient
 
     spec = ServiceXSpec.model_validate(
