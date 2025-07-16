@@ -49,6 +49,10 @@ class Configuration(BaseModel):
     )
 
     shortened_downloaded_filename: Optional[bool] = False
+    # Path to the configuration file this object was read from. This field is
+    # populated by :py:meth:`Configuration.read` and is not part of the input
+    # schema.
+    config_file: Optional[str] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
     def expand_cache_path(self):
@@ -96,12 +100,15 @@ class Configuration(BaseModel):
         :return: Populated configuration object
         """
         if config_path:
-            yaml_config = cls._add_from_path(Path(config_path), walk_up_tree=False)
+            yaml_config, cfg_path = cls._add_from_path(Path(config_path), walk_up_tree=False)
         else:
-            yaml_config = cls._add_from_path(walk_up_tree=True)
+            yaml_config, cfg_path = cls._add_from_path(walk_up_tree=True)
 
         if yaml_config:
-            return Configuration.model_validate(yaml_config)
+            cfg = Configuration.model_validate(yaml_config)
+            if cfg_path:
+                cfg.config_file = str(cfg_path)
+            return cfg
         else:
             path_extra = f"in {config_path}" if config_path else ""
             raise NameError(
@@ -111,6 +118,7 @@ class Configuration(BaseModel):
     @classmethod
     def _add_from_path(cls, path: Optional[Path] = None, walk_up_tree: bool = False):
         config = None
+        found_file: Optional[Path] = None
         if path:
             path.resolve()
             name = path.name
@@ -126,14 +134,16 @@ class Configuration(BaseModel):
             if f.exists():
                 with open(f) as config_file:
                     config = yaml.safe_load(config_file)
-                    break
+                found_file = f
+                break
 
             if alt_name:
                 f = dir / alt_name  # if neither option above, find servicex.yaml
                 if f.exists():
                     with open(f) as config_file:
                         config = yaml.safe_load(config_file)
-                        break
+                    found_file = f
+                    break
 
             if not walk_up_tree:
                 break
@@ -143,4 +153,4 @@ class Configuration(BaseModel):
 
             dir = dir.parent
 
-        return config
+        return config, found_file
