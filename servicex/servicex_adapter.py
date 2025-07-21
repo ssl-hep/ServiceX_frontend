@@ -31,7 +31,7 @@ import datetime
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 
-from httpx import AsyncClient, Response
+from httpx import AsyncClient, Response, Timeout
 from json import JSONDecodeError
 from httpx_retries import RetryTransport, Retry
 from google.auth import jwt
@@ -69,6 +69,9 @@ async def _extract_message(r: Response):
     except JSONDecodeError:
         error_message = r.text
     return error_message
+
+
+_timeout = Timeout(10, read=300)
 
 
 class ServiceXAdapter:
@@ -349,7 +352,8 @@ class ServiceXAdapter:
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=30)
-        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
+        async with AsyncClient(transport=RetryTransport(retry=retry_options),
+                               timeout=_timeout) as client:
             r = await client.post(
                 url=f"{self.url}/servicex/transformation",
                 headers=headers,
