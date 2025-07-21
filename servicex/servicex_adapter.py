@@ -352,8 +352,9 @@ class ServiceXAdapter:
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=30)
-        async with AsyncClient(transport=RetryTransport(retry=retry_options),
-                               timeout=_timeout) as client:
+        async with AsyncClient(
+            transport=RetryTransport(retry=retry_options), timeout=_timeout
+        ) as client:
             r = await client.post(
                 url=f"{self.url}/servicex/transformation",
                 headers=headers,
