@@ -62,6 +62,7 @@ def list():
     table.add_column("Files")
     table.add_column("Format")
     runs = cache.cached_queries()
+    pending = cache.submitted_queries()
     for r in runs:
         table.add_row(
             r.title,
@@ -70,6 +71,15 @@ def list():
             r.submit_time.astimezone().strftime("%a, %Y-%m-%d %H:%M"),
             str(r.files),
             r.result_format,
+        )
+    for r in pending:
+        table.add_row(
+            r.get("title", ""),
+            r.get("codegen", ""),
+            r.get("request_id", ""),
+            "Pending",
+            "Pending",
+            str(r.get("result_format", "")),
         )
     rich.print(table)
 

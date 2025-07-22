@@ -77,7 +77,8 @@ list
 ^^^^
 
 Show all of the cached transforms along with the run time, code
-generator, and number of resulting files
+generator, and number of resulting files. Pending submissions are
+also listed with the run date and file count shown as ``Pending``.
 
 delete
 ^^^^^^

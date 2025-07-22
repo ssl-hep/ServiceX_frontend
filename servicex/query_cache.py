@@ -29,6 +29,7 @@ import json
 import os
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime, timezone
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
 
@@ -148,6 +149,24 @@ class QueryCache:
                 transform.hash == hash_value,
             )
 
+    def cache_submitted_transform(
+        self, transform: TransformRequest, request_id: str
+    ) -> None:
+        """Cache a transform that has been submitted but not completed."""
+
+        record = {
+            "hash": transform.compute_hash(),
+            "title": transform.title,
+            "codegen": transform.codegen,
+            "result_format": transform.result_format,
+            "request_id": request_id,
+            "status": "SUBMITTED",
+            "submit_time": datetime.now(timezone.utc).isoformat(),
+        }
+        transforms = Query()
+        with self.lock:
+            self.db.upsert(record, transforms.hash == record["hash"])
+
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         """
         Returns completed transformations by hash
@@ -202,6 +221,17 @@ class QueryCache:
                 )
             ]
         return result
+
+    def submitted_queries(self) -> List[dict]:
+        """Return all transform records that are only submitted."""
+        transforms = Query()
+        with self.lock:
+            return [
+                doc
+                for doc in self.db.search(
+                    (transforms.status == "SUBMITTED") & transforms.request_id.exists()
+                )
+            ]
 
     def delete_record_by_request_id(self, request_id: str):
         with self.lock:
