@@ -325,8 +325,7 @@ class Query:
                 self.request_id = self.cache.get_transform_request_id(sx_request_hash)
             else:
                 self.request_id = await self.servicex.submit_transform(sx_request)
-                self.cache.update_transform_request_id(sx_request_hash, self.request_id)
-                self.cache.update_transform_status(sx_request_hash, "SUBMITTED")
+                self.cache.cache_submitted_transform(sx_request, self.request_id)
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
