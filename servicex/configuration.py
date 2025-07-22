@@ -122,7 +122,7 @@ class Configuration(BaseModel):
         config = None
         found_file: Optional[Path] = None
         if path:
-            path.resolve()
+            path = path.resolve()
             name = path.name
             dir = path.parent.resolve()
             alt_name = None
