@@ -344,8 +344,9 @@ class ServiceXClient:
         elif backend:
             if backend not in self.endpoints:
                 valid_backends = ", ".join(self.endpoints.keys())
+                cfg_file = self.config.config_file or ".servicex"
                 raise ValueError(
-                    f"Backend {backend} not defined in .servicex file. "
+                    f"Backend {backend} not defined in {cfg_file} file. "
                     f"Valid backend names: {valid_backends}"
                 )
             self.servicex = ServiceXAdapter(
