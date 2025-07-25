@@ -242,9 +242,8 @@ def test_get_transform_request_id(transform_request, completed_status):
             request_id = cache.get_transform_request_id(hash_value)
             print(request_id)
 
-        # update the transform request with a request id and then check for the request id
-        cache.update_transform_status(hash_value, "SUBMITTED")
-        cache.update_transform_request_id(hash_value, "123456")
+        # cache the submitted transform and then check for the request id
+        cache.cache_submitted_transform(transform_request, "123456")
         request_id = cache.get_transform_request_id(hash_value)
         assert request_id == "123456"
 
@@ -276,18 +275,30 @@ def test_get_transform_request_status(transform_request, completed_status):
 
         assert cache.is_transform_request_submitted(hash_value) is False
 
-        # cache transform
-        cache.update_transform_status(hash_value, "SUBMITTED")
-        cache.cache_transform(
-            cache.transformed_results(
-                transform=transform_request,
-                completed_status=completed_status,
-                data_dir="/foo/bar",
-                file_list=file_uris,
-                signed_urls=[],
-            )
+        # cache submitted transform
+        cache.cache_submitted_transform(
+            transform_request, "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
         )
 
         assert cache.is_transform_request_submitted(hash_value) is True
+
+        cache.close()
+
+
+def test_cache_submitted_queries(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+
+        cache.cache_submitted_transform(transform_request, "123456")
+
+        pending = cache.submitted_queries()
+        assert len(pending) == 1
+        assert pending[0]["status"] == "SUBMITTED"
+        assert pending[0]["request_id"] == "123456"
+        assert (
+            cache.is_transform_request_submitted(transform_request.compute_hash())
+            is True
+        )
 
         cache.close()
