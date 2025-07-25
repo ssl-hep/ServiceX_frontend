@@ -28,3 +28,5 @@ Files can also be located using wildcard patterns with XRootD. So, for example, 
 *Note: available from ServiceX client version 3.0.1.*
  * Python: ``{ "Dataset": servicex.dataset.XRootD("root://eospublic.cern.ch//eos/opendata/mystuff/*") }``
  * YAML: ``Dataset: !XRootD root://eospublic.cern.ch//eos/opendata/mystuff/*``
+
+You can access files in other CERN `eos` mounts with `root://eosatlas.cern.ch//eos/...`, or with any other `eos` root.
