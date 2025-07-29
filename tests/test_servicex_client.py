@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -138,3 +139,13 @@ def test_delete_transform_from_cache(mock_cache, servicex_adaptor, transformed_r
             mock_cache.return_value.delete_record_by_request_id.assert_called_once_with(
                 "servicex-request-789"
             )
+
+
+def test_invalid_backend_raises_error_with_filename():
+    config_file = "tests/example_config.yaml"
+    expected = Path(config_file).resolve()
+
+    with pytest.raises(ValueError) as err:
+        ServiceXClient(backend="badname", config_path=config_file)
+
+    assert f"Backend badname not defined in {expected} file" in str(err.value)
