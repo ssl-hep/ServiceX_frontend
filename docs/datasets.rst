@@ -17,7 +17,7 @@ This looks up files in datasets using their integer ID in the `CERN Open Data Po
 
 A list of network-accessible files
 ^^^^
-If you have URLs for files that ServiceX can access via either the HTTP or XRootD protocols, then these URLs can be given directly to ServiceX. Note that the ServiceX instance must have permissions to read these files; in particular if generic members of your experiment can't access the files, ServiceX will probably not be able to either. Wildcards are not supported.
+If you have URLs for files that ServiceX can access via either the HTTP or XRootD protocols, then these URLs can be given directly to ServiceX. Note that the ServiceX instance must have permissions to read these files; in particular if generic members of your experiment can't access the files, ServiceX will probably not be able to either. Wildcards are not supported for a ``FileList``, but are by XRootD patterns (see below).
  * Python: ``{ "Dataset": servicex.dataset.FileList(["http://server/file1.root", "root://server/file2.root"]) }``
  * YAML: ``Dataset: !FileList ["http://server/file1.root", "root://server/file2.root"]``
 
