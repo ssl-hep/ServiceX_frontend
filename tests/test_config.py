@@ -92,3 +92,25 @@ api_endpoints:
 
     c = Configuration.read()
     assert c.api_endpoints[0].endpoint == "http://localhost:5000"
+
+
+@pytest.mark.parametrize("config_filename", ["servicex.yaml", ".servicex"])
+def test_read_from_default_files(monkeypatch, tmp_path, config_filename):
+    """
+    Ensure config can be located in the user's home directory for servicex.yaml and .servicex.
+    """
+
+    # Create a fake home directory with the config file
+    cfg = tmp_path / config_filename
+    cfg.write_text(
+        """
+api_endpoints:
+  - endpoint: http://localhost:5012
+    name: localhost
+"""
+    )
+
+    monkeypatch.chdir(tmp_path)
+
+    c = Configuration.read()
+    assert c.api_endpoints[0].endpoint == "http://localhost:5012"
