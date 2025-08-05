@@ -42,7 +42,7 @@ datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
 
 @datasets_app.callback()
 def datasets() -> None:
-    """Sub-commands for interacting with datasets on the server."""
+    """Sub-commands for interacting with the list of looked-up datasets on the server."""
     pass
 
 
@@ -68,7 +68,9 @@ def list(
     show_deleted: Optional[bool] = show_deleted_opt,
 ):
     """
-    List the datasets. Use fancy formatting if printing to a terminal.
+    List the datasets on the server.
+
+    Use fancy formatting if printing to a terminal.
     Output as plain text if redirected.
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
@@ -82,6 +84,7 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
+    assert show_deleted is not None
     datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
 
     for d in datasets:
@@ -112,7 +115,11 @@ def get(
     dataset_id: int = dataset_id_get_arg,
 ):
     """
-    Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
+    List the files in a dataset.
+
+    Known replicas on the GRID are listed.
+
+    Output as a pretty, nested table if printing to a terminal.
     Output as json if redirected.
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
@@ -155,6 +162,12 @@ def delete(
     config_path: Optional[str] = config_file_option,
     dataset_id: int = dataset_id_delete_arg,
 ):
+    """
+    Remove a dataset from the ServiceX.
+
+    The next time it is queried, it will have to be looked up again. This command should only be
+    used when debugging.
+    """
     sx = ServiceXClient(backend=backend, config_path=config_path)
     result = sx.delete_dataset(dataset_id)
     if result:
