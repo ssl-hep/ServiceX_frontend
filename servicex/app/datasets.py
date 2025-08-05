@@ -38,6 +38,14 @@ from servicex.servicex_client import ServiceXClient
 from rich.table import Table
 
 datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
+
+
+@datasets_app.callback()
+def datasets() -> None:
+    """Sub-commands for interacting with datasets on the server."""
+    pass
+
+
 did_finder_opt = typer.Option(
     None,
     help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
