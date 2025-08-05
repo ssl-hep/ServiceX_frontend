@@ -40,6 +40,14 @@ from servicex.models import CachedDataset
 from rich.table import Table
 
 datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
+
+
+@datasets_app.callback()
+def datasets() -> None:
+    """Sub-commands for interacting with the list of looked-up datasets on the server."""
+    pass
+
+
 did_finder_opt = typer.Option(
     None,
     help="Filter datasets by DID finder. Some useful values are 'rucio' or 'user'",
@@ -66,7 +74,9 @@ def list(
     show_deleted: Optional[bool] = show_deleted_opt,
 ) -> None:
     """
-    List the datasets. Use fancy formatting if printing to a terminal.
+    List the datasets on the server.
+
+    Use fancy formatting if printing to a terminal.
     Output as plain text if redirected.
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
@@ -97,6 +107,7 @@ def list(
             )
 
         datasets = [dataset for dataset in datasets if matches_pattern(dataset)]
+    assert show_deleted is not None
 
     for d in datasets:
         # Format the CachedDataset object into a table row
@@ -140,7 +151,11 @@ def get(
     dataset_id: int = dataset_id_get_arg,
 ):
     """
-    Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
+    List the files in a dataset.
+
+    Known replicas on the GRID are listed.
+
+    Output as a pretty, nested table if printing to a terminal.
     Output as json if redirected.
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
@@ -183,6 +198,12 @@ def delete(
     config_path: Optional[str] = config_file_option,
     dataset_ids: List[int] = dataset_ids_delete_arg,
 ):
+    """
+    Remove a dataset from the ServiceX.
+
+    The next time it is queried, it will have to be looked up again. This command should only be
+    used when debugging.
+    """
     sx = ServiceXClient(backend=backend, config_path=config_path)
     any_missing: bool = False  # Track if any dataset ID is not found
     for dataset_id in dataset_ids:
