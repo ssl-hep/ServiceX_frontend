@@ -84,7 +84,6 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    assert show_deleted is not None
     datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
 
     for d in datasets:
