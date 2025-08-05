@@ -36,6 +36,12 @@ from typing import Optional
 codegen_app = typer.Typer(name="codegen", no_args_is_help=True)
 
 
+@codegen_app.callback()
+def codegen() -> None:
+    """Sub-commands for interacting with available backend code generators."""
+    pass
+
+
 @codegen_app.command(no_args_is_help=False)
 def list(
     backend: Optional[str] = backend_cli_option,
