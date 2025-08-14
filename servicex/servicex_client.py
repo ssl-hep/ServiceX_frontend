@@ -442,6 +442,9 @@ class ServiceXClient:
 
         """
 
+        if query is None:
+            raise ValueError("query argument cannot be None")
+
         if isinstance(query, str):
             if codegen is None:
                 raise RuntimeError(
@@ -449,7 +452,10 @@ class ServiceXClient:
                 )
             query = GenericQueryStringGenerator(query, codegen)
         if not isinstance(query, QueryStringGenerator):
-            raise ValueError("query argument must be string or QueryStringGenerator")
+            raise ValueError(
+                "query argument must be string or QueryStringGenerator, not "
+                f"{type(query).__name__}"
+            )
 
         real_codegen = codegen if codegen is not None else query.default_codegen
         if real_codegen is None:
