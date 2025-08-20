@@ -5,8 +5,9 @@ from pydantic import ValidationError
 
 from servicex import ServiceXSpec, dataset, OutputFormat
 from servicex.query_core import ServiceXException
-from servicex.servicex_client import ReturnValueException
+from servicex.servicex_client import ProgressBarFormat, ReturnValueException
 from servicex.dataset import FileList, Rucio
+from servicex.dataset_identifier import FileListDataset
 
 
 @fixture
@@ -684,9 +685,7 @@ def test_funcadl_query(transformed_result, network_patches, with_event_loop):
         deliver(spec, config_path="tests/example_config.yaml")
 
 
-def test_query_with_codegen_override(
-    transformed_result, network_patches, with_event_loop
-):
+def test_query_with_codegen_override(network_patches, with_event_loop, codegen_list):
     from servicex import deliver
     from servicex.query import FuncADL_Uproot  # type: ignore
 
@@ -705,14 +704,18 @@ def test_query_with_codegen_override(
             ],
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ):
-        with pytest.raises(NameError) as excinfo:
-            deliver(spec, config_path="tests/example_config.yaml")
-        # if this has propagated correctly, the override worked
-        assert excinfo.value.args[0].startswith("does-not-exist")
+    with pytest.raises(NameError) as excinfo:
+        deliver(
+            spec,
+            config_path="tests/example_config.yaml",
+            progress_bar=ProgressBarFormat.none,
+            return_exceptions=False,
+        )
+    # if this has propagated correctly, the override worked and lists supported
+    # code generators.
+    assert excinfo.value.args[0].startswith("does-not-exist")
+    for cg_name in codegen_list:
+        assert cg_name in excinfo.value.args[0]
 
     # second, with sample-level override
     spec = ServiceXSpec.model_validate(
@@ -729,14 +732,18 @@ def test_query_with_codegen_override(
             ]
         }
     )
-    with patch(
-        "servicex.dataset_group.DatasetGroup.as_files",
-        return_value=[transformed_result],
-    ):
-        with pytest.raises(NameError) as excinfo:
-            deliver(spec, config_path="tests/example_config.yaml")
-        # if this has propagated correctly, the override worked
-        assert excinfo.value.args[0].startswith("does-not-exist")
+    with pytest.raises(NameError) as excinfo:
+        deliver(
+            spec,
+            config_path="tests/example_config.yaml",
+            progress_bar=ProgressBarFormat.none,
+            return_exceptions=False,
+        )
+    # if this has propagated correctly, the override worked and lists supported
+    # code generators.
+    assert excinfo.value.args[0].startswith("does-not-exist")
+    for cg_name in codegen_list:
+        assert cg_name in excinfo.value.args[0]
 
 
 def test_databinder_load_dict():
@@ -874,13 +881,13 @@ async def test_generic_query(network_patches):
     )
     sx = ServiceXClient(config_path="tests/example_config.yaml")
     query = sx.generic_query(
-        dataset_identifier=spec.Sample[0].RucioDID,
+        dataset_identifier=FileListDataset("/foo.root"),
         codegen=spec.General.Codegen,
         query=spec.Sample[0].Query,
     )
     assert query.generate_selection_string() == "[{'treename': 'nominal'}]"
     query = sx.generic_query(
-        dataset_identifier=spec.Sample[0].RucioDID,
+        dataset_identifier=FileListDataset("/foo.root"),
         result_format=spec.General.OutputFormat.to_ResultFormat(),
         codegen=spec.General.Codegen,
         query=spec.Sample[0].Query,
@@ -901,16 +908,18 @@ async def test_generic_query(network_patches):
             codegen=spec.General.Codegen,
             query=None,
         )
+    query = sx.generic_query(
+        dataset_identifier=FileListDataset("/foo.root"),
+        codegen="nonsense",
+        query=spec.Sample[0].Query,
+    )
     with pytest.raises(NameError):
-        query = sx.generic_query(
-            dataset_identifier=spec.Sample[0].RucioDID,
-            codegen="nonsense",
-            query=spec.Sample[0].Query,
-        )
+        await query.as_files_async(display_progress=False)
     with pytest.raises(RuntimeError):
         # no codegen specified by generic class
         query = sx.generic_query(
-            dataset_identifier=spec.Sample[0].RucioDID, query=spec.Sample[0].Query
+            dataset_identifier=FileListDataset("/foo.root"),
+            query=spec.Sample[0].Query,
         )
 
 
