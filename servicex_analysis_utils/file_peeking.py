@@ -32,6 +32,7 @@ import numpy as np
 import awkward as ak
 import json
 import logging
+from servicex.dataset_identifier import DataSetIdentifier
 
 
 def run_query(input_filenames):
@@ -85,8 +86,8 @@ def build_deliver_spec(datasets):
     Supports multiple inputs for multiple sample queries.
 
     Parameters:
-    datasets (str, [str], or dict): Rucio DIDs to be checked by the servicex workers.
-                                   If dict, custom names can be inputed
+    datasets (str, [str], dict, DataSetIdentifier): Rucio DIDs (str) or DataSetIdentifier object.
+                                                    If dict, custom names can be inputed for each dataset
 
     Returns:
     spec_python (dict): The specification for the python function query containing Name, Query, Dataset, NFiles
@@ -98,23 +99,29 @@ def build_deliver_spec(datasets):
     dataset_dict = {}
     user_in = type(datasets)
 
+    # Rucio DID as str
     if user_in == str:
-        dataset_dict.update({datasets: datasets})
+        dataset_dict.update({datasets: datasets})  # Use dataset ID as sample name
     elif user_in == list and type(datasets[0]) is str:
         for ds in datasets:
             dataset_dict.update({ds: ds})
-    elif user_in == dict:
+    elif user_in == dict:  # Custom sample names
         dataset_dict = datasets
+    # Single DataSetIdentifier object
+    elif isinstance(datasets, DataSetIdentifier):
+        dataset_dict.update({"Sample": datasets})
     else:
         raise ValueError(
-            f"Unsupported dataset input type: {user_in}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str"
+            "Unsupported dataset input type: {user_in}.\n"
+            "Input must be str or list of str of Rucio DIDs, "
+            "a DataSetIdentifier object or a dict ('sample_name':'dataset_id')"
         )
 
     sample_list = [
         {
             "NFiles": 1,
             "Name": name,
-            "Dataset": dataset.Rucio(did),
+            "Dataset": dataset.Rucio(did) if isinstance(did, str) else did,
             "Query": query_PythonFunction,
         }
         for name, did in dataset_dict.items()
