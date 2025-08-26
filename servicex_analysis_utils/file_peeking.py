@@ -112,7 +112,7 @@ def build_deliver_spec(datasets):
         dataset_dict.update({"Sample": datasets})
     else:
         raise ValueError(
-            "Unsupported dataset input type: {user_in}.\n"
+            f"Unsupported dataset input type: {user_in}.\n"
             "Input must be str or list of str of Rucio DIDs, "
             "a DataSetIdentifier object or a dict ('sample_name':'dataset_id')"
         )

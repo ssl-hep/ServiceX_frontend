@@ -173,11 +173,16 @@ def test_spec_builder():
 
     # wrong input type
     wrong_did = 1234
+    expected_msg = (
+        f"Unsupported dataset input type: {type(wrong_did)}.\n"
+        "Input must be str or list of str of Rucio DIDs, "
+        "a DataSetIdentifier object or a dict "
+        "('sample_name':'dataset_id')"
+    )
+
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            f"Unsupported dataset input type: {type(wrong_did)}.\nInput must be dict ('sample_name':'dataset_id'), str or list of str"
-        ),
+        match=re.escape(expected_msg),
     ):
         file_peeking.build_deliver_spec(wrong_did)
 
