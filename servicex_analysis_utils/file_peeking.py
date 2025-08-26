@@ -109,7 +109,7 @@ def build_deliver_spec(datasets):
         dataset_dict = datasets
     # Single DataSetIdentifier object
     elif isinstance(datasets, DataSetIdentifier):
-        dataset_dict.update({"Sample": datasets})
+        dataset_dict.update({"Dataset": datasets})
     else:
         raise ValueError(
             f"Unsupported dataset input type: {user_in}.\n"
