@@ -34,6 +34,14 @@ import os
 import re
 import filecmp
 from servicex_analysis_utils import file_peeking
+from servicex import dataset
+from servicex.python_dataset import PythonFunction
+from servicex.dataset_identifier import (
+    RucioDatasetIdentifier,
+    FileListDataset,
+    CERNOpenDataDatasetIdentifier,
+    XRootDDatasetIdentifier,
+)
 
 
 @pytest.fixture
@@ -146,13 +154,9 @@ def test_spec_builder():
     assert isinstance(first_entry["NFiles"], int), "'NFiles' should be an integer"
     assert isinstance(first_entry["Name"], str), "'Name' should be a string"
 
-    from servicex.dataset_identifier import RucioDatasetIdentifier
-
     assert isinstance(
         first_entry["Dataset"], RucioDatasetIdentifier
     ), "'Dataset' should be a RucioDatasetIdentifier"
-
-    from servicex.python_dataset import PythonFunction
 
     assert isinstance(
         first_entry["Query"], PythonFunction
@@ -185,6 +189,51 @@ def test_spec_builder():
         match=re.escape(expected_msg),
     ):
         file_peeking.build_deliver_spec(wrong_did)
+
+
+def test_spec_builder_with_dataset_identifier():
+    # Build multiple types of dataset identifiers
+    ds1 = dataset.Rucio("random_space:did")
+    ds2 = dataset.XRootD("root://server/file.root")
+    ds3 = dataset.CERNOpenData("cernopendata:12345")
+    ds4 = dataset.FileList(["file1.root", "file2.root"])
+
+    ds_list = [ds1, ds2, ds3, ds4]
+    ds_types = [
+        RucioDatasetIdentifier,
+        XRootDDatasetIdentifier,
+        CERNOpenDataDatasetIdentifier,
+        FileListDataset,
+    ]
+    for did, did_type in zip(ds_list, ds_types):
+        spec = file_peeking.build_deliver_spec(did)
+
+        # Check return type
+        assert isinstance(spec, dict), "build_deliver_spec does not return a dict"
+        assert "Sample" in spec, "Key 'Sample' is missing in the returned dict"
+        assert isinstance(spec["Sample"], list), "'Sample' should be a list"
+
+        # Get return size
+        size = len(spec["Sample"])
+        assert (
+            size == 1
+        ), f"Only one did given but sample item of spec is not len 1: {size}"
+
+        # Check first sample
+        first_entry = spec["Sample"][0]
+        assert isinstance(first_entry, dict), "Each entry in 'Sample' should be a dict"
+
+        # Check each key type
+        assert isinstance(first_entry["NFiles"], int), "'NFiles' should be an integer"
+        assert isinstance(first_entry["Name"], str), "'Name' should be a string"
+
+        assert isinstance(
+            first_entry["Query"], PythonFunction
+        ), "'Query' should be a PythonFunction"
+
+        assert isinstance(
+            first_entry["Dataset"], did_type
+        ), f"Input Dataset identifier {did} should be a {did_type} but is {type(first_entry['Dataset'])}"
 
 
 def test_decoding_to_array(build_test_samples, array_out=True):
