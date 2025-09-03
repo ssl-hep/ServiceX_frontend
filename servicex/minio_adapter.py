@@ -79,6 +79,15 @@ class MinioAdapter:
 
     @classmethod
     def for_transform(cls, transform: TransformStatus):
+        if not transform.minio_endpoint:
+            raise ValueError("Missing minio_endpoint for transform")
+        if transform.minio_secured is None:
+            raise ValueError("Missing minio_secured for transform")
+        if not transform.minio_access_key:
+            raise ValueError("Missing minio_access_key for transform")
+        if not transform.minio_secret_key:
+            raise ValueError("Missing minio_secret_key for transform")
+
         return MinioAdapter(
             endpoint_host=transform.minio_endpoint,
             secure=transform.minio_secured,

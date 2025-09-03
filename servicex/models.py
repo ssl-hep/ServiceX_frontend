@@ -30,14 +30,14 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Type
 
 
 def _get_typename(typeish) -> str:
     return typeish.__name__ if isinstance(typeish, type) else str(typeish)
 
 
-def _generate_model_docstring(model: type) -> str:
+def _generate_model_docstring(model: Type[BaseModel]) -> str:
     NL = "\n"
     return "\n".join(
         [(model.__doc__ if model.__doc__ else model.__name__).strip(), "", "Args:"]
@@ -160,7 +160,9 @@ class TransformStatus(DocStringBaseModel):
     files_remaining: Optional[int] = Field(
         validation_alias="files-remaining", default=0
     )
-    submit_time: datetime = Field(validation_alias="submit-time", default=None)
+    submit_time: Optional[datetime] = Field(
+        validation_alias="submit-time", default=None
+    )
     finish_time: Optional[datetime] = Field(
         validation_alias="finish-time", default=None
     )

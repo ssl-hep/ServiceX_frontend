@@ -47,7 +47,7 @@ from servicex.query_core import (
 from servicex.types import DID
 from servicex.dataset_group import DatasetGroup
 
-from make_it_sync import make_sync
+from make_it_sync import make_sync  # type: ignore
 from servicex.databinder_models import ServiceXSpec, General, Sample
 from collections.abc import Sequence, Coroutine
 from enum import Enum
@@ -89,7 +89,9 @@ class GuardList(Sequence):
 
         super().__init__()
         if isinstance(data, Exception):
-            self._data = ReturnValueException(data)
+            self._data: Union[ReturnValueException, Sequence] = ReturnValueException(
+                data
+            )
         else:
             self._data = copy.copy(data)
 
@@ -98,19 +100,21 @@ class GuardList(Sequence):
 
     def __getitem__(self, index) -> Any:
         if not self.valid():
-            data = cast(Exception, self._data)
-            raise data
+            if isinstance(self._data, ReturnValueException):
+                raise self._data
         else:
-            data = cast(Sequence, self._data)
-            return data[index]
+            if isinstance(self._data, Sequence):
+                return self._data[index]
+        raise RuntimeError("Invalid state")
 
     def __len__(self) -> int:
         if not self.valid():
-            data = cast(Exception, self._data)
-            raise data
+            if isinstance(self._data, ReturnValueException):
+                raise self._data
         else:
-            data = cast(Sequence, self._data)
-            return len(data)
+            if isinstance(self._data, Sequence):
+                return len(self._data)
+        raise RuntimeError("Invalid state")
 
     def __repr__(self):
         if self.valid():
@@ -202,7 +206,7 @@ async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete
 def _output_handler(
     config: ServiceXSpec,
     requests: List[Query],
-    results: List[Union[TransformedResults, Exception]],
+    results: List[Union[TransformedResults, BaseException]],
 ):
     matched_results = zip(requests, results)
     if config.General.Delivery == General.DeliveryEnum.URLs:

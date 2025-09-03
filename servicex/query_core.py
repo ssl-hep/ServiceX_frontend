@@ -132,7 +132,7 @@ class Query:
         return self.query_string_generator.generate_selection_string()
 
     @property
-    def transform_request(self):
+    def transform_request(self) -> TransformRequest:
         if not self.result_format:
             raise ValueError(
                 "Unable to determine the result file format. Use set_result_format method"
@@ -153,7 +153,7 @@ class Query:
         self.title = title
         return self
 
-    def set_result_format(self, result_format: ResultFormat):
+    def set_result_format(self, result_format: ResultFormat) -> "Query":
         r"""
         Set the result format - required at constructor time or as part of the query
         chain of methods
@@ -205,13 +205,15 @@ class Query:
                     f'ServiceX Exception for request ID {self.request_id} ({self.title})"',
                     exc_info=task.exception(),
                 )
-                if self.fail_if_incomplete:
+                if self.fail_if_incomplete and self.cache and self.request_id:
                     self.cache.delete_record_by_request_id(self.request_id)
                     if download_files_task:
                         download_files_task.cancel("Transform failed")
-                raise task.exception()
+                exc = task.exception()
+                if exc:
+                    raise exc
 
-            if self.current_status.status in DONE_STATUS:
+            if self.current_status and self.current_status.status in DONE_STATUS:
                 if self.current_status.files_failed:
                     titlestr = (
                         f'"{self.current_status.title}" '
@@ -264,9 +266,13 @@ class Query:
         sx_request_hash = sx_request.compute_hash()
 
         # Invalidate the cache if the hash already present but if the user ignores cache
-        if self.ignore_cache and (
-            self.cache.contains_hash(sx_request_hash)
-            or self.cache.is_transform_request_submitted(sx_request_hash)
+        if (
+            self.ignore_cache
+            and self.cache
+            and (
+                self.cache.contains_hash(sx_request_hash)
+                or self.cache.is_transform_request_submitted(sx_request_hash)
+            )
         ):
             self.cache.delete_record_by_hash(sx_request_hash)
 
@@ -274,7 +280,7 @@ class Query:
         # to ignore the cache
         cached_record = (
             self.cache.get_transform_by_hash(sx_request_hash)
-            if not self.ignore_cache
+            if not self.ignore_cache and self.cache
             else None
         )
 
@@ -321,12 +327,17 @@ class Query:
 
         if not cached_record:
 
-            if self.cache.is_transform_request_submitted(sx_request_hash):
+            if self.cache and self.cache.is_transform_request_submitted(
+                sx_request_hash
+            ):
                 self.request_id = self.cache.get_transform_request_id(sx_request_hash)
             else:
                 self.request_id = await self.servicex.submit_transform(sx_request)
-                self.cache.update_transform_request_id(sx_request_hash, self.request_id)
-                self.cache.update_transform_status(sx_request_hash, "SUBMITTED")
+                if self.cache:
+                    self.cache.update_transform_request_id(
+                        sx_request_hash, self.request_id
+                    )
+                    self.cache.update_transform_status(sx_request_hash, "SUBMITTED")
 
             monitor_task = loop.create_task(
                 self.transform_status_listener(
@@ -365,7 +376,7 @@ class Query:
                     cached_record.file_list = download_result
 
             # Update the cache (if no failed files)
-            if not cached_record:
+            if not cached_record and self.cache and self.current_status:
                 transform_report = self.cache.transformed_results(
                     sx_request,
                     self.current_status,
@@ -377,7 +388,12 @@ class Query:
                     self.cache.update_transform_status(sx_request_hash, "COMPLETE")
                     self.cache.cache_transform(transform_report)
             else:
-                if self.current_status.files_failed == 0:
+                if (
+                    cached_record
+                    and self.current_status
+                    and self.current_status.files_failed == 0
+                    and self.cache
+                ):
                     self.cache.update_record(cached_record)
                 transform_report = cached_record
 
@@ -386,6 +402,7 @@ class Query:
             logger.warning("Aborted file downloads due to transform failure")
 
         _ = await monitor_task  # raise exception, if it is there
+        return None  # If we get here, no files were downloaded due to cancellation
 
     async def transform_status_listener(
         self,
@@ -506,7 +523,8 @@ class Query:
         # Update the display and set our download directory.
         if not self.current_status:
             logger.info(f"ServiceX Transform {s.title}: {s.request_id}")
-            self.download_path = self.cache.cache_path_for_transform(s)
+            if self.cache:
+                self.download_path = self.cache.cache_path_for_transform(s)
 
         self.current_status = s
 

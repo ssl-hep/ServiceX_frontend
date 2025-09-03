@@ -29,6 +29,7 @@ import json
 import os
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
 
@@ -43,9 +44,10 @@ class CacheException(Exception):
 class QueryCache:
     def __init__(self, config: Configuration):
         self.config = config
-        Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
-        self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
-        self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
+        cache_path = config.cache_path or "/tmp/servicex_cache"
+        Path(cache_path).mkdir(parents=True, exist_ok=True)
+        self.db = TinyDB(os.path.join(cache_path, "db.json"))
+        self.lock = FileLock(os.path.join(cache_path, "db.lock"))
 
     def close(self):
         self.db.close()
@@ -60,10 +62,10 @@ class QueryCache:
     ) -> TransformedResults:
         return TransformedResults(
             hash=transform.compute_hash(),
-            title=transform.title,
+            title=transform.title or "Untitled",
             codegen=transform.codegen,
             request_id=completed_status.request_id,
-            submit_time=completed_status.submit_time,
+            submit_time=completed_status.submit_time or datetime.now(),
             data_dir=data_dir,
             file_list=file_list,
             signed_url_list=signed_urls,
@@ -186,7 +188,7 @@ class QueryCache:
             return TransformedResults(**records[0])
 
     def cache_path_for_transform(self, transform_status: TransformStatus) -> Path:
-        base = Path(self.config.cache_path)
+        base = Path(self.config.cache_path or "/tmp/servicex_cache")
         result = Path(os.path.join(base, transform_status.request_id))
         result.mkdir(parents=True, exist_ok=True)
         return result

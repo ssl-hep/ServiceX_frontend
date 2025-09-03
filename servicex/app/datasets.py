@@ -116,7 +116,7 @@ def get(
 
     dataset = sx.get_dataset(dataset_id)
 
-    if table:
+    if table and dataset.files:
         for file in dataset.files:
             sub_table = Table(title="")
             sub_table.add_column(f"File ID: {file.id}")
@@ -134,7 +134,7 @@ def get(
                 "name": dataset.name,
                 "files": [
                     {"id": file.id, "paths": file.paths.split(",")}
-                    for file in dataset.files
+                    for file in (dataset.files or [])
                 ],
             }
         }

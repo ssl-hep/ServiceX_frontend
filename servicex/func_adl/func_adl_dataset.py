@@ -88,8 +88,8 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
 
         clone = self.clone_with_new_ast(copy.deepcopy(self.query_ast), self._item_type)
         c = find_EventDataset(clone.query_ast)
-        c.args.append(ast.Str(s="bogus.root"))
-        c.args.append(ast.Str(s=tree_name))
+        c.args.append(ast.Constant(value="bogus.root"))
+        c.args.append(ast.Constant(value=tree_name))
         return clone
 
     def generate_qastle(self, a: ast.AST) -> str:

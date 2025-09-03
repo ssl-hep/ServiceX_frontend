@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Dict, Union
 
 from rich.progress import (
     Progress,
@@ -96,7 +96,8 @@ class ExpandableProgress:
         self.overall_progress = overall_progress
         self.overall_progress_transform_task = None
         self.overall_progress_download_task = None
-        self.progress_counts = {}
+        self.progress_counts: Dict[str, int] = {}
+        self.progress: Optional[Union[Progress, "TranformStatusProgress"]] = None
         if display_progress:
             if self.overall_progress or not provided_progress:
                 self.progress = TranformStatusProgress(*DEFAULT_STYLE)

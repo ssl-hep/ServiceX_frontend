@@ -32,7 +32,7 @@ from rich.progress import Progress
 from servicex.query_core import Query
 from servicex.expandable_progress import ExpandableProgress
 from servicex.models import TransformedResults, ResultFormat
-from make_it_sync import make_sync
+from make_it_sync import make_sync  # type: ignore
 
 
 DatasetGroupMember = Query
@@ -47,7 +47,7 @@ class DatasetGroup:
 
         :param datasets: List of transform request as dataset instances
         """
-        self.tasks = []
+        self.tasks: List = []
         self.datasets = datasets
 
     def set_result_format(self, result_format: ResultFormat):

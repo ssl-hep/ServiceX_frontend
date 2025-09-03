@@ -51,7 +51,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import types
-from typing import Union, Any, Protocol
+from typing import Union, Any, Protocol, Dict, List, Callable, Type
 from pathlib import Path
 import os
 
@@ -67,7 +67,9 @@ class TextFileLike(Protocol):
 
 
 class CompositingComposer(ruamel.yaml.composer.Composer):
-    compositors = {k: {} for k in (ScalarNode, MappingNode, SequenceNode)}
+    compositors: Dict[Type[ruamel.yaml.Node], Dict[str, Callable]] = {
+        k: {} for k in (ScalarNode, MappingNode, SequenceNode)
+    }
 
     @classmethod
     def add_compositor(cls, tag, compositor, *, nodeTypes=(ScalarNode,)):
@@ -101,7 +103,9 @@ class CompositingComposer(ruamel.yaml.composer.Composer):
 
 
 class ExcludingConstructor(ruamel.yaml.constructor.Constructor):
-    filters = {k: [] for k in (MappingNode, SequenceNode)}
+    filters: Dict[Type[ruamel.yaml.Node], List[Callable]] = {
+        k: [] for k in (MappingNode, SequenceNode)
+    }
 
     @classmethod
     def add_filter(cls, filter, *, nodeTypes=(MappingNode,)):
