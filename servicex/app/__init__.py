@@ -34,7 +34,7 @@ def is_terminal_output() -> bool:
     return sys.stdout.isatty()
 
 
-def pipeable_table(title: str) -> "rich.table.Table":
+def pipeable_table(title: str) -> rich.table.Table:
     """
     Create a table that can be used in a pipeable command. Make it pretty if we
     are outputting to a terminal, otherwise just make it as simple as possible.
