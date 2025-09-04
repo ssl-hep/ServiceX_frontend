@@ -58,7 +58,7 @@ def list(
     config_path: Optional[str] = config_file_option,
     did_finder: Optional[str] = did_finder_opt,
     show_deleted: Optional[bool] = show_deleted_opt,
-):
+) -> None:
     """
     List the datasets. Use fancy formatting if printing to a terminal.
     Output as plain text if redirected.
@@ -102,7 +102,7 @@ def get(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     dataset_id: int = dataset_id_get_arg,
-):
+) -> None:
     """
     Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
     Output as json if redirected.
@@ -146,7 +146,7 @@ def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     dataset_id: int = dataset_id_delete_arg,
-):
+) -> None:
     sx = ServiceXClient(backend=backend, config_path=config_path)
     result = sx.delete_dataset(dataset_id)
     if result:

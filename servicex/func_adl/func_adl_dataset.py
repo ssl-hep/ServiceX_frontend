@@ -51,14 +51,14 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
 
     # These are methods that are translated locally
     _execute_locally = ["ResultPandasDF", "ResultAwkwardArray"]
-    default_codegen = None
+    default_codegen: Optional[str] = None
 
     async def execute_result_async(
         self, a: ast.AST, title: Optional[str] = None
     ) -> Any:
         "Required override of EventDataset"
 
-    def check_data_format_request(self, f_name: str):
+    def check_data_format_request(self, f_name: str) -> None:
         "Required override of EventDataset"
 
     def __init__(
@@ -66,9 +66,9 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         item_type: Type = Any,
     ):
         EventDataset.__init__(self, item_type=item_type)
-        self.provided_qastle = None
+        self.provided_qastle: Optional[str] = None
 
-    def set_provided_qastle(self, qastle: str):
+    def set_provided_qastle(self, qastle: str) -> None:
         self.provided_qastle = qastle
 
     def generate_selection_string(self) -> str:
@@ -107,7 +107,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         """
         return python_ast_to_text_ast(a)
 
-    def as_qastle(self):
+    def as_qastle(self) -> str:
         r"""
         Generate Qastle from this AST
 
@@ -119,7 +119,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
 
 class FuncADLQuery_Uproot(FuncADLQuery):
     yaml_tag = "!FuncADL_Uproot"
-    default_codegen = "uproot"
+    default_codegen: Optional[str] = "uproot"
 
     def __init__(
         self,
@@ -128,11 +128,11 @@ class FuncADLQuery_Uproot(FuncADLQuery):
         super().__init__(item_type)
         self.tree_is_set = False
 
-    def FromTree(self, tree_name):
+    def FromTree(self, tree_name: str) -> "FuncADLQuery_Uproot":
         self.tree_is_set = True
         return self.set_tree(tree_name=tree_name)
 
-    def generate_selection_string(self):
+    def generate_selection_string(self) -> str:
         if not self.tree_is_set:
             raise ValueError(
                 "Uproot FuncADL query requires "
@@ -140,14 +140,14 @@ class FuncADLQuery_Uproot(FuncADLQuery):
             )
         return super().generate_selection_string()
 
-    def set_provided_qastle(self, qastle_query: str):
+    def set_provided_qastle(self, qastle_query: str) -> None:
         # we do not validate provided qastle, so we don't know if a tree name is specified.
         # assume user knows what they're doing
         self.tree_is_set = True
         super().set_provided_qastle(qastle_query)
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "FuncADLQuery_Uproot":
         import qastle
         import re
 
@@ -175,19 +175,19 @@ class FuncADLQuery_Uproot(FuncADLQuery):
 
 class FuncADLQuery_ATLASr21(FuncADLQuery):
     yaml_tag = "!FuncADL_ATLASr21"
-    default_codegen = "atlasr21"
+    default_codegen: Optional[str] = "atlasr21"
 
 
 class FuncADLQuery_ATLASr22(FuncADLQuery):
     yaml_tag = "!FuncADL_ATLASr22"
-    default_codegen = "atlasr22"
+    default_codegen: Optional[str] = "atlasr22"
 
 
 class FuncADLQuery_ATLASxAOD(FuncADLQuery):
     yaml_tag = "!FuncADL_ATLASxAOD"
-    default_codegen = "atlasxaod"
+    default_codegen: Optional[str] = "atlasxaod"
 
 
 class FuncADLQuery_CMS(FuncADLQuery):
     yaml_tag = "!FuncADL_CMS"
-    default_codegen = "cms"
+    default_codegen: Optional[str] = "cms"

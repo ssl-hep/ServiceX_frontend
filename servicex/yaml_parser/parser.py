@@ -72,15 +72,21 @@ class CompositingComposer(ruamel.yaml.composer.Composer):
     }
 
     @classmethod
-    def add_compositor(cls, tag, compositor, *, nodeTypes=(ScalarNode,)):
+    def add_compositor(
+        cls, tag: str, compositor: Callable, *, nodeTypes: tuple = (ScalarNode,)
+    ) -> None:
         for nodeType in nodeTypes:
             cls.compositors[nodeType][tag] = compositor
 
     @classmethod
-    def get_compositor(cls, tag, nodeType):
+    def get_compositor(
+        cls, tag: str, nodeType: Type[ruamel.yaml.Node]
+    ) -> Union[Callable, None]:
         return cls.compositors[nodeType].get(tag, None)
 
-    def __compose_dispatch(self, anchor, nodeType, callback):
+    def __compose_dispatch(
+        self, anchor: str, nodeType: Type[ruamel.yaml.Node], callback: Callable
+    ) -> Any:
         event = self.parser.peek_event()
         compositor = self.get_compositor(event.tag, nodeType) or callback
         if isinstance(compositor, types.MethodType):
@@ -88,16 +94,16 @@ class CompositingComposer(ruamel.yaml.composer.Composer):
         else:
             return compositor(self, anchor)
 
-    def compose_scalar_node(self, anchor):
+    def compose_scalar_node(self, anchor: str) -> ScalarNode:
         return self.__compose_dispatch(anchor, ScalarNode, super().compose_scalar_node)
 
-    def compose_sequence_node(self, anchor):
-        return self.__compose_dispatch(
+    def compose_sequence_node(self, anchor: str) -> SequenceNode:
+        return self.__compose_dispatch(  # type: ignore
             anchor, SequenceNode, super().compose_sequence_node
         )
 
-    def compose_mapping_node(self, anchor):
-        return self.__compose_dispatch(
+    def compose_mapping_node(self, anchor: str) -> MappingNode:
+        return self.__compose_dispatch(  # type: ignore
             anchor, MappingNode, super().compose_mapping_node
         )
 
@@ -108,11 +114,11 @@ class ExcludingConstructor(ruamel.yaml.constructor.Constructor):
     }
 
     @classmethod
-    def add_filter(cls, filter, *, nodeTypes=(MappingNode,)):
+    def add_filter(cls, filter: Callable, *, nodeTypes: tuple = (MappingNode,)) -> None:
         for nodeType in nodeTypes:
             cls.filters[nodeType].append(filter)
 
-    def construct_mapping(self, node):
+    def construct_mapping(self, node: MappingNode, deep: bool = True) -> Any:
         node.value = [
             (key_node, value_node)
             for key_node, value_node in node.value
@@ -120,7 +126,7 @@ class ExcludingConstructor(ruamel.yaml.constructor.Constructor):
         ]
         return super().construct_mapping(node)
 
-    def construct_sequence(self, node, deep=True):
+    def construct_sequence(self, node: SequenceNode, deep: bool = True) -> Any:
         node.value = [
             value_node
             for value_node in node.value
@@ -130,7 +136,7 @@ class ExcludingConstructor(ruamel.yaml.constructor.Constructor):
 
 
 class YAML(ruamel.yaml.YAML):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if "typ" not in kwargs:
             kwargs["typ"] = "safe"
         elif kwargs["typ"] not in ("safe", "unsafe") and kwargs["typ"] not in (
@@ -176,11 +182,11 @@ class YAML(ruamel.yaml.YAML):
             except AttributeError:  # pragma: no cover
                 pass
 
-    def fork(self):
+    def fork(self) -> "YAML":
         return type(self)(typ=self.typ, pure=self.pure)
 
 
-def include_compositor(self, anchor):
+def include_compositor(self: Any, anchor: str) -> Any:
     event = self.parser.get_event()
     yaml = self.loader.fork()
     path = os.path.join(os.path.dirname(self.loader.reader.name), event.value)
@@ -190,7 +196,9 @@ def include_compositor(self, anchor):
         return rv
 
 
-def exclude_filter(key_node, value_node=None):
+def exclude_filter(
+    key_node: ruamel.yaml.Node, value_node: Union[ruamel.yaml.Node, None] = None
+) -> bool:
     value_node = value_node or key_node  # copy ref if None
     return key_node.tag == "!exclude" or value_node.tag == "!exclude"
 

@@ -33,6 +33,7 @@ import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
 import logging
+from pathlib import Path
 from typing import List, Optional, Union
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
@@ -49,6 +50,7 @@ from servicex.models import (
     ResultFormat,
     Status,
     TransformedResults,
+    TransformStatus,
 )
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
@@ -110,14 +112,14 @@ class Query:
 
         self.result_format = result_format
         self.signed_urls = False
-        self.current_status = None
-        self.download_path = None
-        self.minio = None
-        self.files_failed = None
-        self.files_completed = None
+        self.current_status: Optional[TransformStatus] = None
+        self.download_path: Optional[Path] = None
+        self.minio: Optional[MinioAdapter] = None
+        self.files_failed: Optional[int] = None
+        self.files_completed: Optional[int] = None
         self._return_qastle = True
 
-        self.request_id = None
+        self.request_id: Optional[str] = None
         self.ignore_cache = ignore_cache
         self.fail_if_incomplete = fail_if_incomplete
         self.query_string_generator = query_string_generator
@@ -141,10 +143,10 @@ class Query:
         sx_request = TransformRequest(
             title=self.title,
             codegen=self.codegen,
-            result_destination=ResultDestination.object_store,  # type: ignore
-            result_format=self.result_format,  # type: ignore
+            result_destination=ResultDestination.object_store,
+            result_format=self.result_format,
             selection=self.generate_selection_string(),
-        )  # type: ignore
+        )
         # Transfer the DID into the transform request
         self.dataset_identifier.populate_transform_request(sx_request)
         return sx_request
@@ -192,7 +194,7 @@ class Query:
         download_files_task = None
         loop = asyncio.get_running_loop()
 
-        def transform_complete(task: Task):
+        def transform_complete(task: Task) -> None:
             """
             Called when the Monitor task completes. This could be because of exception or
             the transform completed
@@ -258,9 +260,10 @@ class Query:
                 else:
                     logger.info("Transforms completed successfully")
             else:  # pragma: no cover
-                logger.info(
-                    f"Transforms finished with code {self.current_status.status}"
+                status_code = (
+                    self.current_status.status if self.current_status else "unknown"
                 )
+                logger.info(f"Transforms finished with code {status_code}")
 
         sx_request = self.transform_request
         sx_request_hash = sx_request.compute_hash()
@@ -407,11 +410,11 @@ class Query:
     async def transform_status_listener(
         self,
         progress: ExpandableProgress,
-        progress_task: TaskID,
+        progress_task: Optional[TaskID],
         progress_bar_title: str,
-        download_task: TaskID,
+        download_task: Optional[TaskID],
         download_bar_title: str,
-    ):
+    ) -> None:
         """
         Poll ServiceX for the status of a transform. Update progress bars and keep track
         of status. Once we know the number of files in the dataset, update the progress
@@ -433,34 +436,39 @@ class Query:
 
             # Do we finally know the final number of files in the dataset? Now is the
             # time to properly initialize the progress bars
-            if not final_count and self.current_status.files:
+            if not final_count and self.current_status and self.current_status.files:
                 final_count = self.current_status.files
-                if progress:
+                if progress and progress_task is not None:
                     progress.update(
                         progress_task, progress_bar_title, total=final_count
                     )
                     progress.start_task(task_id=progress_task, task_type="Transform")
 
+                if progress and download_task is not None:
                     progress.update(
                         download_task, download_bar_title, total=final_count
                     )
                     progress.start_task(task_id=download_task, task_type="Download")
 
-            if progress:
+            if progress and self.current_status:
                 # update the transform progress bar to get the total number of files
-                progress.update(
-                    progress_task,
-                    progress_bar_title,
-                    total=self.current_status.files,
-                    completed=self.current_status.files_completed,
-                )
+                if progress_task is not None:
+                    progress.update(
+                        progress_task,
+                        progress_bar_title,
+                        total=self.current_status.files,
+                        completed=self.current_status.files_completed,
+                    )
 
                 # update the download progress bar to get the total number of files
-                progress.update(
-                    download_task, download_bar_title, total=self.current_status.files
-                )
+                if download_task is not None:
+                    progress.update(
+                        download_task,
+                        download_bar_title,
+                        total=self.current_status.files,
+                    )
 
-            if self.current_status.status in DONE_STATUS:
+            if self.current_status and self.current_status.status in DONE_STATUS:
                 self.files_completed = self.current_status.files_completed
                 self.files_failed = self.current_status.files_failed
                 titlestr = (
@@ -473,13 +481,14 @@ class Query:
                         bar = "failure"
                     else:
                         bar = "complete"
-                    progress.update(
-                        progress_task,
-                        progress_bar_title,
-                        self.current_status.files,
-                        completed=self.current_status.files_completed,
-                        bar=bar,
-                    )
+                    if progress_task is not None:
+                        progress.update(
+                            progress_task,
+                            progress_bar_title,
+                            self.current_status.files,
+                            completed=self.current_status.files_completed,
+                            bar=bar,
+                        )
                     return
                 elif self.current_status.status == Status.canceled:
                     logger.warning(
@@ -516,7 +525,11 @@ class Query:
 
             await asyncio.sleep(self.servicex_polling_interval)
 
-    async def retrieve_current_transform_status(self):
+    async def retrieve_current_transform_status(self) -> None:
+        if self.request_id is None:
+            raise RuntimeError(
+                "request_id must be set before retrieving transform status"
+            )
         s = await self.servicex.get_transform_status(self.request_id)
 
         # Is this the first time we've polled status? We now know the request ID.
@@ -538,7 +551,7 @@ class Query:
         self,
         signed_urls_only: bool,
         progress: ExpandableProgress,
-        download_progress: TaskID,
+        download_progress: Optional[TaskID],
         cached_record: Optional[TransformedResults],
     ) -> List[str]:
         """
@@ -546,7 +559,7 @@ class Query:
         will be downloaded.
         """
 
-        files_seen = set()
+        files_seen: set[str] = set()
         result_uris = []
         download_tasks = []
         loop = asyncio.get_running_loop()
@@ -555,28 +568,34 @@ class Query:
             minio: MinioAdapter,
             filename: str,
             progress: Progress,
-            download_progress: TaskID,
+            download_progress: Optional[TaskID],
             shorten_filename: bool = False,
             expected_size: Optional[int] = None,
-        ):
+        ) -> None:
+            if self.download_path is None:
+                # Fallback to current working directory if no download path is set
+                download_path = Path(".")
+            else:
+                download_path = self.download_path
             downloaded_filename = await minio.download_file(
                 filename,
-                self.download_path,
+                download_path,
                 shorten_filename=shorten_filename,
                 expected_size=expected_size,
             )
             result_uris.append(downloaded_filename.as_posix())
-            progress.advance(task_id=download_progress, task_type="Download")
+            if download_progress is not None:
+                progress.advance(task_id=download_progress, task_type="Download")
 
         async def get_signed_url(
             minio: MinioAdapter,
             filename: str,
             progress: Optional[Progress],
-            download_progress: TaskID,
-        ):
+            download_progress: Optional[TaskID],
+        ) -> None:
             url = await minio.get_signed_url(filename)
             result_uris.append(url)
-            if progress:
+            if progress and download_progress is not None:
                 progress.advance(task_id=download_progress, task_type="Download")
 
         later_than = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)

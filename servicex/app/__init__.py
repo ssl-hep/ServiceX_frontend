@@ -25,15 +25,16 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import rich
 
 
-def is_terminal_output():
+def is_terminal_output() -> bool:
     import sys
 
     return sys.stdout.isatty()
 
 
-def pipeable_table(title: str):
+def pipeable_table(title: str) -> "rich.table.Table":
     """
     Create a table that can be used in a pipeable command. Make it pretty if we
     are outputting to a terminal, otherwise just make it as simple as possible.

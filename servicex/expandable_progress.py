@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, Any
 
 from rich.progress import (
     Progress,
@@ -94,9 +94,9 @@ class ExpandableProgress:
         self.display_progress = display_progress
         self.provided_progress = provided_progress
         self.overall_progress = overall_progress
-        self.overall_progress_transform_task = None
-        self.overall_progress_download_task = None
-        self.progress_counts: Dict[str, int] = {}
+        self.overall_progress_transform_task: Optional[TaskID] = None
+        self.overall_progress_download_task: Optional[TaskID] = None
+        self.progress_counts: Dict[TaskID, ProgressCounts] = {}
         self.progress: Optional[Union[Progress, "TranformStatusProgress"]] = None
         if display_progress:
             if self.overall_progress or not provided_progress:
@@ -111,16 +111,16 @@ class ExpandableProgress:
         else:
             self.progress = None
 
-    def __enter__(self):
+    def __enter__(self) -> "ExpandableProgress":
         """
         Start the progress bar if it is not already started and the user wants one.
         :return:
         """
-        if self.display_progress and not self.provided_progress:
+        if self.display_progress and not self.provided_progress and self.progress:
             self.progress.start()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """
         Close the progress bar if it is not already closed and the user wanted one in
         the first place.
@@ -129,11 +129,11 @@ class ExpandableProgress:
         :param exc_tb:
         :return:
         """
-        if self.display_progress and not self.provided_progress:
+        if self.display_progress and not self.provided_progress and self.progress:
             self.progress.stop()
 
-    def add_task(self, param, start, total):
-        if self.display_progress and self.overall_progress:
+    def add_task(self, param: str, start: Any, total: Any) -> Optional[TaskID]:
+        if self.display_progress and self.overall_progress and self.progress:
             if (
                 not self.overall_progress_download_task
                 and not self.overall_progress_transform_task
@@ -156,87 +156,132 @@ class ExpandableProgress:
             )
             self.progress_counts[task_id] = new_task
             return task_id
-        if self.display_progress and not self.overall_progress:
+        if self.display_progress and not self.overall_progress and self.progress:
             return self.progress.add_task(param, start=start, total=total)
+        return None
 
-    def update(self, task_id, task_type, total=None, completed=None, **fields):
+    def update(
+        self,
+        task_id: Optional[TaskID],
+        task_type: str,
+        total: Optional[int] = None,
+        completed: Optional[int] = None,
+        **fields: Any,
+    ) -> None:
 
-        if self.display_progress and self.overall_progress:
+        if (
+            self.display_progress
+            and self.overall_progress
+            and task_id is not None
+            and self.progress
+        ):
             if task_type.endswith("Transform"):
                 task_type = "Transform"
             # Calculate and update
             overall_completed = 0
             overall_total = 0
-            if completed:
+            if completed is not None:
                 self.progress_counts[task_id].completed = completed
 
-            if total:
+            if total is not None:
                 self.progress_counts[task_id].total = total
 
             for task in self.progress_counts:
                 if (
                     self.progress_counts[task].description == task_type
-                    and self.progress_counts[task].completed
+                    and self.progress_counts[task].completed is not None
                 ):
-                    overall_completed += self.progress_counts[task].completed
+                    completed_value = self.progress_counts[task].completed
+                    if completed_value is not None:
+                        overall_completed += completed_value
 
             for task in self.progress_counts:
                 if (
                     self.progress_counts[task].description == task_type
-                    and self.progress_counts[task].total
+                    and self.progress_counts[task].total is not None
                 ):
-                    overall_total += self.progress_counts[task].total
+                    total_value = self.progress_counts[task].total
+                    if total_value is not None:
+                        overall_total += total_value
 
-            if task_type == "Transform":
-                return self.progress.update(
+            if (
+                task_type == "Transform"
+                and self.overall_progress_transform_task is not None
+            ):
+                self.progress.update(
                     self.overall_progress_transform_task,
                     completed=overall_completed,
                     total=overall_total,
                 )
-            else:
-                return self.progress.update(
+            elif self.overall_progress_download_task is not None:
+                self.progress.update(
                     self.overall_progress_download_task,
                     completed=overall_completed,
                     total=overall_total,
                 )
 
-        if self.display_progress and not self.overall_progress:
-            return self.progress.update(
-                task_id, completed=completed, total=total, **fields
-            )
+        if (
+            self.display_progress
+            and not self.overall_progress
+            and self.progress
+            and task_id is not None
+        ):
+            self.progress.update(task_id, completed=completed, total=total, **fields)
 
-    def start_task(self, task_id, task_type):
-        if self.display_progress and self.overall_progress:
-            if task_type.endswith("Transform"):
+    def start_task(self, task_id: Optional[TaskID], task_type: str) -> None:
+        if self.display_progress and self.overall_progress and self.progress:
+            if (
+                task_type.endswith("Transform")
+                and self.overall_progress_transform_task is not None
+            ):
                 self.progress.start_task(task_id=self.overall_progress_transform_task)
-            else:
+            elif self.overall_progress_download_task is not None:
                 self.progress.start_task(task_id=self.overall_progress_download_task)
-        elif self.display_progress and not self.overall_progress:
+        elif (
+            self.display_progress
+            and not self.overall_progress
+            and self.progress
+            and task_id is not None
+        ):
             self.progress.start_task(task_id=task_id)
 
-    def advance(self, task_id, task_type):
-        if self.display_progress and self.overall_progress:
-            if self.progress_counts[task_id].completed is not None:
-                self.progress_counts[task_id].completed += 1
+    def advance(self, task_id: Optional[TaskID], task_type: str) -> None:
+        if (
+            self.display_progress
+            and self.overall_progress
+            and task_id is not None
+            and self.progress
+        ):
+            current_completed = self.progress_counts[task_id].completed
+            if current_completed is not None:
+                self.progress_counts[task_id].completed = current_completed + 1
             else:
                 self.progress_counts[task_id].completed = 1
-            if task_type.endswith("Transform"):
+            if (
+                task_type.endswith("Transform")
+                and self.overall_progress_transform_task is not None
+            ):
                 self.progress.advance(task_id=self.overall_progress_transform_task)
-            else:
+            elif self.overall_progress_download_task is not None:
                 self.progress.advance(task_id=self.overall_progress_download_task)
-        elif self.display_progress and not self.overall_progress:
+        elif (
+            self.display_progress
+            and not self.overall_progress
+            and self.progress
+            and task_id is not None
+        ):
             self.progress.advance(task_id=task_id)
 
-    def refresh(self):
+    def refresh(self) -> None:
         if self.progress is not None:
             self.progress.refresh()
 
 
 class TranformStatusProgress(Progress):
-    def get_renderables(self):
+    def get_renderables(self) -> Any:
         for task in self.tasks:
             if task.fields.get("bar") == "failure":
-                self.columns = BROKEN_STYLE
+                self.columns = tuple(BROKEN_STYLE)
             else:
-                self.columns = DEFAULT_STYLE
+                self.columns = tuple(DEFAULT_STYLE)
             yield self.make_tasks_table([task])

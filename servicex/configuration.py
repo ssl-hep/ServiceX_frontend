@@ -55,7 +55,7 @@ class Configuration(BaseModel):
     config_file: Optional[str] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
-    def expand_cache_path(self):
+    def expand_cache_path(self) -> "Configuration":
         """
         Expand the cache path to a full path, and create it if it doesn't exist.
         Expand ${USER} to be the user name on the system. Works for windows, too.
@@ -91,7 +91,7 @@ class Configuration(BaseModel):
         return {endpoint.name: endpoint for endpoint in self.api_endpoints}
 
     @classmethod
-    def read(cls, config_path: Optional[str] = None):
+    def read(cls, config_path: Optional[str] = None) -> "Configuration":
         r"""
         Read configuration from .servicex or servicex.yaml file.
         :param config_path: If provided, use this as the path to the .servicex file.
@@ -118,7 +118,9 @@ class Configuration(BaseModel):
             )
 
     @classmethod
-    def _add_from_path(cls, path: Optional[Path] = None, walk_up_tree: bool = False):
+    def _add_from_path(
+        cls, path: Optional[Path] = None, walk_up_tree: bool = False
+    ) -> tuple[Optional[dict], Optional[Path]]:
         config = None
         found_file: Optional[Path] = None
         if path:

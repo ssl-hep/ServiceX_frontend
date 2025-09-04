@@ -28,7 +28,7 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
 from datetime import datetime
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
@@ -49,7 +49,7 @@ class QueryCache:
         self.db = TinyDB(os.path.join(cache_path, "db.json"))
         self.lock = FileLock(os.path.join(cache_path, "db.lock"))
 
-    def close(self):
+    def close(self) -> None:
         self.db.close()
 
     def transformed_results(
@@ -58,7 +58,7 @@ class QueryCache:
         completed_status: TransformStatus,
         data_dir: str,
         file_list: List[str],
-        signed_urls,
+        signed_urls: Any,
     ) -> TransformedResults:
         return TransformedResults(
             hash=transform.compute_hash(),
@@ -74,14 +74,14 @@ class QueryCache:
             log_url=completed_status.log_url,
         )
 
-    def cache_transform(self, record: TransformedResults):
+    def cache_transform(self, record: TransformedResults) -> None:
         transforms = Query()
         with self.lock:
             self.db.upsert(
                 json.loads(record.model_dump_json()), transforms.hash == record.hash
             )
 
-    def update_record(self, record: TransformedResults):
+    def update_record(self, record: TransformedResults) -> None:
         transforms = Query()
         with self.lock:
             self.db.update(
@@ -205,11 +205,11 @@ class QueryCache:
             ]
         return result
 
-    def delete_record_by_request_id(self, request_id: str):
+    def delete_record_by_request_id(self, request_id: str) -> None:
         with self.lock:
             self.db.remove(where("request_id") == request_id)
 
-    def delete_record_by_hash(self, hash: str):
+    def delete_record_by_hash(self, hash: str) -> None:
         transforms = Query()
         with self.lock:
             self.db.remove(transforms.hash == hash)

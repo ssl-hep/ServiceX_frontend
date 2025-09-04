@@ -33,7 +33,7 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Any, Type
 
 
-def _get_typename(typeish) -> str:
+def _get_typename(typeish: Any) -> str:
     return typeish.__name__ if isinstance(typeish, type) else str(typeish)
 
 
@@ -53,7 +53,7 @@ class DocStringBaseModel(BaseModel):
     """Class to autogenerate a docstring for a Pydantic model"""
 
     @classmethod
-    def __pydantic_init_subclass__(cls, **kwargs: Any):
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         super().__pydantic_init_subclass__(**kwargs)
         # There is currently no good way of knowing we are building within Sphinx.
         # Use a hacky workaround but monitor https://github.com/sphinx-doc/sphinx/issues/9805
@@ -113,7 +113,7 @@ class TransformRequest(DocStringBaseModel):
 
     model_config = {"populate_by_name": True, "use_attribute_docstrings": True}
 
-    def compute_hash(self):
+    def compute_hash(self) -> str:
         r"""
         Compute a hash for this submission. Only include properties that impact the result
         so we have maximal ability to reuse transforms
@@ -182,7 +182,7 @@ class TransformStatus(DocStringBaseModel):
 
     @field_validator("finish_time", mode="before")
     @classmethod
-    def parse_finish_time(cls, v):
+    def parse_finish_time(cls, v: Any) -> Any:
         if isinstance(v, str) and v == "None":
             return None
         return v

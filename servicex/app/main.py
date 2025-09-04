@@ -51,7 +51,7 @@ ignore_cache_opt = typer.Option(
 )
 
 
-def show_version(show: bool):
+def show_version(show: bool) -> None:
     """Display the installed version and quit."""
     if show:
         rich.print(f"ServiceX {__version__}")
@@ -62,7 +62,7 @@ version_opt = typer.Option(None, "--version", callback=show_version, is_eager=Tr
 
 
 @app.callback()
-def main_info(version: Optional[bool] = version_opt):
+def main_info(version: Optional[bool] = version_opt) -> None:
     """
     ServiceX Client
     """
@@ -75,7 +75,7 @@ def deliver(
     config_path: Optional[str] = config_file_option,
     spec_file: str = spec_file_arg,
     ignore_cache: Optional[bool] = ignore_cache_opt,
-):
+) -> None:
     """
     Deliver a file to the ServiceX cache.
     """

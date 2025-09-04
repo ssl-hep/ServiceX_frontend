@@ -28,7 +28,7 @@
 import os
 import time
 import datetime
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union
 from dataclasses import dataclass
 
 from httpx import AsyncClient, Response, Timeout
@@ -62,10 +62,10 @@ class ServiceXFile:
     total_bytes: int
 
 
-async def _extract_message(r: Response):
+async def _extract_message(r: Response) -> str:
     try:
         o = r.json()
-        error_message = o.get("message", str(r))
+        error_message = str(o.get("message", str(r)))
     except JSONDecodeError:
         error_message = r.text
     return error_message
@@ -78,13 +78,13 @@ class ServiceXAdapter:
     def __init__(self, url: str, refresh_token: Optional[str] = None):
         self.url = url
         self.refresh_token = refresh_token
-        self.token = None
+        self.token: Optional[str] = None
 
         # interact with _servicex_info via get_servicex_info
         self._servicex_info: Optional[ServiceXInfo] = None
         self._sample_title_limit: Optional[int] = None
 
-    async def _get_token(self):
+    async def _get_token(self) -> None:
         url = f"{self.url}/token/refresh"
         headers = {"Authorization": f"Bearer {self.refresh_token}"}
         async with AsyncClient() as client:
@@ -98,7 +98,7 @@ class ServiceXAdapter:
                 )
 
     @staticmethod
-    def _get_bearer_token_file():
+    def _get_bearer_token_file() -> Optional[str]:
         bearer_token_file = os.environ.get("BEARER_TOKEN_FILE")
         bearer_token = None
         if bearer_token_file:
@@ -107,14 +107,14 @@ class ServiceXAdapter:
         return bearer_token
 
     @staticmethod
-    def _get_token_expiration(token) -> int:
+    def _get_token_expiration(token: str) -> int:
         decoded_token = jwt.decode(token, verify=False)
         if "exp" not in decoded_token:
             raise RuntimeError(
                 "Authentication token does not have expiration set. "
                 f"Token data: {decoded_token}"
             )
-        return decoded_token["exp"]
+        return int(decoded_token["exp"])
 
     async def _get_authorization(self, force_reauth: bool = False) -> Dict[str, str]:
         now = time.time()
@@ -209,10 +209,12 @@ class ServiceXAdapter:
     get_code_generators = make_sync(get_code_generators_async)
 
     async def get_datasets(
-        self, did_finder=None, show_deleted=False
+        self, did_finder: Optional[str] = None, show_deleted: bool = False
     ) -> List[CachedDataset]:
         headers = await self._get_authorization()
-        params = {"did-finder": did_finder} if did_finder else {}
+        params: Dict[str, Union[str, bool]] = (
+            {"did-finder": did_finder} if did_finder else {}
+        )
         if show_deleted:
             params["show-deleted"] = True
 
@@ -233,7 +235,7 @@ class ServiceXAdapter:
             datasets = [CachedDataset(**d) for d in result["datasets"]]
             return datasets
 
-    async def get_dataset(self, dataset_id=None) -> CachedDataset:
+    async def get_dataset(self, dataset_id: Optional[str] = None) -> CachedDataset:
         headers = await self._get_authorization()
         path_template = "/servicex/datasets/{dataset_id}"
         url = self.url + path_template.format(dataset_id=dataset_id)
@@ -253,7 +255,7 @@ class ServiceXAdapter:
         dataset = CachedDataset(**result)
         return dataset
 
-    async def delete_dataset(self, dataset_id=None) -> bool:
+    async def delete_dataset(self, dataset_id: Optional[str] = None) -> bool:
         headers = await self._get_authorization()
         path_template = "/servicex/datasets/{dataset_id}"
         url = self.url + path_template.format(dataset_id=dataset_id)
@@ -270,9 +272,9 @@ class ServiceXAdapter:
                 msg = await _extract_message(r)
                 raise RuntimeError(f"Failed to delete dataset {dataset_id} - {msg}")
             result = r.json()
-            return result["stale"]
+            return bool(result["stale"])
 
-    async def delete_transform(self, transform_id=None):
+    async def delete_transform(self, transform_id: Optional[str] = None) -> None:
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}"
         url = self.url + path_template.format(transform_id=transform_id)
@@ -291,7 +293,7 @@ class ServiceXAdapter:
 
     async def get_transformation_results(
         self, request_id: str, later_than: Optional[datetime.datetime] = None
-    ):
+    ) -> List[ServiceXFile]:
         if (
             "poll_local_transformation_results"
             not in await self.get_servicex_capabilities()
@@ -335,7 +337,7 @@ class ServiceXAdapter:
                     response.append(_file)
             return response
 
-    async def cancel_transform(self, transform_id=None):
+    async def cancel_transform(self, transform_id: Optional[str] = None) -> None:
         headers = await self._get_authorization()
         path_template = f"/servicex/transformation/{transform_id}/cancel"
         url = self.url + path_template.format(transform_id=transform_id)
@@ -378,7 +380,7 @@ class ServiceXAdapter:
                 )
             else:
                 o = r.json()
-                return o["request_id"]
+                return str(o["request_id"])
 
     async def get_transform_status(self, request_id: str) -> TransformStatus:
         headers = await self._get_authorization()

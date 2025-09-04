@@ -30,7 +30,7 @@
 
 import pydantic
 from ..models import DocStringBaseModel
-from typing import List, Union, Mapping, Optional, get_args
+from typing import List, Union, Mapping, Optional, get_args, Any
 from ..query_core import QueryStringGenerator
 
 
@@ -79,7 +79,7 @@ class UprootRawQuery(QueryStringGenerator):
     query: Union[List[SubQuery], SubQuery]
     default_codegen: str = "uproot-raw"
 
-    def generate_selection_string(self):
+    def generate_selection_string(self) -> str:
         import json
 
         final_query: List[SubQuery]
@@ -92,7 +92,7 @@ class UprootRawQuery(QueryStringGenerator):
         return json.dumps([json.loads(_.model_dump_json()) for _ in final_query])
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "UprootRawQuery":
         code = node.value
         import json
 
