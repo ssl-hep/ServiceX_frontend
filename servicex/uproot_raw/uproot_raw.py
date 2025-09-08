@@ -88,6 +88,9 @@ class UprootRawQuery(QueryStringGenerator):
         ):  # from Python 3.10 we don't need "get_args"
             final_query = [self.query]
         else:
+            # self.query must be List[SubQuery] due to Union[List[SubQuery], SubQuery]
+            if not isinstance(self.query, list):
+                raise TypeError(f"Expected list or SubQuery, got {type(self.query)}")
             final_query = self.query
         return json.dumps([json.loads(_.model_dump_json()) for _ in final_query])
 

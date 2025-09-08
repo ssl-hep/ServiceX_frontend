@@ -47,7 +47,7 @@ from servicex.query_core import (
 from servicex.types import DID
 from servicex.dataset_group import DatasetGroup
 
-from make_it_sync import make_sync  # type: ignore
+from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
 from collections.abc import Sequence, Coroutine
 from enum import Enum
@@ -73,7 +73,7 @@ class ProgressBarFormat(str, Enum):
 class ReturnValueException(Exception):
     """An exception occurred at some point while obtaining this result from ServiceX"""
 
-    def __init__(self, exc):
+    def __init__(self, exc: Exception) -> None:
         import copy
 
         message = "Exception occurred while making ServiceX request.\n" + (
@@ -98,7 +98,7 @@ class GuardList(Sequence):
     def valid(self) -> bool:
         return not isinstance(self._data, Exception)
 
-    def __getitem__(self, index) -> Any:
+    def __getitem__(self, index: int) -> Any:
         if not self.valid():
             if isinstance(self._data, ReturnValueException):
                 raise self._data
@@ -116,7 +116,7 @@ class GuardList(Sequence):
                 return len(self._data)
         raise RuntimeError("Invalid state")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.valid():
             return repr(self._data)
         else:
@@ -171,8 +171,13 @@ def _load_ServiceXSpec(
     return config
 
 
-async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
-    def get_codegen(_sample: Sample, _general: General):
+async def _build_datasets(
+    config: ServiceXSpec,
+    config_path: Optional[str],
+    servicex_name: Optional[str],
+    fail_if_incomplete: bool,
+) -> List[Query]:
+    def get_codegen(_sample: Sample, _general: General) -> Optional[str]:
         if _sample.Codegen is not None:
             return _sample.Codegen
         elif _general.Codegen is not None:
@@ -181,6 +186,7 @@ async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete
             return _sample.Query.default_codegen
         elif isinstance(_sample.Query, Query):
             return _sample.Query.codegen
+        return None
 
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
     title_length_limit = await sx.servicex.get_servicex_sample_title_limit()
@@ -207,7 +213,7 @@ def _output_handler(
     config: ServiceXSpec,
     requests: List[Query],
     results: List[Union[TransformedResults, BaseException]],
-):
+) -> dict[str, GuardList]:
     matched_results = zip(requests, results)
     if config.General.Delivery == General.DeliveryEnum.URLs:
         out_dict = {
@@ -246,7 +252,7 @@ async def deliver_async(
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
     concurrency: int = 10,
-):
+) -> dict[str, GuardList]:
     r"""
     Execute a ServiceX query.
 
@@ -318,7 +324,12 @@ class ServiceXClient:
     Instances of this class are factories for `Datasets``
     """
 
-    def __init__(self, backend=None, url=None, config_path=None):
+    def __init__(
+        self,
+        backend: Optional[str] = None,
+        url: Optional[str] = None,
+        config_path: Optional[Path] = None,
+    ) -> None:
         r"""
         If both `backend` and `url` are unspecified then it will attempt to pick up
         the default backend from `.servicex`
@@ -370,7 +381,7 @@ class ServiceXClient:
 
     get_transforms = make_sync(get_transforms_async)
 
-    async def get_transform_status_async(self, transform_id) -> TransformStatus:
+    async def get_transform_status_async(self, transform_id: str) -> TransformStatus:
         r"""
         Get the status of a given transform
         :param transform_id: The uuid of the transform
@@ -380,7 +391,9 @@ class ServiceXClient:
 
     get_transform_status = make_sync(get_transform_status_async)
 
-    def get_datasets(self, did_finder=None, show_deleted=False) -> List[CachedDataset]:
+    def get_datasets(
+        self, did_finder: Optional[str] = None, show_deleted: bool = False
+    ) -> List[CachedDataset]:
         r"""
         Retrieve all datasets you have run on the server
         :return: List of Query objects
@@ -389,27 +402,27 @@ class ServiceXClient:
             self.servicex.get_datasets(did_finder, show_deleted)
         )
 
-    def get_dataset(self, dataset_id) -> CachedDataset:
+    def get_dataset(self, dataset_id: str) -> CachedDataset:
         r"""
         Retrieve a dataset by its ID
         :return: A Query object
         """
         return _async_execute_and_wait(self.servicex.get_dataset(dataset_id))
 
-    def delete_dataset(self, dataset_id) -> bool:
+    def delete_dataset(self, dataset_id: str) -> bool:
         r"""
         Delete a dataset by its ID
         :return: boolean showing whether the dataset has been deleted
         """
         return _async_execute_and_wait(self.servicex.delete_dataset(dataset_id))
 
-    def delete_transform(self, transform_id) -> None:
+    def delete_transform(self, transform_id: str) -> None:
         r"""
         Delete a Transform by its request ID
         """
         return _async_execute_and_wait(self.servicex.delete_transform(transform_id))
 
-    def cancel_transform(self, transform_id) -> None:
+    def cancel_transform(self, transform_id: str) -> None:
         r"""
         Cancel a Transform by its request ID
         """
@@ -481,7 +494,7 @@ class ServiceXClient:
         )
         return qobj
 
-    def delete_transform_from_cache(self, transform_id: str):
+    def delete_transform_from_cache(self, transform_id: str) -> bool:
         cache = self.query_cache
         rec = cache.get_transform_by_request_id(transform_id)
         if not rec:

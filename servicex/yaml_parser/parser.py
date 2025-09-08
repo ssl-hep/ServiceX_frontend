@@ -51,7 +51,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import types
-from typing import Union, Any, Protocol, Dict, List, Callable, Type
+from typing import Union, Any, Protocol, Dict, List, Callable, Type, cast
 from pathlib import Path
 import os
 
@@ -95,7 +95,12 @@ class CompositingComposer(ruamel.yaml.composer.Composer):
             return compositor(self, anchor)
 
     def compose_scalar_node(self, anchor: str) -> ScalarNode:
-        return self.__compose_dispatch(anchor, ScalarNode, super().compose_scalar_node)
+        result = self.__compose_dispatch(
+            anchor, ScalarNode, super().compose_scalar_node
+        )
+        # Note: __compose_dispatch may return different node types based on YAML content
+        # This is by design for the flexible YAML parsing system
+        return cast(ScalarNode, result)
 
     def compose_sequence_node(self, anchor: str) -> SequenceNode:
         return self.__compose_dispatch(  # type: ignore
