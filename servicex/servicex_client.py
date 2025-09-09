@@ -234,6 +234,18 @@ def _output_handler(
     return out_dict
 
 
+def _get_progress_options(progress_bar: ProgressBarFormat) -> dict:
+    """Get progress options based on progress bar format."""
+    if progress_bar == ProgressBarFormat.expanded:
+        return {}
+    elif progress_bar == ProgressBarFormat.compact:
+        return {"overall_progress": True}
+    elif progress_bar == ProgressBarFormat.none:
+        return {"display_progress": False}
+    else:
+        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+
+
 def _display_results(out_dict):
     """Display the delivery results using rich styling."""
     from rich import get_console
@@ -326,14 +338,7 @@ async def deliver_async(
 
     group = DatasetGroup(datasets)
 
-    if progress_bar == ProgressBarFormat.expanded:
-        progress_options = {}
-    elif progress_bar == ProgressBarFormat.compact:
-        progress_options = {"overall_progress": True}
-    elif progress_bar == ProgressBarFormat.none:
-        progress_options = {"display_progress": False}
-    else:
-        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+    progress_options = _get_progress_options(progress_bar)
 
     if config.General.Delivery not in [
         General.DeliveryEnum.URLs,
