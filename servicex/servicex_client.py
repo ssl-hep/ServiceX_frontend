@@ -52,7 +52,6 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 from collections.abc import Sequence, Coroutine
 from enum import Enum
 import traceback
-from rich.console import Console
 from rich.table import Table
 
 T = TypeVar("T")
@@ -237,7 +236,9 @@ def _output_handler(
 
 def _display_results(out_dict):
     """Display the delivery results using rich styling."""
-    console = Console()
+    from rich import get_console
+
+    console = get_console()
 
     console.print("\n[bold green]✓ ServiceX Delivery Complete![/bold green]\n")
 
