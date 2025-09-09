@@ -166,9 +166,11 @@ class MinioAdapter:
     )
     async def get_signed_url(self, object_name: str) -> str:
         async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
-            return await s3.generate_presigned_url(
+            # Type bridge: Convert Any from boto3 to str
+            result = await s3.generate_presigned_url(
                 "get_object", Params={"Bucket": self.bucket, "Key": object_name}
             )
+            return str(result)
 
     @classmethod
     def hash_path(cls, file_name: str) -> str:

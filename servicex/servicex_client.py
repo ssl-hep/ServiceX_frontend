@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import logging
 import shutil
-from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
+from typing import Optional, List, TypeVar, Any, Mapping, Union, cast, overload
 from pathlib import Path
 
 from servicex.configuration import Configuration
@@ -36,6 +36,7 @@ from servicex.models import (
     TransformStatus,
     TransformedResults,
     CachedDataset,
+    is_transform_success,
 )
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
@@ -98,13 +99,22 @@ class GuardList(Sequence):
     def valid(self) -> bool:
         return not isinstance(self._data, Exception)
 
-    def __getitem__(self, index: int) -> Any:
+    @overload
+    def __getitem__(self, index: int) -> Any: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> "GuardList": ...
+
+    def __getitem__(self, index: Union[int, slice]) -> Any:
         if not self.valid():
             if isinstance(self._data, ReturnValueException):
                 raise self._data
         else:
             if isinstance(self._data, Sequence):
-                return self._data[index]
+                if isinstance(index, slice):
+                    return GuardList(self._data[index])
+                else:
+                    return self._data[index]
         raise RuntimeError("Invalid state")
 
     def __len__(self) -> int:
@@ -152,7 +162,7 @@ def _load_ServiceXSpec(
         yaml = YAML()
 
         if sys.version_info < (3, 10):
-            from importlib_metadata import entry_points
+            from importlib_metadata import entry_points  # type: ignore[import-not-found]
         else:
             from importlib.metadata import entry_points
 
@@ -184,8 +194,6 @@ async def _build_datasets(
             return _general.Codegen
         elif isinstance(_sample.Query, QueryStringGenerator):
             return _sample.Query.default_codegen
-        elif isinstance(_sample.Query, Query):
-            return _sample.Query.codegen
         return None
 
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
@@ -199,7 +207,7 @@ async def _build_datasets(
             codegen=get_codegen(sample, config.General),
             result_format=config.General.OutputFormat.to_ResultFormat(),
             ignore_cache=sample.IgnoreLocalCache,
-            query=sample.Query,
+            query=sample.Query or "",
             fail_if_incomplete=fail_if_incomplete,
         )
         logger.debug(f"Query string: {query.generate_selection_string()}")
@@ -216,19 +224,21 @@ def _output_handler(
 ) -> dict[str, GuardList]:
     matched_results = zip(requests, results)
     if config.General.Delivery == General.DeliveryEnum.URLs:
-        out_dict = {
-            obj[0].title: GuardList(
-                obj[1].signed_url_list if not isinstance(obj[1], Exception) else obj[1]
-            )
-            for obj in matched_results
-        }
+        out_dict = {}
+        for obj in matched_results:
+            if is_transform_success(obj[1]):
+                # Type guard confirms obj[1] is TransformedResults
+                out_dict[obj[0].title] = GuardList(obj[1].signed_url_list)
+            else:
+                out_dict[obj[0].title] = GuardList(cast(Exception, obj[1]))
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        out_dict = {
-            obj[0].title: GuardList(
-                obj[1].file_list if not isinstance(obj[1], Exception) else obj[1]
-            )
-            for obj in matched_results
-        }
+        out_dict = {}
+        for obj in matched_results:
+            if is_transform_success(obj[1]):
+                # Type guard confirms obj[1] is TransformedResults
+                out_dict[obj[0].title] = GuardList(obj[1].file_list)
+            else:
+                out_dict[obj[0].title] = GuardList(cast(Exception, obj[1]))
 
     if config.General.OutputDirectory:
         import yaml as yl
@@ -303,13 +313,17 @@ async def deliver_async(
 
     if config.General.Delivery == General.DeliveryEnum.URLs:
         results = await group.as_signed_urls_async(
-            return_exceptions=return_exceptions, **progress_options
+            return_exceptions=return_exceptions,
+            display_progress=progress_options.get("display_progress", True),
+            overall_progress=progress_options.get("overall_progress", False),
         )
         return _output_handler(config, datasets, results)
 
     elif config.General.Delivery == General.DeliveryEnum.LocalCache:
         results = await group.as_files_async(
-            return_exceptions=return_exceptions, **progress_options
+            return_exceptions=return_exceptions,
+            display_progress=progress_options.get("display_progress", True),
+            overall_progress=progress_options.get("overall_progress", False),
         )
         return _output_handler(config, datasets, results)
 
@@ -328,7 +342,7 @@ class ServiceXClient:
         self,
         backend: Optional[str] = None,
         url: Optional[str] = None,
-        config_path: Optional[Path] = None,
+        config_path: Optional[Union[str, Path]] = None,
     ) -> None:
         r"""
         If both `backend` and `url` are unspecified then it will attempt to pick up
@@ -341,7 +355,9 @@ class ServiceXClient:
         :param config_path: Optional path to the `.servicex` file. If not specified,
                     will search in local directory and up in enclosing directories
         """
-        self.config = Configuration.read(config_path)
+        # Convert Path to str if needed for Configuration.read()
+        config_path_str = str(config_path) if config_path is not None else None
+        self.config = Configuration.read(config_path_str)
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:
@@ -398,8 +414,11 @@ class ServiceXClient:
         Retrieve all datasets you have run on the server
         :return: List of Query objects
         """
-        return _async_execute_and_wait(
-            self.servicex.get_datasets(did_finder, show_deleted)
+        return cast(
+            List[CachedDataset],
+            _async_execute_and_wait(
+                self.servicex.get_datasets(did_finder, show_deleted)
+            ),
         )
 
     def get_dataset(self, dataset_id: str) -> CachedDataset:
@@ -407,33 +426,40 @@ class ServiceXClient:
         Retrieve a dataset by its ID
         :return: A Query object
         """
-        return _async_execute_and_wait(self.servicex.get_dataset(dataset_id))
+        return cast(
+            CachedDataset,
+            _async_execute_and_wait(self.servicex.get_dataset(dataset_id)),
+        )
 
     def delete_dataset(self, dataset_id: str) -> bool:
         r"""
         Delete a dataset by its ID
         :return: boolean showing whether the dataset has been deleted
         """
-        return _async_execute_and_wait(self.servicex.delete_dataset(dataset_id))
+        return cast(
+            bool, _async_execute_and_wait(self.servicex.delete_dataset(dataset_id))
+        )
 
     def delete_transform(self, transform_id: str) -> None:
         r"""
         Delete a Transform by its request ID
         """
-        return _async_execute_and_wait(self.servicex.delete_transform(transform_id))
+        # Type bridge: async wrapper returns Any, but we know this returns None
+        _async_execute_and_wait(self.servicex.delete_transform(transform_id))
 
     def cancel_transform(self, transform_id: str) -> None:
         r"""
         Cancel a Transform by its request ID
         """
-        return _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
+        # Type bridge: async wrapper returns Any, but we know this returns None
+        _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
 
     def get_code_generators(self) -> dict[str, str]:
         r"""
         Retrieve the code generators deployed with the serviceX instance
         :return:  The list of code generators as json dictionary
         """
-        return self.servicex.get_code_generators()
+        return cast(dict[str, str], self.servicex.get_code_generators())
 
     def generic_query(
         self,

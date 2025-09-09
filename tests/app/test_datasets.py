@@ -113,7 +113,7 @@ def test_dataset_get(script_runner, dataset):
             ["servicex", "datasets", "get", "42", "-c", "tests/example_config.yaml"]
         )
         assert result.returncode == 0
-        mock_get_dataset.assert_called_once_with(42)
+        mock_get_dataset.assert_called_once_with("42")
 
         # The output is a json document
         result_doc = json.loads(result.stdout)
@@ -131,7 +131,7 @@ def test_dataset_delete(script_runner):
         )
         assert result.returncode == 0
         assert result.stdout == "Dataset 42 deleted\n"
-        mock_delete_dataset.assert_called_once_with(42)
+        mock_delete_dataset.assert_called_once_with("42")
 
         mock_delete_dataset_not_found = MagicMock(return_value=False)
         mock_servicex.return_value.delete_dataset = mock_delete_dataset_not_found
@@ -139,5 +139,5 @@ def test_dataset_delete(script_runner):
             ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
         )
         assert result.returncode == 1
-        mock_delete_dataset.assert_called_once_with(42)
+        mock_delete_dataset.assert_called_once_with("42")
         assert result.stdout == "Dataset 42 not found\n"

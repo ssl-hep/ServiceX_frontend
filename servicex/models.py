@@ -26,11 +26,17 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import hashlib
+import sys
 from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Any, Type
+from typing import List, Optional, Any, Type, Union
+
+if sys.version_info >= (3, 10):
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
 
 
 def _get_typename(typeish: Any) -> str:
@@ -230,6 +236,25 @@ class TransformedResults(DocStringBaseModel):
     """File format for results"""
     log_url: Optional[str] = None
     """URL for looking up logs on the ServiceX server"""
+
+
+def is_transform_success(
+    result: Union[TransformedResults, BaseException],
+) -> TypeGuard[TransformedResults]:
+    """
+    Type guard to distinguish successful TransformedResults from exceptions.
+
+    This is needed because asyncio.gather(..., return_exceptions=True) returns
+    Union[TransformedResults, BaseException], but we want to safely access
+    TransformedResults attributes without MyPy union-attr errors.
+
+    Args:
+        result: Either a TransformedResults object or an exception
+
+    Returns:
+        True if result is TransformedResults, False if it's an exception
+    """
+    return not isinstance(result, BaseException)
 
 
 class ServiceXInfo(DocStringBaseModel):

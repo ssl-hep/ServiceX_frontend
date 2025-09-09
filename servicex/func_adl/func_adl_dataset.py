@@ -34,6 +34,7 @@ from typing import (
     Any,
     Type,
     TypeVar,
+    cast,
 )
 from qastle import python_ast_to_text_ast
 
@@ -90,7 +91,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         c = find_EventDataset(clone.query_ast)
         c.args.append(ast.Constant(value="bogus.root"))
         c.args.append(ast.Constant(value=tree_name))
-        return clone
+        return cast(FuncADLQuery[T], clone)
 
     def generate_qastle(self, a: ast.AST) -> str:
         r"""Generate the qastle from the ast of the query.
@@ -105,7 +106,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         Returns:
             str: Qastle that should be sent to servicex
         """
-        return python_ast_to_text_ast(a)
+        return cast(str, python_ast_to_text_ast(a))
 
     def as_qastle(self) -> str:
         r"""
@@ -114,7 +115,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         :returns:
             Qastle representation of the target's AST
         """
-        return self.value()
+        return cast(str, self.value())
 
 
 class FuncADLQuery_Uproot(FuncADLQuery):

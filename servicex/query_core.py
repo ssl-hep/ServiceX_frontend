@@ -34,7 +34,7 @@ from abc import ABC
 from asyncio import Task, CancelledError
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
 
@@ -51,9 +51,10 @@ from servicex.models import (
     Status,
     TransformedResults,
     TransformStatus,
+    ResultFile,
 )
 from servicex.query_cache import QueryCache
-from servicex.servicex_adapter import ServiceXAdapter
+from servicex.servicex_adapter import ServiceXAdapter, ServiceXFile
 
 from make_it_sync import make_sync
 
@@ -170,7 +171,7 @@ class Query:
         signed_urls_only: bool,
         expandable_progress: ExpandableProgress,
         dataset_group: Optional[bool] = False,
-    ) -> Optional[TransformedResults]:
+    ) -> TransformedResults:
         """
         Submit the transform request to ServiceX. Poll the transform status to see when
         the transform completes and to get the number of files in the dataset along with
@@ -209,11 +210,11 @@ class Query:
                 )
                 if self.fail_if_incomplete and self.cache and self.request_id:
                     self.cache.delete_record_by_request_id(self.request_id)
-                    if download_files_task:
-                        download_files_task.cancel("Transform failed")
+                if download_files_task:
+                    download_files_task.cancel("Transform failed")  # type: ignore[unreachable]
                 exc = task.exception()
-                if exc:
-                    raise exc
+                assert exc is not None  # We know this from the outer if condition
+                raise exc
 
             if self.current_status and self.current_status.status in DONE_STATUS:
                 if self.current_status.files_failed:
@@ -253,7 +254,9 @@ class Query:
                             f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
                         )
                     if self.fail_if_incomplete:
-                        self.cache.delete_record_by_request_id(self.request_id)
+                        # Add None guards for Optional attributes
+                        if self.cache and self.request_id:
+                            self.cache.delete_record_by_request_id(self.request_id)
                         raise ServiceXException(errorstr)
                     else:
                         logger.error("Will continue to download what is available")
@@ -379,7 +382,12 @@ class Query:
                     cached_record.file_list = download_result
 
             # Update the cache (if no failed files)
-            if not cached_record and self.cache and self.current_status:
+            if (
+                not cached_record
+                and self.cache
+                and self.current_status
+                and self.download_path
+            ):
                 transform_report = self.cache.transformed_results(
                     sx_request,
                     self.current_status,
@@ -398,14 +406,16 @@ class Query:
                     and self.cache
                 ):
                     self.cache.update_record(cached_record)
-                transform_report = cached_record
+                transform_report = cached_record  # type: ignore[assignment]
 
+            if transform_report is None:
+                raise RuntimeError("Transform failed to produce results")
             return transform_report
         except CancelledError:
             logger.warning("Aborted file downloads due to transform failure")
 
-        _ = await monitor_task  # raise exception, if it is there
-        return None  # If we get here, no files were downloaded due to cancellation
+        _ = await monitor_task  # type: ignore[func-returns-value]
+        raise RuntimeError("Transform was cancelled but no exception was raised")
 
     async def transform_status_listener(
         self,
@@ -567,7 +577,7 @@ class Query:
         async def download_file(
             minio: MinioAdapter,
             filename: str,
-            progress: Progress,
+            progress: ExpandableProgress,
             download_progress: Optional[TaskID],
             shorten_filename: bool = False,
             expected_size: Optional[int] = None,
@@ -579,7 +589,7 @@ class Query:
                 download_path = self.download_path
             downloaded_filename = await minio.download_file(
                 filename,
-                download_path,
+                str(download_path),
                 shorten_filename=shorten_filename,
                 expected_size=expected_size,
             )
@@ -590,7 +600,7 @@ class Query:
         async def get_signed_url(
             minio: MinioAdapter,
             filename: str,
-            progress: Optional[Progress],
+            progress: ExpandableProgress,
             download_progress: Optional[TaskID],
         ) -> None:
             url = await minio.get_signed_url(filename)
@@ -615,15 +625,21 @@ class Query:
         while True:
             if not cached_record:
                 await asyncio.sleep(self.minio_polling_interval)
-            if self.minio:
-                # if self.minio exists, self.current_status will too
+            if self.minio and self.current_status:
+                # Both minio and current_status exist
                 if self.current_status.files_completed > len(files_seen):
                     if use_local_polling:
-                        files = await self.servicex.get_transformation_results(
-                            self.current_status.request_id, later_than
+                        files = cast(
+                            List[Union[ServiceXFile, ResultFile]],
+                            await self.servicex.get_transformation_results(
+                                self.current_status.request_id, later_than
+                            ),
                         )
                     else:
-                        files = await self.minio.list_bucket()
+                        files = cast(
+                            List[Union[ServiceXFile, ResultFile]],
+                            await self.minio.list_bucket(),
+                        )
 
                     for file in files:
                         filename = file.filename
@@ -642,9 +658,13 @@ class Query:
                                 )
                             else:
                                 if use_local_polling:
-                                    expected_size = file.total_bytes
+                                    expected_size = getattr(
+                                        file, "total_bytes", getattr(file, "size", 0)
+                                    )
                                 else:
-                                    expected_size = file.size
+                                    expected_size = getattr(
+                                        file, "size", getattr(file, "total_bytes", 0)
+                                    )
                                 download_tasks.append(
                                     loop.create_task(
                                         download_file(
@@ -652,7 +672,10 @@ class Query:
                                             filename,
                                             progress,
                                             download_progress,
-                                            shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
+                                            shorten_filename=(
+                                                self.configuration.shortened_downloaded_filename
+                                            )
+                                            or False,  # NOQA: E501
                                             expected_size=expected_size,
                                         )
                                     )
@@ -660,7 +683,10 @@ class Query:
                             files_seen.add(filename)
 
                             if use_local_polling:
-                                if file.created_at > later_than:
+                                if (
+                                    hasattr(file, "created_at")
+                                    and file.created_at > later_than
+                                ):
                                     later_than = file.created_at
 
             # Once the transform is complete and all files are seen we can stop polling.
@@ -707,9 +733,16 @@ class Query:
         :return: TransformedResults object with the presigned_urls list populated
         """
         if dataset_group:
+            # Convert provided_progress to ExpandableProgress for dataset group mode
+            if isinstance(provided_progress, ExpandableProgress):
+                expandable_prog = provided_progress
+            else:
+                expandable_prog = ExpandableProgress(
+                    display_progress, provided_progress
+                )
             return await self.submit_and_download(
                 signed_urls_only=True,
-                expandable_progress=provided_progress,
+                expandable_progress=expandable_prog,
                 dataset_group=dataset_group,
             )
 

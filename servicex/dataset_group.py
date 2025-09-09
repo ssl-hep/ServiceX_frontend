@@ -26,13 +26,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 from rich.progress import Progress
 
 from servicex.query_core import Query
 from servicex.expandable_progress import ExpandableProgress
 from servicex.models import TransformedResults, ResultFormat
-from make_it_sync import make_sync  # type: ignore
+from make_it_sync import make_sync
 
 
 DatasetGroupMember = Query
@@ -50,7 +50,7 @@ class DatasetGroup:
         self.tasks: List = []
         self.datasets = datasets
 
-    def set_result_format(self, result_format: ResultFormat):
+    def set_result_format(self, result_format: ResultFormat) -> "DatasetGroup":
         r"""
         Set the result format for all the datasets in the group.
 
@@ -81,8 +81,9 @@ class DatasetGroup:
                 )
                 for d in self.datasets
             ]
-            return await asyncio.gather(
-                *self.tasks, return_exceptions=return_exceptions
+            return cast(
+                List[Union[TransformedResults, BaseException]],
+                await asyncio.gather(*self.tasks, return_exceptions=return_exceptions),
             )
 
     as_signed_urls = make_sync(as_signed_urls_async)
@@ -106,8 +107,9 @@ class DatasetGroup:
                 )
                 for d in self.datasets
             ]
-            return await asyncio.gather(
-                *self.tasks, return_exceptions=return_exceptions
+            return cast(
+                List[Union[TransformedResults, BaseException]],
+                await asyncio.gather(*self.tasks, return_exceptions=return_exceptions),
             )
 
     as_files = make_sync(as_files_async)

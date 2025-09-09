@@ -74,7 +74,9 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
+    datasets = sx.get_datasets(
+        did_finder=did_finder, show_deleted=show_deleted or False
+    )
 
     for d in datasets:
         # Format the CachedDataset object into a table row
@@ -114,7 +116,7 @@ def get(
     else:
         table = None
 
-    dataset = sx.get_dataset(dataset_id)
+    dataset = sx.get_dataset(str(dataset_id))
 
     if table and dataset.files:
         for file in dataset.files:
@@ -148,7 +150,7 @@ def delete(
     dataset_id: int = dataset_id_delete_arg,
 ) -> None:
     sx = ServiceXClient(backend=backend, config_path=config_path)
-    result = sx.delete_dataset(dataset_id)
+    result = sx.delete_dataset(str(dataset_id))
     if result:
         typer.echo(f"Dataset {dataset_id} deleted")
     else:

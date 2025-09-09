@@ -127,7 +127,9 @@ class QueryCache:
 
         if not records or "request_id" not in records[0]:
             raise CacheException("Request Id not found")
-        return records[0]["request_id"]
+        # Type bridge: Convert Any from TinyDB to Optional[str]
+        result = records[0]["request_id"]
+        return str(result) if result is not None else None
 
     def update_transform_status(self, hash_value: str, status: str) -> None:
         """
