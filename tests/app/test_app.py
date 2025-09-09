@@ -45,6 +45,10 @@ def test_deliver(script_runner):
         assert result.returncode == 0
         result_rows = result.stdout.split("\n")
         assert result_rows[0] == "Delivering foo.yaml to ServiceX cache"
-        assert (
-            result_rows[1] == "{'UprootRaw_YAML': ['/tmp/foo.root', '/tmp/bar.root']}"
+        mock_servicex_client.deliver.assert_called_once_with(
+            "foo.yaml",
+            servicex_name=None,
+            config_path=None,
+            ignore_local_cache=None,
+            display_results=True,
         )
