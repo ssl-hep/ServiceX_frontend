@@ -52,3 +52,24 @@ def test_deliver(script_runner):
             ignore_local_cache=None,
             display_results=True,
         )
+
+
+def test_deliver_hide_results(script_runner):
+    with patch("servicex.app.main.servicex_client") as mock_servicex_client:
+        mock_servicex_client.deliver = Mock(
+            return_value={"UprootRaw_YAML": ["/tmp/foo.root", "/tmp/bar.root"]}
+        )
+        result = script_runner.run(
+            ["servicex", "deliver", "foo.yaml", "--hide-results"]
+        )
+        assert result.returncode == 0
+        result_rows = result.stdout.split("\n")
+        assert result_rows[0] == "Delivering foo.yaml to ServiceX cache"
+        # Verify that servicex_client.deliver was called with display_results=False
+        mock_servicex_client.deliver.assert_called_once_with(
+            "foo.yaml",
+            servicex_name=None,
+            config_path=None,
+            ignore_local_cache=None,
+            display_results=False,
+        )
