@@ -80,7 +80,7 @@ def test_datasets_list(script_runner, dataset):
         assert result_row[0].strip() == "42"
         assert result_row[1] == "test_dataset"
         assert result_row[2] == "2"
-        assert result_row[3] == "0MB"
+        assert result_row[3] == "0.00 MB"
         assert result_row[4] == "completed"
 
         mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)
@@ -102,6 +102,28 @@ def test_datasets_list(script_runner, dataset):
         mock_get_datasets.assert_called_once_with(
             did_finder="some_finder", show_deleted=True
         )
+
+
+@pytest.mark.parametrize(
+    "size,expected",
+    [
+        (int(5e7), "50.00 MB"),
+        (int(1.5e9), "1.50 GB"),
+        (int(2.5e12), "2.50 TB"),
+    ],
+)
+def test_datasets_list_size_units(script_runner, dataset, size, expected):
+    dataset.size = size
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
+        mock_get_datasets = MagicMock(return_value=[dataset])
+        mock_servicex.return_value.get_datasets = mock_get_datasets
+
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "-c", "tests/example_config.yaml"]
+        )
+        assert result.returncode == 0
+        result_row = result.stdout.split("  ")
+        assert result_row[3] == expected
 
 
 def test_dataset_get(script_runner, dataset):
