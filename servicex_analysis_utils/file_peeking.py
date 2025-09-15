@@ -192,7 +192,7 @@ def print_structure_from_str(
                     continue
                 output_lines.append(f"   │   ├── {branch_name} ; dtype: {dtype}")
 
-    result_str = "\n".join(output_lines)
+    result_str = "\n".join(output_lines).encode("utf-8").decode("utf-8")
 
     if save_to_txt:
         with open("samples_structure.txt", "w") as f:
