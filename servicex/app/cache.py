@@ -62,7 +62,7 @@ def list():
     table.add_column("Files")
     table.add_column("Format")
     runs = cache.cached_queries()
-    pending = cache.submitted_queries()
+    submitted = cache.submitted_queries()
     for r in runs:
         table.add_row(
             r.title,
@@ -72,13 +72,13 @@ def list():
             str(r.files),
             r.result_format,
         )
-    for r in pending:
+    for r in submitted:
         table.add_row(
             r.get("title", ""),
             r.get("codegen", ""),
             r.get("request_id", ""),
-            "Pending",
-            "Pending",
+            "Submitted",
+            "Submitted",
             str(r.get("result_format", "")),
         )
     rich.print(table)
