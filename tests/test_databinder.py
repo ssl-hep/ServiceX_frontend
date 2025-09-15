@@ -889,11 +889,17 @@ async def test_generic_query(network_patches):
     query.query_string_generator = None
     with pytest.raises(RuntimeError):
         query.generate_selection_string()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not int"):
         query = sx.generic_query(
             dataset_identifier=spec.Sample[0].RucioDID,
             codegen=spec.General.Codegen,
             query=5,
+        )
+    with pytest.raises(ValueError, match="cannot be None"):
+        query = sx.generic_query(
+            dataset_identifier=spec.Sample[0].RucioDID,
+            codegen=spec.General.Codegen,
+            query=None,
         )
     with pytest.raises(NameError):
         query = sx.generic_query(
