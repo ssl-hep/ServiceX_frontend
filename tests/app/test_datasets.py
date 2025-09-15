@@ -22,7 +22,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 import pytest
 
@@ -123,21 +123,37 @@ def test_dataset_get(script_runner, dataset):
 
 def test_dataset_delete(script_runner):
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
-        mock_delete_dataset = MagicMock(return_value=True)
+        mock_delete_dataset = MagicMock(side_effect=[True, True])
         mock_servicex.return_value.delete_dataset = mock_delete_dataset
 
         result = script_runner.run(
-            ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
+            [
+                "servicex",
+                "datasets",
+                "delete",
+                "-c",
+                "tests/example_config.yaml",
+                "42",
+                "43",
+            ]
         )
         assert result.returncode == 0
-        assert result.stdout == "Dataset 42 deleted\n"
-        mock_delete_dataset.assert_called_once_with(42)
+        assert result.stdout == "Dataset 42 deleted\nDataset 43 deleted\n"
+        assert mock_delete_dataset.call_args_list == [call(42), call(43)]
 
-        mock_delete_dataset_not_found = MagicMock(return_value=False)
+        mock_delete_dataset_not_found = MagicMock(side_effect=[True, False])
         mock_servicex.return_value.delete_dataset = mock_delete_dataset_not_found
         result = script_runner.run(
-            ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
+            [
+                "servicex",
+                "datasets",
+                "delete",
+                "-c",
+                "tests/example_config.yaml",
+                "42",
+                "43",
+            ]
         )
         assert result.returncode == 1
-        mock_delete_dataset.assert_called_once_with(42)
-        assert result.stdout == "Dataset 42 not found\n"
+        assert mock_delete_dataset_not_found.call_args_list == [call(42), call(43)]
+        assert result.stdout == "Dataset 42 deleted\nDataset 43 not found\n"
