@@ -40,7 +40,7 @@ transform_id_arg = typer.Argument(help="Transform ID")
 
 
 @cache_app.callback()
-def cache():
+def cache() -> None:
     """
     Sub-commands for creating and manipulating the local query cache
     """
@@ -48,7 +48,7 @@ def cache():
 
 
 @cache_app.command()
-def list():
+def list() -> None:
     """
     List the cached queries
     """
@@ -75,19 +75,20 @@ def list():
 
 
 @cache_app.command()
-def clear(force: bool = force_opt):
+def clear(force: bool = force_opt) -> None:
     """
     Clear the local query cache
     """
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
         sx.query_cache.close()
-        shutil.rmtree(sx.config.cache_path)
+        if sx.config.cache_path:
+            shutil.rmtree(sx.config.cache_path)
         rich.print("Cache cleared")
 
 
 @cache_app.command(no_args_is_help=True)
-def delete(transform_id: str = transform_id_arg):
+def delete(transform_id: str = transform_id_arg) -> None:
     """
     Delete a cached query. Use -t to specify the transform ID
     """

@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
 import hashlib
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Any
 from pydantic import (
     Field,
     model_validator,
@@ -119,7 +119,7 @@ class Sample(DocStringBaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_did_xor_file(cls, values):
+    def validate_did_xor_file(cls, values: Any) -> Any:
         """
         Ensure that only one of Dataset, RootFile, or RucioDID is specified.
         :param values:
@@ -135,7 +135,7 @@ class Sample(DocStringBaseModel):
         return values
 
     @model_validator(mode="after")
-    def validate_nfiles_is_not_zero(self):
+    def validate_nfiles_is_not_zero(self) -> "Sample":
         """
         Ensure that NFiles is not set to zero
         """
@@ -161,7 +161,7 @@ class Sample(DocStringBaseModel):
                 raise ValueError(f"Sample name {self.Name} length too long")
 
     @property
-    def hash(self):
+    def hash(self) -> str:
         sha = hashlib.sha256(
             str(
                 [
@@ -294,7 +294,7 @@ class ServiceXSpec(DocStringBaseModel):
 
     @field_validator("Sample", mode="after")
     @classmethod
-    def validate_unique_sample(cls, v):
+    def validate_unique_sample(cls, v: Any) -> Any:
         hash_set = set()
         for sample in v:
             if sample.hash in hash_set:

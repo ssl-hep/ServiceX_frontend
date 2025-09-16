@@ -31,7 +31,7 @@
 import pydantic
 from pathlib import Path
 
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from ..query_core import QueryStringGenerator
 
 
@@ -54,12 +54,12 @@ class TopCPQuery(QueryStringGenerator):
     """Save all events regardless of analysis filters (still saves the decision)"""
 
     @pydantic.model_validator(mode="after")
-    def no_input_yaml(self):
+    def no_input_yaml(self) -> "TopCPQuery":
         if self.reco is None and self.parton is None and self.particle is None:
             raise ValueError("No yaml provided!")
         return self
 
-    def generate_selection_string(self):
+    def generate_selection_string(self) -> str:
         import json
 
         recoYaml = None
@@ -88,7 +88,7 @@ class TopCPQuery(QueryStringGenerator):
         return json.dumps(query)
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "TopCPQuery":
         code = node.value
         import re
 

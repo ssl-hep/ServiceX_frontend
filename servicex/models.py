@@ -26,18 +26,24 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import hashlib
+import sys
 from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Type, Union
+
+if sys.version_info >= (3, 10):
+    from typing import TypeGuard
+else:
+    from typing_extensions import TypeGuard
 
 
-def _get_typename(typeish) -> str:
+def _get_typename(typeish: Any) -> str:
     return typeish.__name__ if isinstance(typeish, type) else str(typeish)
 
 
-def _generate_model_docstring(model: type) -> str:
+def _generate_model_docstring(model: Type[BaseModel]) -> str:
     NL = "\n"
     return "\n".join(
         [(model.__doc__ if model.__doc__ else model.__name__).strip(), "", "Args:"]
@@ -53,7 +59,7 @@ class DocStringBaseModel(BaseModel):
     """Class to autogenerate a docstring for a Pydantic model"""
 
     @classmethod
-    def __pydantic_init_subclass__(cls, **kwargs: Any):
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
         super().__pydantic_init_subclass__(**kwargs)
         # There is currently no good way of knowing we are building within Sphinx.
         # Use a hacky workaround but monitor https://github.com/sphinx-doc/sphinx/issues/9805
@@ -113,7 +119,7 @@ class TransformRequest(DocStringBaseModel):
 
     model_config = {"populate_by_name": True, "use_attribute_docstrings": True}
 
-    def compute_hash(self):
+    def compute_hash(self) -> str:
         r"""
         Compute a hash for this submission. Only include properties that impact the result
         so we have maximal ability to reuse transforms
@@ -160,7 +166,9 @@ class TransformStatus(DocStringBaseModel):
     files_remaining: Optional[int] = Field(
         validation_alias="files-remaining", default=0
     )
-    submit_time: datetime = Field(validation_alias="submit-time", default=None)
+    submit_time: Optional[datetime] = Field(
+        validation_alias="submit-time", default=None
+    )
     finish_time: Optional[datetime] = Field(
         validation_alias="finish-time", default=None
     )
@@ -180,7 +188,7 @@ class TransformStatus(DocStringBaseModel):
 
     @field_validator("finish_time", mode="before")
     @classmethod
-    def parse_finish_time(cls, v):
+    def parse_finish_time(cls, v: Any) -> Any:
         if isinstance(v, str) and v == "None":
             return None
         return v
@@ -228,6 +236,25 @@ class TransformedResults(DocStringBaseModel):
     """File format for results"""
     log_url: Optional[str] = None
     """URL for looking up logs on the ServiceX server"""
+
+
+def is_transform_success(
+    result: Union[TransformedResults, BaseException],
+) -> TypeGuard[TransformedResults]:
+    """
+    Type guard to distinguish successful TransformedResults from exceptions.
+
+    This is needed because asyncio.gather(..., return_exceptions=True) returns
+    Union[TransformedResults, BaseException], but we want to safely access
+    TransformedResults attributes without MyPy union-attr errors.
+
+    Args:
+        result: Either a TransformedResults object or an exception
+
+    Returns:
+        True if result is TransformedResults, False if it's an exception
+    """
+    return not isinstance(result, BaseException)
 
 
 class ServiceXInfo(DocStringBaseModel):

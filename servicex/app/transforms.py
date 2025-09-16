@@ -64,7 +64,7 @@ time_frame_opt = typer.Option(
 
 
 @transforms_app.callback()
-def transforms():
+def transforms() -> None:
     """
     Sub-commands for interacting with transforms.
     """
@@ -77,7 +77,7 @@ def list(
     config_path: Optional[str] = config_file_option,
     complete: Optional[bool] = complete_opt,
     running: Optional[bool] = running_opt,
-):
+) -> None:
     """
     List the transforms that have been run.
     """
@@ -111,7 +111,7 @@ def files(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     transform_id: str = transform_id_arg,
-):
+) -> None:
     """
     List the files that were produced by a transform.
     """
@@ -139,20 +139,22 @@ def download(
     transform_id: str = transform_id_arg,
     local_dir: str = local_dir_opt,
     concurrency: int = concurrency_opt,
-):
+) -> None:
     """
     Download the files that were produced by a transform.
     """
 
-    async def download_files(sx: ServiceXClient, transform_id: str, local_dir):
+    async def download_files(
+        sx: ServiceXClient, transform_id: str, local_dir: str
+    ) -> List[Path]:
         s3_semaphore = asyncio.Semaphore(concurrency)
 
-        async def download_with_progress(filename) -> Path:
+        async def download_with_progress(filename: str) -> Path:
             async with s3_semaphore:
                 p = await minio.download_file(
                     filename,
                     local_dir,
-                    shorten_filename=sx.config.shortened_downloaded_filename,
+                    shorten_filename=sx.config.shortened_downloaded_filename or False,
                 )
             progress.advance(download_progress)
             return p
@@ -180,13 +182,13 @@ def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     transform_id_list: List[str] = transform_id_arg,
-):
+) -> None:
     """
     Delete a completed transform along with the result files.
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
     for transform_id in transform_id_list:
-        asyncio.run(sx.delete_transform(transform_id))
+        asyncio.run(sx.delete_transform(transform_id))  # type: ignore[func-returns-value]
         sx.delete_transform_from_cache(transform_id)
 
         print(f"Transform {transform_id} deleted")
@@ -197,13 +199,13 @@ def cancel(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     transform_id_list: List[str] = transform_id_arg,
-):
+) -> None:
     """
     Cancel a running transform request.
     """
     sx = ServiceXClient(backend=backend, config_path=config_path)
     for transform_id in transform_id_list:
-        asyncio.run(sx.cancel_transform(transform_id))
+        asyncio.run(sx.cancel_transform(transform_id))  # type: ignore[func-returns-value]
         print(f"Transform {transform_id} cancelled")
 
 
@@ -212,9 +214,9 @@ class TimeFrame(str, Enum):
     Time Frame levels: 'day', 'week' & 'month'
     """
 
-    day = ("day",)
-    week = ("week",)
-    month = ("month",)
+    day = "day"
+    week = "week"
+    month = "month"
 
 
 class LogLevel(str, Enum):
@@ -222,11 +224,11 @@ class LogLevel(str, Enum):
     Level of the log messages: INFO & ERROR
     """
 
-    info = ("INFO",)
-    error = ("ERROR",)
+    info = "INFO"
+    error = "ERROR"
 
 
-def add_query(key, value):
+def add_query(key: str, value: str) -> str:
     """
     Creates query string from the key and value pairs
     """
@@ -234,36 +236,41 @@ def add_query(key, value):
     return query_string
 
 
-def select_time(time_frame=TimeFrame.day):
+def select_time(time_frame: TimeFrame = TimeFrame.day) -> str:
     """
     Takes input as 'day','week','month' and returns the time filter
     """
-    time_string = time_frame
-    if time_frame.lower() == TimeFrame.day:
+    if time_frame == TimeFrame.day:
         time_string = "time:(from:now%2Fd,to:now%2Fd)"
-    elif time_frame.lower() == TimeFrame.week:
+    elif time_frame == TimeFrame.week:
         time_string = "time:(from:now%2Fw,to:now%2Fw)"
-    elif time_frame.lower() == TimeFrame.month:
+    elif time_frame == TimeFrame.month:
         time_string = "time:(from:now-30d%2Fd,to:now)"
     else:
-        rich.print("Got a time frame apart from 'day', 'week', 'month'")
+        # Fallback for any unexpected time frame values
+        time_string = "time:(from:now%2Fd,to:now%2Fd)"  # type: ignore[unreachable]
     return time_string
 
 
 def create_kibana_link_parameters(
-    log_url, transform_id=None, log_level=None, time_frame=None
-):
+    log_url: str,
+    transform_id: Optional[str] = None,
+    log_level: Optional["LogLevel"] = None,
+    time_frame: Optional[TimeFrame] = None,
+) -> str:
     """
     Create the _a and _g parameters for the kibana dashboard link
     """
     if log_level:
         a_parameter = (
-            f"&_a=(filters:!({add_query('requestId', transform_id)},"
+            f"&_a=(filters:!({add_query('requestId', transform_id or '')},"
             f"{add_query('level', log_level.value.lower())}))"
         )
     else:
-        a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)}))"
-    g_parameter = f"&_g=({select_time(time_frame.value.lower())})"
+        a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id or '')}))"
+    # Handle Optional time_frame with default fallback
+    time_frame_value = time_frame if time_frame else TimeFrame.day
+    g_parameter = f"&_g=({select_time(time_frame_value)})"
     kibana_link = re.sub(r"\&\_g\=\(\)", g_parameter + a_parameter, log_url)
     return kibana_link
 
@@ -274,7 +281,7 @@ def logs(
     transform_id: str = transform_id_arg,
     log_level: Optional[LogLevel] = log_level_opt,
     time_frame: Optional[TimeFrame] = time_frame_opt,
-):
+) -> None:
     """
     Open the URL to the Kibana dashboard of the logs of a tranformer
     """

@@ -256,6 +256,7 @@ async def test_retrieve_current_transform_status_status_none(
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
+        python_dataset.request_id = completed_status.request_id
         python_dataset.servicex = AsyncMock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
@@ -282,6 +283,7 @@ async def test_retrieve_current_transform_status_status_not(
     python_dataset, completed_status
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
+        python_dataset.request_id = completed_status.request_id
         python_dataset.servicex = AsyncMock()
         python_dataset.servicex.get_transform_status.return_value = completed_status
         config = Configuration(cache_path=temp_dir, api_endpoints=[])

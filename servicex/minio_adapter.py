@@ -46,13 +46,13 @@ _file_transfer_sem = asyncio.Semaphore(10)
 _bucket_list_sem = asyncio.Semaphore(5)
 
 
-def init_s3_config(concurrency: int = 10):
+def init_s3_config(concurrency: int = 10) -> None:
     "Update the number of concurrent connections"
     global _file_transfer_sem
     _file_transfer_sem = asyncio.Semaphore(concurrency)
 
 
-def _sanitize_filename(fname: str):
+def _sanitize_filename(fname: str) -> str:
     "No matter the string given, make it an acceptable filename on all platforms"
     return fname.replace("*", "_").replace(";", "_").replace(":", "_")
 
@@ -78,7 +78,16 @@ class MinioAdapter:
         self.bucket = bucket
 
     @classmethod
-    def for_transform(cls, transform: TransformStatus):
+    def for_transform(cls, transform: TransformStatus) -> "MinioAdapter":
+        if not transform.minio_endpoint:
+            raise ValueError("Missing minio_endpoint for transform")
+        if transform.minio_secured is None:
+            raise ValueError("Missing minio_secured for transform")
+        if not transform.minio_access_key:
+            raise ValueError("Missing minio_access_key for transform")
+        if not transform.minio_secret_key:
+            raise ValueError("Missing minio_secret_key for transform")
+
         return MinioAdapter(
             endpoint_host=transform.minio_endpoint,
             secure=transform.minio_secured,
@@ -157,12 +166,14 @@ class MinioAdapter:
     )
     async def get_signed_url(self, object_name: str) -> str:
         async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
-            return await s3.generate_presigned_url(
+            # Type bridge: Convert Any from boto3 to str
+            result = await s3.generate_presigned_url(
                 "get_object", Params={"Bucket": self.bucket, "Key": object_name}
             )
+            return str(result)
 
     @classmethod
-    def hash_path(cls, file_name):
+    def hash_path(cls, file_name: str) -> str:
         """
         Make the path safe for object store or POSIX, by keeping the length
         less than MAX_PATH_LEN. Replace the leading (less interesting) characters with a

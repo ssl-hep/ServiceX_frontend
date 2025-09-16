@@ -40,7 +40,7 @@ codegen_app = typer.Typer(name="codegen", no_args_is_help=True)
 def list(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-):
+) -> None:
     """
     List the available code generators
     """

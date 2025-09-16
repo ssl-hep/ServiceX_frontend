@@ -58,7 +58,7 @@ def list(
     config_path: Optional[str] = config_file_option,
     did_finder: Optional[str] = did_finder_opt,
     show_deleted: Optional[bool] = show_deleted_opt,
-):
+) -> None:
     """
     List the datasets. Use fancy formatting if printing to a terminal.
     Output as plain text if redirected.
@@ -74,7 +74,9 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
+    datasets = sx.get_datasets(
+        did_finder=did_finder, show_deleted=show_deleted or False
+    )
 
     for d in datasets:
         # Format the CachedDataset object into a table row
@@ -102,7 +104,7 @@ def get(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     dataset_id: int = dataset_id_get_arg,
-):
+) -> None:
     """
     Get the details of a dataset. Output as a pretty, nested table if printing to a terminal.
     Output as json if redirected.
@@ -114,9 +116,9 @@ def get(
     else:
         table = None
 
-    dataset = sx.get_dataset(dataset_id)
+    dataset = sx.get_dataset(str(dataset_id))
 
-    if table:
+    if table and dataset.files:
         for file in dataset.files:
             sub_table = Table(title="")
             sub_table.add_column(f"File ID: {file.id}")
@@ -134,7 +136,7 @@ def get(
                 "name": dataset.name,
                 "files": [
                     {"id": file.id, "paths": file.paths.split(",")}
-                    for file in dataset.files
+                    for file in (dataset.files or [])
                 ],
             }
         }
@@ -146,9 +148,9 @@ def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     dataset_id: int = dataset_id_delete_arg,
-):
+) -> None:
     sx = ServiceXClient(backend=backend, config_path=config_path)
-    result = sx.delete_dataset(dataset_id)
+    result = sx.delete_dataset(str(dataset_id))
     if result:
         typer.echo(f"Dataset {dataset_id} deleted")
     else:

@@ -28,7 +28,8 @@
 import json
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Any
+from datetime import datetime
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
 
@@ -43,11 +44,12 @@ class CacheException(Exception):
 class QueryCache:
     def __init__(self, config: Configuration):
         self.config = config
-        Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
-        self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
-        self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
+        cache_path = config.cache_path or "/tmp/servicex_cache"
+        Path(cache_path).mkdir(parents=True, exist_ok=True)
+        self.db = TinyDB(os.path.join(cache_path, "db.json"))
+        self.lock = FileLock(os.path.join(cache_path, "db.lock"))
 
-    def close(self):
+    def close(self) -> None:
         self.db.close()
 
     def transformed_results(
@@ -56,14 +58,14 @@ class QueryCache:
         completed_status: TransformStatus,
         data_dir: str,
         file_list: List[str],
-        signed_urls,
+        signed_urls: Any,
     ) -> TransformedResults:
         return TransformedResults(
             hash=transform.compute_hash(),
-            title=transform.title,
+            title=transform.title or "Untitled",
             codegen=transform.codegen,
             request_id=completed_status.request_id,
-            submit_time=completed_status.submit_time,
+            submit_time=completed_status.submit_time or datetime.now(),
             data_dir=data_dir,
             file_list=file_list,
             signed_url_list=signed_urls,
@@ -72,14 +74,14 @@ class QueryCache:
             log_url=completed_status.log_url,
         )
 
-    def cache_transform(self, record: TransformedResults):
+    def cache_transform(self, record: TransformedResults) -> None:
         transforms = Query()
         with self.lock:
             self.db.upsert(
                 json.loads(record.model_dump_json()), transforms.hash == record.hash
             )
 
-    def update_record(self, record: TransformedResults):
+    def update_record(self, record: TransformedResults) -> None:
         transforms = Query()
         with self.lock:
             self.db.update(
@@ -125,7 +127,9 @@ class QueryCache:
 
         if not records or "request_id" not in records[0]:
             raise CacheException("Request Id not found")
-        return records[0]["request_id"]
+        # Type bridge: Convert Any from TinyDB to Optional[str]
+        result = records[0]["request_id"]
+        return str(result) if result is not None else None
 
     def update_transform_status(self, hash_value: str, status: str) -> None:
         """
@@ -186,7 +190,7 @@ class QueryCache:
             return TransformedResults(**records[0])
 
     def cache_path_for_transform(self, transform_status: TransformStatus) -> Path:
-        base = Path(self.config.cache_path)
+        base = Path(self.config.cache_path or "/tmp/servicex_cache")
         result = Path(os.path.join(base, transform_status.request_id))
         result.mkdir(parents=True, exist_ok=True)
         return result
@@ -203,11 +207,11 @@ class QueryCache:
             ]
         return result
 
-    def delete_record_by_request_id(self, request_id: str):
+    def delete_record_by_request_id(self, request_id: str) -> None:
         with self.lock:
             self.db.remove(where("request_id") == request_id)
 
-    def delete_record_by_hash(self, hash: str):
+    def delete_record_by_hash(self, hash: str) -> None:
         transforms = Query()
         with self.lock:
             self.db.remove(transforms.hash == hash)

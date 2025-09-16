@@ -25,7 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Any
 import hashlib
 
 from servicex.models import TransformRequest
@@ -43,7 +43,7 @@ class DataSetIdentifier:
         self.num_files = num_files
 
     @property
-    def did(self):
+    def did(self) -> Optional[str]:
         num_files_arg = f"?files={self.num_files}" if self.num_files is not None else ""
         return f"{self.scheme}://{self.dataset}{num_files_arg}"
 
@@ -52,7 +52,7 @@ class DataSetIdentifier:
         transform_request.file_list = None
 
     @property
-    def hash(self):
+    def hash(self) -> str:
         sha = hashlib.sha256(str([self.dataset]).encode("utf-8"))
         return sha.hexdigest()
 
@@ -81,7 +81,7 @@ class RucioDatasetIdentifier(DataSetIdentifier):
     yaml_tag = "!Rucio"
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "RucioDatasetIdentifier":
         return cls(node.value)
 
 
@@ -104,17 +104,17 @@ class FileListDataset(DataSetIdentifier):
         transform_request.did = None
 
     @property
-    def did(self):
+    def did(self) -> Optional[str]:
         return None
 
     yaml_tag = "!FileList"
 
     @classmethod
-    def from_yaml(cls, constructor, node):
+    def from_yaml(cls, constructor: Any, node: Any) -> "FileListDataset":
         return cls(constructor.construct_sequence(node))
 
     @property
-    def hash(self):
+    def hash(self) -> str:
         self.files.sort()
         sha = hashlib.sha256(str([self.files]).encode("utf-8"))
         return sha.hexdigest()
@@ -136,7 +136,7 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
     yaml_tag = "!CERNOpenData"
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "CERNOpenDataDatasetIdentifier":
         return cls(int(node.value))
 
 
@@ -156,5 +156,5 @@ class XRootDDatasetIdentifier(DataSetIdentifier):
     yaml_tag = "!XRootD"
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "XRootDDatasetIdentifier":
         return cls(node.value)

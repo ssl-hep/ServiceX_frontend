@@ -26,7 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import inspect
-from typing import Optional, Union, Callable
+from typing import Optional, Union, Callable, Any
 from base64 import b64encode
 from textwrap import dedent
 from servicex.query_core import QueryStringGenerator
@@ -65,7 +65,7 @@ class PythonFunction(QueryStringGenerator):
             ).decode("utf-8")
 
     @classmethod
-    def from_yaml(cls, _, node):
+    def from_yaml(cls, _: Any, node: Any) -> "PythonFunction":
         code = node.value
         try:
             exec(code)
