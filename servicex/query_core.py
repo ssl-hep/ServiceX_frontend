@@ -452,6 +452,23 @@ class Query:
                     else ""
                 )
                 if self.current_status.status == Status.complete:
+                    if self.current_status.files == 0:
+                        err_str = (
+                            f"Transform {titlestr}completed with 0 files. "
+                            "This might indicate an invalid dataset identifier (DID). "
+                        )
+                        if self.current_status.log_url is not None:
+                            kibana_link = create_kibana_link_parameters(
+                                self.current_status.log_url,
+                                self.current_status.request_id,
+                                LogLevel.error,
+                                TimeFrame.month,
+                            )
+                            logger.error(
+                                f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
+                            )
+                        raise ServiceXException(err_str)
+
                     if self.files_failed:
                         bar = "failure"
                     else:
