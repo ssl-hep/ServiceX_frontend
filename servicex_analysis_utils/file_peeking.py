@@ -35,7 +35,9 @@ import logging
 from servicex.dataset_identifier import DataSetIdentifier
 
 
-def run_query(input_filenames):
+def run_query(
+    input_filenames,
+):
     import uproot
     import awkward as ak
     import json
@@ -59,6 +61,13 @@ def run_query(input_filenames):
     tree_dict = {}
 
     with uproot.open(input_filenames) as file:
+
+        meta = file["MetaData"]
+        fm_branches = [b for b in meta.keys() if b.startswith("FileMetaDataAuxDyn.")]
+        # remove the prefix in keys
+        meta_dict = {p[19:]: str(meta[p].array(library="ak")[0]) for p in fm_branches}
+        tree_dict["FileMetaData"] = meta_dict
+
         for tree_name in file.keys():
             tree_name_clean = tree_name.rstrip(";1")
             tree = file[tree_name]
@@ -174,9 +183,6 @@ def print_structure_from_str(
     import json
 
     output_lines = []
-    output_lines.append(
-        f"\nFile structure of all samples with branch filter '{filter_branch}':"
-    )
 
     for sample_name, path in deliver_dict.items():
         structure_str = open_delivered_file(sample_name, path)
@@ -189,6 +195,19 @@ def print_structure_from_str(
             f"\n---------------------------\n"
             f"\U0001f4c1 Sample: {sample_name}\n"
             f"---------------------------"
+        )
+
+        # Get the metadata first
+        output_lines.append(f"\nFile Metadata \u2139\ufe0f :\n")
+        for key, value in structure_dict.get("FileMetaData", {}).items():
+            output_lines.append(f"── {key}: {value}")
+        output_lines.append("\n---------------------------")
+
+        # drop the File metadata from the trees
+        structure_dict.pop("FileMetaData", {})
+
+        output_lines.append(
+            f"\nFile structure with branch filter \U0001f33f '{filter_branch}':\n"
         )
 
         for tree_name, branches in structure_dict.items():
