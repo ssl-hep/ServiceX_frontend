@@ -62,18 +62,22 @@ def run_query(
 
     with uproot.open(input_filenames) as file:
 
-        meta = file["MetaData"]
-        fm_branches = [b for b in meta.keys() if b.startswith("FileMetaDataAuxDyn.")]
-        # remove the prefix in keys
-        meta_dict = {p[19:]: str(meta[p].array(library="ak")[0]) for p in fm_branches}
-        tree_dict["FileMetaData"] = meta_dict
-
         for tree_name in file.keys():
             tree_name_clean = tree_name.rstrip(";1")
             tree = file[tree_name]
 
             if not is_tree(tree):
                 continue
+
+            if tree_name_clean == "Metadata":
+                fm_branches = [
+                    b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")
+                ]
+                # remove the prefix in keys
+                meta_dict = {
+                    p[19:]: str(tree[p].array(library="ak")[0]) for p in fm_branches
+                }
+                tree_dict["FileMetaData"] = meta_dict
 
             branch_dict = {}
             for branch_name, branch in tree.items():
@@ -199,8 +203,11 @@ def print_structure_from_str(
 
         # Get the metadata first
         output_lines.append(f"\nFile Metadata \u2139\ufe0f :\n")
-        for key, value in structure_dict.get("FileMetaData", {}).items():
-            output_lines.append(f"── {key}: {value}")
+        if "FileMetaData" not in structure_dict:
+            output_lines.append("No FileMetaData found in dataset.")
+        else:
+            for key, value in structure_dict.get("FileMetaData", {}).items():
+                output_lines.append(f"── {key}: {value}")
         output_lines.append("\n---------------------------")
 
         # drop the File metadata from the trees
@@ -278,6 +285,8 @@ def str_to_array(encoded_json_str):
     """
     reconstructed_data = {}
     structure_dict = json.loads(encoded_json_str)
+    # drop the File metadata from the trees
+    structure_dict.pop("FileMetaData", {})
 
     for treename, branch_dict in structure_dict.items():
         branches = {}
