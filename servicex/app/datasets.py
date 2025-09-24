@@ -25,7 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Optional
+from fnmatch import fnmatch
+from typing import List, Optional
 
 import rich
 
@@ -35,6 +36,7 @@ from servicex.app.cli_options import backend_cli_option, config_file_option
 import typer
 
 from servicex.servicex_client import ServiceXClient
+from servicex.models import CachedDataset
 from rich.table import Table
 
 datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
@@ -54,6 +56,10 @@ dataset_id_delete_arg = typer.Argument(..., help="The ID of the dataset to delet
 
 @datasets_app.command(no_args_is_help=False)
 def list(
+    name_pattern: Optional[str] = typer.Argument(
+        None,
+        help="Filter datasets by name. Use '*' as a wildcard for any number of characters.",
+    ),
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     did_finder: Optional[str] = did_finder_opt,
@@ -74,7 +80,23 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
+    datasets: List[CachedDataset] = sx.get_datasets(
+        did_finder=did_finder, show_deleted=show_deleted
+    )
+
+    if name_pattern:
+        # Allow substring matching when no wildcard is provided by surrounding the pattern
+        # with '*' characters. Users can still provide wildcards explicitly to narrow the match.
+        effective_pattern = name_pattern if "*" in name_pattern else f"*{name_pattern}*"
+
+        def matches_pattern(dataset: CachedDataset) -> bool:
+            display_name = dataset.name if dataset.did_finder != "user" else "File list"
+            return any(
+                fnmatch(candidate, effective_pattern)
+                for candidate in {dataset.name, display_name}
+            )
+
+        datasets = [dataset for dataset in datasets if matches_pattern(dataset)]
 
     for d in datasets:
         # Format the CachedDataset object into a table row

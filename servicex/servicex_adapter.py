@@ -304,9 +304,12 @@ class ServiceXAdapter:
         if later_than:
             params["later_than"] = later_than.isoformat()
 
-        async with AsyncClient() as session:
+        retry_options = Retry(total=3, backoff_factor=10)
+        async with AsyncClient(
+            transport=RetryTransport(retry=retry_options), timeout=_timeout
+        ) as session:
             r = await session.get(headers=headers, url=url, params=params)
-            if r.status_code == 403:
+            if r.status_code in [401, 403]:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}"
                 )
