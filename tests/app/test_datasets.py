@@ -22,7 +22,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -64,7 +64,27 @@ def dataset():
     return cached_dataset
 
 
-def test_datasets_list(script_runner, dataset):
+def make_cached_dataset(
+    dataset_id: int, name: str, did_finder: str = "some_finder"
+) -> CachedDataset:
+    files: list[DatasetFile] = []
+    now = datetime.now()
+    return CachedDataset(
+        id=dataset_id,
+        name=name,
+        did_finder=did_finder,
+        n_files=0,
+        size=0,
+        events=0,
+        last_used=now,
+        last_updated=now,
+        lookup_status="completed",
+        is_stale=False,
+        files=files,
+    )
+
+
+def test_datasets_list(script_runner, dataset) -> None:
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_datasets = MagicMock(return_value=[dataset])
         mock_servicex.return_value.get_datasets = mock_get_datasets
@@ -104,7 +124,7 @@ def test_datasets_list(script_runner, dataset):
         )
 
 
-def test_dataset_get(script_runner, dataset):
+def test_dataset_get(script_runner, dataset) -> None:
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_dataset = MagicMock(return_value=dataset)
         mock_servicex.return_value.get_dataset = mock_get_dataset
@@ -121,7 +141,7 @@ def test_dataset_get(script_runner, dataset):
         assert len(result_doc["dataset"]["files"]) == 2
 
 
-def test_dataset_delete(script_runner):
+def test_dataset_delete(script_runner) -> None:
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_delete_dataset = MagicMock(return_value=True)
         mock_servicex.return_value.delete_dataset = mock_delete_dataset
@@ -141,3 +161,45 @@ def test_dataset_delete(script_runner):
         assert result.returncode == 1
         mock_delete_dataset.assert_called_once_with(42)
         assert result.stdout == "Dataset 42 not found\n"
+
+
+def test_datasets_list_with_search_pattern(script_runner) -> None:
+    dataset_alpha = make_cached_dataset(1, "alpha")
+    dataset_beta = make_cached_dataset(2, "beta")
+
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
+        mock_get_datasets = MagicMock(return_value=[dataset_alpha, dataset_beta])
+        mock_servicex.return_value.get_datasets = mock_get_datasets
+
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "alpha", "-c", "tests/example_config.yaml"]
+        )
+
+        assert result.returncode == 0
+        assert "alpha" in result.stdout
+        assert "beta" not in result.stdout
+
+        mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)
+
+
+def test_datasets_list_with_wildcard_pattern(script_runner) -> None:
+    dataset_alpha = make_cached_dataset(1, "alpha")
+    dataset_beta = make_cached_dataset(2, "beta")
+    dataset_gamma = make_cached_dataset(3, "gamma")
+
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
+        mock_get_datasets = MagicMock(
+            return_value=[dataset_alpha, dataset_beta, dataset_gamma]
+        )
+        mock_servicex.return_value.get_datasets = mock_get_datasets
+
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "*ta", "-c", "tests/example_config.yaml"]
+        )
+
+        assert result.returncode == 0
+        assert "beta" in result.stdout
+        assert "alpha" not in result.stdout
+        assert "gamma" not in result.stdout
+
+        mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)
