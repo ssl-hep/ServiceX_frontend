@@ -45,7 +45,7 @@ def build_test_samples(tmp_path):
 
     # Create tmp .root files
     with uproot.create(test_path) as file:
-        file["Metadata"] = tree_data
+        file["MetaData"] = tree_data
 
     return test_path
 
@@ -58,7 +58,7 @@ def test_metadata_retrieval(build_test_samples, tmp_path, capsys):
     # Check result
     expected_result = {
         "FileMetaData": {"test_100": "100", "test_abc": "abc"},
-        "Metadata": {
+        "MetaData": {
             "FileMetaDataAuxDyn.test_100": "AsDtype('>i8')",
             "FileMetaDataAuxDyn.test_abc": "AsStrings()",
         },
