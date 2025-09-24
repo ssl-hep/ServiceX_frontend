@@ -69,7 +69,7 @@ def run_query(
             if not is_tree(tree):
                 continue
 
-            if tree_name_clean == "Metadata":
+            if tree_name_clean == "MetaData":
                 fm_branches = [
                     b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")
                 ]
