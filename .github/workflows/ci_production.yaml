@@ -33,7 +33,7 @@ jobs:
       - name: Install package
         run: |
           uv venv
-          uv pip install --upgrade '.[test]'
+          uv pip install --upgrade '.[test,docs]'
           uv pip list
 
       - name: Run example
