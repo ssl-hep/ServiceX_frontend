@@ -107,11 +107,25 @@ def list(
         d_name = d.name if d.did_finder != "user" else "File list"
         is_stale = "Yes" if d.is_stale else ""
         last_used = d.last_used.strftime("%Y-%m-%dT%H:%M:%S")
+
+        # Convert byte size into a human-readable string with appropriate units
+        size_in_bytes = d.size
+        if size_in_bytes >= 1e12:
+            size_value = size_in_bytes / 1e12
+            unit = "TB"
+        elif size_in_bytes >= 1e9:
+            size_value = size_in_bytes / 1e9
+            unit = "GB"
+        else:
+            size_value = size_in_bytes / 1e6
+            unit = "MB"
+        size_str = f"{size_value:,.2f} {unit}"
+
         table.add_row(
             str(d.id),
             d_name,
-            "%d" % d.n_files,
-            "{:,}MB".format(round(d.size / 1e6)),
+            f"{d.n_files}",
+            size_str,
             d.lookup_status,
             last_used,
             is_stale,
