@@ -251,6 +251,63 @@ async def test_transform_status_listener_cancelled(python_dataset):
 
 
 @pytest.mark.asyncio
+async def test_transform_status_listener_zero_files_no_log_url(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(
+        files=0,
+        files_completed=0,
+        files_failed=0,
+        status=Status.complete,
+        log_url=None,
+        title="Test Transform",
+    )
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+
+    with pytest.raises(ServiceXException, match=r"Transform.*completed with 0 files"):
+        await python_dataset.transform_status_listener(
+            progress, progress_task, "mock_title", download_task, "mock_title"
+        )
+
+    python_dataset.retrieve_current_transform_status.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_transform_status_listener_zero_files_with_log_url(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(
+        files=0,
+        files_completed=0,
+        files_failed=0,
+        status=Status.complete,
+        log_url="http://example.com/logs",
+        request_id="test-request-123",
+        title="Test Transform",
+    )
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+
+    with pytest.raises(ServiceXException, match=r"Transform.*completed with 0 files"):
+        with patch(
+            "servicex.app.transforms.create_kibana_link_parameters"
+        ) as mock_link:
+            with patch("servicex.query_core.logger") as mock_logger:
+                mock_link.return_value = "http://kibana.example.com/link"
+                await python_dataset.transform_status_listener(
+                    progress, progress_task, "mock_title", download_task, "mock_title"
+                )
+
+                mock_link.assert_called_once()
+                mock_logger.error.assert_called_once()
+
+    python_dataset.retrieve_current_transform_status.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_retrieve_current_transform_status_status_none(
     python_dataset, completed_status
 ):
