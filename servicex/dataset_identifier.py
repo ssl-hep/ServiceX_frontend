@@ -59,10 +59,7 @@ class DataSetIdentifier:
     def describe(self) -> str:
         """Return a human readable description of this dataset."""
 
-        did_value = self.did
-        if did_value is not None:
-            return did_value
-        return str(self.dataset)
+        return self.did
 
 
 class RucioDatasetIdentifier(DataSetIdentifier):

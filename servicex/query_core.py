@@ -134,11 +134,7 @@ class Query:
     def _describe_dataset(self) -> str:
         """Return a human-readable description of the dataset for error messages."""
 
-        descriptor = getattr(self.dataset_identifier, "describe", None)
-        if callable(descriptor):
-            return descriptor()
-
-        return str(self.dataset_identifier)
+        return self.dataset_identifier.describe()
 
     @property
     def transform_request(self):
