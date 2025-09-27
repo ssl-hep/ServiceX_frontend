@@ -56,6 +56,14 @@ class DataSetIdentifier:
         sha = hashlib.sha256(str([self.dataset]).encode("utf-8"))
         return sha.hexdigest()
 
+    def describe(self) -> str:
+        """Return a human readable description of this dataset."""
+
+        did_value = self.did
+        if did_value is not None:
+            return did_value
+        return str(self.dataset)
+
 
 class RucioDatasetIdentifier(DataSetIdentifier):
     def __init__(self, dataset: str, num_files: Optional[int] = None):
@@ -84,6 +92,11 @@ class RucioDatasetIdentifier(DataSetIdentifier):
     def from_yaml(cls, _, node):
         return cls(node.value)
 
+    def describe(self) -> str:
+        """Return a human readable description of the configured Rucio dataset."""
+
+        return super().describe()
+
 
 class FileListDataset(DataSetIdentifier):
     def __init__(self, files: Union[List[str], str]):
@@ -106,6 +119,17 @@ class FileListDataset(DataSetIdentifier):
     @property
     def did(self):
         return None
+
+    def describe(self) -> str:
+        """Return a human readable description of the configured file list."""
+
+        file_count: int = len(self.files)
+        file_word: str = "file" if file_count == 1 else "files"
+        preview_count: int = min(3, file_count)
+        preview: str = ", ".join(self.files[:preview_count])
+        suffix: str = ", ..." if file_count > preview_count else ""
+
+        return f"{file_count} {file_word}: {preview}{suffix}"
 
     yaml_tag = "!FileList"
 
@@ -139,6 +163,11 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
     def from_yaml(cls, _, node):
         return cls(int(node.value))
 
+    def describe(self) -> str:
+        """Return a human readable description of the CERN Open Data dataset."""
+
+        return super().describe()
+
 
 class XRootDDatasetIdentifier(DataSetIdentifier):
     def __init__(self, pattern: str, num_files: Optional[int] = None):
@@ -158,3 +187,8 @@ class XRootDDatasetIdentifier(DataSetIdentifier):
     @classmethod
     def from_yaml(cls, _, node):
         return cls(node.value)
+
+    def describe(self) -> str:
+        """Return a human readable description of the XRootD dataset pattern."""
+
+        return super().describe()

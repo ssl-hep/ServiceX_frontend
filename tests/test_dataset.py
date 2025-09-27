@@ -31,7 +31,7 @@ import os
 import datetime
 
 from unittest.mock import AsyncMock, Mock, patch
-from servicex.dataset_identifier import FileListDataset
+from servicex.dataset_identifier import FileListDataset, RucioDatasetIdentifier
 from servicex.configuration import Configuration
 from servicex.minio_adapter import MinioAdapter
 from servicex.query_core import Query
@@ -320,7 +320,7 @@ async def test_submit_and_download_cache_miss(python_dataset, completed_status):
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ["1.parquet"]
         python_dataset.cache.update_transform_request_id = Mock()
 
         signed_urls_only = False
@@ -353,7 +353,7 @@ async def test_submit_and_download_cache_miss_overall_progress(
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ["1.parquet"]
         python_dataset.cache.update_transform_request_id = Mock()
 
         signed_urls_only = False
@@ -390,7 +390,7 @@ async def test_submit_and_download_no_result_format(python_dataset, completed_st
             python_dataset.servicex.get_transform_status.return_value = completed_status
             python_dataset.servicex.submit_transform = AsyncMock()
             python_dataset.download_files = AsyncMock()
-            python_dataset.download_files.return_value = []
+            python_dataset.download_files.return_value = ["1.parquet"]
             signed_urls_only = False
             expandable_progress = ExpandableProgress()
             await python_dataset.submit_and_download(
@@ -422,7 +422,7 @@ async def test_submit_and_download_cache_miss_signed_urls_only(
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ["signed://url"]
         python_dataset.cache.update_transform_request_id = Mock()
 
         signed_urls_only = True
@@ -433,6 +433,48 @@ async def test_submit_and_download_cache_miss_signed_urls_only(
         )
         assert result is not None
         assert result.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
+        cache.close()
+
+
+@pytest.mark.asyncio
+async def test_submit_and_download_raises_for_empty_results(
+    python_dataset, completed_status
+):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        python_dataset.dataset_identifier = RucioDatasetIdentifier(
+            "scope:missing_dataset"
+        )
+        python_dataset.current_status = None
+        python_dataset.servicex = AsyncMock()
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])
+        cache = QueryCache(config)
+        python_dataset.cache = cache
+        python_dataset.configuration = config
+        python_dataset.cache.get_transform_by_hash = Mock(return_value=None)
+        python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
+        complete_status = completed_status.model_copy(deep=True)
+        complete_status.status = Status.complete
+        complete_status.files = 0
+        complete_status.files_completed = 0
+        complete_status.files_failed = 0
+        python_dataset.servicex.get_transform_status.return_value = complete_status
+        python_dataset.servicex.submit_transform = AsyncMock()
+        python_dataset.download_files = AsyncMock(return_value=[])
+        python_dataset.cache.update_transform_request_id = Mock()
+
+        signed_urls_only = False
+        expandable_progress = ExpandableProgress()
+
+        with pytest.raises(
+            ServiceXException,
+            match=(
+                r"Dataset rucio://scope:missing_dataset "
+                r"does not exist or has zero files."
+            ),
+        ):
+            await python_dataset.submit_and_download(
+                signed_urls_only, expandable_progress
+            )
         cache.close()
 
 
@@ -525,7 +567,7 @@ async def test_network_loss(python_dataset, transformed_result):
         python_dataset.servicex.get_transform_status.return_value = status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ["1.parquet"]
 
         signed_urls_only = False
         expandable_progress = ExpandableProgress()
@@ -556,7 +598,7 @@ async def test_submit_and_download_get_request_id_from_previous_submitted_reques
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ["signed://url"]
         python_dataset.cache.is_transform_request_submitted = Mock(return_value=True)
         python_dataset.cache.get_transform_request_id = Mock(
             return_value="b8c508d0-ccf2-4deb-a1f7-65c839eebabf"

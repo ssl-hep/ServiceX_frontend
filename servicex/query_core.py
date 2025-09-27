@@ -131,6 +131,15 @@ class Query:
             raise RuntimeError("query string generator not set")
         return self.query_string_generator.generate_selection_string()
 
+    def _describe_dataset(self) -> str:
+        """Return a human-readable description of the dataset for error messages."""
+
+        descriptor = getattr(self.dataset_identifier, "describe", None)
+        if callable(descriptor):
+            return descriptor()
+
+        return str(self.dataset_identifier)
+
     @property
     def transform_request(self):
         if not self.result_format:
@@ -355,6 +364,17 @@ class Query:
             downloaded_files = []
 
             download_result = await download_files_task
+            if (
+                not download_result
+                and self.current_status
+                and self.current_status.status == Status.complete
+                and self.current_status.files_completed == 0
+                and self.current_status.files_failed == 0
+            ):
+                dataset_description = self._describe_dataset()
+                raise ServiceXException(
+                    f"Dataset {dataset_description} does not exist or has zero files."
+                )
             if signed_urls_only:
                 signed_urls = download_result
                 if cached_record:
