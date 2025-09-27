@@ -92,11 +92,6 @@ class RucioDatasetIdentifier(DataSetIdentifier):
     def from_yaml(cls, _, node):
         return cls(node.value)
 
-    def describe(self) -> str:
-        """Return a human readable description of the configured Rucio dataset."""
-
-        return super().describe()
-
 
 class FileListDataset(DataSetIdentifier):
     def __init__(self, files: Union[List[str], str]):
@@ -163,11 +158,6 @@ class CERNOpenDataDatasetIdentifier(DataSetIdentifier):
     def from_yaml(cls, _, node):
         return cls(int(node.value))
 
-    def describe(self) -> str:
-        """Return a human readable description of the CERN Open Data dataset."""
-
-        return super().describe()
-
 
 class XRootDDatasetIdentifier(DataSetIdentifier):
     def __init__(self, pattern: str, num_files: Optional[int] = None):
@@ -187,8 +177,3 @@ class XRootDDatasetIdentifier(DataSetIdentifier):
     @classmethod
     def from_yaml(cls, _, node):
         return cls(node.value)
-
-    def describe(self) -> str:
-        """Return a human readable description of the XRootD dataset pattern."""
-
-        return super().describe()
