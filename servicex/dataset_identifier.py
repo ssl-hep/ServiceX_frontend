@@ -56,6 +56,11 @@ class DataSetIdentifier:
         sha = hashlib.sha256(str([self.dataset]).encode("utf-8"))
         return sha.hexdigest()
 
+    def describe(self) -> str:
+        """Return a human readable description of this dataset."""
+
+        return self.did
+
 
 class RucioDatasetIdentifier(DataSetIdentifier):
     def __init__(self, dataset: str, num_files: Optional[int] = None):
@@ -106,6 +111,17 @@ class FileListDataset(DataSetIdentifier):
     @property
     def did(self):
         return None
+
+    def describe(self) -> str:
+        """Return a human readable description of the configured file list."""
+
+        file_count: int = len(self.files)
+        file_word: str = "file" if file_count == 1 else "files"
+        preview_count: int = min(3, file_count)
+        preview: str = ", ".join(self.files[:preview_count])
+        suffix: str = ", ..." if file_count > preview_count else ""
+
+        return f"{file_count} {file_word}: {preview}{suffix}"
 
     yaml_tag = "!FileList"
 
