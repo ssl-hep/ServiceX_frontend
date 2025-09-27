@@ -51,7 +51,7 @@ show_deleted_opt = typer.Option(
     show_default=True,
 )
 dataset_id_get_arg = typer.Argument(..., help="The ID of the dataset to get")
-dataset_id_delete_arg = typer.Argument(..., help="The ID of the dataset to delete")
+dataset_ids_delete_arg = typer.Argument(..., help="IDs of the datasets to delete")
 
 
 @datasets_app.command(no_args_is_help=False)
@@ -181,12 +181,16 @@ def get(
 def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    dataset_id: int = dataset_id_delete_arg,
+    dataset_ids: List[int] = dataset_ids_delete_arg,
 ):
     sx = ServiceXClient(backend=backend, config_path=config_path)
-    result = sx.delete_dataset(dataset_id)
-    if result:
-        typer.echo(f"Dataset {dataset_id} deleted")
-    else:
-        typer.echo(f"Dataset {dataset_id} not found")
+    any_missing: bool = False  # Track if any dataset ID is not found
+    for dataset_id in dataset_ids:
+        result = sx.delete_dataset(dataset_id)
+        if result:
+            typer.echo(f"Dataset {dataset_id} deleted")
+        else:
+            typer.echo(f"Dataset {dataset_id} not found")
+            any_missing = True
+    if any_missing:
         raise typer.Abort()
