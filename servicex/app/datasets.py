@@ -25,7 +25,8 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-from typing import Optional
+from fnmatch import fnmatch
+from typing import List, Optional
 
 import rich
 
@@ -35,6 +36,7 @@ from servicex.app.cli_options import backend_cli_option, config_file_option
 import typer
 
 from servicex.servicex_client import ServiceXClient
+from servicex.models import CachedDataset
 from rich.table import Table
 
 datasets_app = typer.Typer(name="datasets", no_args_is_help=True)
@@ -49,16 +51,20 @@ show_deleted_opt = typer.Option(
     show_default=True,
 )
 dataset_id_get_arg = typer.Argument(..., help="The ID of the dataset to get")
-dataset_id_delete_arg = typer.Argument(..., help="The ID of the dataset to delete")
+dataset_ids_delete_arg = typer.Argument(..., help="IDs of the datasets to delete")
 
 
 @datasets_app.command(no_args_is_help=False)
 def list(
+    name_pattern: Optional[str] = typer.Argument(
+        None,
+        help="Filter datasets by name. Use '*' as a wildcard for any number of characters.",
+    ),
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
     did_finder: Optional[str] = did_finder_opt,
     show_deleted: Optional[bool] = show_deleted_opt,
-):
+) -> None:
     """
     List the datasets. Use fancy formatting if printing to a terminal.
     Output as plain text if redirected.
@@ -74,7 +80,23 @@ def list(
     if show_deleted:
         table.add_column("Deleted")
 
-    datasets = sx.get_datasets(did_finder=did_finder, show_deleted=show_deleted)
+    datasets: List[CachedDataset] = sx.get_datasets(
+        did_finder=did_finder, show_deleted=show_deleted
+    )
+
+    if name_pattern:
+        # Allow substring matching when no wildcard is provided by surrounding the pattern
+        # with '*' characters. Users can still provide wildcards explicitly to narrow the match.
+        effective_pattern = name_pattern if "*" in name_pattern else f"*{name_pattern}*"
+
+        def matches_pattern(dataset: CachedDataset) -> bool:
+            display_name = dataset.name if dataset.did_finder != "user" else "File list"
+            return any(
+                fnmatch(candidate, effective_pattern)
+                for candidate in {dataset.name, display_name}
+            )
+
+        datasets = [dataset for dataset in datasets if matches_pattern(dataset)]
 
     for d in datasets:
         # Format the CachedDataset object into a table row
@@ -85,11 +107,25 @@ def list(
         d_name = d.name if d.did_finder != "user" else "File list"
         is_stale = "Yes" if d.is_stale else ""
         last_used = d.last_used.strftime("%Y-%m-%dT%H:%M:%S")
+
+        # Convert byte size into a human-readable string with appropriate units
+        size_in_bytes = d.size
+        if size_in_bytes >= 1e12:
+            size_value = size_in_bytes / 1e12
+            unit = "TB"
+        elif size_in_bytes >= 1e9:
+            size_value = size_in_bytes / 1e9
+            unit = "GB"
+        else:
+            size_value = size_in_bytes / 1e6
+            unit = "MB"
+        size_str = f"{size_value:,.2f} {unit}"
+
         table.add_row(
             str(d.id),
             d_name,
-            "%d" % d.n_files,
-            "{:,}MB".format(round(d.size / 1e6)),
+            f"{d.n_files}",
+            size_str,
             d.lookup_status,
             last_used,
             is_stale,
@@ -145,12 +181,16 @@ def get(
 def delete(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
-    dataset_id: int = dataset_id_delete_arg,
+    dataset_ids: List[int] = dataset_ids_delete_arg,
 ):
     sx = ServiceXClient(backend=backend, config_path=config_path)
-    result = sx.delete_dataset(dataset_id)
-    if result:
-        typer.echo(f"Dataset {dataset_id} deleted")
-    else:
-        typer.echo(f"Dataset {dataset_id} not found")
+    any_missing: bool = False  # Track if any dataset ID is not found
+    for dataset_id in dataset_ids:
+        result = sx.delete_dataset(dataset_id)
+        if result:
+            typer.echo(f"Dataset {dataset_id} deleted")
+        else:
+            typer.echo(f"Dataset {dataset_id} not found")
+            any_missing = True
+    if any_missing:
         raise typer.Abort()
