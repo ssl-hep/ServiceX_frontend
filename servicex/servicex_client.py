@@ -52,6 +52,7 @@ from servicex.databinder_models import ServiceXSpec, General, Sample
 from collections.abc import Sequence, Coroutine
 from enum import Enum
 import traceback
+from rich.table import Table
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
@@ -233,6 +234,58 @@ def _output_handler(
     return out_dict
 
 
+def _get_progress_options(progress_bar: ProgressBarFormat) -> dict:
+    """Get progress options based on progress bar format."""
+    if progress_bar == ProgressBarFormat.expanded:
+        return {}
+    elif progress_bar == ProgressBarFormat.compact:
+        return {"overall_progress": True}
+    elif progress_bar == ProgressBarFormat.none:
+        return {"display_progress": False}
+    else:
+        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+
+
+def _display_results(out_dict):
+    """Display the delivery results using rich styling."""
+    from rich import get_console
+
+    console = get_console()
+
+    console.print("\n[bold green]✓ ServiceX Delivery Complete![/bold green]\n")
+
+    table = Table(
+        title="Delivered Files", show_header=True, header_style="bold magenta"
+    )
+    table.add_column("Sample", style="cyan", no_wrap=True)
+    table.add_column("File Count", justify="right", style="green")
+    table.add_column("Files", style="dim")
+
+    total_files = 0
+    for sample_name, files in out_dict.items():
+        if isinstance(files, GuardList) and files.valid():
+            file_list = list(files)
+            file_count = len(file_list)
+            total_files += file_count
+
+            # Show first few files with ellipsis if many
+            if file_count <= 3:
+                files_display = "\n".join(str(f) for f in file_list)
+            else:
+                files_display = "\n".join(str(f) for f in file_list[:2])
+                files_display += f"\n... and {file_count - 2} more files"
+
+            table.add_row(sample_name, str(file_count), files_display)
+        else:
+            # Handle error case
+            table.add_row(
+                sample_name, "[red]Error[/red]", "[red]Failed to retrieve files[/red]"
+            )
+
+    console.print(table)
+    console.print(f"\n[bold blue]Total files delivered: {total_files}[/bold blue]\n")
+
+
 async def deliver_async(
     spec: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
@@ -241,6 +294,7 @@ async def deliver_async(
     fail_if_incomplete: bool = True,
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
+    display_results: bool = True,
     concurrency: int = 10,
 ):
     r"""
@@ -263,6 +317,8 @@ async def deliver_async(
             will have its own progress bars; :py:const:`ProgressBarFormat.compact` gives one
             summary progress bar for all transformations; :py:const:`ProgressBarFormat.none`
             switches off progress bars completely.
+    :param display_results: Specifies whether the results should be displayed to the console.
+            Defaults to True.
     :param concurrency: specify how many downloads to run in parallel (default is 8).
     :return: A dictionary mapping the name of each :py:class:`Sample` to a :py:class:`.GuardList`
             with the file names or URLs for the outputs.
@@ -282,26 +338,32 @@ async def deliver_async(
 
     group = DatasetGroup(datasets)
 
-    if progress_bar == ProgressBarFormat.expanded:
-        progress_options = {}
-    elif progress_bar == ProgressBarFormat.compact:
-        progress_options = {"overall_progress": True}
-    elif progress_bar == ProgressBarFormat.none:
-        progress_options = {"display_progress": False}
-    else:
-        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+    progress_options = _get_progress_options(progress_bar)
+
+    if config.General.Delivery not in [
+        General.DeliveryEnum.URLs,
+        General.DeliveryEnum.LocalCache,
+    ]:
+        raise ValueError(
+            f"unexpected value for config.general.Delivery: {config.General.Delivery}"
+        )
 
     if config.General.Delivery == General.DeliveryEnum.URLs:
         results = await group.as_signed_urls_async(
             return_exceptions=return_exceptions, **progress_options
         )
-        return _output_handler(config, datasets, results)
 
-    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
+    else:
         results = await group.as_files_async(
             return_exceptions=return_exceptions, **progress_options
         )
-        return _output_handler(config, datasets, results)
+
+    output_dict = _output_handler(config, datasets, results)
+
+    if display_results:
+        _display_results(output_dict)
+
+    return output_dict
 
 
 deliver = make_sync(deliver_async)
