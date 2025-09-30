@@ -196,13 +196,13 @@ def print_structure_from_str(
         structure_dict = json.loads(structure_str)
 
         output_lines.append(
-            f"\n---------------------------\n"
+            "\n---------------------------\n"
             f"\U0001f4c1 Sample: {sample_name}\n"
-            f"---------------------------"
+            "---------------------------"
         )
 
         # Get the metadata first
-        output_lines.append(f"\nFile Metadata \u2139\ufe0f :\n")
+        output_lines.append("\nFile Metadata \u2139\ufe0f :\n")
         if "FileMetaData" not in structure_dict:
             output_lines.append("No FileMetaData found in dataset.")
         else:
