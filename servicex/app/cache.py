@@ -81,12 +81,12 @@ def list(
     table.add_column("Run Date")
     table.add_column("Files")
     table.add_column("Format")
-    runs = cache.cached_queries()
-    submitted = cache.queries_in_state("SUBMITTED")
     if show_size:
         table.add_column("Size")
 
     runs: List[TransformedResults] = cache.cached_queries()
+    submitted = cache.queries_in_state("SUBMITTED")
+
     for r in runs:
         row = [
             r.title,
@@ -96,6 +96,13 @@ def list(
             str(r.files),
             r.result_format,
         ]
+        if show_size:
+            total_size: int = sum(
+                Path(f).stat().st_size for f in r.file_list if Path(f).exists()
+            )
+            # Convert to human readable string, keeping two decimal places
+            row.append(_format_size(total_size))
+        table.add_row(*row)
     for r in submitted:
         table.add_row(
             r.get("title", ""),
@@ -106,11 +113,7 @@ def list(
             str(r.get("result_format", "")),
         )
         if show_size:
-            total_size: int = sum(
-                Path(f).stat().st_size for f in r.file_list if Path(f).exists()
-            )
-            # Convert to human readable string, keeping two decimal places
-            row.append(_format_size(total_size))
+            row.append("N/A")
         table.add_row(*row)
     rich.print(table)
 

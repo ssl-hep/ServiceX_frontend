@@ -53,6 +53,7 @@ def test_cache_list_size(script_runner, tmp_path) -> None:
     with patch("servicex.app.cache.ServiceXClient") as mock_servicex:
         cache_mock = Mock()
         cache_mock.cached_queries.return_value = [record]
+        cache_mock.queries_in_state.return_value = []
         mock_servicex.return_value.query_cache = cache_mock
         result = script_runner.run(["servicex", "cache", "list", "--size"])
 
@@ -83,6 +84,7 @@ def test_cache_list_without_size(script_runner, tmp_path) -> None:
     with patch("servicex.app.cache.ServiceXClient") as mock_servicex:
         cache_mock = Mock()
         cache_mock.cached_queries.return_value = [record]
+        cache_mock.queries_in_state.return_value = []
         mock_servicex.return_value.query_cache = cache_mock
         result = script_runner.run(["servicex", "cache", "list"])
 
@@ -119,6 +121,7 @@ def test_cache_list_size_gb(script_runner, tmp_path) -> None:
     ):
         cache_mock = Mock()
         cache_mock.cached_queries.return_value = [record]
+        cache_mock.queries_in_state.return_value = []
         mock_servicex.return_value.query_cache = cache_mock
         result = script_runner.run(["servicex", "cache", "list", "--size"])
 
@@ -154,6 +157,7 @@ def test_cache_list_size_tb(script_runner, tmp_path) -> None:
     ):
         cache_mock = Mock()
         cache_mock.cached_queries.return_value = [record]
+        cache_mock.queries_in_state.return_value = []
         mock_servicex.return_value.query_cache = cache_mock
         result = script_runner.run(["servicex", "cache", "list", "--size"])
 
