@@ -33,6 +33,49 @@ from unittest.mock import Mock, patch
 from servicex.models import ResultFormat, TransformedResults
 
 
+def test_cache_list(script_runner, tmp_path) -> None:
+    dummy_file: Path = tmp_path / "data.parquet"
+    dummy_file.write_bytes(b"0" * (5 * 1024 * 1024))
+
+    record_r = TransformedResults(
+        hash="hash",
+        title="Test",
+        codegen="code",
+        request_id="id",
+        submit_time=datetime.now(timezone.utc),
+        data_dir=str(tmp_path),
+        file_list=[str(dummy_file)],
+        signed_url_list=[],
+        files=1,
+        result_format=ResultFormat.parquet,
+    )
+    record_s = {
+        "hash": "hash2",
+        "title": "Test2",
+        "codegen": "code2",
+        "request_id": "id2",
+        "submit_time": datetime.now(timezone.utc).isoformat(),
+        "data_dir": str(tmp_path),
+        "file_list": [str(dummy_file)],
+        "signed_url_list": [],
+        "files": 1,
+        "result_format": ResultFormat.parquet.value,
+    }
+
+    with patch("servicex.app.cache.ServiceXClient") as mock_servicex:
+        cache_mock = Mock()
+        cache_mock.cached_queries.return_value = [record_r]
+        cache_mock.queries_in_state.return_value = [record_s]
+        mock_servicex.return_value.query_cache = cache_mock
+        result = script_runner.run(["servicex", "cache", "list", "--size"])
+
+    assert result.returncode == 0
+    lines = [ln for ln in result.stdout.split("\n") if ln.strip() != ""]
+    assert len(lines) == 2
+    assert "Submitted" in lines[1]
+    assert "Submitted" not in lines[0]
+
+
 def test_cache_list_size(script_runner, tmp_path) -> None:
     dummy_file: Path = tmp_path / "data.parquet"
     dummy_file.write_bytes(b"0" * (5 * 1024 * 1024))

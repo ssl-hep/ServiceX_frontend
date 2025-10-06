@@ -104,14 +104,14 @@ def list(
             row.append(_format_size(total_size))
         table.add_row(*row)
     for r in submitted:
-        table.add_row(
+        row = [
             r.get("title", ""),
             r.get("codegen", ""),
             r.get("request_id", ""),
             "Submitted",
             "Submitted",
             str(r.get("result_format", "")),
-        )
+        ]
         if show_size:
             row.append("N/A")
         table.add_row(*row)
