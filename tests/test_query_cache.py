@@ -285,14 +285,14 @@ def test_get_transform_request_status(transform_request, completed_status):
         cache.close()
 
 
-def test_cache_submitted_queries(transform_request):
+def test_cache_queries_in_state(transform_request):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
         cache = QueryCache(config)
 
         cache.cache_submitted_transform(transform_request, "123456")
 
-        pending = cache.submitted_queries()
+        pending = cache.queries_in_state("SUBMITTED")
         assert len(pending) == 1
         assert pending[0]["status"] == "SUBMITTED"
         assert pending[0]["request_id"] == "123456"

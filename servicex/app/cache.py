@@ -62,7 +62,7 @@ def list():
     table.add_column("Files")
     table.add_column("Format")
     runs = cache.cached_queries()
-    submitted = cache.submitted_queries()
+    submitted = cache.queries_in_state("SUBMITTED")
     for r in runs:
         table.add_row(
             r.title,

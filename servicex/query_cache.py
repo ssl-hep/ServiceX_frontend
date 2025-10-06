@@ -222,8 +222,8 @@ class QueryCache:
             ]
         return result
 
-    def submitted_queries(self) -> List[dict]:
-        """Return all transform records that are only submitted."""
+    def queries_in_state(self, state: str) -> List[dict]:
+        """Return all transform records in a given state."""
         transforms = Query()
         with self.lock:
             return [
