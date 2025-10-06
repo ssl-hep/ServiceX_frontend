@@ -126,7 +126,8 @@ def clear(force: bool = force_opt):
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
         sx.query_cache.close()
-        shutil.rmtree(sx.config.cache_path)
+        if sx.config.cache_path is not None:
+            shutil.rmtree(sx.config.cache_path)
         rich.print("Cache cleared")
 
 
