@@ -415,9 +415,10 @@ class ServiceXClient:
                 self.endpoints[backend].endpoint,
                 refresh_token=self.endpoints[backend].token,
             )
-
         self.query_cache = QueryCache(self.config)
-        self.code_generators = self.get_code_generators()
+        # Delay fetching the list of code generators until needed to avoid an
+        # unnecessary network call when the client is instantiated.
+        self._code_generators: dict[str, str] | None = None
 
     async def get_transforms_async(self) -> List[TransformStatus]:
         r"""
@@ -473,12 +474,23 @@ class ServiceXClient:
         """
         return _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
 
+    def _ensure_code_generators(self) -> None:
+        """Populate cached code generators if not already retrieved."""
+
+        if self._code_generators is None:
+            # Only hit the network the first time we need this information.
+            self._code_generators = self.servicex.get_code_generators()
+
     def get_code_generators(self) -> dict[str, str]:
         r"""
-        Retrieve the code generators deployed with the serviceX instance
-        :return:  The list of code generators as json dictionary
+        Retrieve the code generators deployed with the ServiceX instance.
+
+        Returns the cached result if already fetched, otherwise performs a
+        network request via :py:meth:`ServiceXAdapter.get_code_generators`.
         """
-        return self.servicex.get_code_generators()
+        self._ensure_code_generators()
+        # _ensure_code_generators guarantees the attribute is populated
+        return cast(dict[str, str], self._code_generators)
 
     def generic_query(
         self,
@@ -523,12 +535,6 @@ class ServiceXClient:
         if real_codegen is None:
             raise RuntimeError(
                 "No codegen specified, either from query class or user input"
-            )
-
-        if real_codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
             )
 
         qobj = Query(

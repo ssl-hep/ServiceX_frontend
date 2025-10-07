@@ -51,6 +51,16 @@ from servicex.servicex_adapter import ServiceXFile
 from servicex.servicex_client import ServiceXClient
 from servicex.uproot_raw.uproot_raw import UprootRawQuery
 
+
+def _sx_mock() -> AsyncMock:
+    """Create a ServiceX adapter mock with code generators configured."""
+    mock = AsyncMock()
+    mock.get_code_generators_async = AsyncMock(
+        return_value={"uproot": "img", "uproot-raw": "img"}
+    )
+    return mock
+
+
 transform_status = TransformStatus(
     **{
         "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
@@ -162,7 +172,7 @@ transform_status6 = transform_status.model_copy(
 
 @pytest.fixture
 def servicex():
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
     servicex.get_transform_status = AsyncMock()
@@ -206,7 +216,7 @@ def cache_transform(record: TransformedResults):
 @pytest.mark.parametrize("use_s3_polling", [False, True])
 @pytest.mark.asyncio
 async def test_submit(mocker, use_s3_polling):
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": "123-456-789"}
 
@@ -286,7 +296,7 @@ async def test_submit(mocker, use_s3_polling):
 @pytest.mark.parametrize("use_s3_polling", [False, True])
 @pytest.mark.asyncio
 async def test_submit_partial_success(mocker, use_s3_polling):
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": "123-456-789"}
 
@@ -361,7 +371,7 @@ async def test_submit_partial_success(mocker, use_s3_polling):
 @pytest.mark.asyncio
 async def test_use_of_cache(mocker, use_s3_polling):
     """Do we pick up the cache on the second request for the same transform?"""
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": "123-456-789"}
 
@@ -426,7 +436,7 @@ async def test_use_of_cache(mocker, use_s3_polling):
         assert mock_minio.get_signed_url.await_count == 2
 
         with ExpandableProgress(display_progress=False) as progress:
-            servicex2 = AsyncMock()
+            servicex2 = _sx_mock()
             if use_s3_polling:
                 mock_minio.list_bucket.reset_mock()
             else:
@@ -493,7 +503,7 @@ async def test_use_of_cache(mocker, use_s3_polling):
 
 @pytest.mark.asyncio
 async def test_submit_cancel(mocker):
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
     servicex.get_transform_status = AsyncMock()
@@ -533,7 +543,7 @@ async def test_submit_cancel(mocker):
 
 @pytest.mark.asyncio
 async def test_submit_fatal(mocker):
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     servicex.submit_transform = AsyncMock()
     servicex.submit_transform.return_value = {"request_id": '123-456-789"'}
     servicex.get_transform_status = AsyncMock()
@@ -576,7 +586,7 @@ async def test_submit_generic(mocker, codegen_list):
     """Uses Uproot-Raw classes which go through the generic query mechanism"""
     import json
 
-    sx = AsyncMock()
+    sx = _sx_mock()
     sx.submit_transform = AsyncMock()
     sx.submit_transform.return_value = {"request_id": '123-456-789"'}
     sx.get_transform_status = AsyncMock()
@@ -628,7 +638,7 @@ async def test_submit_cancelled(mocker, codegen_list):
     """Uses Uproot-Raw classes which go through the query cancelled mechanism"""
     import json
 
-    sx = AsyncMock()
+    sx = _sx_mock()
     sx.submit_transform = AsyncMock()
     sx.submit_transform.return_value = {"request_id": '123-456-789"'}
     sx.get_transform_status = AsyncMock()
@@ -662,7 +672,7 @@ async def test_submit_cancelled(mocker, codegen_list):
 
 
 def test_transform_request():
-    servicex = AsyncMock()
+    servicex = _sx_mock()
     did = FileListDataset("/foo/bar/baz.root")
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])

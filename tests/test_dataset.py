@@ -48,6 +48,13 @@ from rich.progress import Progress
 from servicex.servicex_adapter import ServiceXFile
 
 
+def _sx_mock() -> AsyncMock:
+    """Create a ServiceX adapter mock with code generators configured."""
+    mock = AsyncMock()
+    mock.get_code_generators_async = AsyncMock(return_value={"uproot": "img"})
+    return mock
+
+
 @pytest.mark.asyncio
 async def test_as_signed_urls_happy(transformed_result):
     # Test when display_progress is True and provided_progress is None
@@ -127,7 +134,7 @@ async def test_download_files(python_dataset):
     minio_mock = AsyncMock()
     config = Configuration(cache_path="temp_dir", api_endpoints=[])
     python_dataset.configuration = config
-    python_dataset.servicex = AsyncMock()
+    python_dataset.servicex = _sx_mock()
     python_dataset.servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
@@ -174,7 +181,7 @@ async def test_download_files_with_signed_urls(python_dataset):
     minio_mock.get_signed_url.return_value = "http://example.com/signed_url"
     progress_mock = Mock()
 
-    python_dataset.servicex = AsyncMock()
+    python_dataset.servicex = _sx_mock()
     python_dataset.servicex.get_servicex_capabilities = AsyncMock(
         return_value=["poll_local_transformation_results"]
     )
@@ -256,7 +263,7 @@ async def test_retrieve_current_transform_status_status_none(
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
@@ -282,7 +289,7 @@ async def test_retrieve_current_transform_status_status_not(
     python_dataset, completed_status
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.servicex.get_transform_status.return_value = completed_status
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
@@ -307,13 +314,13 @@ async def test_retrieve_current_transform_status_status_not(
 async def test_submit_and_download_cache_miss(python_dataset, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
 
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.cache.get_transform_by_hash = Mock()
         python_dataset.cache.get_transform_by_hash.return_value = None
         python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
@@ -340,13 +347,13 @@ async def test_submit_and_download_cache_miss_overall_progress(
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
 
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.cache.get_transform_by_hash = Mock()
         python_dataset.cache.get_transform_by_hash.return_value = None
         python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
@@ -372,7 +379,7 @@ async def test_submit_and_download_cache_miss_overall_progress(
 async def test_submit_and_download_no_result_format(python_dataset, completed_status):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
@@ -383,7 +390,7 @@ async def test_submit_and_download_no_result_format(python_dataset, completed_st
             r"Use set_result_format method",
         ):
             python_dataset.result_format = None
-            python_dataset.servicex = AsyncMock()
+            python_dataset.servicex = _sx_mock()
             python_dataset.cache.get_transform_by_hash = Mock()
             python_dataset.cache.get_transform_by_hash.return_value = None
             python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
@@ -410,12 +417,12 @@ async def test_submit_and_download_cache_miss_signed_urls_only(
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.cache.get_transform_by_hash = Mock()
         python_dataset.cache.get_transform_by_hash.return_value = None
         python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
@@ -442,12 +449,12 @@ async def test_submit_and_download_cache_files_request_urls(
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.cache.get_transform_by_hash = Mock()
         python_dataset.cache.get_transform_by_hash.return_value = transformed_result
         status = Mock(
@@ -474,12 +481,12 @@ async def test_submit_and_download_cache_urls_request_files(
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.cache.get_transform_by_hash = Mock()
         transformed_result.signed_url_list = ["a.b.c.com"]
         transformed_result.file_list = []
@@ -506,14 +513,14 @@ async def test_submit_and_download_cache_urls_request_files(
 async def test_network_loss(python_dataset, transformed_result):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
         python_dataset.download_path = Path("www.a.b.com")
 
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         status = Mock(files=10, files_completed=5, files_failed=1, status=Status.fatal)
         python_dataset.current_status = status
 
@@ -544,12 +551,12 @@ async def test_submit_and_download_get_request_id_from_previous_submitted_reques
 ):
     with tempfile.TemporaryDirectory() as temp_dir:
         python_dataset.current_status = None
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         config = Configuration(cache_path=temp_dir, api_endpoints=[])
         cache = QueryCache(config)
         python_dataset.cache = cache
         python_dataset.configuration = config
-        python_dataset.servicex = AsyncMock()
+        python_dataset.servicex = _sx_mock()
         python_dataset.cache.get_transform_by_hash = Mock()
         python_dataset.cache.get_transform_by_hash.return_value = None
         python_dataset.servicex.get_transform_status = AsyncMock(id="12345")
