@@ -31,7 +31,12 @@ from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
 from servicex.configuration import Configuration
-from servicex.models import ResultFormat, TransformStatus, TransformedResults
+from servicex.models import (
+    ResultFormat,
+    TransformStatus,
+    TransformedResults,
+    CachedDataset,
+)
 from servicex.query_cache import QueryCache
 from servicex.servicex_adapter import ServiceXAdapter
 from servicex.query_core import (
@@ -44,9 +49,10 @@ from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
-from collections.abc import Sequence
+from collections.abc import Sequence, Coroutine
 from enum import Enum
 import traceback
+from rich.table import Table
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
@@ -115,6 +121,12 @@ class GuardList(Sequence):
             return f"Invalid GuardList: {repr(data._exc)}"
 
 
+def _async_execute_and_wait(coro: Coroutine) -> Any:
+    import asyncio
+
+    return asyncio.run(coro)
+
+
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
 ) -> ServiceXSpec:
@@ -156,7 +168,7 @@ def _load_ServiceXSpec(
     return config
 
 
-def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
+async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -168,8 +180,10 @@ def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
             return _sample.Query.codegen
 
     sx = ServiceXClient(backend=servicex_name, config_path=config_path)
+    title_length_limit = await sx.servicex.get_servicex_sample_title_limit()
     datasets = []
     for sample in config.Sample:
+        sample.validate_title(title_length_limit)
         query = sx.generic_query(
             dataset_identifier=sample.dataset_identifier,
             title=sample.Name,
@@ -220,7 +234,59 @@ def _output_handler(
     return out_dict
 
 
-def deliver(
+def _get_progress_options(progress_bar: ProgressBarFormat) -> dict:
+    """Get progress options based on progress bar format."""
+    if progress_bar == ProgressBarFormat.expanded:
+        return {}
+    elif progress_bar == ProgressBarFormat.compact:
+        return {"overall_progress": True}
+    elif progress_bar == ProgressBarFormat.none:
+        return {"display_progress": False}
+    else:
+        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+
+
+def _display_results(out_dict):
+    """Display the delivery results using rich styling."""
+    from rich import get_console
+
+    console = get_console()
+
+    console.print("\n[bold green]✓ ServiceX Delivery Complete![/bold green]\n")
+
+    table = Table(
+        title="Delivered Files", show_header=True, header_style="bold magenta"
+    )
+    table.add_column("Sample", style="cyan", no_wrap=True)
+    table.add_column("File Count", justify="right", style="green")
+    table.add_column("Files", style="dim")
+
+    total_files = 0
+    for sample_name, files in out_dict.items():
+        if isinstance(files, GuardList) and files.valid():
+            file_list = list(files)
+            file_count = len(file_list)
+            total_files += file_count
+
+            # Show first few files with ellipsis if many
+            if file_count <= 3:
+                files_display = "\n".join(str(f) for f in file_list)
+            else:
+                files_display = "\n".join(str(f) for f in file_list[:2])
+                files_display += f"\n... and {file_count - 2} more files"
+
+            table.add_row(sample_name, str(file_count), files_display)
+        else:
+            # Handle error case
+            table.add_row(
+                sample_name, "[red]Error[/red]", "[red]Failed to retrieve files[/red]"
+            )
+
+    console.print(table)
+    console.print(f"\n[bold blue]Total files delivered: {total_files}[/bold blue]\n")
+
+
+async def deliver_async(
     spec: Union[ServiceXSpec, Mapping[str, Any], str, Path],
     config_path: Optional[str] = None,
     servicex_name: Optional[str] = None,
@@ -228,6 +294,7 @@ def deliver(
     fail_if_incomplete: bool = True,
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
+    display_results: bool = True,
     concurrency: int = 10,
 ):
     r"""
@@ -250,6 +317,8 @@ def deliver(
             will have its own progress bars; :py:const:`ProgressBarFormat.compact` gives one
             summary progress bar for all transformations; :py:const:`ProgressBarFormat.none`
             switches off progress bars completely.
+    :param display_results: Specifies whether the results should be displayed to the console.
+            Defaults to True.
     :param concurrency: specify how many downloads to run in parallel (default is 8).
     :return: A dictionary mapping the name of each :py:class:`Sample` to a :py:class:`.GuardList`
             with the file names or URLs for the outputs.
@@ -263,30 +332,41 @@ def deliver(
         for sample in config.Sample:
             sample.IgnoreLocalCache = True
 
-    datasets = _build_datasets(config, config_path, servicex_name, fail_if_incomplete)
+    datasets = await _build_datasets(
+        config, config_path, servicex_name, fail_if_incomplete
+    )
 
     group = DatasetGroup(datasets)
 
-    if progress_bar == ProgressBarFormat.expanded:
-        progress_options = {}
-    elif progress_bar == ProgressBarFormat.compact:
-        progress_options = {"overall_progress": True}
-    elif progress_bar == ProgressBarFormat.none:
-        progress_options = {"display_progress": False}
-    else:
-        raise ValueError(f"Invalid value {progress_bar} for progress_bar provided")
+    progress_options = _get_progress_options(progress_bar)
+
+    if config.General.Delivery not in [
+        General.DeliveryEnum.URLs,
+        General.DeliveryEnum.LocalCache,
+    ]:
+        raise ValueError(
+            f"unexpected value for config.general.Delivery: {config.General.Delivery}"
+        )
 
     if config.General.Delivery == General.DeliveryEnum.URLs:
-        results = group.as_signed_urls(
+        results = await group.as_signed_urls_async(
             return_exceptions=return_exceptions, **progress_options
         )
-        return _output_handler(config, datasets, results)
 
-    elif config.General.Delivery == General.DeliveryEnum.LocalCache:
-        results = group.as_files(
+    else:
+        results = await group.as_files_async(
             return_exceptions=return_exceptions, **progress_options
         )
-        return _output_handler(config, datasets, results)
+
+    output_dict = _output_handler(config, datasets, results)
+
+    if display_results:
+        _display_results(output_dict)
+
+    return output_dict
+
+
+deliver = make_sync(deliver_async)
 
 
 class ServiceXClient:
@@ -325,14 +405,20 @@ class ServiceXClient:
             self.servicex = ServiceXAdapter(url)
         elif backend:
             if backend not in self.endpoints:
-                raise ValueError(f"Backend {backend} not defined in .servicex file")
+                valid_backends = ", ".join(self.endpoints.keys())
+                cfg_file = self.config.config_file or ".servicex"
+                raise ValueError(
+                    f"Backend {backend} not defined in {cfg_file} file. "
+                    f"Valid backend names: {valid_backends}"
+                )
             self.servicex = ServiceXAdapter(
                 self.endpoints[backend].endpoint,
                 refresh_token=self.endpoints[backend].token,
             )
-
         self.query_cache = QueryCache(self.config)
-        self.code_generators = set(self.get_code_generators(backend).keys())
+        # Delay fetching the list of code generators until needed to avoid an
+        # unnecessary network call when the client is instantiated.
+        self._code_generators: dict[str, str] | None = None
 
     async def get_transforms_async(self) -> List[TransformStatus]:
         r"""
@@ -353,56 +439,58 @@ class ServiceXClient:
 
     get_transform_status = make_sync(get_transform_status_async)
 
-    def get_datasets(self, did_finder=None, show_deleted=False):
+    def get_datasets(self, did_finder=None, show_deleted=False) -> List[CachedDataset]:
         r"""
         Retrieve all datasets you have run on the server
         :return: List of Query objects
         """
-        return self.servicex.get_datasets(did_finder, show_deleted)
+        return _async_execute_and_wait(
+            self.servicex.get_datasets(did_finder, show_deleted)
+        )
 
-    def get_dataset(self, dataset_id):
+    def get_dataset(self, dataset_id) -> CachedDataset:
         r"""
         Retrieve a dataset by its ID
         :return: A Query object
         """
-        return self.servicex.get_dataset(dataset_id)
+        return _async_execute_and_wait(self.servicex.get_dataset(dataset_id))
 
-    def delete_dataset(self, dataset_id):
+    def delete_dataset(self, dataset_id) -> bool:
         r"""
         Delete a dataset by its ID
-        :return: A Query object
+        :return: boolean showing whether the dataset has been deleted
         """
-        return self.servicex.delete_dataset(dataset_id)
+        return _async_execute_and_wait(self.servicex.delete_dataset(dataset_id))
 
-    def delete_transform(self, transform_id):
+    def delete_transform(self, transform_id) -> None:
         r"""
         Delete a Transform by its request ID
-        :return: A Query object
         """
-        return self.servicex.delete_transform(transform_id)
+        return _async_execute_and_wait(self.servicex.delete_transform(transform_id))
 
-    def cancel_transform(self, transform_id):
+    def cancel_transform(self, transform_id) -> None:
         r"""
         Cancel a Transform by its request ID
-        :return: A Query object
         """
-        return self.servicex.cancel_transform(transform_id)
+        return _async_execute_and_wait(self.servicex.cancel_transform(transform_id))
 
-    def get_code_generators(self, backend=None):
+    def _ensure_code_generators(self) -> None:
+        """Populate cached code generators if not already retrieved."""
+
+        if self._code_generators is None:
+            # Only hit the network the first time we need this information.
+            self._code_generators = self.servicex.get_code_generators()
+
+    def get_code_generators(self) -> dict[str, str]:
         r"""
-        Retrieve the code generators deployed with the serviceX instance
-        :return:  The list of code generators as json dictionary
+        Retrieve the code generators deployed with the ServiceX instance.
+
+        Returns the cached result if already fetched, otherwise performs a
+        network request via :py:meth:`ServiceXAdapter.get_code_generators`.
         """
-        cached_backends = None
-        if backend:
-            cached_backends = self.query_cache.get_codegen_by_backend(backend)
-        if cached_backends:
-            logger.info("Returning code generators from cache")
-            return cached_backends["codegens"]
-        else:
-            code_generators = self.servicex.get_code_generators()
-            self.query_cache.update_codegen_by_backend(backend, code_generators)
-            return code_generators
+        self._ensure_code_generators()
+        # _ensure_code_generators guarantees the attribute is populated
+        return cast(dict[str, str], self._code_generators)
 
     def generic_query(
         self,
@@ -428,6 +516,9 @@ class ServiceXClient:
 
         """
 
+        if query is None:
+            raise ValueError("query argument cannot be None")
+
         if isinstance(query, str):
             if codegen is None:
                 raise RuntimeError(
@@ -435,18 +526,15 @@ class ServiceXClient:
                 )
             query = GenericQueryStringGenerator(query, codegen)
         if not isinstance(query, QueryStringGenerator):
-            raise ValueError("query argument must be string or QueryStringGenerator")
+            raise ValueError(
+                "query argument must be string or QueryStringGenerator, not "
+                f"{type(query).__name__}"
+            )
 
         real_codegen = codegen if codegen is not None else query.default_codegen
         if real_codegen is None:
             raise RuntimeError(
                 "No codegen specified, either from query class or user input"
-            )
-
-        if real_codegen not in self.code_generators:
-            raise NameError(
-                f"{codegen} code generator not supported by serviceX "
-                f"deployment at {self.servicex.url}"
             )
 
         qobj = Query(

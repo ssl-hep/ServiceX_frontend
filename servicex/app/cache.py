@@ -29,10 +29,28 @@ import shutil
 
 import rich
 import typer
+from pathlib import Path
 from rich.prompt import Confirm
+from typing import List
 
 from servicex.app import pipeable_table
+from servicex.models import TransformedResults
 from servicex.servicex_client import ServiceXClient
+
+
+def _format_size(size_bytes: int) -> str:
+    """Return human readable string for size in bytes."""
+    if size_bytes >= 1024**4:
+        size = size_bytes / (1024**4)
+        unit = "TB"
+    elif size_bytes >= 1024**3:
+        size = size_bytes / (1024**3)
+        unit = "GB"
+    else:
+        size = size_bytes / (1024**2)
+        unit = "MB"
+    return f"{size:,.2f} {unit}"
+
 
 cache_app = typer.Typer(name="cache", no_args_is_help=True)
 force_opt = typer.Option(False, "-y", help="Force, don't ask for permission")
@@ -48,7 +66,9 @@ def cache():
 
 
 @cache_app.command()
-def list():
+def list(
+    show_size: bool = typer.Option(False, "--size", help="Include size of cached files")
+) -> None:
     """
     List the cached queries
     """
@@ -61,16 +81,40 @@ def list():
     table.add_column("Run Date")
     table.add_column("Files")
     table.add_column("Format")
-    runs = cache.cached_queries()
+    if show_size:
+        table.add_column("Size")
+
+    runs: List[TransformedResults] = cache.cached_queries()
+    submitted = cache.queries_in_state("SUBMITTED")
+
     for r in runs:
-        table.add_row(
+        row = [
             r.title,
             r.codegen,
             r.request_id,
             r.submit_time.astimezone().strftime("%a, %Y-%m-%d %H:%M"),
             str(r.files),
             r.result_format,
-        )
+        ]
+        if show_size:
+            total_size: int = sum(
+                Path(f).stat().st_size for f in r.file_list if Path(f).exists()
+            )
+            # Convert to human readable string, keeping two decimal places
+            row.append(_format_size(total_size))
+        table.add_row(*row)
+    for r in submitted:
+        row = [
+            r.get("title", ""),
+            r.get("codegen", ""),
+            r.get("request_id", ""),
+            "Submitted",
+            "Submitted",
+            str(r.get("result_format", "")),
+        ]
+        if show_size:
+            row.append("N/A")
+        table.add_row(*row)
     rich.print(table)
 
 
@@ -82,7 +126,8 @@ def clear(force: bool = force_opt):
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
         sx.query_cache.close()
-        shutil.rmtree(sx.config.cache_path)
+        if sx.config.cache_path is not None:
+            shutil.rmtree(sx.config.cache_path)
         rich.print("Cache cleared")
 
 

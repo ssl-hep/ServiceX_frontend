@@ -143,17 +143,22 @@ class Sample(DocStringBaseModel):
             raise ValueError("NFiles cannot be set to zero for a dataset.")
         return self
 
-    @field_validator("Name", mode="before")
-    @classmethod
-    def truncate_long_sample_name(cls, v):
+    def validate_title(self, length: Optional[int]) -> None:
         """
-        Truncate sample name to 128 characters if exceed
-        Print warning message
+        Logic for adjusting length of the title
         """
-        if len(v) > 128:
-            logger.warning(f"Truncating Sample name to 128 characters for {v}")
-            v = v[0:128]
-        return v
+        if length is None:
+            # we adopt pre-3.2.0 behavior: truncate to 128 characters
+            if len(self.Name) > 128:
+                logger.warning(
+                    f"Truncating Sample name to 128 characters for {self.Name}"
+                )
+                self.Name = self.Name[:128]
+                logger.warning(f"New name is {self.Name}")
+        else:
+            if len(self.Name) > length:
+                logger.error(f"Sample name {self.Name} over the limit ({length})")
+                raise ValueError(f"Sample name {self.Name} length too long")
 
     @property
     def hash(self):
@@ -198,6 +203,11 @@ class General(DocStringBaseModel):
         a ROOT TTree https://root.cern.ch/doc/master/classTTree.html
         """
 
+        root_rntuple = "root-rntuple"
+        """
+        Save the output as an RNtuple https://root.cern/doc/master/classROOT_1_1RNTuple.html
+        """
+
         def to_ResultFormat(self) -> ResultFormat:
             """This method is used to convert the OutputFormatEnum enum to the ResultFormat enum,
             which is what is actually used for the TransformRequest. This allows us to use
@@ -207,6 +217,8 @@ class General(DocStringBaseModel):
                 return ResultFormat.parquet
             elif self == self.root_ttree:
                 return ResultFormat.root_ttree
+            elif self == self.root_rntuple:
+                return ResultFormat.root_rntuple
             else:  # pragma: no cover
                 raise RuntimeError(f"Bad OutputFormatEnum {self}")
 

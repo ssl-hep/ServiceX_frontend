@@ -30,7 +30,12 @@ Provide the path to the configuration file as an argument to the command.
 codegens
 ~~~~~~~~
 
-This command will list the code generators deployed.
+Commands that interact with code generators deployed on a backend.
+
+list
+^^^^
+
+List the available code generators for the selected backend.
 
 transforms
 ~~~~~~~~~~
@@ -77,7 +82,8 @@ list
 ^^^^
 
 Show all of the cached transforms along with the run time, code
-generator, and number of resulting files
+generator, and number of resulting files. Submitted submissions are
+also listed with the run date and file count shown as ``Submitted``.
 
 delete
 ^^^^^^

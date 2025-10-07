@@ -17,7 +17,7 @@ This looks up files in datasets using their integer ID in the `CERN Open Data Po
 
 A list of network-accessible files
 ^^^^
-If you have URLs for files that ServiceX can access via either the HTTP or XRootD protocols, then these URLs can be given directly to ServiceX. Note that the ServiceX instance must have permissions to read these files; in particular if generic members of your experiment can't access the files, ServiceX will probably not be able to either.
+If you have URLs for files that ServiceX can access via either the HTTP or XRootD protocols, then these URLs can be given directly to ServiceX. Note that the ServiceX instance must have permissions to read these files; in particular if generic members of your experiment can't access the files, ServiceX will probably not be able to either. Wildcards are not supported for a ``FileList``, but are by XRootD patterns (see below).
  * Python: ``{ "Dataset": servicex.dataset.FileList(["http://server/file1.root", "root://server/file2.root"]) }``
  * YAML: ``Dataset: !FileList ["http://server/file1.root", "root://server/file2.root"]``
 
@@ -28,3 +28,5 @@ Files can also be located using wildcard patterns with XRootD. So, for example, 
 *Note: available from ServiceX client version 3.0.1.*
  * Python: ``{ "Dataset": servicex.dataset.XRootD("root://eospublic.cern.ch//eos/opendata/mystuff/*") }``
  * YAML: ``Dataset: !XRootD root://eospublic.cern.ch//eos/opendata/mystuff/*``
+
+You can access files in other CERN `eos` mounts with `root://eosatlas.cern.ch//eos/...`, or with any other `eos` root.

@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "servicex"
-version = "3.1.1"
+version = "3.2.2"
 description = "Python SDK and CLI Client for ServiceX"
 readme = "README.md"
 license = { text = "BSD-3-Clause" }  # SPDX short identifier
@@ -80,6 +80,7 @@ test = [
     "pyarrow>=12.0.0",
     "pre-commit>=4.0.1",
     "pytest-aioboto3>=0.6.0",
+    "coverage>=7.0.0",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",
@@ -124,7 +125,20 @@ include = [
 packages = ["servicex"]
 
 [tool.coverage.run]
-dynamic_context = "test_function"
+source = ["servicex"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.hatch.envs.test]
+features = ["test"]
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args}"
+cov = "coverage run --source servicex/ -m pytest tests && coverage report"
+cov-html = "coverage run --source servicex/ -m pytest tests && coverage html"

@@ -79,6 +79,7 @@ class ResultFormat(str, Enum):
 
     parquet = "parquet"
     root_ttree = "root-file"
+    root_rntuple = "root-rntuple"
 
 
 class Status(str, Enum):
@@ -227,6 +228,16 @@ class TransformedResults(DocStringBaseModel):
     """File format for results"""
     log_url: Optional[str] = None
     """URL for looking up logs on the ServiceX server"""
+
+
+class ServiceXInfo(DocStringBaseModel):
+    r"""
+    Model for ServiceX Info properties
+    """
+
+    app_version: str = Field(alias="app-version")
+    code_gen_image: dict[str, str] = Field(alias="code-gen-image")
+    capabilities: list[str] = Field(default_factory=list)
 
 
 class DatasetFile(BaseModel):
