@@ -150,7 +150,7 @@ is applied to each event in the input sequence, and the result is a sequence of 
 The dictionary defines the columns of the output file (e.g. the leaves in a ``TTree``). In each case, the three ``lambda`` functions are applied
 to each jet, transforming the sequence of jets into a sequence of :math:`p_T` values, a sequence of :math:`\eta` values, and a sequence of EM fractions.
 
-Full documentation on the func-adl query language can be found at this `JupyterBook <https://iris-hep.github.io/xaod_usage/intro.html>`_.
+Full documentation on the func-adl query language can be found `here <https://iris-hep.org/func_adl/>`_.
 
 Python Function Query Type
 --------------------------
