@@ -41,7 +41,7 @@ from servicex.models import (
 from servicex.dataset_identifier import FileListDataset
 from servicex.minio_adapter import MinioAdapter
 
-import pandas as pd
+import awkward as ak
 import os
 
 
@@ -200,9 +200,9 @@ def transformed_result_signed_url() -> TransformedResults:
 @fixture
 def dummy_parquet_file():
     data = {"column1": [1, 2, 3, 4], "column2": ["A", "B", "C", "D"]}
-    df = pd.DataFrame(data)
+    arr = ak.Array(data)
     parquet_file_path = "1.parquet"
-    df.to_parquet(parquet_file_path, index=False)
+    ak.to_parquet(arr, parquet_file_path)
 
     yield parquet_file_path
 
