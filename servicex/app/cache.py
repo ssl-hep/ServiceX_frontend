@@ -85,6 +85,8 @@ def list(
         table.add_column("Size")
 
     runs: List[TransformedResults] = cache.cached_queries()
+    submitted = cache.queries_in_state("SUBMITTED")
+
     for r in runs:
         row = [
             r.title,
@@ -101,6 +103,18 @@ def list(
             # Convert to human readable string, keeping two decimal places
             row.append(_format_size(total_size))
         table.add_row(*row)
+    for r in submitted:
+        row = [
+            r.get("title", ""),
+            r.get("codegen", ""),
+            r.get("request_id", ""),
+            "Submitted",
+            "Submitted",
+            str(r.get("result_format", "")),
+        ]
+        if show_size:
+            row.append("N/A")
+        table.add_row(*row)
     rich.print(table)
 
 
@@ -112,7 +126,8 @@ def clear(force: bool = force_opt):
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
         sx = ServiceXClient()
         sx.query_cache.close()
-        shutil.rmtree(sx.config.cache_path)
+        if sx.config.cache_path is not None:
+            shutil.rmtree(sx.config.cache_path)
         rich.print("Cache cleared")
 
 

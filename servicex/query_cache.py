@@ -29,6 +29,7 @@ import json
 import os
 from pathlib import Path
 from typing import List, Optional
+from datetime import datetime, timezone
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
 
@@ -43,9 +44,10 @@ class CacheException(Exception):
 class QueryCache:
     def __init__(self, config: Configuration):
         self.config = config
-        Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
-        self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
-        self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
+        if self.config.cache_path is not None:
+            Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
+            self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
+            self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
 
     def close(self):
         self.db.close()
@@ -60,7 +62,7 @@ class QueryCache:
     ) -> TransformedResults:
         return TransformedResults(
             hash=transform.compute_hash(),
-            title=transform.title,
+            title=transform.title or "No Title",
             codegen=transform.codegen,
             request_id=completed_status.request_id,
             submit_time=completed_status.submit_time,
@@ -148,6 +150,24 @@ class QueryCache:
                 transform.hash == hash_value,
             )
 
+    def cache_submitted_transform(
+        self, transform: TransformRequest, request_id: str
+    ) -> None:
+        """Cache a transform that has been submitted but not completed."""
+
+        record = {
+            "hash": transform.compute_hash(),
+            "title": transform.title,
+            "codegen": transform.codegen,
+            "result_format": transform.result_format,
+            "request_id": request_id,
+            "status": "SUBMITTED",
+            "submit_time": datetime.now(timezone.utc).isoformat(),
+        }
+        transforms = Query()
+        with self.lock:
+            self.db.upsert(record, transforms.hash == record["hash"])
+
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         """
         Returns completed transformations by hash
@@ -186,6 +206,7 @@ class QueryCache:
             return TransformedResults(**records[0])
 
     def cache_path_for_transform(self, transform_status: TransformStatus) -> Path:
+        assert self.config.cache_path is not None, "Cache path not set"
         base = Path(self.config.cache_path)
         result = Path(os.path.join(base, transform_status.request_id))
         result.mkdir(parents=True, exist_ok=True)
@@ -202,6 +223,17 @@ class QueryCache:
                 )
             ]
         return result
+
+    def queries_in_state(self, state: str) -> List[dict]:
+        """Return all transform records in a given state."""
+        transforms = Query()
+        with self.lock:
+            return [
+                doc
+                for doc in self.db.search(
+                    (transforms.status == "SUBMITTED") & transforms.request_id.exists()
+                )
+            ]
 
     def delete_record_by_request_id(self, request_id: str):
         with self.lock:
