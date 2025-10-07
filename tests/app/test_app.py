@@ -263,9 +263,10 @@ def test_cache_clear_force(script_runner, tmp_path):
     fake_cache_dir = tmp_path / "cache_dir"
     fake_cache_dir.mkdir()
 
-    with patch("servicex.app.cache.ServiceXClient") as mock_servicex, patch(
-        "shutil.rmtree"
-    ) as mock_rmtree:
+    with (
+        patch("servicex.app.cache.ServiceXClient") as mock_servicex,
+        patch("shutil.rmtree") as mock_rmtree,
+    ):
         # Configure the ServiceXClient instance mock
         instance = Mock()
         instance.query_cache = Mock()
