@@ -175,7 +175,7 @@ async def test_get_codegens(get, servicex):
             "capabilities": [],
         },
     )
-    c = await servicex.get_code_generators()
+    c = await servicex.get_code_generators_async()
     assert len(c) == 2
     assert c["uproot"] == "http://uproot-codegen"
 
@@ -686,7 +686,7 @@ async def test_get_authorization_no_token_no_refresh(servicex, monkeypatch):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.jwt.decode", return_value={"exp": time.time() + 120})
+@patch("servicex.servicex_adapter.jwt.decode", return_value={"exp": time.time() + 600})
 async def test_get_authorization_with_valid_token(decode, servicex):
     servicex.token = "tok123"
     headers = await servicex._get_authorization()

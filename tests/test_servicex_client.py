@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -138,3 +139,77 @@ def test_delete_transform_from_cache(mock_cache, servicex_adaptor, transformed_r
             mock_cache.return_value.delete_record_by_request_id.assert_called_once_with(
                 "servicex-request-789"
             )
+
+
+def test_invalid_backend_raises_error_with_filename():
+    config_file = "tests/example_config.yaml"
+    expected = Path(config_file).resolve()
+
+    with pytest.raises(ValueError) as err:
+        ServiceXClient(backend="badname", config_path=config_file)
+
+    assert f"Backend badname not defined in {expected} file" in str(err.value)
+
+
+def test_display_results_with_many_files():
+    from servicex.servicex_client import _display_results, GuardList
+    from unittest.mock import patch, MagicMock
+
+    # Mock GuardList with more than 3 files to trigger lines 275-276
+    mock_guard_list = MagicMock(spec=GuardList)
+    mock_guard_list.valid.return_value = True
+    mock_guard_list.__iter__.return_value = iter(
+        [
+            "file1.parquet",
+            "file2.parquet",
+            "file3.parquet",
+            "file4.parquet",
+            "file5.parquet",
+        ]
+    )
+
+    out_dict = {"sample1": mock_guard_list}
+
+    with patch("rich.get_console") as mock_get_console:
+        mock_console = MagicMock()
+        mock_get_console.return_value = mock_console
+
+        with patch("servicex.servicex_client.Table") as mock_table:
+            mock_table_instance = MagicMock()
+            mock_table.return_value = mock_table_instance
+
+            _display_results(out_dict)
+
+            # Verify that add_row was called with the truncated file list
+            mock_table_instance.add_row.assert_called_once()
+            call_args = mock_table_instance.add_row.call_args[0]
+            assert call_args[0] == "sample1"
+            assert call_args[1] == "5"
+            assert "... and 3 more files" in call_args[2]
+
+
+@pytest.mark.asyncio
+async def test_deliver_async_invalid_delivery_config():
+    from servicex.servicex_client import deliver_async
+    from unittest.mock import patch, MagicMock
+
+    # Mock the config loading to return invalid delivery type
+    with patch("servicex.servicex_client._load_ServiceXSpec") as mock_load_spec:
+        with patch("servicex.servicex_client._build_datasets") as mock_build_datasets:
+            with patch("servicex.minio_adapter.init_s3_config"):
+                mock_config = MagicMock()
+                mock_config.General.Delivery = (
+                    "INVALID_DELIVERY"  # Invalid delivery type
+                )
+                mock_config.General.IgnoreLocalCache = False
+                mock_config.Sample = []
+                mock_load_spec.return_value = mock_config
+                mock_build_datasets.return_value = []
+
+                with pytest.raises(ValueError) as exc_info:
+                    await deliver_async("test_spec.yaml")
+
+                assert (
+                    "unexpected value for config.general.Delivery: INVALID_DELIVERY"
+                    in str(exc_info.value)
+                )

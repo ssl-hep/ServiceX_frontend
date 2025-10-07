@@ -320,6 +320,19 @@ class Query:
         )
 
         if not cached_record:
+            # Validate the requested code generator only when we are about to
+            # submit a new transform. This avoids a network call when a cached
+            # transform is used.
+            supported_codegens = await self.servicex.get_code_generators_async()
+            if self.codegen not in supported_codegens:
+                # Include available code generators to guide user when an
+                # unsupported one is requested.
+                available_codegens = ", ".join(sorted(supported_codegens))
+                raise NameError(
+                    f"{self.codegen} code generator not supported by serviceX "
+                    f"deployment at {self.servicex.url}. Supported code generators are: "
+                    f"{available_codegens}"
+                )
 
             if self.cache.is_transform_request_submitted(sx_request_hash):
                 self.request_id = self.cache.get_transform_request_id(sx_request_hash)

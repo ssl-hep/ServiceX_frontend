@@ -31,7 +31,7 @@ import datetime
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 
-from httpx import AsyncClient, Response
+from httpx import AsyncClient, Response, Timeout
 from json import JSONDecodeError
 from httpx_retries import RetryTransport, Retry
 from google.auth import jwt
@@ -41,6 +41,7 @@ from tenacity import (
     wait_fixed,
     retry_if_not_exception_type,
 )
+from make_it_sync import make_sync
 
 from servicex.models import (
     TransformRequest,
@@ -68,6 +69,9 @@ async def _extract_message(r: Response):
     except JSONDecodeError:
         error_message = r.text
     return error_message
+
+
+_timeout = Timeout(10, read=300)
 
 
 class ServiceXAdapter:
@@ -199,8 +203,10 @@ class ServiceXAdapter:
             statuses = [TransformStatus(**status) for status in o["requests"]]
             return statuses
 
-    async def get_code_generators(self) -> dict[str, str]:
+    async def get_code_generators_async(self) -> dict[str, str]:
         return (await self.get_servicex_info()).code_gen_image
+
+    get_code_generators = make_sync(get_code_generators_async)
 
     async def get_datasets(
         self, did_finder=None, show_deleted=False
@@ -298,9 +304,12 @@ class ServiceXAdapter:
         if later_than:
             params["later_than"] = later_than.isoformat()
 
-        async with AsyncClient() as session:
+        retry_options = Retry(total=3, backoff_factor=10)
+        async with AsyncClient(
+            transport=RetryTransport(retry=retry_options), timeout=_timeout
+        ) as session:
             r = await session.get(headers=headers, url=url, params=params)
-            if r.status_code == 403:
+            if r.status_code in [401, 403]:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}"
                 )
@@ -346,7 +355,9 @@ class ServiceXAdapter:
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=30)
-        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
+        async with AsyncClient(
+            transport=RetryTransport(retry=retry_options), timeout=_timeout
+        ) as client:
             r = await client.post(
                 url=f"{self.url}/servicex/transformation",
                 headers=headers,

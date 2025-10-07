@@ -22,7 +22,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 
 import pytest
 
@@ -64,7 +64,27 @@ def dataset():
     return cached_dataset
 
 
-def test_datasets_list(script_runner, dataset):
+def make_cached_dataset(
+    dataset_id: int, name: str, did_finder: str = "some_finder"
+) -> CachedDataset:
+    files: list[DatasetFile] = []
+    now = datetime.now()
+    return CachedDataset(
+        id=dataset_id,
+        name=name,
+        did_finder=did_finder,
+        n_files=0,
+        size=0,
+        events=0,
+        last_used=now,
+        last_updated=now,
+        lookup_status="completed",
+        is_stale=False,
+        files=files,
+    )
+
+
+def test_datasets_list(script_runner, dataset) -> None:
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_datasets = MagicMock(return_value=[dataset])
         mock_servicex.return_value.get_datasets = mock_get_datasets
@@ -80,7 +100,7 @@ def test_datasets_list(script_runner, dataset):
         assert result_row[0].strip() == "42"
         assert result_row[1] == "test_dataset"
         assert result_row[2] == "2"
-        assert result_row[3] == "0MB"
+        assert result_row[3] == "0.00 MB"
         assert result_row[4] == "completed"
 
         mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)
@@ -104,7 +124,29 @@ def test_datasets_list(script_runner, dataset):
         )
 
 
-def test_dataset_get(script_runner, dataset):
+@pytest.mark.parametrize(
+    "size,expected",
+    [
+        (int(5e7), "50.00 MB"),
+        (int(1.5e9), "1.50 GB"),
+        (int(2.5e12), "2.50 TB"),
+    ],
+)
+def test_datasets_list_size_units(script_runner, dataset, size, expected):
+    dataset.size = size
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
+        mock_get_datasets = MagicMock(return_value=[dataset])
+        mock_servicex.return_value.get_datasets = mock_get_datasets
+
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "-c", "tests/example_config.yaml"]
+        )
+        assert result.returncode == 0
+        result_row = result.stdout.split("  ")
+        assert result_row[3] == expected
+
+
+def test_dataset_get(script_runner, dataset) -> None:
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
         mock_get_dataset = MagicMock(return_value=dataset)
         mock_servicex.return_value.get_dataset = mock_get_dataset
@@ -121,23 +163,81 @@ def test_dataset_get(script_runner, dataset):
         assert len(result_doc["dataset"]["files"]) == 2
 
 
-def test_dataset_delete(script_runner):
+def test_dataset_delete(script_runner) -> None:
     with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
-        mock_delete_dataset = MagicMock(return_value=True)
+        mock_delete_dataset = MagicMock(side_effect=[True, True])
         mock_servicex.return_value.delete_dataset = mock_delete_dataset
 
         result = script_runner.run(
-            ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
+            [
+                "servicex",
+                "datasets",
+                "delete",
+                "-c",
+                "tests/example_config.yaml",
+                "42",
+                "43",
+            ]
         )
         assert result.returncode == 0
-        assert result.stdout == "Dataset 42 deleted\n"
-        mock_delete_dataset.assert_called_once_with(42)
+        assert result.stdout == "Dataset 42 deleted\nDataset 43 deleted\n"
+        assert mock_delete_dataset.call_args_list == [call(42), call(43)]
 
-        mock_delete_dataset_not_found = MagicMock(return_value=False)
+        mock_delete_dataset_not_found = MagicMock(side_effect=[True, False])
         mock_servicex.return_value.delete_dataset = mock_delete_dataset_not_found
         result = script_runner.run(
-            ["servicex", "datasets", "delete", "-c", "tests/example_config.yaml", "42"]
+            [
+                "servicex",
+                "datasets",
+                "delete",
+                "-c",
+                "tests/example_config.yaml",
+                "42",
+                "43",
+            ]
         )
         assert result.returncode == 1
-        mock_delete_dataset.assert_called_once_with(42)
-        assert result.stdout == "Dataset 42 not found\n"
+        assert mock_delete_dataset_not_found.call_args_list == [call(42), call(43)]
+        assert result.stdout == "Dataset 42 deleted\nDataset 43 not found\n"
+
+
+def test_datasets_list_with_search_pattern(script_runner) -> None:
+    dataset_alpha = make_cached_dataset(1, "alpha")
+    dataset_beta = make_cached_dataset(2, "beta")
+
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
+        mock_get_datasets = MagicMock(return_value=[dataset_alpha, dataset_beta])
+        mock_servicex.return_value.get_datasets = mock_get_datasets
+
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "alpha", "-c", "tests/example_config.yaml"]
+        )
+
+        assert result.returncode == 0
+        assert "alpha" in result.stdout
+        assert "beta" not in result.stdout
+
+        mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)
+
+
+def test_datasets_list_with_wildcard_pattern(script_runner) -> None:
+    dataset_alpha = make_cached_dataset(1, "alpha")
+    dataset_beta = make_cached_dataset(2, "beta")
+    dataset_gamma = make_cached_dataset(3, "gamma")
+
+    with patch("servicex.app.datasets.ServiceXClient") as mock_servicex:
+        mock_get_datasets = MagicMock(
+            return_value=[dataset_alpha, dataset_beta, dataset_gamma]
+        )
+        mock_servicex.return_value.get_datasets = mock_get_datasets
+
+        result = script_runner.run(
+            ["servicex", "datasets", "list", "*ta", "-c", "tests/example_config.yaml"]
+        )
+
+        assert result.returncode == 0
+        assert "beta" in result.stdout
+        assert "alpha" not in result.stdout
+        assert "gamma" not in result.stdout
+
+        mock_get_datasets.assert_called_once_with(did_finder=None, show_deleted=False)

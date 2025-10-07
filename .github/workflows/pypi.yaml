@@ -11,17 +11,17 @@ jobs:
     # c.f. https://docs.pypi.org/trusted-publishers/using-a-publisher/
     permissions:
       id-token: write
-      contents: write # required to push with GITHUB_TOKEN
     env:
       BRANCH: ${{ github.event.release.target_commitish }}
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         fetch-depth: 0
+        ssh-key: ${{ secrets.DEPLOY_KEY }}
 
     - name: Set up Python 3.12
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.12'
 
@@ -45,6 +45,24 @@ jobs:
       run: |
         sed -i "/version =/ s/= \"[^\"]*\"/= \"${{ env.RELEASE_VERSION }}\"/" pyproject.toml
 
+    - name: commit version-bump
+      run: |
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add ./pyproject.toml
+
+        # Check if there are changes to commit
+        if ! git diff --cached --quiet; then
+          echo "Changes detected, committing..."
+          git commit -m "Update version to ${{ env.RELEASE_VERSION }}" --no-verify
+        else
+          echo "No changes to commit"
+        fi
+
+    - name: Push commit
+      run: |
+        git push origin HEAD:$BRANCH
+
     - name: Build a sdist and wheel
       run: |
         python -m build .
@@ -66,6 +84,6 @@ jobs:
 
     - name: Publish distribution 📦 to PyPI
       if: github.repository == 'ssl-hep/ServiceX_frontend'
-      uses: pypa/gh-action-pypi-publish@v1.12.4
+      uses: pypa/gh-action-pypi-publish@v1.13.0
       with:
         print-hash: true

@@ -49,6 +49,11 @@ spec_file_arg = typer.Argument(..., help="Spec file to submit to serviceX")
 ignore_cache_opt = typer.Option(
     None, "--ignore-cache", help="Ignore local cache and always submit to ServiceX"
 )
+hide_results_opt = typer.Option(
+    False,
+    "--hide-results",
+    help="Exclude printing results to the console",
+)
 
 
 def show_version(show: bool):
@@ -75,19 +80,20 @@ def deliver(
     config_path: Optional[str] = config_file_option,
     spec_file: str = spec_file_arg,
     ignore_cache: Optional[bool] = ignore_cache_opt,
+    hide_results: bool = hide_results_opt,
 ):
     """
     Deliver a file to the ServiceX cache.
     """
 
     print(f"Delivering {spec_file} to ServiceX cache")
-    results = servicex_client.deliver(
+    servicex_client.deliver(
         spec_file,
         servicex_name=backend,
         config_path=config_path,
         ignore_local_cache=ignore_cache,
+        display_results=not hide_results,
     )
-    rich.print(results)
 
 
 if __name__ == "__main__":

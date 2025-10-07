@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+from pathlib import Path
 from unittest.mock import patch
 import pytest
 
@@ -66,3 +67,50 @@ def test_default_cache_path(tempdir):
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
     assert c.cache_path == "mytemp/servicex_p_higgs"
     del os.environ["USER"]
+
+
+def test_read_from_home(monkeypatch, tmp_path):
+    """Ensure configuration can be located in the user's home directory."""
+
+    # Create a fake home directory with a servicex.yaml file
+    home = tmp_path / "home"
+    home.mkdir()
+    cfg = home / "servicex.yaml"
+    cfg.write_text(
+        """
+api_endpoints:
+  - endpoint: http://localhost:5000
+    name: localhost
+"""
+    )
+
+    # Patch Path.home to point to our fake home and move cwd elsewhere
+    monkeypatch.setattr(Path, "home", lambda: home)
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.chdir(work)
+
+    c = Configuration.read()
+    assert c.api_endpoints[0].endpoint == "http://localhost:5000"
+
+
+@pytest.mark.parametrize("config_filename", ["servicex.yaml", ".servicex"])
+def test_read_from_default_files(monkeypatch, tmp_path, config_filename):
+    """
+    Ensure config can be located in the user's home directory for servicex.yaml and .servicex.
+    """
+
+    # Create a fake home directory with the config file
+    cfg = tmp_path / config_filename
+    cfg.write_text(
+        """
+api_endpoints:
+  - endpoint: http://localhost:5012
+    name: localhost
+"""
+    )
+
+    monkeypatch.chdir(tmp_path)
+
+    c = Configuration.read()
+    assert c.api_endpoints[0].endpoint == "http://localhost:5012"
