@@ -255,3 +255,29 @@ def test_cache_list_size_tb(script_runner, tmp_path) -> None:
     assert result.returncode == 0
     result_row = result.stdout.split("  ")
     assert result_row[-1].strip() == "3.00 TB"
+
+
+def test_cache_clear_force(script_runner, tmp_path):
+    """Ensure the cache clear command with force (-y) calls close and rmtree."""
+    # Prepare a fake cache path
+    fake_cache_dir = tmp_path / "cache_dir"
+    fake_cache_dir.mkdir()
+
+    with patch("servicex.app.cache.ServiceXClient") as mock_servicex, patch(
+        "shutil.rmtree"
+    ) as mock_rmtree:
+        # Configure the ServiceXClient instance mock
+        instance = Mock()
+        instance.query_cache = Mock()
+        instance.config = Mock()
+        instance.config.cache_path = str(fake_cache_dir)
+        mock_servicex.return_value = instance
+
+        result = script_runner.run(["servicex", "cache", "clear", "-y"])
+
+    assert result.returncode == 0
+    # Ensure the cache close was called
+    instance.query_cache.close.assert_called_once()
+    # Ensure rmtree was called with the configured cache path
+    mock_rmtree.assert_called_once_with(str(fake_cache_dir))
+    assert "Cache cleared" in result.stdout
