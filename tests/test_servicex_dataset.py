@@ -55,6 +55,7 @@ transform_status = TransformStatus(
     **{
         "request_id": "b8c508d0-ccf2-4deb-a1f7-65c839eebabf",
         "did": "File List Provided in Request",
+        "did_id": 1,
         "columns": None,
         "selection": "(Where (SelectMany (call EventDataset) (lambda (list e) (call (attr e 'Jets') 'AntiKt4EMTopoJets'))) (lambda (list j) (and (> (/ (call (attr j 'pt')) 1000) 20) (< (call abs (/ (call (attr j 'eta')) 1000)) 4.5))))",  # NOQA 501
         "tree-name": None,

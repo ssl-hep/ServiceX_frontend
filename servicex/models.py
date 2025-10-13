@@ -94,6 +94,7 @@ class Status(str, Enum):
     looking = ("Lookup",)
     pending = "Pending Lookup"
     running = "Running"
+    bad_dataset = "Bad Dataset"
 
 
 class TransformRequest(DocStringBaseModel):
@@ -145,6 +146,7 @@ class TransformStatus(DocStringBaseModel):
 
     request_id: str
     did: str
+    did_id: int
     title: Optional[str] = None
     selection: str
     tree_name: Optional[str] = Field(validation_alias="tree-name")

@@ -55,7 +55,7 @@ from servicex.servicex_adapter import ServiceXAdapter
 
 from make_it_sync import make_sync
 
-DONE_STATUS = (Status.complete, Status.canceled, Status.fatal)
+DONE_STATUS = (Status.complete, Status.canceled, Status.fatal, Status.bad_dataset)
 ProgressIndicators = Union[Progress, ExpandableProgress]
 logger = logging.getLogger(__name__)
 shell_handler = RichHandler(markup=True)
@@ -452,6 +452,24 @@ class Query:
                     else ""
                 )
                 if self.current_status.status == Status.complete:
+                    if self.current_status.files == 0:
+                        err_str = (
+                            f"Transform {titlestr}completed with 0 files. "
+                            "This indicates there were no files in the input dataset. "
+                            "Is this intentional? "
+                        )
+                        logger.warning(err_str)
+                        if self.current_status.log_url is not None:
+                            kibana_link = create_kibana_link_parameters(
+                                self.current_status.log_url,
+                                self.current_status.request_id,
+                                LogLevel.error,
+                                TimeFrame.month,
+                            )
+                            logger.warning(
+                                f"More logfiles of '{self.title}' [bold red on white]"
+                                f"[link={kibana_link}]HERE[/link][/bold red on white]"
+                            )
                     if self.files_failed:
                         bar = "failure"
                     else:
@@ -482,7 +500,46 @@ class Query:
                             f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
                         )
                     raise ServiceXException(err_str)
+                elif self.current_status.status == Status.bad_dataset:
+                    msg_map = {
+                        "does_not_exist": "Dataset does not exist",
+                        "bad_name": "Bad dataset specification",
+                        "internal_failure": "Internal failure during lookup",
+                    }
+                    # get dataset info
+                    try:
+                        dataset_info = await self.servicex.get_dataset(
+                            self.current_status.did_id
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Request {titlestr} failed due to a dataset problem, and "
+                            f"an error ({e}) was encountered while trying to get more details. "
+                            f"{self.current_status.files_completed}/{self.current_status.files} "
+                            f"files completed"
+                        )
+                    else:
+                        logger.error(
+                            f"Request {titlestr} failed due to a dataset problem: "
+                            f"{msg_map[dataset_info.lookup_status]}. "
+                            f"{self.current_status.files_completed}/{self.current_status.files} "
+                            f"files completed"
+                        )
 
+                        if self.current_status.log_url is not None:
+                            kibana_link = create_kibana_link_parameters(
+                                self.current_status.log_url,
+                                self.current_status.request_id,
+                                LogLevel.error,
+                                TimeFrame.month,
+                            )
+                            logger.error(
+                                f"More logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
+                            )
+                    raise ServiceXException(
+                        f"Request {titlestr} failed due to a dataset problem: "
+                        f"{msg_map[dataset_info.lookup_status]}"
+                    )
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:

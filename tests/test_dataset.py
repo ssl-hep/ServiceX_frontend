@@ -38,6 +38,7 @@ from servicex.query_core import Query
 from servicex.query_cache import QueryCache
 from servicex.expandable_progress import ExpandableProgress
 from servicex.query_core import ServiceXException
+from servicex.models import CachedDataset
 
 from pathlib import Path
 from servicex.models import (
@@ -248,6 +249,97 @@ async def test_transform_status_listener_cancelled(python_dataset):
             python_dataset.retrieve_current_transform_status.assert_awaited_once()
             assert python_dataset.files_completed == 5
             assert python_dataset.files_failed == 1
+
+
+@pytest.mark.asyncio
+async def test_transform_status_listener_bad_dataset(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(files=0, files_completed=0, files_failed=0, status=Status.bad_dataset)
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+    bad_dataset = CachedDataset(
+        id=42,
+        name="test_dataset",
+        did_finder="some_finder",
+        n_files=2,
+        size=3072,
+        events=300,
+        last_used=datetime.datetime.now(),
+        last_updated=datetime.datetime.now(),
+        lookup_status="does_not_exist",
+        is_stale=True,
+        files=[],
+    )
+    python_dataset.servicex = Mock()
+    python_dataset.servicex.get_dataset = AsyncMock(return_value=bad_dataset)
+    with pytest.raises(ServiceXException, match=r"dataset problem"):
+        with patch(
+            "servicex.app.transforms.create_kibana_link_parameters"
+        ) as mock_link:
+            await python_dataset.transform_status_listener(
+                progress, progress_task, "mock_title", download_task, "mock_title"
+            )
+            mock_link.assert_called_once()
+            python_dataset.retrieve_current_transform_status.assert_awaited_once()
+            assert python_dataset.files_completed == 0
+            assert python_dataset.files_failed == 0
+
+
+@pytest.mark.asyncio
+async def test_transform_status_listener_zero_files_no_log_url(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(
+        files=0,
+        files_completed=0,
+        files_failed=0,
+        status=Status.complete,
+        log_url=None,
+        title="Test Transform",
+    )
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+    with patch("servicex.query_core.logger") as mock_logger:
+
+        await python_dataset.transform_status_listener(
+            progress, progress_task, "mock_title", download_task, "mock_title"
+        )
+        mock_logger.warning.assert_called_once()
+
+    python_dataset.retrieve_current_transform_status.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_transform_status_listener_zero_files_with_log_url(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(
+        files=0,
+        files_completed=0,
+        files_failed=0,
+        status=Status.complete,
+        log_url="http://example.com/logs",
+        request_id="test-request-123",
+        title="Test Transform",
+    )
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+
+    with patch("servicex.app.transforms.create_kibana_link_parameters") as mock_link:
+        with patch("servicex.query_core.logger") as mock_logger:
+            mock_link.return_value = "http://kibana.example.com/link"
+            await python_dataset.transform_status_listener(
+                progress, progress_task, "mock_title", download_task, "mock_title"
+            )
+
+            mock_link.assert_called_once()
+            mock_logger.warning.assert_called()
+
+    python_dataset.retrieve_current_transform_status.assert_awaited_once()
 
 
 @pytest.mark.asyncio
