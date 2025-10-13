@@ -288,6 +288,29 @@ async def test_transform_status_listener_bad_dataset(python_dataset):
 
 
 @pytest.mark.asyncio
+async def test_transform_status_listener_bad_dataset_bad_lookup(python_dataset):
+    progress = Mock(spec=Progress)
+    progress_task = Mock()
+    download_task = Mock()
+    status = Mock(files=0, files_completed=0, files_failed=0, status=Status.bad_dataset)
+    python_dataset.current_status = status
+    python_dataset.retrieve_current_transform_status = AsyncMock(return_value=status)
+    python_dataset.servicex = Mock()
+    python_dataset.servicex.get_dataset = AsyncMock(side_effect=Exception)
+    with pytest.raises(ServiceXException, match=r"Further information not available"):
+        with patch(
+            "servicex.app.transforms.create_kibana_link_parameters"
+        ) as mock_link:
+            await python_dataset.transform_status_listener(
+                progress, progress_task, "mock_title", download_task, "mock_title"
+            )
+            mock_link.assert_called_once()
+            python_dataset.retrieve_current_transform_status.assert_awaited_once()
+            assert python_dataset.files_completed == 0
+            assert python_dataset.files_failed == 0
+
+
+@pytest.mark.asyncio
 async def test_transform_status_listener_zero_files_no_log_url(python_dataset):
     progress = Mock(spec=Progress)
     progress_task = Mock()

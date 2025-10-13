@@ -518,6 +518,10 @@ class Query:
                             f"{self.current_status.files_completed}/{self.current_status.files} "
                             f"files completed"
                         )
+                        err_str = (
+                            f"Request {titlestr} failed due to a dataset problem. "
+                            "Further information not available"
+                        )
                     else:
                         logger.error(
                             f"Request {titlestr} failed due to a dataset problem: "
@@ -526,20 +530,21 @@ class Query:
                             f"files completed"
                         )
 
-                        if self.current_status.log_url is not None:
-                            kibana_link = create_kibana_link_parameters(
-                                self.current_status.log_url,
-                                self.current_status.request_id,
-                                LogLevel.error,
-                                TimeFrame.month,
-                            )
-                            logger.error(
-                                f"More logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
-                            )
-                    raise ServiceXException(
-                        f"Request {titlestr} failed due to a dataset problem: "
-                        f"{msg_map[dataset_info.lookup_status]}"
-                    )
+                        err_str = (
+                            f"Request {titlestr} failed due to a dataset problem: "
+                            f"{msg_map[dataset_info.lookup_status]}"
+                        )
+                    if self.current_status.log_url is not None:
+                        kibana_link = create_kibana_link_parameters(
+                            self.current_status.log_url,
+                            self.current_status.request_id,
+                            LogLevel.error,
+                            TimeFrame.month,
+                        )
+                        logger.error(
+                            f"More logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
+                        )
+                    raise ServiceXException(err_str)
                 else:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
