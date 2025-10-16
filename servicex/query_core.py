@@ -454,8 +454,9 @@ class Query:
                 if self.current_status.status == Status.complete:
                     if self.current_status.files == 0:
                         err_str = (
-                            f"Transform {titlestr}completed with 0 files. "
-                            "This indicates there were no files in the input dataset. "
+                            f"Transform {titlestr}completed with 0 files.\n "
+                            "This indicates there were no files in the input dataset "
+                            f"{self.current_status.did}."
                             "Is this intentional? "
                         )
                         logger.warning(err_str)
