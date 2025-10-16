@@ -48,6 +48,7 @@ def transform_status_record() -> TransformStatus:
     base_data = {
         "request_id": "test-request-123",
         "did": "test-did-456",
+        "did_id": 1,
         "title": "Test Transform Job",
         "selection": "(muon_pt > 20)",
         "tree-name": "mytree",
