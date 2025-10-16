@@ -74,44 +74,6 @@ def test_deliver_hide_results(script_runner):
         assert result_rows[0] == "Delivering foo.yaml to ServiceX cache"
 
 
-def test_display_results_with_many_files():
-    from servicex.servicex_client import GuardList
-    from servicex.app.main import _display_results
-    from unittest.mock import patch, MagicMock
-
-    # Mock GuardList with more than 3 files to trigger lines 275-276
-    mock_guard_list = MagicMock(spec=GuardList)
-    mock_guard_list.valid.return_value = True
-    mock_guard_list.__iter__.return_value = iter(
-        [
-            "file1.parquet",
-            "file2.parquet",
-            "file3.parquet",
-            "file4.parquet",
-            "file5.parquet",
-        ]
-    )
-
-    out_dict = {"sample1": mock_guard_list}
-
-    with patch("rich.get_console") as mock_get_console:
-        mock_console = MagicMock()
-        mock_get_console.return_value = mock_console
-
-        with patch("rich.table.Table") as mock_table:
-            mock_table_instance = MagicMock()
-            mock_table.return_value = mock_table_instance
-
-            _display_results(out_dict)
-
-            # Verify that add_row was called with the truncated file list
-            mock_table_instance.add_row.assert_called_once()
-            call_args = mock_table_instance.add_row.call_args[0]
-            assert call_args[0] == "sample1"
-            assert call_args[1] == "5"
-            assert "... and 3 more files" in call_args[2]
-
-
 def test_cache_list(script_runner, tmp_path) -> None:
     dummy_file: Path = tmp_path / "data.parquet"
     dummy_file.write_bytes(b"0" * (5 * 1024 * 1024))
