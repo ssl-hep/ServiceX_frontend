@@ -466,9 +466,9 @@ class Query:
                 if self.current_status.status == Status.complete:
                     if self.current_status.files == 0:
                         err_str = (
-                            f"Transform {titlestr}completed with 0 files.\n "
+                            f"Transform {titlestr}completed with 0 files.\n"
                             "This indicates there were no files in the input dataset "
-                            f"{self.current_status.did}."
+                            f"{self.current_status.did}. "
                             "Is this intentional? "
                         )
                         logger.warning(err_str)
@@ -526,25 +526,25 @@ class Query:
                         )
                     except Exception as e:
                         logger.error(
-                            f"Request {titlestr} failed due to a dataset problem, and "
+                            f"Request {titlestr}failed due to a dataset problem, and "
                             f"an error ({e}) was encountered while trying to get more details. "
                             f"{self.current_status.files_completed}/{self.current_status.files} "
                             f"files completed"
                         )
                         err_str = (
-                            f"Request {titlestr} failed due to a dataset problem. "
+                            f"Request {titlestr}failed due to a dataset problem. "
                             "Further information not available"
                         )
                     else:
                         logger.error(
-                            f"Request {titlestr} failed due to a dataset problem: "
+                            f"Request {titlestr}failed due to a dataset problem: "
                             f"{msg_map[dataset_info.lookup_status]}. "
                             f"{self.current_status.files_completed}/{self.current_status.files} "
                             f"files completed"
                         )
 
                         err_str = (
-                            f"Request {titlestr} failed due to a dataset problem: "
+                            f"Request {titlestr}failed due to a dataset problem: "
                             f"{msg_map[dataset_info.lookup_status]}"
                         )
                     if self.current_status.log_url is not None:
