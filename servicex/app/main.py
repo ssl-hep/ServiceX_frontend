@@ -63,6 +63,46 @@ def show_version(show: bool):
         raise typer.Exit()
 
 
+def _display_results(out_dict):
+    """Display the delivery results using rich styling."""
+    from rich import get_console
+
+    console = get_console()
+
+    console.print("\n[bold green]✓ ServiceX Delivery Complete![/bold green]\n")
+
+    table = rich.table.Table(
+        title="Delivered Files", show_header=True, header_style="bold magenta"
+    )
+    table.add_column("Sample", style="cyan", no_wrap=True)
+    table.add_column("File Count", justify="right", style="green")
+    table.add_column("Files", style="dim")
+
+    total_files = 0
+    for sample_name, files in out_dict.items():
+        if isinstance(files, servicex_client.GuardList) and files.valid():
+            file_list = list(files)
+            file_count = len(file_list)
+            total_files += file_count
+
+            # Show first few files with ellipsis if many
+            if file_count <= 3:
+                files_display = "\n".join(str(f) for f in file_list)
+            else:
+                files_display = "\n".join(str(f) for f in file_list[:2])
+                files_display += f"\n... and {file_count - 2} more files"
+
+            table.add_row(sample_name, str(file_count), files_display)
+        else:
+            # Handle error case
+            table.add_row(
+                sample_name, "[red]Error[/red]", "[red]Failed to retrieve files[/red]"
+            )
+
+    console.print(table)
+    console.print(f"\n[bold blue]Total files delivered: {total_files}[/bold blue]\n")
+
+
 version_opt = typer.Option(None, "--version", callback=show_version, is_eager=True)
 
 
@@ -87,13 +127,14 @@ def deliver(
     """
 
     print(f"Delivering {spec_file} to ServiceX cache")
-    servicex_client.deliver(
+    results = servicex_client.deliver(
         spec_file,
         servicex_name=backend,
         config_path=config_path,
         ignore_local_cache=ignore_cache,
-        display_results=not hide_results,
     )
+    if not hide_results:
+        _display_results(results)
 
 
 if __name__ == "__main__":

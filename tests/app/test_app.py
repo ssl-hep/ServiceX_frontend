@@ -30,6 +30,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
+from servicex.servicex_client import GuardList
 
 from servicex.models import ResultFormat, TransformedResults
 
@@ -43,42 +44,34 @@ def test_app_version(script_runner):
 
 
 def test_deliver(script_runner):
-    with patch("servicex.app.main.servicex_client") as mock_servicex_client:
-        mock_servicex_client.deliver = Mock(
-            return_value={"UprootRaw_YAML": ["/tmp/foo.root", "/tmp/bar.root"]}
-        )
+    with patch("servicex.app.main.servicex_client.deliver") as mock_servicex_client:
+        mock_servicex_client.return_value = {
+            "UprootRaw_YAML": GuardList(["/tmp/foo.root", "/tmp/bar.root"])
+        }
         result = script_runner.run(["servicex", "deliver", "foo.yaml"])
         assert result.returncode == 0
         result_rows = result.stdout.split("\n")
         assert result_rows[0] == "Delivering foo.yaml to ServiceX cache"
-        mock_servicex_client.deliver.assert_called_once_with(
+        mock_servicex_client.assert_called_once_with(
             "foo.yaml",
             servicex_name=None,
             config_path=None,
             ignore_local_cache=None,
-            display_results=True,
         )
+        assert result_rows[-3] == "Total files delivered: 2"
 
 
 def test_deliver_hide_results(script_runner):
-    with patch("servicex.app.main.servicex_client") as mock_servicex_client:
-        mock_servicex_client.deliver = Mock(
-            return_value={"UprootRaw_YAML": ["/tmp/foo.root", "/tmp/bar.root"]}
-        )
+    with patch("servicex.app.main.servicex_client.deliver") as mock_servicex_client:
+        mock_servicex_client.return_value = {
+            "UprootRaw_YAML": ["/tmp/foo.root", "/tmp/bar.root"]
+        }
         result = script_runner.run(
             ["servicex", "deliver", "foo.yaml", "--hide-results"]
         )
         assert result.returncode == 0
         result_rows = result.stdout.split("\n")
         assert result_rows[0] == "Delivering foo.yaml to ServiceX cache"
-        # Verify that servicex_client.deliver was called with display_results=False
-        mock_servicex_client.deliver.assert_called_once_with(
-            "foo.yaml",
-            servicex_name=None,
-            config_path=None,
-            ignore_local_cache=None,
-            display_results=False,
-        )
 
 
 def test_cache_list(script_runner, tmp_path) -> None:
