@@ -24,4 +24,8 @@ spec = {
     ]
 }
 
-print(f"Files: {deliver(spec)}")
+files = deliver(spec)
+if len(files["UprootRaw_Dict"]) != 3:
+    raise RuntimeError(f"Expect three files from server; got {files}")
+
+print(f"Files: {files}")
