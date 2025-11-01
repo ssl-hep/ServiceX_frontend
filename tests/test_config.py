@@ -27,46 +27,47 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import pytest
 
 from servicex.configuration import Configuration
 
 
+@patch("servicex.configuration.getuser", return_value="cache_user")
 @patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
-def test_config_read(tempdir):
-    # Windows style user name
+def test_config_read(tempdir: MagicMock, getuser_mock: MagicMock) -> None:
+    # Windows style user name should not override the getpass result.
     os.environ["UserName"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config.yaml")
-    assert c.cache_path == "mytemp/servicex_p_higgs"
+    assert c.cache_path == "mytemp/servicex_cache_user"
+    os.environ.pop("UserName")
 
-    # Reset environment
-    del os.environ["UserName"]
-
-    # Linux style user name
+    # Linux style user name should also not override the getpass result.
     os.environ["USER"] = "p_higgs2"
     c = Configuration.read(config_path="tests/example_config.yaml")
-    assert c.cache_path == "mytemp/servicex_p_higgs2"
+    assert c.cache_path == "mytemp/servicex_cache_user"
+    os.environ.pop("USER")
 
     # but what if there is no file at all?
     with pytest.raises(NameError):
         Configuration.read(config_path="invalid.yaml")
 
 
+@patch("servicex.configuration.getuser", return_value="cache_user")
 @patch("servicex.configuration.tempfile.gettempdir", return_value="./mytemp")
-def test_default_cache_path(tempdir):
+def test_default_cache_path(tempdir: MagicMock, getuser_mock: MagicMock) -> None:
 
-    # Windows style user name
+    # Windows style user name should not override the getpass result.
     os.environ["UserName"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
-    assert c.cache_path == "mytemp/servicex_p_higgs"
-    del os.environ["UserName"]
+    assert c.cache_path == "mytemp/servicex_cache_user"
+    os.environ.pop("UserName")
 
-    # Linux style user name
+    # Linux style user name should also not override the getpass result.
     os.environ["USER"] = "p_higgs"
     c = Configuration.read(config_path="tests/example_config_no_cache_path.yaml")
-    assert c.cache_path == "mytemp/servicex_p_higgs"
-    del os.environ["USER"]
+    assert c.cache_path == "mytemp/servicex_cache_user"
+    os.environ.pop("USER")
 
 
 def test_read_from_home(monkeypatch, tmp_path):
