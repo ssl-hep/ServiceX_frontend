@@ -46,8 +46,15 @@ class QueryCache:
         self.config = config
         if self.config.cache_path is not None:
             Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
-            self.db = TinyDB(os.path.join(self.config.cache_path, "db.json"))
-            self.lock = FileLock(os.path.join(self.config.cache_path, "db.lock"))
+            Path(self.config.cache_path + "/.servicex").mkdir(
+                parents=True, exist_ok=True
+            )
+            self.db = TinyDB(
+                os.path.join(self.config.cache_path, ".servicex", "db.json")
+            )
+            self.lock = FileLock(
+                os.path.join(self.config.cache_path, ".servicex", "db.lock")
+            )
 
     def close(self):
         self.db.close()
