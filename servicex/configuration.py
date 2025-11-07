@@ -70,11 +70,7 @@ class Configuration(BaseModel):
         s_path = os.path.expanduser(self.cache_path)
 
         if "${USER}" in s_path:
-            try:
-                username = getuser()
-            except Exception:  # pragma: no cover - getpass failures are unexpected
-                username = ""
-
+            username = getuser()
             s_path = s_path.replace("${USER}", username)
 
         p_p = PurePath(s_path)
