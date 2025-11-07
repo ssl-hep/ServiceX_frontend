@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+from getpass import getuser
 import tempfile
 from pathlib import Path, PurePath
 from typing import List, Optional, Dict
@@ -55,7 +56,7 @@ class Configuration(BaseModel):
     config_file: Optional[str] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
-    def expand_cache_path(self):
+    def expand_cache_path(self) -> "Configuration":
         """
         Expand the cache path to a full path, and create it if it doesn't exist.
         Expand ${USER} to be the user name on the system. Works for windows, too.
@@ -68,12 +69,9 @@ class Configuration(BaseModel):
 
         s_path = os.path.expanduser(self.cache_path)
 
-        # If they have tried to use the USER or UserName as an expansion, and it has failed, then
-        # translate it to maintain harmony across platforms.
-        if "${USER}" in s_path and "UserName" in os.environ:
-            s_path = s_path.replace("${USER}", os.environ["UserName"])
-        if "${USER}" in s_path and "USER" in os.environ:
-            s_path = s_path.replace("${USER}", os.environ["USER"])
+        if "${USER}" in s_path:
+            username = getuser()
+            s_path = s_path.replace("${USER}", username)
 
         p_p = PurePath(s_path)
         if len(p_p.parts) > 1 and p_p.parts[1] == "tmp":
