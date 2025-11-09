@@ -29,7 +29,11 @@
 import rich
 import typer
 
-from servicex.app.cli_options import backend_cli_option, config_file_option
+from servicex.app.cli_options import (
+    backend_cli_option,
+    config_file_option,
+    cache_dir_option,
+)
 from servicex.servicex_client import ServiceXClient
 from typing import Optional
 
@@ -46,9 +50,10 @@ def codegen() -> None:
 def list(
     backend: Optional[str] = backend_cli_option,
     config_path: Optional[str] = config_file_option,
+    cache_dir: Optional[str] = cache_dir_option,
 ):
     """
     List the available code generators
     """
-    sx = ServiceXClient(backend=backend, config_path=config_path)
+    sx = ServiceXClient(backend=backend, config_path=config_path, cache_dir=cache_dir)
     rich.print_json(data=sx.get_code_generators())

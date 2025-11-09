@@ -167,7 +167,13 @@ def _load_ServiceXSpec(
     return config
 
 
-async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete):
+async def _build_datasets(
+    config,
+    config_path,
+    servicex_name,
+    fail_if_incomplete,
+    cache_dir: Optional[str] = None,
+):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
             return _sample.Codegen
@@ -178,7 +184,9 @@ async def _build_datasets(config, config_path, servicex_name, fail_if_incomplete
         elif isinstance(_sample.Query, Query):
             return _sample.Query.codegen
 
-    sx = ServiceXClient(backend=servicex_name, config_path=config_path)
+    sx = ServiceXClient(
+        backend=servicex_name, config_path=config_path, cache_dir=cache_dir
+    )
     title_length_limit = await sx.servicex.get_servicex_sample_title_limit()
     datasets = []
     for sample in config.Sample:
@@ -254,6 +262,7 @@ async def deliver_async(
     ignore_local_cache: bool = False,
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
     concurrency: int = 10,
+    cache_dir: Optional[str] = None,
 ):
     r"""
     Execute a ServiceX query.
@@ -275,7 +284,9 @@ async def deliver_async(
             will have its own progress bars; :py:const:`ProgressBarFormat.compact` gives one
             summary progress bar for all transformations; :py:const:`ProgressBarFormat.none`
             switches off progress bars completely.
-    :param concurrency: specify how many downloads to run in parallel (default is 8).
+    :param concurrency: specify how many downloads to run in parallel (default is 10).
+    :param cache_dir: if set, will override the target directory for downloads and the cache
+            database.
     :return: A dictionary mapping the name of each :py:class:`Sample` to a :py:class:`.GuardList`
             with the file names or URLs for the outputs.
     """
@@ -289,7 +300,7 @@ async def deliver_async(
             sample.IgnoreLocalCache = True
 
     datasets = await _build_datasets(
-        config, config_path, servicex_name, fail_if_incomplete
+        config, config_path, servicex_name, fail_if_incomplete, cache_dir
     )
 
     group = DatasetGroup(datasets)
@@ -329,7 +340,9 @@ class ServiceXClient:
     Instances of this class are factories for `Datasets``
     """
 
-    def __init__(self, backend=None, url=None, config_path=None):
+    def __init__(
+        self, backend=None, url=None, config_path=None, cache_dir: Optional[str] = None
+    ):
         r"""
         If both `backend` and `url` are unspecified then it will attempt to pick up
         the default backend from `.servicex`
@@ -342,6 +355,10 @@ class ServiceXClient:
                     will search in local directory and up in enclosing directories
         """
         self.config = Configuration.read(config_path)
+        if cache_dir is not None:
+            self.config.cache_path = cache_dir
+            self.config.expand_cache_path()
+
         self.endpoints = self.config.endpoint_dict()
 
         if not url and not backend:

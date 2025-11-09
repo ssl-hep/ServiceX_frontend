@@ -118,8 +118,8 @@ three formats and returns a python dictionary with the name of the sample as a k
 and a list of URLs or local file paths as a value.
 
 Further documentation as to its use and arguments can be found in :py:func:`~servicex.deliver`.
-You can control which ServiceX instance to use, whether to use the local cache, how the progress bars are displayed,
-and more via arguments to this function.
+You can control which ServiceX instance to use, whether to use the local cache, where that local cache is located,
+how the progress bars are displayed, and more via arguments to this function.
 
 
 How to Use YAML Specification
