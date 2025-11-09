@@ -353,8 +353,9 @@ class ServiceXClient:
                     in a file pointed to by the environment variable BEARER_TOKEN_FILE
         :param config_path: Optional path to the `.servicex` file. If not specified,
                     will search in local directory and up in enclosing directories
-        :param cache_dir: Optional path to override the cache directory for downloads and the cache database.
-                    If not specified, uses the value from the configuration file or the default path.
+        :param cache_dir: Optional path to override the cache directory for downloads
+                    and the cache database. If not specified, uses the value from the
+                    configuration file or the default path.
         """
         self.config = Configuration.read(config_path)
         if cache_dir is not None:
