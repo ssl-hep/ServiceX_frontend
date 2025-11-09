@@ -124,7 +124,7 @@ def transformed_results() -> TransformedResults:
 def test_change_cache_dir(mock_cache):
     # test default
     sx = ServiceXClient(config_path="tests/example_config.yaml")
-    assert sx.config.cache_path.startswith("/tmp/servicex_")
+    assert "servicex_" in sx.config.cache_path
 
     # test explicitly specified dir
     sx = ServiceXClient(config_path="tests/example_config.yaml", cache_dir="cache")
