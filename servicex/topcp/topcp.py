@@ -86,8 +86,11 @@ class TopCPQuery(QueryStringGenerator):
             "max_events": self.max_events,
             "no_systematics": self.no_systematics,
             "no_filter": self.no_filter,
-            "docker_image": self.docker_image,
         }
+
+        if self.docker_image is not None:
+            query["docker_image"] = self.docker_image
+
         return json.dumps(query)
 
     @classmethod
