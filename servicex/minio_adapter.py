@@ -127,29 +127,28 @@ class MinioAdapter:
             )
         )
 
-        async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
-            if expected_size is not None:
-                remotesize = expected_size
-            else:
-                async with _file_transfer_sem:
+        async with _file_transfer_sem:
+            async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
+                if expected_size is not None:
+                    remotesize = expected_size
+                else:
                     info = await s3.head_object(Bucket=self.bucket, Key=object_name)
                     remotesize = info["ContentLength"]
-            if path.exists():
-                # if file size is the same, let's not download anything
-                # maybe move to a better verification mechanism with e-tags in the future
-                localsize = path.stat().st_size
-                if localsize == remotesize:
-                    return path.resolve()
-            async with _file_transfer_sem:
+                if path.exists():
+                    # if file size is the same, let's not download anything
+                    # maybe move to a better verification mechanism with e-tags in the future
+                    localsize = path.stat().st_size
+                    if localsize == remotesize:
+                        return path.resolve()
                 await s3.download_file(
                     Bucket=self.bucket,
                     Key=object_name,
                     Filename=path.as_posix(),
                     Config=_transferconfig,
                 )
-            localsize = path.stat().st_size
-            if localsize != remotesize:
-                raise RuntimeError(f"Download of {object_name} failed")
+                localsize = path.stat().st_size
+                if localsize != remotesize:
+                    raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()
 
     @retry(
