@@ -31,9 +31,10 @@ import rich
 import typer
 from pathlib import Path
 from rich.prompt import Confirm
-from typing import List
+from typing import List, Optional
 
 from servicex.app import pipeable_table
+from servicex.app.cli_options import cache_dir_option
 from servicex.models import TransformedResults
 from servicex.servicex_client import ServiceXClient
 
@@ -67,12 +68,15 @@ def cache():
 
 @cache_app.command()
 def list(
-    show_size: bool = typer.Option(False, "--size", help="Include size of cached files")
+    show_size: bool = typer.Option(
+        False, "--size", help="Include size of cached files"
+    ),
+    cache_dir: Optional[str] = cache_dir_option,
 ) -> None:
     """
     List the cached queries
     """
-    sx = ServiceXClient()
+    sx = ServiceXClient(cache_dir=cache_dir)
     cache = sx.query_cache
     table = pipeable_table(title="Cached Queries")
     table.add_column("Title")
@@ -119,12 +123,12 @@ def list(
 
 
 @cache_app.command()
-def clear(force: bool = force_opt):
+def clear(force: bool = force_opt, cache_dir: Optional[str] = cache_dir_option):
     """
     Clear the local query cache
     """
     if force or Confirm.ask("Really clear cache and delete downloaded files?"):
-        sx = ServiceXClient()
+        sx = ServiceXClient(cache_dir=cache_dir)
         sx.query_cache.close()
         if sx.config.cache_path is not None:
             shutil.rmtree(sx.config.cache_path)
@@ -132,10 +136,12 @@ def clear(force: bool = force_opt):
 
 
 @cache_app.command(no_args_is_help=True)
-def delete(transform_id: str = transform_id_arg):
+def delete(
+    transform_id: str = transform_id_arg, cache_dir: Optional[str] = cache_dir_option
+):
     """
     Delete a cached query. Use -t to specify the transform ID
     """
-    sx = ServiceXClient()
+    sx = ServiceXClient(cache_dir=cache_dir)
     if not sx.delete_transform_from_cache(transform_id):
         rich.print(f"Transform {transform_id} not found in cache")

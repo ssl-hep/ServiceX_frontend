@@ -1,7 +1,5 @@
 Command Line Interface (Experimental)
 ======================================
-*\*The command line interface is an under-development feature that is not supported in the 3.0.0 release*
-
 The command line interface (CLI) is a text-based interface used to interact with the ServiceX backend.
 The client provides a new command in your shell,
 ``servicex``. This command uses a series of subcommands to work with
@@ -13,12 +11,18 @@ Common command line arguments:
 | F   | Long     | What it does                                        |
 | lag | Flag     |                                                     |
 +=====+==========+=====================================================+
-| -b  | –backend | Named backend from the .servicex file endpoints     |
+| -b  | --backend | Named backend from the .servicex file endpoints    |
 |     |          | list                                                |
++-----+----------+-----------------------------------------------------+
+| -d  | --cache_dir | Directory for downloaded files and ServiceX      |
+|     |          | cache database                                      |
 +-----+----------+-----------------------------------------------------+
 
 If no backend is specified then the client will attempt to
 use the ``default_endpoint`` value to determine who to talk to.
+
+If no cache directory is specified on the command line, then the ``cache_path`` value of the ``servicex.yaml`` file will be used; if that is not specified either, the default path will be
+``/tmp/servicex_${USER}``.
 
 deliver
 ~~~~~~~

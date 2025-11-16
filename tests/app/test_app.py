@@ -57,6 +57,7 @@ def test_deliver(script_runner):
             servicex_name=None,
             config_path=None,
             ignore_local_cache=None,
+            cache_dir=None,
         )
         assert result_rows[-3] == "Total files delivered: 2"
 
@@ -275,3 +276,32 @@ def test_cache_clear_force(script_runner, tmp_path):
     # Ensure rmtree was called with the configured cache path
     mock_rmtree.assert_called_once_with(str(fake_cache_dir))
     assert "Cache cleared" in result.stdout
+
+
+def test_cache_delete(script_runner, tmp_path) -> None:
+    dummy_file: Path = tmp_path / "data.parquet"
+
+    record_r = TransformedResults(
+        hash="hash",
+        title="Test",
+        codegen="code",
+        request_id="id",
+        submit_time=datetime.now(timezone.utc),
+        data_dir=str(tmp_path),
+        file_list=[str(dummy_file)],
+        signed_url_list=[],
+        files=1,
+        result_format=ResultFormat.parquet,
+    )
+
+    with patch("servicex.app.cache.ServiceXClient") as mock_servicex:
+        delete_mock = Mock()
+        mock_servicex.return_value.delete_transform_from_cache = delete_mock
+
+        cache_mock = Mock()
+        cache_mock.cached_queries.return_value = [record_r]
+        mock_servicex.return_value.query_cache = cache_mock
+        result = script_runner.run(["servicex", "cache", "delete", "id"])
+
+        assert result.returncode == 0
+        delete_mock.assert_called_once_with("id")

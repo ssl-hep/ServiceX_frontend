@@ -121,7 +121,17 @@ def transformed_results() -> TransformedResults:
     return TransformedResults(**base_data)
 
 
-def test_delete_transform_from_cache(mock_cache, servicex_adaptor, transformed_results):
+def test_change_cache_dir(mock_cache):
+    # test default
+    sx = ServiceXClient(config_path="tests/example_config.yaml")
+    assert "servicex_" in sx.config.cache_path
+
+    # test explicitly specified dir
+    sx = ServiceXClient(config_path="tests/example_config.yaml", cache_dir="cache")
+    assert sx.config.cache_path == "cache"
+
+
+def test_delete_transform_from_cache(servicex_adaptor, transformed_results):
     with patch("servicex.servicex_client.QueryCache") as mock_cache:
         mock_cache.return_value.get_transform_by_request_id = MagicMock(
             return_value=transformed_results
