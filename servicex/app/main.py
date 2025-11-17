@@ -32,7 +32,11 @@ import typer
 
 from servicex import servicex_client
 from servicex._version import __version__
-from servicex.app.cli_options import backend_cli_option, config_file_option
+from servicex.app.cli_options import (
+    backend_cli_option,
+    config_file_option,
+    cache_dir_option,
+)
 from servicex.app.datasets import datasets_app
 from servicex.app.transforms import transforms_app
 from servicex.app.cache import cache_app
@@ -123,6 +127,7 @@ def deliver(
     spec_file: str = spec_file_arg,
     ignore_cache: Optional[bool] = ignore_cache_opt,
     hide_results: bool = hide_results_opt,
+    cache_dir: Optional[str] = cache_dir_option,
 ):
     """
     Deliver a file to the ServiceX cache.
@@ -134,6 +139,7 @@ def deliver(
         servicex_name=backend,
         config_path=config_path,
         ignore_local_cache=ignore_cache,
+        cache_dir=cache_dir,
     )
     if not hide_results:
         _display_results(results)

@@ -862,6 +862,28 @@ def test_uproot_raw_query_rntuple(transformed_result, network_patches, with_even
         deliver(spec, config_path="tests/example_config.yaml")
 
 
+def test_changed_cache_path(transformed_result, network_patches, with_event_loop):
+    from servicex import deliver
+    from servicex.query import UprootRaw  # type: ignore
+
+    spec = ServiceXSpec.model_validate(
+        {
+            "Sample": [
+                {
+                    "Name": "sampleA",
+                    "RucioDID": "user.ivukotic:user.ivukotic.single_top_tW__nominal",
+                    "Query": UprootRaw([{"treename": "nominal"}]),
+                }
+            ],
+        }
+    )
+    with patch(
+        "servicex.dataset_group.DatasetGroup.as_files",
+        return_value=[transformed_result],
+    ):
+        deliver(spec, config_path="tests/example_config.yaml", cache_dir="cache")
+
+
 async def test_generic_query(network_patches):
     from servicex.servicex_client import ServiceXClient
 
