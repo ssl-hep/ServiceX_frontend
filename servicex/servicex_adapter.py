@@ -51,7 +51,7 @@ from servicex.models import (
 )
 
 
-class AuthorizationError(BaseException):
+class AuthorizationError(Exception):
     pass
 
 
