@@ -28,7 +28,7 @@
 
 from pathlib import Path
 import getpass
-from typing import Literal, Optional
+from typing import Literal, Optional, TypedDict
 import asyncio
 
 import typer
@@ -40,22 +40,22 @@ from servicex.servicex_adapter import ServiceXAdapter
 
 init_app = typer.Typer(name="init", invoke_without_command=True, no_args_is_help=False)
 
-text = {
-    "atlas": {
-        "url_text": (
-            "Open this url and log into your UChicago ServiceX credentials or your "
-            "ATLAS SSO: https://servicex.af.uchicago.edu/sign-in"
-        ),
+
+class InitItem(TypedDict):
+    name: str
+    url: str
+    service_name: str
+
+
+class InitConfig(TypedDict):
+    uchicago: InitItem
+
+
+config: InitConfig = {
+    "uchicago": {
+        "name": "UChicago",
         "url": "https://servicex.af.uchicago.edu",
         "service_name": "servicex-uc-af",
-    },
-    "cms": {
-        "url_text": (
-            "Open this url and log into your UChicago ServiceX credentials: "
-            "https://servicex-cms.af.uchicago.edu/sign-in"
-        ),
-        "url": "https://servicex-cms.af.uchicago.edu",
-        "service_name": "servicex-uc-cms",
     },
 }
 
@@ -72,70 +72,70 @@ async def verify_token(url: str, token: str) -> bool:
         return False
 
 
-def run(source: Literal["atlas", "cms"], custom_url: Optional[str] = None):
+def run(
+    source: Optional[Literal["uchicago"]] = None,
+    custom_url: Optional[str] = None,
+    auth_disabled: bool = False,
+):
+    if source is None and custom_url is None:
+        raise RuntimeError("An Access Facility source or specific url must be provided")
+
     console = get_console()
-    data = text[source]
+    if source is not None:
+        data = config[source]
+        url = data["url"]
+        service_name = data["service_name"]
+        name = data["name"]
+    elif custom_url is not None:
+        name = custom_url
+        url = custom_url
+        service_name = "custom-servicex"
 
-    # Use custom URL if provided, otherwise use the default for the source
-    url = custom_url if custom_url else data["url"]
-    service_name = data["service_name"] if not custom_url else "custom-servicex"
-
-    # Show sign-in URL in a panel
     console.print()
+
     profile_url = f"{url}/profile"
+    sign_in_url = f"{url}/sign-in"
 
     if custom_url:
-        sign_in_url = f"{custom_url}/sign-in"
+        name = custom_url
+
+    # breakpoint()
+    token = None
+    if not auth_disabled:
         sign_in_message = (
-            f"1. Open this URL to sign in:\n"
+            f"1. Open this URL to sign in to {name}:\n"
             f"   [cyan][link={sign_in_url}]{sign_in_url}[/link][/cyan]\n\n"
             f"2. After signing in, navigate to:\n"
             f"   [cyan][link={profile_url}]{profile_url}[/link][/cyan]\n\n"
             f"3. Copy your API token and paste it below"
         )
-    else:
-        sign_in_url = f"{data['url']}/sign-in"
-        if source == "atlas":
-            sign_in_message = (
-                f"1. Open this URL to sign in with your UChicago ServiceX "
-                f"credentials or ATLAS SSO:\n"
-                f"   [cyan][link={sign_in_url}]{sign_in_url}[/link][/cyan]\n\n"
-                f"2. After signing in, navigate to:\n"
-                f"   [cyan][link={profile_url}]{profile_url}[/link][/cyan]\n\n"
-                f"3. Copy your API token and paste it below"
-            )
-        else:
-            sign_in_message = (
-                f"1. Open this URL to sign in with your UChicago ServiceX "
-                f"credentials:\n"
-                f"   [cyan][link={sign_in_url}]{sign_in_url}[/link][/cyan]\n\n"
-                f"2. After signing in, navigate to:\n"
-                f"   [cyan][link={profile_url}]{profile_url}[/link][/cyan]\n\n"
-                f"3. Copy your API token and paste it below"
-            )
 
-    console.print(
-        Panel(sign_in_message, title="[bold]Get Your Token[/bold]", border_style="blue")
-    )
-
-    # Get token from user
-    console.print()
-    token = getpass.getpass("Paste your token here: ")
-
-    # Verify token with authenticated ping
-    console.print("\n[yellow]⏳ Verifying token...[/yellow]")
-    if not asyncio.run(verify_token(url, token)):
         console.print(
-            "[red]✗ Failed to verify token. "
-            "Please check your token and try again.[/red]"
+            Panel(
+                sign_in_message,
+                title="[bold]Get Your Token[/bold]",
+                border_style="blue",
+            )
         )
-        raise typer.Exit(1)
 
-    console.print("[green]✓ Token verified successfully![/green]")
+        # Get token from user
+        console.print()
+        token = getpass.getpass("Paste your token here: ")
+
+        # Verify token with authenticated ping
+        console.print("\n[yellow]⏳ Verifying token...[/yellow]")
+        if not asyncio.run(verify_token(url, token)):
+            console.print(
+                "[red]✗ Failed to verify token. "
+                "Please check your token and try again.[/red]"
+            )
+            raise typer.Exit(1)
+
+        console.print("[green]✓ Token verified successfully![/green]")
 
     # Prompt for download directory
     console.print()
-    default_download_dir = "./download"
+    default_download_dir = "./downloads"
     download_dir = Prompt.ask(
         "[bold]Select download directory[/bold]", default=default_download_dir
     )
@@ -150,7 +150,7 @@ def run(source: Literal["atlas", "cms"], custom_url: Optional[str] = None):
             f"""api_endpoints:
   - endpoint: {url}
     name: {service_name}
-    token: {token}
+    {"token: " + str(token) if not auth_disabled else ""}
 
 cache_path: {downloads_path}
 shortened_downloaded_filename: true
@@ -176,11 +176,32 @@ shortened_downloaded_filename: true
 
 
 @init_app.callback()
-def init(ctx: typer.Context):
+def init(
+    ctx: typer.Context,
+    custom_url: Optional[str] = typer.Option(
+        None,
+        "--url",
+        help="Custom ServiceX URL (default: https://servicex.af.uchicago.edu)",
+    ),
+    auth_disabled: bool = typer.Option(
+        False,
+        "--auth-disabled",
+        is_flag=True,
+        help=(
+            "Specify this if the ServiceX server is not using authentication "
+            "(for example, a ServiceX instance running locally)"
+        ),
+    ),
+):
     """
     Initialize ServiceX configuration. If no subcommand is provided,
     an interactive wizard will guide you through the setup.
     """
+
+    if custom_url:
+        run(custom_url=custom_url, auth_disabled=auth_disabled)
+        return
+
     # Only run the wizard if no subcommand was provided
     if ctx.invoked_subcommand is None:
         console = get_console()
@@ -194,51 +215,32 @@ def init(ctx: typer.Context):
         console.print()
 
         choice = Prompt.ask(
-            "Select your experiment "
-            "([cyan]A[/cyan] for ATLAS, [cyan]C[/cyan] for CMS)",
+            "Select your experiment " "([cyan]A[/cyan] for UChicago)",
             choices=["A", "C", "a", "c"],
             default="A",
             show_choices=False,
         ).upper()
 
         console.print()
+        key: Literal["uchicago"] | None = None
         if choice == "A":
-            console.print("[bold]Configuring for ATLAS...[/bold]\n")
-            run(source="atlas")
-        elif choice == "C":
-            console.print("[bold]Configuring for CMS...[/bold]\n")
-            run(source="cms")
+            key = "uchicago"
         else:
-            console.print(
-                "[red]✗ Invalid choice. "
-                "Please enter 'A' for ATLAS or 'C' for CMS.[/red]"
-            )
+            console.print("[red]✗ Invalid choice. ")
             raise typer.Exit(1)
 
+        if key is None or key not in config:
+            console.print("[red]✗ Invalid choice. ")
+            raise typer.Exit(1)
 
-@init_app.command()
-def atlas(
-    url: Optional[str] = typer.Option(
-        None,
-        "--url",
-        help="Custom ServiceX URL (default: https://servicex.af.uchicago.edu)",
-    )
-):
-    """
-    Initialize ATLAS ServiceX configuration.
-    """
-    run(source="atlas", custom_url=url)
+        access_facility = config[key]
+        console.print(f"[bold]Configuring for {access_facility["name"]}...[/bold]\n")
+        run(source=key)
 
 
 @init_app.command()
-def cms(
-    url: Optional[str] = typer.Option(
-        None,
-        "--url",
-        help="Custom ServiceX URL (default: https://servicex-cms.af.uchicago.edu)",
-    )
-):
+def uchicago():
     """
-    Initialize CMS ServiceX configuration.
+    Initialize uchicago ServiceX configuration.
     """
-    run(source="cms", custom_url=url)
+    run(source="uchicago")
