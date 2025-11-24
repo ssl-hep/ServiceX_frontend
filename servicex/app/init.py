@@ -233,7 +233,7 @@ def init(
             raise typer.Exit(1)
 
         access_facility = config[key]
-        console.print(f"[bold]Configuring for {access_facility["name"]}...[/bold]\n")
+        console.print(f"[bold]Configuring for {access_facility['name']}...[/bold]\n")
         run(source=key)
 
 
