@@ -99,7 +99,6 @@ def run(
     if custom_url:
         name = custom_url
 
-    # breakpoint()
     token = None
     if not auth_disabled:
         sign_in_message = (
