@@ -59,9 +59,14 @@ jobs:
           echo "No changes to commit"
         fi
 
-    - name: Push commit
+    - name: move tag
+      run: |
+        git tag -f ${{ env.RELEASE_VERSION }} -m "$(git tag -l --format='%(contents)' ${{ env.RELEASE_VERSION }})"
+
+    - name: Push commit and new tag
       run: |
         git push origin HEAD:$BRANCH
+        git push origin --force ${{ env.RELEASE_VERSION }}
 
     - name: Build a sdist and wheel
       run: |
