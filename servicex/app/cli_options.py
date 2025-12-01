@@ -34,3 +34,6 @@ backend_cli_option = typer.Option(
 config_file_option = typer.Option(
     None, "-c", "--config", help="ServiceX client configuration file"
 )
+cache_dir_option = typer.Option(
+    None, "-d", "--cache-dir", help="Set top-level directory for downloads"
+)
