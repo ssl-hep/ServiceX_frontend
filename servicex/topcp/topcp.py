@@ -52,7 +52,7 @@ class TopCPQuery(QueryStringGenerator):
     """Toggles off the computation of systematics"""
     no_filter: Optional[bool] = False
     """Save all events regardless of analysis filters (still saves the decision)"""
-    docker_image: Optional[str] = None
+    image: Optional[str] = None
     """Docker image to use"""
 
     @pydantic.model_validator(mode="after")
@@ -88,8 +88,8 @@ class TopCPQuery(QueryStringGenerator):
             "no_filter": self.no_filter,
         }
 
-        if self.docker_image is not None:
-            query["docker_image"] = self.docker_image
+        if self.image is not None:
+            query["docker_image"] = self.image
 
         return json.dumps(query)
 
