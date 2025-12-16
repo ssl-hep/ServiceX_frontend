@@ -113,3 +113,21 @@ PL_Electrons:
 def test_no_yaml():
     with pytest.raises(ValueError):
         TopCPQuery()
+
+
+def test_docker_image(tmp_path):
+    reco_file = tmp_path / "reco.yaml"
+    reco_file.write_text(
+        """
+CommonServices:
+  runSystematics: False
+    """
+    )
+
+    docker_image = "my-custom-image:latest"
+    topcp_query = TopCPQuery(reco=reco_file, image=docker_image)
+    query_string = topcp_query.generate_selection_string()
+    query = json.loads(query_string)
+
+    assert "image" in query, "Missing image key"
+    assert query["image"] == docker_image
