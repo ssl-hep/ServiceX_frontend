@@ -129,5 +129,5 @@ CommonServices:
     query_string = topcp_query.generate_selection_string()
     query = json.loads(query_string)
 
-    assert "docker_image" in query, "Missing docker_image key"
-    assert query["docker_image"] == docker_image
+    assert "image" in query, "Missing image key"
+    assert query["image"] == docker_image
