@@ -137,19 +137,36 @@ class MinioAdapter:
                 if path.exists():
                     # if file size is the same, let's not download anything
                     # maybe move to a better verification mechanism with e-tags in the future
-                    await asyncio.sleep(0.3)
                     localsize = path.stat().st_size
                     if localsize == remotesize:
                         return path.resolve()
+
+                tmp_path = path.with_suffix(path.suffix + ".part")
                 await s3.download_file(
                     Bucket=self.bucket,
                     Key=object_name,
-                    Filename=path.as_posix(),
+                    Filename=tmp_path.as_posix(),
                     Config=_transferconfig,
                 )
-                localsize = path.stat().st_size
+
+                # Ensure filesystem flush visibility
+                await asyncio.sleep(0)
+                localsize = tmp_path.stat().st_size
                 if localsize != remotesize:
-                    raise RuntimeError(f"Download of {object_name} failed")
+                    # tmp_path.unlink(missing_ok=True)
+                    raise RuntimeError(f"Download of {object_name} failed: local size - {localsize}, remote size - {remotesize}")
+
+                tmp_path.replace(path)
+
+                # await s3.download_file(
+                #     Bucket=self.bucket,
+                #     Key=object_name,
+                #     Filename=path.as_posix(),
+                #     Config=_transferconfig,
+                # )
+                # localsize = path.stat().st_size
+                # if localsize != remotesize:
+                #     raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()
 
     @retry(
