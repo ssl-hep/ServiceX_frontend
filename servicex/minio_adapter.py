@@ -137,6 +137,7 @@ class MinioAdapter:
                 if path.exists():
                     # if file size is the same, let's not download anything
                     # maybe move to a better verification mechanism with e-tags in the future
+                    await asyncio.sleep(0.3)
                     localsize = path.stat().st_size
                     if localsize == remotesize:
                         return path.resolve()
