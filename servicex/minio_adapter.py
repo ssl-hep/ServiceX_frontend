@@ -150,7 +150,7 @@ class MinioAdapter:
                 )
 
                 # Ensure filesystem flush visibility
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.5)
                 localsize = tmp_path.stat().st_size
                 if localsize != remotesize:
                     # tmp_path.unlink(missing_ok=True)
