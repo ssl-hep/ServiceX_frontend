@@ -39,7 +39,7 @@ import asyncio
 from servicex.models import ResultFile, TransformStatus
 
 # Maximum five simultaneous streams per individual file download
-_transferconfig = TransferConfig(max_concurrency=5)
+_transferconfig = TransferConfig(max_concurrency=2)
 # Maximum ten files simultaneously being downloaded (configurable with init_s3_config)
 _file_transfer_sem = asyncio.Semaphore(10)
 # Maximum five buckets being queried at once
