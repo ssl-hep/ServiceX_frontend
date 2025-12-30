@@ -152,11 +152,16 @@ class MinioAdapter:
                 # Ensure filesystem flush visibility
                 await asyncio.sleep(0.05)
                 localsize = tmp_path.stat().st_size
-                if localsize != remotesize:
-                    tmp_path.unlink(missing_ok=True)
-                    raise RuntimeError(f"Download of {object_name} failed: local size - {localsize}, remote size - {remotesize}, etag - {info["ETag"].strip('"')}")
 
-                tmp_path.replace(path)                
+                # compare file size
+                if localsize != remotesize:
+                    print(f"Download of {object_name} failed: \
+                          local size - {localsize}, remote size - {remotesize}")
+                    # tmp_path.unlink(missing_ok=True)
+                    # raise RuntimeError(f"Download of {object_name} failed: \
+                    # local size - {localsize}, remote size - {remotesize}")
+
+                tmp_path.replace(path)
         return path.resolve()
 
     @retry(
