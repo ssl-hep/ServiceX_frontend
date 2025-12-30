@@ -39,11 +39,7 @@ import asyncio
 from servicex.models import ResultFile, TransformStatus
 
 # Maximum five simultaneous streams per individual file download
-_transferconfig = TransferConfig(
-    multipart_chunksize=16 * 1024 * 1024,
-    max_concurrency=4,
-    max_io_queue=20,
-)
+_transferconfig = TransferConfig(max_concurrency=5)
 # Maximum ten files simultaneously being downloaded (configurable with init_s3_config)
 _file_transfer_sem = asyncio.Semaphore(10)
 # Maximum five buckets being queried at once
@@ -111,9 +107,9 @@ class MinioAdapter:
                 ]
                 return rv
 
-    # @retry(
-    #     stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
-    # )
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
     async def download_file(
         self,
         object_name: str,
@@ -146,25 +142,21 @@ class MinioAdapter:
                         return path.resolve()
 
                 tmp_path = path.with_suffix(path.suffix + ".part")
-                for attempt in range(1, 4):
-                    if tmp_path.exists():
-                        tmp_path.unlink()
+                await s3.download_file(
+                    Bucket=self.bucket,
+                    Key=object_name,
+                    Filename=tmp_path.as_posix(),
+                    Config=_transferconfig,
+                )
 
-                    await s3.download_file(
-                        Bucket=self.bucket,
-                        Key=object_name,
-                        Filename=tmp_path.as_posix(),
-                        Config=_transferconfig,
-                    )
+                # Ensure filesystem flush visibility
+                await asyncio.sleep(0.05)
+                localsize = tmp_path.stat().st_size
+                if localsize != remotesize:
+                    # tmp_path.unlink(missing_ok=True)
+                    raise RuntimeError(f"Download of {object_name} failed: local size - {localsize}, remote size - {remotesize}, etag - {info["ETag"].strip('"')}")
 
-                    # Ensure filesystem flush visibility
-                    await asyncio.sleep(0)
-                    localsize = tmp_path.stat().st_size
-                    if localsize == remotesize:
-                        tmp_path.replace(path)
-                        return path.resolve()
-                        # tmp_path.unlink(missing_ok=True)
-                raise RuntimeError(f"Download of {object_name} failed: local size - {localsize}, remote size - {remotesize}")
+                tmp_path.replace(path)
 
                 # await s3.download_file(
                 #     Bucket=self.bucket,
@@ -175,7 +167,7 @@ class MinioAdapter:
                 # localsize = path.stat().st_size
                 # if localsize != remotesize:
                 #     raise RuntimeError(f"Download of {object_name} failed")
-        # return path.resolve()
+        return path.resolve()
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
