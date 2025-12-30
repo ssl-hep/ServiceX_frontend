@@ -714,6 +714,7 @@ class Query:
                 break
 
         # Now just wait until all of our tasks complete
+        print(f"Total tasks alive before gather: {len(asyncio.all_tasks())}")
         await asyncio.gather(*download_tasks)
         return result_uris
 
