@@ -39,7 +39,7 @@ import asyncio
 from servicex.models import ResultFile, TransformStatus
 
 # Maximum five simultaneous streams per individual file download
-_transferconfig = TransferConfig(max_concurrency=5)
+_transferconfig = TransferConfig(max_concurrency=1)
 # Maximum ten files simultaneously being downloaded (configurable with init_s3_config)
 _file_transfer_sem = asyncio.Semaphore(10)
 # Maximum five buckets being queried at once
@@ -150,7 +150,7 @@ class MinioAdapter:
                 )
 
                 # Ensure filesystem flush visibility
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(0.05)
                 localsize = tmp_path.stat().st_size
                 if localsize != remotesize:
                     # tmp_path.unlink(missing_ok=True)
