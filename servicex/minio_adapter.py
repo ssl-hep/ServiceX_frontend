@@ -107,9 +107,9 @@ class MinioAdapter:
                 ]
                 return rv
 
-    @retry(
-        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
-    )
+    # @retry(
+    #     stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    # )
     async def download_file(
         self,
         object_name: str,
@@ -142,21 +142,25 @@ class MinioAdapter:
                         return path.resolve()
 
                 tmp_path = path.with_suffix(path.suffix + ".part")
-                await s3.download_file(
-                    Bucket=self.bucket,
-                    Key=object_name,
-                    Filename=tmp_path.as_posix(),
-                    Config=_transferconfig,
-                )
+                for attempt in range(1, 4):
+                    if tmp_path.exists():
+                        tmp_path.unlink()
 
-                # Ensure filesystem flush visibility
-                await asyncio.sleep(0.05)
-                localsize = tmp_path.stat().st_size
-                if localsize != remotesize:
-                    # tmp_path.unlink(missing_ok=True)
-                    raise RuntimeError(f"Download of {object_name} failed: local size - {localsize}, remote size - {remotesize}")
+                    await s3.download_file(
+                        Bucket=self.bucket,
+                        Key=object_name,
+                        Filename=tmp_path.as_posix(),
+                        Config=_transferconfig,
+                    )
 
-                tmp_path.replace(path)
+                    # Ensure filesystem flush visibility
+                    await asyncio.sleep(0)
+                    localsize = tmp_path.stat().st_size
+                    if localsize == remotesize:
+                        tmp_path.replace(path)
+                        return path.resolve()
+                        # tmp_path.unlink(missing_ok=True)
+                raise RuntimeError(f"Download of {object_name} failed: local size - {localsize}, remote size - {remotesize}")
 
                 # await s3.download_file(
                 #     Bucket=self.bucket,
@@ -167,7 +171,7 @@ class MinioAdapter:
                 # localsize = path.stat().st_size
                 # if localsize != remotesize:
                 #     raise RuntimeError(f"Download of {object_name} failed")
-        return path.resolve()
+        # return path.resolve()
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
