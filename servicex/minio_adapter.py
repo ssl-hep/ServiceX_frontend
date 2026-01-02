@@ -156,9 +156,11 @@ class MinioAdapter:
                 # compare file size
                 if localsize != remotesize:
                     tmp_path.unlink(missing_ok=True)
-                    raise RuntimeError(f"Download of {object_name} failed:\n"
-                                       f"  Local size - {localsize}\n"
-                                       f"  Remote size - {remotesize}")
+                    raise RuntimeError(
+                        f"Download of {object_name} failed:\n"
+                        f"  Local size - {localsize}\n"
+                        f"  Remote size - {remotesize}"
+                    )
                 tmp_path.replace(path)
         return path.resolve()
 
