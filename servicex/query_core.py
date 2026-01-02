@@ -714,8 +714,13 @@ class Query:
                 break
 
         # Now just wait until all of our tasks complete
-        print(f"Total tasks alive before gather: {len(asyncio.all_tasks())}")
-        await asyncio.gather(*download_tasks)
+        MAX_INFLIGHT = 100
+        if len(download_tasks) >= MAX_INFLIGHT:
+            await asyncio.gather(*download_tasks)
+            download_tasks.clear()
+
+        # print(f"Total tasks alive before gather: {len(asyncio.all_tasks())}")
+        # await asyncio.gather(*download_tasks)
         return result_uris
 
     async def as_files_async(

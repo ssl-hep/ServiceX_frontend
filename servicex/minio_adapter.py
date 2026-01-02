@@ -39,7 +39,7 @@ import asyncio
 from servicex.models import ResultFile, TransformStatus
 
 # Maximum five simultaneous streams per individual file download
-_transferconfig = TransferConfig(max_concurrency=2)
+_transferconfig = TransferConfig(max_concurrency=5)
 # Maximum ten files simultaneously being downloaded (configurable with init_s3_config)
 _file_transfer_sem = asyncio.Semaphore(10)
 # Maximum five buckets being queried at once
@@ -155,14 +155,10 @@ class MinioAdapter:
 
                 # compare file size
                 if localsize != remotesize:
-                    print(
-                        f"Download of {object_name} failed: \
-                          local size - {localsize}, remote size - {remotesize}"
-                    )
-                    # tmp_path.unlink(missing_ok=True)
-                    # raise RuntimeError(f"Download of {object_name} failed: \
-                    # local size - {localsize}, remote size - {remotesize}")
-
+                    tmp_path.unlink(missing_ok=True)
+                    raise RuntimeError(f"Download of {object_name} failed:\n"
+                                       f"  Local size - {localsize}\n"
+                                       f"  Remote size - {remotesize}")
                 tmp_path.replace(path)
         return path.resolve()
 
