@@ -125,7 +125,7 @@ CommonServices:
     )
 
     docker_image = "my-custom-image:latest"
-    topcp_query = TopCPQuery(reco=reco_file, image=docker_image)
+    topcp_query = TopCPQuery(reco=reco_file, image=docker_image, registry="docker.io")
     query_string = topcp_query.generate_selection_string()
     query = json.loads(query_string)
 
