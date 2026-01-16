@@ -54,8 +54,6 @@ class TopCPQuery(QueryStringGenerator):
     """Save all events regardless of analysis filters (still saves the decision)"""
     image: Optional[str] = None
     """Docker image to use"""
-    registry: Optional[str] = None
-    """Docker registry to use"""
 
     @pydantic.model_validator(mode="after")
     def no_input_yaml(self):
@@ -92,9 +90,6 @@ class TopCPQuery(QueryStringGenerator):
 
         if self.image is not None:
             query["image"] = self.image
-
-        if self.registry is not None:
-            query["registry"] = self.registry
 
         return json.dumps(query)
 
