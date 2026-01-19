@@ -1,6 +1,5 @@
 from servicex import Sample, ServiceXSpec, query, dataset, deliver
 
-
 spec = ServiceXSpec(
     Sample=[
         Sample(
@@ -16,7 +15,7 @@ spec = ServiceXSpec(
             .FromTree("CollectionTree")
             .Select(
                 lambda e: {"el_pt": e["AnalysisElectronsAuxDyn.pt"]}
-            ),  # type:ignore
+            ),  # type: ignore
         )
     ]
 )

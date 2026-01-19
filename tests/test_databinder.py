@@ -441,8 +441,7 @@ def test_yaml(tmp_path):
 
     # Nominal paths
     with open(path := (tmp_path / "python.yaml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 General:
   OutputFormat: root-ttree
   Delivery: LocalCache
@@ -477,8 +476,7 @@ Sample:
   - Name: ttH8
     Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v113
     Query: !TopCP 'reco="examples/reco.yaml"'
-"""
-        )
+""")
         f.flush()
         result = _load_ServiceXSpec(path)
         assert type(result.Sample[0].Query).__name__ == "PythonFunction"
@@ -508,8 +506,7 @@ Sample:
 
     # Python syntax error
     with open(path := (tmp_path / "python.yaml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 General:
   OutputFormat: root-ttree
   Delivery: LocalCache
@@ -520,16 +517,14 @@ Sample:
     Query: !PythonFunction |
         def run_query(input_filenames=None):
             i ==== 18 # syntax error
-"""
-        )
+""")
         f.flush()
         with pytest.raises(SyntaxError):
             _load_ServiceXSpec(path)
 
     # Duplicate samples with different names but same dataset and query
     with open(path := (tmp_path / "python.yaml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 General:
   OutputFormat: root-ttree
   Delivery: LocalCache
@@ -545,8 +540,7 @@ Sample:
   - Name: ttH5
     Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
     Query: !UprootRaw '[{"treename": "nominal"}]'
-    """
-        )
+    """)
         f.flush()
         with pytest.raises(RuntimeError):
             _load_ServiceXSpec(path)
@@ -554,8 +548,7 @@ Sample:
     # Duplicate samples with different names but same datasets (multiple) and query
     # change the order of the datasets
     with open(path := (tmp_path / "python.yaml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 General:
   OutputFormat: root-ttree
   Delivery: LocalCache
@@ -571,8 +564,7 @@ Sample:
   - Name: ttH5
     Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
     Query: !UprootRaw '[{"treename": "nominal"}]'
-    """
-        )
+    """)
         f.flush()
         with pytest.raises(RuntimeError):
             _load_ServiceXSpec(path)
@@ -580,8 +572,7 @@ Sample:
     # Samples with different names but same datasets(multiple) and query
     # different NFiles
     with open(path := (tmp_path / "python.yaml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 General:
   OutputFormat: root-ttree
   Delivery: LocalCache
@@ -595,8 +586,7 @@ Sample:
     NFiles: 1
     Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
     Query: !UprootRaw '[{"treename": "nominal"}]'
-    """
-        )
+    """)
         f.flush()
         result = _load_ServiceXSpec(path)
         assert type(result.Sample[0].Query).__name__ == "UprootRawQuery"
@@ -605,8 +595,7 @@ Sample:
     # Samples with different names but same datasets(multiple) and
     # different queries
     with open(path := (tmp_path / "python.yaml"), "w") as f:
-        f.write(
-            """
+        f.write("""
 General:
   OutputFormat: root-ttree
   Delivery: LocalCache
@@ -618,8 +607,7 @@ Sample:
   - Name: ttH6
     Dataset: !FileList ["/path/to/file1.root", "/path/to/file2.root"]
     Query: !UprootRaw '[{"treename": "CollectionTree"}]'
-    """
-        )
+    """)
         f.flush()
         result = _load_ServiceXSpec(path)
         assert type(result.Sample[0].Query).__name__ == "UprootRawQuery"
@@ -634,15 +622,12 @@ def test_yaml_include(tmp_path):
         open(tmp_path / "definitions.yaml", "w") as f1,
         open(path2 := (tmp_path / "parent.yaml"), "w") as f2,
     ):
-        f1.write(
-            """
+        f1.write("""
 - &DEF_query !PythonFunction |
         def run_query(input_filenames=None):
             return []
-"""
-        )
-        f2.write(
-            """
+""")
+        f2.write("""
 Definitions:
     !include definitions.yaml
 
@@ -654,8 +639,7 @@ Sample:
   - Name: ttH
     RucioDID: user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
     Query: *DEF_query
-"""
-        )
+""")
         f1.flush()
         f2.flush()
         _load_ServiceXSpec(path2)
