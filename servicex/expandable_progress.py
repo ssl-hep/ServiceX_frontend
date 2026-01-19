@@ -38,7 +38,6 @@ from rich.progress import (
     TaskID,
 )
 
-
 DEFAULT_STYLE = [
     TextColumn("[progress.description]{task.description}"),
     BarColumn(complete_style="rgb(114,156,31)", finished_style="rgb(0,255,0)"),

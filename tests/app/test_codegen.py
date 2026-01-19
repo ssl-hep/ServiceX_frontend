@@ -33,11 +33,8 @@ def test_codegen_list(script_runner):
             ["servicex", "codegen", "list", "-c", "tests/example_config.yaml"]
         )
         assert result.returncode == 0
-        assert (
-            result.stdout
-            == """{
+        assert result.stdout == """{
   "uproot": "http://uproot-codegen",
   "xaod": "http://xaod-codegen"
 }
 """
-        )

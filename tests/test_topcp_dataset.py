@@ -36,12 +36,10 @@ import pytest
 def test_default_keys():
     with tempfile.NamedTemporaryFile(mode="w", delete=False) as fp:
         test_logfile_path = Path(fp.name)
-        fp.write(
-            """
+        fp.write("""
 CommonServices:
   runSystematics: False
-        """
-        )
+        """)
         fp.close()
 
         topcp_query = TopCPQuery(reco=test_logfile_path)
@@ -67,8 +65,7 @@ def test_yaml_serialization():
         tempfile.NamedTemporaryFile(mode="w", delete=False) as f2,
     ):
         test_parton_yaml = Path(f1.name)
-        f1.write(
-            """
+        f1.write("""
 CommonServices:
   systematicsHistogram: 'listOfSystematicsPartonLevel'
   runSystematics: True
@@ -77,12 +74,10 @@ GeneratorLevelAnalysis: {}
 
 PartonHistory:
   - histories: 'Ttbar'
-        """
-        )
+        """)
         f1.close()
         test_particle_yaml = Path(f2.name)
-        f2.write(
-            """
+        f2.write("""
 CommonServices:
   systematicsHistogram: 'listOfSystematicsParticleLevel'
   runSystematics: True
@@ -95,8 +90,7 @@ PL_Electrons:
     useDressedProperties: True
     minPt: 25000.0
     maxEta: 2.5
-        """
-        )
+        """)
         f2.close()
 
         topcp_query = TopCPQuery(parton=test_parton_yaml, particle=test_particle_yaml)

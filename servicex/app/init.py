@@ -145,16 +145,14 @@ def run(
     # Write configuration file
     config_path = Path.cwd() / "servicex.yaml"
     with open(config_path, "w") as file:
-        file.write(
-            f"""api_endpoints:
+        file.write(f"""api_endpoints:
   - endpoint: {url}
     name: {service_name}
     {"token: " + str(token) if not auth_disabled else ""}
 
 cache_path: {downloads_path}
 shortened_downloaded_filename: true
-"""
-        )
+""")
 
     # Success message
     console.print()
