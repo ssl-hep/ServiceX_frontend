@@ -31,8 +31,8 @@ import asyncio
 import typer
 from rich import get_console
 
-from servicex.app.init import verify_token
 from servicex.configuration import Configuration
+from servicex.servicex_adapter import ServiceXAdapter
 
 check_app = typer.Typer(
     name="check", invoke_without_command=True, no_args_is_help=False
@@ -54,8 +54,9 @@ def check(
 
     results = {}
 
-    async def wrapped_verify_token(endpoint):
-        result = await verify_token(endpoint.endpoint, endpoint.token)
+    async def verify_endpoint(endpoint):
+        adapter = ServiceXAdapter(url=endpoint.endpoint, refresh_token=endpoint.token)
+        result = await adapter.verify_authentication()
         results[endpoint.endpoint] = result
         if result:
             console.print(f"[green]✓[/green] {endpoint.endpoint}")
@@ -64,7 +65,7 @@ def check(
         return result
 
     async def verify_all_endpoints():
-        tasks = [wrapped_verify_token(endpoint) for endpoint in config.api_endpoints]
+        tasks = [verify_endpoint(endpoint) for endpoint in config.api_endpoints]
         return await asyncio.gather(*tasks)
 
     asyncio.run(verify_all_endpoints())

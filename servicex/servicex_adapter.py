@@ -208,6 +208,32 @@ class ServiceXAdapter:
 
     get_code_generators = make_sync(get_code_generators_async)
 
+    async def verify_authentication(self) -> bool:
+        """Verify connectivity and authentication with the ServiceX server.
+
+        If a refresh_token is configured, verifies authentication using the
+        /servicex/datasets endpoint which requires authentication.
+
+        If no token is configured (auth disabled), verifies connectivity using
+        the /servicex info endpoint directly without going through authorization.
+
+        Returns True if successful, False otherwise.
+        Any exception (connection error, auth error, etc.) results in False.
+        """
+        try:
+            if self.refresh_token:
+                await self.get_datasets()
+            else:
+                # Call info endpoint directly without authorization headers
+                # to avoid issues with BEARER_TOKEN_FILE containing expired tokens
+                async with AsyncClient() as client:
+                    r = await client.get(url=f"{self.url}/servicex")
+                    if r.status_code != 200:
+                        return False
+            return True
+        except Exception:
+            return False
+
     async def get_datasets(
         self, did_finder=None, show_deleted=False
     ) -> List[CachedDataset]:
