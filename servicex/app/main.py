@@ -32,6 +32,7 @@ import typer
 
 from servicex import servicex_client
 from servicex._version import __version__
+from servicex.app.check import check_app
 from servicex.app.cli_options import (
     backend_cli_option,
     config_file_option,
@@ -50,6 +51,7 @@ app.add_typer(cache_app)
 app.add_typer(codegen_app)
 app.add_typer(datasets_app)
 app.add_typer(init_app)
+app.add_typer(check_app)
 
 spec_file_arg = typer.Argument(..., help="Spec file to submit to serviceX")
 ignore_cache_opt = typer.Option(
