@@ -88,7 +88,9 @@ class ServiceXAdapter:
     async def _get_token(self):
         url = f"{self.url}/token/refresh"
         headers = {"Authorization": f"Bearer {self.refresh_token}"}
-        async with AsyncClient() as client:
+        retry_options = Retry(total=3, backoff_factor=2, allowed_methods=["POST"])
+
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             r = await client.post(url, headers=headers, json=None)
             if r.status_code == 200:
                 o = r.json()
