@@ -120,18 +120,42 @@ def test_most_recent_cache(transform_request, completed_status):
                 signed_urls=[],
             )
         )
+
+        req2 = transform_request.model_copy(update={"codegen": "uproot-2"})
+        cache.update_transform_status(req2.compute_hash(), "COMPLETE")
         cache.cache_transform(
             cache.transformed_results(
-                transform=transform_request,
+                transform=req2,
                 completed_status=completed_status.model_copy(
                     update={
                         "request_id": "02c64494-4529-49a7-a4a6-95661ea3936e",
-                        "submit_time": datetime.datetime(2025, 12, 1),
+                        "submit_time": datetime.datetime(
+                            2025, 12, 1, tzinfo=datetime.timezone.utc
+                        ),
                     }
                 ),
                 data_dir="/foo/bar",
                 file_list=file_uris_2,
                 signed_urls=[],
+            )
+        )
+
+        req3 = transform_request.model_copy(update={"codegen": "uproot-3"})
+        cache.update_transform_status(req3.compute_hash(), "COMPLETE")
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=req3,
+                completed_status=completed_status.model_copy(
+                    update={
+                        "request_id": "02c64494-4529-49a7-a4a6-95661ea3936a",
+                        "submit_time": datetime.datetime(
+                            1970, 12, 1, tzinfo=datetime.timezone.utc
+                        ),
+                    }
+                ),
+                data_dir="/foo/bar",
+                file_list=[],
+                signed_urls=remote_urls,
             )
         )
 

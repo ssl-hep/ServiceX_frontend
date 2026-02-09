@@ -87,7 +87,7 @@ def read_dir(
         else:
             current = latest_transforms[transform.title]
             if transform.submit_time > current.submit_time:
-                latest_transforms[transform.title]
+                latest_transforms[transform.title] = transform
 
     if local_preferred:
         return {
