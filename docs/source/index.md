@@ -54,6 +54,9 @@ re-running queries that have already been executed.
 :maxdepth: 2
 :caption: "Contents:"
 
+introduction
+getting_started
+installation
 connect_servicex
 query_types
 transform_request
@@ -62,6 +65,8 @@ examples
 errors
 yaml
 command_line
+transformer_matrix
+troubleshoot
 modules
 ```
 

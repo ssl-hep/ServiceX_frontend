@@ -17,4 +17,10 @@ api/servicex_queries
 api/servicex.func_adl
 api/servicex.app
 api/servicex_internals
+api/configuration
+api/databinder
+api/dataset
+api/dataset_group
+api/dataset_identifier
+api/models
 ```

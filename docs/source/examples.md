@@ -21,17 +21,17 @@ from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset.
 
     .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/UprootRaw_Dict.py
+        .. literalinclude:: ../../examples/UprootRaw_Dict.py
             :language: python
 
     .. tab:: *Python Typed Object*
 
-        .. literalinclude:: ../examples/UprootRaw_Typed.py
+        .. literalinclude:: ../../examples/UprootRaw_Typed.py
             :language: python
 
     .. tab:: *YAML*
 
-        .. literalinclude:: ../examples/config_UprootRaw.yaml
+        .. literalinclude:: ../../examples/config_UprootRaw.yaml
             :language: yaml
 ```
 
@@ -45,17 +45,17 @@ from the `CollectionTree` tree in ATLAS PHYSLITE OpenData Dataset.
 
     .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/FuncADL_Uproot_Dict.py
+        .. literalinclude:: ../../examples/FuncADL_Uproot_Dict.py
             :language: python
 
     .. tab:: *Python Typed Object*
 
-        .. literalinclude:: ../examples/FuncADL_Uproot_Typed.py
+        .. literalinclude:: ../../examples/FuncADL_Uproot_Typed.py
             :language: python
 
     .. tab:: *YAML*
 
-        .. literalinclude:: ../examples/config_FuncADL_Uproot.yaml
+        .. literalinclude:: ../../examples/config_FuncADL_Uproot.yaml
             :language: yaml
 ```
 
@@ -72,7 +72,7 @@ THe first example uses the very simple model that is built into ServiceX:
 
     .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/func_adl_xAOD_simple.py
+        .. literalinclude:: ../../examples/func_adl_xAOD_simple.py
             :language: python
 ```
 
@@ -84,7 +84,7 @@ access everything that could be translated in the xAOD (including ElementLink fo
 
     .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/func_adl_xAOD_typed.py
+        .. literalinclude:: ../../examples/func_adl_xAOD_typed.py
             :language: python
 ```
 
@@ -101,17 +101,17 @@ Note that you can specify a python function even in a yaml file.
 
     .. tab:: *Python Dict*
 
-        .. literalinclude:: ../examples/PythonFunction_Dict.py
+        .. literalinclude:: ../../examples/PythonFunction_Dict.py
             :language: python
 
     .. tab:: *Python Typed Object*
 
-        .. literalinclude:: ../examples/PythonFunction_Typed.py
+        .. literalinclude:: ../../examples/PythonFunction_Typed.py
             :language: python
 
     .. tab:: *YAML*
 
-        .. literalinclude:: ../examples/config_PythonFunction.yaml
+        .. literalinclude:: ../../examples/config_PythonFunction.yaml
             :language: yaml
 ```
 

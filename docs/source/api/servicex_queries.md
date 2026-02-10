@@ -28,12 +28,7 @@ from servicex.func_adl.func_adl_dataset import FuncADLQuery_Uproot
 
 ```{eval-rst}
 .. automodule:: servicex.uproot_raw.uproot_raw
-   :members: UprootRawQuery
-```
-
-```{eval-rst}
-.. automodule:: servicex.uproot_raw.uproot_raw
-   :members: TreeSubQuery, CopyHistogramSubQuery
+   :members: UprootRawQuery, TreeSubQuery, CopyHistogramSubQuery
 ```
 
 ## Python queries

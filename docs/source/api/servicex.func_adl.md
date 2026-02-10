@@ -9,6 +9,7 @@
    :members:
    :undoc-members:
    :show-inheritance:
+   :no-index:
 ```
 
 ## Module contents
@@ -18,4 +19,5 @@
    :members:
    :undoc-members:
    :show-inheritance:
+   :no-index:
 ```

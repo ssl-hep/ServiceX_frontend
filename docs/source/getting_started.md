@@ -133,4 +133,4 @@ Expected output:
 
 ## Next steps
 
-Check out the [requests guide](requests.md) to learn more about specifying transformation requests using func-ADL.
+Check out the [transform request guide](transform_request.md) to learn more about specifying transformation requests.
