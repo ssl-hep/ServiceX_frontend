@@ -14,6 +14,9 @@ repos:
     rev: "7.3.0"
     hooks:
       - id: flake8
+        additional_dependencies: [flake8-print]
+        args:
+          - --per-file-ignores=examples/**:T201,tests/**:T201,servicex/app/**:T201
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 26.1.0
     hooks:
