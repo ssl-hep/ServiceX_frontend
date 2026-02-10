@@ -1,15 +1,13 @@
-Outreach
-===========
+# Outreach
 
 This page lists presentations and posters on the ServiceX client (frontend) library.
 The `Client version` stands for the ServiceX client version for the given presentation.
 A demo (or demo-like) talks are marked as `Notebook`.
 
 You can find more materials on the ServiceX backend or intergration into broader
-python ecosystem at the `IRIS-HEP ServiceX page <https://iris-hep.org/projects/servicex.html>`_.
+python ecosystem at the [IRIS-HEP ServiceX page](https://iris-hep.org/projects/servicex.html).
 
-
-
+```{eval-rst}
 .. list-table::
    :widths: 15 30 60 15 10 5
    :align: center
@@ -51,3 +49,4 @@ python ecosystem at the `IRIS-HEP ServiceX page <https://iris-hep.org/projects/s
      - KyungEon Choi
      - \-
      - o
+```
