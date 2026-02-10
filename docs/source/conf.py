@@ -6,20 +6,17 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-# import os, sys
-
-# sys.path.insert(0, os.path.abspath(".."))
-import servicex
-
 # the following is to propagate down to the pydantic class docstring builder
 import os
 
 os.environ["IN_SPHINX_BUILD"] = "1"
 
 project = "ServiceX"
-copyright = "2024 Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"  # NOQA 501
-author = "Ben Galewsky, Gordon Watts, KyongEon Choi, Ketan Mahajan, Peter Onyisi"
-release = servicex.__version__
+copyright = (
+    "2026 Institute for Research and " "Innovation in Software for High Energy Physics (IRIS-HEP)"
+)
+author = "Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"
+html_title = "ServiceX User Guide"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -37,8 +34,30 @@ extensions = [
     "enum_tools.autoenum",
 ]
 
-templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "examples"]
+templates_path = ['_templates']
+
+html_css_files = [
+    ('https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css', {'crossorigin': 'anonymous'}),
+    ('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css', {'crossorigin': 'anonymous'}),
+    ('https://tryservicex.org/css/navbar.css', {'crossorigin': 'anonymous'}),
+    ('https://tryservicex.org/css/sphinx.css', {'crossorigin': 'anonymous'}),
+]
+
+html_js_files = [
+    ('https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js', 
+        {'integrity': 'sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI', 'crossorigin': 'anonymous'}
+    ),
+]
+
+html_sidebars = {
+    "**": [
+        "sidebar/brand.html",
+        "sidebar/navigation.html",
+        "sidebar/scroll-start.html",
+        "sidebar/scroll-end.html",
+    ]
+}
+
 
 autoclass_content = "both"
 
@@ -52,14 +71,5 @@ autodoc_pydantic_model_undoc_members = False
 autodoc_pydantic_settings_show_validator_summary = False
 autodoc_pydantic_settings_show_validator_members = False
 autodoc_pydantic_model_member_order = "bysource"
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
-html_static_path = ["_static"]
-html_show_sourcelink = False
-
-# sphinx-copybutton configuration
-copybutton_prompt_text = r">>> |\.\.\. |\$ "
-copybutton_prompt_is_regexp = True
-copybutton_here_doc_delimiter = "EOF"
