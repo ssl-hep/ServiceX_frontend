@@ -62,11 +62,7 @@ examples
 errors
 yaml
 command_line
-analysis_tools
-contribute
-about
 modules
-GitHub <https://github.com/ssl-hep/ServiceX_frontend>
 ```
 
 ## Indices and tables
