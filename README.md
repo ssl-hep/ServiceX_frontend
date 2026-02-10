@@ -14,6 +14,6 @@
 Python SDK and CLI Client for ServiceX
 
 ## Documentation
+Documentation on how to use ServiceX is located at [tryservicex.org](https://tryservicex.org/guide/).
 
-* The **user** documentation is hosted at https://servicex-frontend.readthedocs.io
-* The **developer** documentation is available under the [`latest` view](https://servicex-frontend.readthedocs.io/en/latest/)
+To make updates to the documentation please see the [ServiceX DocGuide](https://github.com/ssl-hep/ServiceX_Website/blob/main/DocGuide.md) for more information.
