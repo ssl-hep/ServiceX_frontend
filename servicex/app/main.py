@@ -128,6 +128,11 @@ def deliver(
     ignore_cache: Optional[bool] = ignore_cache_opt,
     hide_results: bool = hide_results_opt,
     cache_dir: Optional[str] = cache_dir_option,
+    version_string: Optional[str] = typer.Option(
+        None,
+        "--version",
+        help="Version string to record with the transform",
+    ),
 ):
     """
     Deliver a file to the ServiceX cache.
@@ -140,6 +145,7 @@ def deliver(
         config_path=config_path,
         ignore_local_cache=ignore_cache,
         cache_dir=cache_dir,
+        version=version_string,
     )
     if not hide_results:
         _display_results(results)
