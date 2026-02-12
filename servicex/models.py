@@ -231,6 +231,10 @@ class TransformedResults(DocStringBaseModel):
     log_url: Optional[str] = None
     """URL for looking up logs on the ServiceX server"""
 
+    @property
+    def short_hash(self):
+        return self.hash[:8]
+
 
 class ServiceXInfo(DocStringBaseModel):
     r"""
