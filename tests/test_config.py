@@ -77,13 +77,11 @@ def test_read_from_home(monkeypatch, tmp_path):
     home = tmp_path / "home"
     home.mkdir()
     cfg = home / "servicex.yaml"
-    cfg.write_text(
-        """
+    cfg.write_text("""
 api_endpoints:
   - endpoint: http://localhost:5000
     name: localhost
-"""
-    )
+""")
 
     # Patch Path.home to point to our fake home and move cwd elsewhere
     monkeypatch.setattr(Path, "home", lambda: home)
@@ -103,13 +101,11 @@ def test_read_from_default_files(monkeypatch, tmp_path, config_filename):
 
     # Create a fake home directory with the config file
     cfg = tmp_path / config_filename
-    cfg.write_text(
-        """
+    cfg.write_text("""
 api_endpoints:
   - endpoint: http://localhost:5012
     name: localhost
-"""
-    )
+""")
 
     monkeypatch.chdir(tmp_path)
 

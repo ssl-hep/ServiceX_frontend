@@ -1,6 +1,5 @@
 from servicex import query, dataset, deliver
 
-
 spec = {
     "Sample": [
         {

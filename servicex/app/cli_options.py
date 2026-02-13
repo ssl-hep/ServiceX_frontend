@@ -27,7 +27,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import typer
 
-
 backend_cli_option = typer.Option(
     None, "-b", "--backend", help="Name of backend server from .servicex file"
 )

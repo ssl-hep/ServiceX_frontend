@@ -34,5 +34,4 @@ from ..dataset_identifier import (  # noqa: F401
     XRootDDatasetIdentifier as XRootD,
 )
 
-
 __any__ = ["Rucio", "FileList", "CERNOpenData", "GenericDataSet", "XRootD"]

@@ -34,7 +34,6 @@ from servicex.expandable_progress import ExpandableProgress
 from servicex.models import TransformedResults, ResultFormat
 from make_it_sync import make_sync
 
-
 DatasetGroupMember = Query
 
 
