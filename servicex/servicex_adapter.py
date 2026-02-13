@@ -28,6 +28,7 @@
 import os
 import time
 import datetime
+from rich import get_console
 from typing import Optional, Dict, List
 from dataclasses import dataclass
 
@@ -389,6 +390,12 @@ class ServiceXAdapter:
                 headers=headers,
                 json=transform_request.model_dump(by_alias=True, exclude_none=True),
             )
+
+            if r.status_code >= 400:
+                console = get_console()
+                message = await _extract_message(r)
+                console.log(message)
+
             if r.status_code == 401:
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}"

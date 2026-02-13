@@ -1,6 +1,5 @@
 from servicex import Sample, ServiceXSpec, query, dataset, deliver
 
-
 spec = ServiceXSpec(
     Sample=[
         Sample(
