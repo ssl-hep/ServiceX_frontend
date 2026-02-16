@@ -43,19 +43,19 @@ def temp_dir():
 
 @pytest.mark.asyncio
 async def test_verify_token_success():
-    """Test verify_token with successful authentication."""
     with patch("servicex.app.init.ServiceXAdapter") as mock_adapter_class:
         mock_adapter = Mock()
-        mock_adapter.get_servicex_info = AsyncMock(return_value={})
+        mock_adapter.verify_authentication = AsyncMock(return_value=True)
         mock_adapter_class.return_value = mock_adapter
 
         result = await verify_token("https://servicex.af.uchicago.edu", "test-token")
 
         assert result is True
         mock_adapter_class.assert_called_once_with(
-            url="https://servicex.af.uchicago.edu", refresh_token="test-token"
+            url="https://servicex.af.uchicago.edu",
+            refresh_token="test-token",
         )
-        mock_adapter.get_servicex_info.assert_called_once()
+        mock_adapter.verify_authentication.assert_awaited_once()
 
 
 @pytest.mark.asyncio
