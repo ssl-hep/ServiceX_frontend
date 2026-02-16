@@ -49,7 +49,8 @@ class Sample:
     def get_runs(self) -> list[str]:
         return [run.short_hash for run in self.results]
 
-    def get_versions(self) -> list[str]:
+    @property
+    def versions(self) -> list[str]:
         return [run.version for run in self.results if run.version is not None]
 
     def get_run(self, sha: str) -> TransformedResults:
