@@ -852,6 +852,19 @@ async def test_get_transformation_results_failed_file(mock_get, servicex):
 
 
 @pytest.mark.asyncio
+@patch(
+    "httpx.AsyncHTTPTransport.handle_async_request",
+    side_effect=httpx.ConnectTimeout("Timed out"),
+)
+async def test_get_token_connect_timeout(mock_handle):
+    s = ServiceXAdapter(url="https://servicex.org", refresh_token="rftok")
+    with pytest.raises(httpx.ConnectTimeout):
+        await s._get_token()
+    # 1 initial attempt + 3 retries = 4 total calls
+    assert mock_handle.call_count == 4
+
+
+@pytest.mark.asyncio
 async def test_sample_title_limit(servicex):
     servicex.get_servicex_capabilities = AsyncMock(return_value=["irrelevant"])
     assert await servicex.get_servicex_sample_title_limit() is None
