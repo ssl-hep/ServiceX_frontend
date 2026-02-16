@@ -1,11 +1,10 @@
-``servicex`` package
-================
+# `servicex` package
 
+## Module contents
 
-Module contents
----------------
-
+```{eval-rst}
 .. automodule:: servicex
    :members:
    :undoc-members:
    :show-inheritance:
+```
