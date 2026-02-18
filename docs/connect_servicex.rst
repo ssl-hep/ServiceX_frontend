@@ -48,6 +48,8 @@ downloaded to your computer.
 .. image:: img/download-servicex-yaml.jpg
     :alt: Download button
 
+.. _client-installation:
+
 ServiceX Client Installation
 ----------------------------
 ServiceX client Python package is a python library for users to communicate
@@ -76,7 +78,7 @@ or with ``conda``
 
     conda install --channel conda-forge servicex
 
-Testing
+Connecting to an analysis facility
 ~~~~~~~
 
 Navigate to a directory in which you want to begin a ServiceX project and execute:
@@ -128,3 +130,33 @@ After completing the instructions, you can execute one of the ServiceX :doc:`exa
     └─────────────────────┴────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
     Total files delivered: 3
+
+Writing your own ServiceX Access File
+~~~~~~~~~~~~~~~~~~~~
+
+The client relies on a ``servicex.yaml`` file to obtain the URLs of different
+servicex deployments, as well as tokens to authenticate with the
+service.
+
+The client library will search for this file in the current working directory
+and then start looking in parent directories and your home directory until a file
+is found.
+
+The format of this file is as follows:
+
+.. code:: yaml
+   api_endpoints:
+     - endpoint: https://servicex.af.uchicago.edu
+       name: servicex-uc-af
+       token: <YOUR TOKEN>
+   cache_path: /tmp/ServiceX_Client/cache-dir
+   shortened_downloaded_filename: true
+``cache_path`` and ``shortened_downloaded_filename`` are optional fields and default to
+reasonable values.
+
+The cache database and downloaded files will be stored in the directory
+specified by ``cache_path``.
+
+The ``shortened_downloaded_filename`` property controls whether
+downloaded files will have their names shortened for convenience.
+Setting to false preserves the full filename from the dataset.
