@@ -111,6 +111,7 @@ class TransformRequest(DocStringBaseModel):
         serialization_alias="result-destination"
     )
     result_format: ResultFormat = Field(serialization_alias="result-format")
+    version: Optional[str] = None
 
     model_config = {"populate_by_name": True, "use_attribute_docstrings": True}
 
@@ -131,6 +132,7 @@ class TransformRequest(DocStringBaseModel):
                     None,  # was image
                     self.result_format.name,
                     sorted(self.file_list) if self.file_list else None,
+                    self.version,
                 ]
             ).encode("utf-8")
         )
@@ -230,6 +232,13 @@ class TransformedResults(DocStringBaseModel):
     """File format for results"""
     log_url: Optional[str] = None
     """URL for looking up logs on the ServiceX server"""
+
+    version: Optional[str] = None
+    """Version of the sample. """
+
+    @property
+    def short_hash(self):
+        return self.hash[:8]
 
 
 class ServiceXInfo(DocStringBaseModel):
