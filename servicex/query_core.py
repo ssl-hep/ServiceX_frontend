@@ -691,7 +691,7 @@ class Query:
                                             progress,
                                             download_progress,
                                             shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
-                                            expected_size=expected_size,
+                                            # expected_size=expected_size,
                                         )
                                     )
                                 )  # NOQA 501
