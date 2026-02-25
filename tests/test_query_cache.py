@@ -358,3 +358,46 @@ def test_cache_queries_in_state(transform_request):
         )
 
         cache.close()
+
+
+def test_update_record(transform_request, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        original = cache.transformed_results(
+            transform=transform_request,
+            completed_status=completed_status,
+            data_dir="/foo/bar",
+            file_list=file_uris,
+            signed_urls=[],
+        )
+        cache.cache_transform(original)
+
+        # Populate the in-memory cache
+        assert cache.get_transform_by_hash(transform_request.compute_hash())
+
+        updated = original.model_copy(update={"data_dir": "/foo/updated"})
+        cache.update_record(updated)
+
+        # Cache should be invalidated; next read reflects the update
+        result = cache.get_transform_by_hash(transform_request.compute_hash())
+        assert result is not None
+        assert result.data_dir == "/foo/updated"
+        cache.close()
+
+
+def test_update_transform_request_id(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        hash_value = transform_request.compute_hash()
+        cache.cache_submitted_transform(transform_request, "old-request-id")
+
+        # Populate the in-memory cache
+        assert cache.get_transform_request_id(hash_value) == "old-request-id"
+
+        cache.update_transform_request_id(hash_value, "new-request-id")
+
+        # Cache should be invalidated; next read reflects the new request id
+        assert cache.get_transform_request_id(hash_value) == "new-request-id"
+        cache.close()
