@@ -1,4 +1,4 @@
-# Copyright (c) 2025, IRIS-HEP
+# Copyright (c) 2026, IRIS-HEP
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
