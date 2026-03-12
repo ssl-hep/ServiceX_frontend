@@ -1,0 +1,31 @@
+Query: &my_query !UprootRaw |
+  [
+    {
+      "treename": "reco",
+      "filter_name": [
+        "mu_phi", "mu_eta", "mu_charge", "mu_e*", "mu_pt*", "mu_select*", "mu*SF*",
+        "el_phi", "el_eta", "el_charge", "el_e*", "el_pt*", "el_select*", "el*SF*",
+        "jet_phi", "jet_eta", "jet_e*", "jet_pt*", "jet_GN2*", "jet_select*", "jet_TruthFlavour",
+        "met_met*", "met_phi*",
+        "PL*", "NNLO*", "weight*", "globalTrigger*", "run*", "event*", "mcChannel*"
+      ],
+      "cut": "((any(log(jet_GN2v01_pc / (jet_GN2v01_pb*0.3 + jet_GN2v01_pu*0.7)) > 0.828, axis=1)) | (sum(log(jet_GN2v01_pb / (jet_GN2v01_pc*0.2 + jet_GN2v01_pu*0.8)) > 2.09, axis=1) > 1)) & (met_met_NOSYS > 45000)"
+    },
+    {
+      "copy_histograms": ["CutBookkeeper*", "cflow*", "metadata", "listOfSystematics"]
+    }
+  ]
+
+Sample:
+  - Name: singletop
+    Dataset: !Rucio user.mtost:user.mtost.700604.Sh_2212_lvvv.DAOD_PHYS.e8433_s3681_r13144_r13146_p6490.Jul2_final_submit
+    Query: *my_query
+  - Name: zjets_3
+    Dataset: !Rucio user.mtost:user.mtost.700794.Sh.DAOD_PHYS.e8527_e7400_s3681_r13167_r13146_p6490.Feb5_zjets_tautau
+    Query: *my_query
+  - Name: zjets_1
+    Dataset: !Rucio user.mtost:user.mtost.700792.Sh.DAOD_PHYS.e8527_e7400_s3681_r13144_r13146_p6490.Feb5_zjets_tautau
+    Query: *my_query
+  - Name: zjets_2
+    Dataset: !Rucio user.mtost:user.mtost.700793.Sh.DAOD_PHYS.e8527_e7400_s3681_r13144_r13146_p6490.Feb5_zjets_tautau
+    Query: *my_query
