@@ -18,7 +18,7 @@ repos:
         args:
           - --per-file-ignores=examples/**:T201,tests/**:T201,servicex/app/**:T201
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.1.0
+    rev: 26.3.1
     hooks:
       -   id: black
 
