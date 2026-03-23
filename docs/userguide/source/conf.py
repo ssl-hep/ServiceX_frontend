@@ -29,10 +29,15 @@ extensions = [
     "sphinx.ext.doctest",
     "code_include.extension",
     "myst_parser",
+    "sphinx_design",
     "sphinxcontrib.autodoc_pydantic",
     "sphinx_tabs.tabs",
     "sphinx_copybutton",
     "enum_tools.autoenum",
+]
+
+myst_enable_extensions = [
+    "colon_fence",
 ]
 
 templates_path = ["_templates"]
