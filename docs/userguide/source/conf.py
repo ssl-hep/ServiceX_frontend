@@ -11,13 +11,13 @@ import os
 
 os.environ["IN_SPHINX_BUILD"] = "1"
 
-project = "ServiceX Reference"
+project = "ServiceX User Guide"
 copyright = (
     "2026 Institute for Research and "
     "Innovation in Software for High Energy Physics (IRIS-HEP)"
 )
 author = "Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"
-html_title = "ServiceX Reference"
+html_title = "ServiceX User Guide"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
