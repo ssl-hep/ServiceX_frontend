@@ -28,12 +28,22 @@ func_adl
 ```
 
 ```{toctree}
-:caption: "API & Tools"
+:caption: "Tools"
 
 dataset
 yaml
 command_line
-modules
+```
+
+```{toctree}
+:caption: Other API
+
+api/servicex
+api/servicex.app
+api/servicex_internals
+api/configuration
+api/databinder
+api/models
 ```
 
 ## Indices and tables

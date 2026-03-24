@@ -1,13 +1,3 @@
-# Specifying Datasets
-
-:::{admonition} You Will Learn:
-:class: note
-- What dataset source types are supported by ServiceX
-- How to define a dataset in Python and YAML for each source type
-:::
-
-Physics analyses use a wide range of data types stored in a wide range of locations. The storage location determines the dataset definition, while the data type requires no special configuration. Four dataset source types are currently accepted.
-
 ## Dataset Storage Options
 
 Each of these will show how to define datasets in both Python and YAML formats. For all Python examples, `dataset` must be imported from `servicex`.
