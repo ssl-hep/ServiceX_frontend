@@ -1,5 +1,12 @@
 # Building a Query
 
+:::{admonition} You Will Learn:
+:class: note
+- What query languages are available in ServiceX
+- How to select the appropriate query language for a given dataset
+- How to write a basic query in each supported language
+:::
+
 ServiceX queries can be expressed using a number of query languages.
 The queries are translated to actual code in the ServiceX backend.
 Not all query languages support all potential input data formats,
