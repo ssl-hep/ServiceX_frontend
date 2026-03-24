@@ -11,13 +11,13 @@ import os
 
 os.environ["IN_SPHINX_BUILD"] = "1"
 
-project = "ServiceX Reference"
+project = "ServiceX Reference Guide"
 copyright = (
     "2026 Institute for Research and "
     "Innovation in Software for High Energy Physics (IRIS-HEP)"
 )
 author = "Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"
-html_title = "ServiceX Reference"
+html_title = "ServiceX Reference Guide"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -29,10 +29,15 @@ extensions = [
     "sphinx.ext.doctest",
     "code_include.extension",
     "myst_parser",
+    "sphinx_design",
     "sphinxcontrib.autodoc_pydantic",
     "sphinx_tabs.tabs",
     "sphinx_copybutton",
     "enum_tools.autoenum",
+]
+
+myst_enable_extensions = [
+    "colon_fence",
 ]
 
 templates_path = ["_templates"]

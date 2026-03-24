@@ -25,12 +25,12 @@ ServiceX is well-suited for the following use cases:
 ## Other Resources
 :::{admonition} Reference Guide
 :class: seealso
-Users who are already working with ServiceX and need detailed API or configuration information should consult the [reference documentation](https://tryservicex.org/reference/).
+The [Reference Guide](https://tryservicex.org/reference/) covers detailed API and configuration information for users already familiar with ServiceX.
 :::
 
 :::{admonition} Example Workflows
 :class: seealso
-A set of end-to-end workflow examples covering common real-world analysis steps is also available at [ServiceX Workflows](https://tryservicex.org/workflows/)
+The [ServiceX Workflows](https://tryservicex.org/workflows/) collection provides end-to-end examples covering common real-world analysis steps.
 :::
 
 ## Guide Format
