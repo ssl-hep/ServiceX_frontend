@@ -40,10 +40,6 @@ Sometimes errors occur during the transformation on the backend. These errors oc
 ```{image} imgs/server_side_log_3.png
 :alt: Step 3 of finding the server-side transformation log
 ```
-    
-:::{seealso}
-These errors can also be found through the dashboard list of transforms. Information on that can be found in [Using the Dashboard](dashboard.md)
-:::
 
 ## Errors After Submission
 

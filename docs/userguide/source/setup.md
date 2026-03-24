@@ -48,8 +48,4 @@ If setup completes successfully, a **Configuration Complete** message is display
 
 ## ServiceX Dashboard
 
-This process also authenticates access to the ServiceX dashboard. Beyond token retrieval, the dashboard provides additional management options for ServiceX resources.
-
-:::{seealso}
-[Dashboard Guide](https://tryservicex.org/guide/dashboard/)
-:::
+This process also authenticates access to the ServiceX dashboard, which provides additional management options beyond token retrieval. From the dashboard, users can view the status of their transformation requests, see why they failed, and cancel any that are currently running.

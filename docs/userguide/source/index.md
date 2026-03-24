@@ -43,7 +43,6 @@ This guide is organized into the following sections:
 | [Understanding deliver()](deliver.md) | How to request and receive data from ServiceX |
 | [Specifying Datasets](dataset.md) | How to identify and reference the datasets ServiceX will access |
 | [Building Queries](query.md) | How to filter events and select columns from a dataset |
-| [Using the Dashboard](dashboard.md) | How to monitor active and past requests via the web interface |
 | [Handling Errors](errors.md) | How to interpret and resolve common errors |
 
 
@@ -53,7 +52,6 @@ setup.md
 deliver.md
 dataset.md
 query.md
-dashboard.md
 errors.md
 
 ```
