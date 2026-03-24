@@ -1,5 +1,13 @@
 # Understanding deliver()
 
+:::{admonition} You Will Learn:
+:class: note
+- What the ServiceX Spec is and how to define it
+- How to add samples with datasets and queries to a Spec
+- How to pass a Spec to `deliver()` and submit transformation requests
+- How to access the resulting file paths from the returned dictionary
+:::
+
 The `deliver()` function is the primary interface for ServiceX. It accepts a ServiceX Spec and converts each of its Samples into a transformation request, which is submitted to the backend. Each Sample contains a dataset and a query. ServiceX processes each transformation request and returns the results by downloading files and returning a dictionary mapping each sample's name to a list of file locations.
 
 ```{image} imgs/servicex_data_delivery_flow.svg
