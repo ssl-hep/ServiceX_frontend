@@ -23,10 +23,15 @@ ServiceX is well-suited for the following use cases:
 - Data can be accessed and transformed without setting up a local analysis environments
 
 ## Other Resources
-
+:::{admonition} Reference Guide
+:class: seealso
 Users who are already working with ServiceX and need detailed API or configuration information should consult the [reference documentation](https://tryservicex.org/reference/).
+:::
 
+:::{admonition} Example Workflows
+:class: seealso
 A set of end-to-end workflow examples covering common real-world analysis steps is also available at [ServiceX Workflows](https://tryservicex.org/workflows/)
+:::
 
 ## Guide Format
 
