@@ -30,6 +30,7 @@ func_adl
 ```{toctree}
 :caption: "API & Tools"
 
+dataset
 yaml
 command_line
 modules
