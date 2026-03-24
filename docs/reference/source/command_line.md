@@ -1,4 +1,4 @@
-# Command Line Interface (Experimental)
+# Command Line Interface
 
 The command line interface (CLI) is a text-based interface used to interact with the ServiceX backend.
 The client provides a new command in your shell,
