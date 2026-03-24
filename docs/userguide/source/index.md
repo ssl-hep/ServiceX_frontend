@@ -7,7 +7,7 @@ Users who have completed the 15-minute Histogram challenge will find this guide 
 
 ## What is ServiceX
 
-ServiceX is a data delivery service for high-energy physics analyses. Rather than copying entire datasets to user/group directories or local machines, ServiceX retrieves columnar data from remote storage on demand, applies transformations server-side, and delivers only the subset of events and columns the analysis requires in ready to use data formats. 
+ServiceX is a data delivery service for high-energy physics analyses. Rather than copying entire datasets to user/group directories or local machines, ServiceX retrieves columnar data from remote storage on demand, applies transformations server-side, and delivers only the subset of events and columns the analysis requires in ready to use data formats.
 
 ```{image} imgs/servicex_overview_fixed.svg
 :width: 750px
