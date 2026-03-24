@@ -1,60 +1,56 @@
-<svg width="100%" viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg">
+<svg width="100%" viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
     <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </marker>
 </defs>
 
-<!-- Dataset box -->
-<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
-  <rect x="20" y="50" width="100" height="40" rx="8" stroke-width="0.5" style="fill:rgb(12, 68, 124);stroke:rgb(133, 183, 235);color:rgb(255, 255, 255);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text x="70" y="70" text-anchor="middle" dominant-baseline="central" style="fill:rgb(181, 212, 244);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Dataset</text>
-</g>
+<rect x="8" y="58" width="76" height="30" rx="7" stroke-width="0.5" fill="rgb(12,68,124)" stroke="rgb(133,183,235)"/>
+<text x="46" y="73" text-anchor="middle" dominant-baseline="central" style="fill:rgb(181,212,244);font-family:sans-serif;font-size:11px;font-weight:500">Dataset</text>
 
-<!-- Query box -->
-<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
-  <rect x="20" y="104" width="100" height="40" rx="8" stroke-width="0.5" style="fill:rgb(12, 68, 124);stroke:rgb(133, 183, 235);color:rgb(255, 255, 255);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text x="70" y="124" text-anchor="middle" dominant-baseline="central" style="fill:rgb(181, 212, 244);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Query</text>
-</g>
+<rect x="8" y="100" width="76" height="30" rx="7" stroke-width="0.5" fill="rgb(12,68,124)" stroke="rgb(133,183,235)"/>
+<text x="46" y="115" text-anchor="middle" dominant-baseline="central" style="fill:rgb(181,212,244);font-family:sans-serif;font-size:11px;font-weight:500">Query</text>
 
-<!-- Merge arrows into Spec -->
-<line x1="120" y1="70" x2="164" y2="90" marker-end="url(#arrow)" style="fill:none;stroke:rgb(156, 154, 146);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-<line x1="120" y1="124" x2="164" y2="104" marker-end="url(#arrow)" style="fill:none;stroke:rgb(156, 154, 146);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="84" y1="73" x2="104" y2="84" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
+<line x1="84" y1="115" x2="104" y2="104" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
 
-<!-- Spec box (taller) -->
-<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
-  <rect x="164" y="68" width="100" height="58" rx="8" stroke-width="0.5" style="fill:rgb(60, 52, 137);stroke:rgb(175, 169, 236);color:rgb(255, 255, 255);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text x="214" y="97" text-anchor="middle" dominant-baseline="central" style="fill:rgb(206, 203, 246);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Spec</text>
-</g>
+<rect x="104" y="74" width="90" height="40" rx="7" stroke-width="0.5" fill="rgb(68,68,65)" stroke="rgb(136,135,128)"/>
+<text x="149" y="89" text-anchor="middle" dominant-baseline="central" style="fill:rgb(211,209,199);font-family:sans-serif;font-size:11px;font-weight:500">Sample</text>
+<text x="149" y="105" text-anchor="middle" dominant-baseline="central" style="fill:rgb(178,176,169);font-family:sans-serif;font-size:10px">dataset + query</text>
 
-<!-- Arrow: Spec → deliver() -->
-<line x1="264" y1="97" x2="308" y2="97" marker-end="url(#arrow)" style="fill:none;stroke:rgb(156, 154, 146);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="194" y1="94" x2="210" y2="94" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
 
-<!-- deliver() box -->
-<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
-  <rect x="308" y="68" width="100" height="58" rx="8" stroke-width="0.5" style="fill:rgb(8, 80, 65);stroke:rgb(93, 202, 165);color:rgb(255, 255, 255);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text x="358" y="97" text-anchor="middle" dominant-baseline="central" style="fill:rgb(159, 225, 203);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">deliver()</text>
-</g>
+<rect x="210" y="30" width="104" height="128" rx="9" stroke-width="0.5" fill="rgb(60,52,137)" stroke="rgb(175,169,236)"/>
+<text x="262" y="49" text-anchor="middle" dominant-baseline="central" style="fill:rgb(206,203,246);font-family:sans-serif;font-size:12px;font-weight:500">Spec</text>
+<rect x="222" y="60" width="80" height="21" rx="5" stroke-width="0.5" fill="rgb(83,74,183)" stroke="rgb(175,169,236)" opacity="0.9"/>
+<text x="262" y="71" text-anchor="middle" dominant-baseline="central" style="fill:rgb(225,223,252);font-family:sans-serif;font-size:10px">Sample 1</text>
+<rect x="222" y="87" width="80" height="21" rx="5" stroke-width="0.5" fill="rgb(83,74,183)" stroke="rgb(175,169,236)" opacity="0.7"/>
+<text x="262" y="98" text-anchor="middle" dominant-baseline="central" style="fill:rgb(225,223,252);font-family:sans-serif;font-size:10px">Sample 2 …</text>
+<text x="262" y="146" text-anchor="middle" dominant-baseline="central" style="fill:rgb(175,169,236);font-family:sans-serif;font-size:10px">collection of samples</text>
 
-<!-- Arrow: deliver() → ServiceX Backend -->
-<line x1="408" y1="97" x2="452" y2="97" marker-end="url(#arrow)" style="fill:none;stroke:rgb(156, 154, 146);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="314" y1="94" x2="330" y2="94" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
 
-<!-- ServiceX Backend box (taller) -->
-<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
-  <rect x="452" y="44" width="110" height="106" rx="8" stroke-width="0.5" style="fill:rgb(60, 52, 137);stroke:rgb(175, 169, 236);color:rgb(255, 255, 255);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text x="507" y="90" text-anchor="middle" dominant-baseline="central" style="fill:rgb(206, 203, 246);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">ServiceX</text>
-  <text x="507" y="108" text-anchor="middle" dominant-baseline="central" style="fill:rgb(206, 203, 246);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Backend</text>
-</g>
+<rect x="330" y="68" width="76" height="52" rx="7" stroke-width="0.5" fill="rgb(8,80,65)" stroke="rgb(93,202,165)"/>
+<text x="368" y="88" text-anchor="middle" dominant-baseline="central" style="fill:rgb(159,225,203);font-family:sans-serif;font-size:12px;font-weight:500">deliver()</text>
+<text x="368" y="106" text-anchor="middle" dominant-baseline="central" style="fill:rgb(93,202,165);font-family:sans-serif;font-size:10px">client function</text>
 
-<!-- Arrow: ServiceX Backend → Files -->
-<line x1="562" y1="97" x2="608" y2="97" marker-end="url(#arrow)" style="fill:none;stroke:rgb(156, 154, 146);color:rgb(255, 255, 255);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
+<line x1="406" y1="94" x2="422" y2="94" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
 
-<!-- Files box -->
-<g style="fill:rgb(0, 0, 0);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto">
-  <rect x="608" y="68" width="56" height="58" rx="8" stroke-width="0.5" style="fill:rgb(8, 80, 65);stroke:rgb(93, 202, 165);color:rgb(255, 255, 255);stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:16px;font-weight:400;text-anchor:start;dominant-baseline:auto"/>
-  <text x="636" y="97" text-anchor="middle" dominant-baseline="central" style="fill:rgb(159, 225, 203);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:14px;font-weight:500;text-anchor:middle;dominant-baseline:central">Files</text>
-</g>
+<rect x="422" y="68" width="84" height="52" rx="7" stroke-width="0.5" fill="rgb(95,94,90)" stroke="rgb(178,176,169)"/>
+<text x="464" y="88" text-anchor="middle" dominant-baseline="central" style="fill:rgb(211,209,199);font-family:sans-serif;font-size:11px;font-weight:500">Transform</text>
+<text x="464" y="104" text-anchor="middle" dominant-baseline="central" style="fill:rgb(211,209,199);font-family:sans-serif;font-size:11px;font-weight:500">request</text>
 
-<!-- Section label -->
-<text x="340" y="195" text-anchor="middle" style="fill:rgb(194, 192, 182);stroke:none;color:rgb(255, 255, 255);stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;opacity:1;font-family:&quot;Anthropic Sans&quot;, -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, sans-serif;font-size:12px;font-weight:400;text-anchor:middle;dominant-baseline:auto">ServiceX data delivery pipeline</text>
+<line x1="506" y1="94" x2="522" y2="94" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
+
+<rect x="522" y="44" width="86" height="100" rx="7" stroke-width="0.5" fill="rgb(60,52,137)" stroke="rgb(175,169,236)"/>
+<text x="565" y="74" text-anchor="middle" dominant-baseline="central" style="fill:rgb(206,203,246);font-family:sans-serif;font-size:12px;font-weight:500">ServiceX</text>
+<text x="565" y="90" text-anchor="middle" dominant-baseline="central" style="fill:rgb(206,203,246);font-family:sans-serif;font-size:12px;font-weight:500">backend</text>
+<text x="565" y="114" text-anchor="middle" dominant-baseline="central" style="fill:rgb(175,169,236);font-family:sans-serif;font-size:10px">processes &amp;</text>
+<text x="565" y="128" text-anchor="middle" dominant-baseline="central" style="fill:rgb(175,169,236);font-family:sans-serif;font-size:10px">downloads</text>
+
+<line x1="608" y1="94" x2="624" y2="94" marker-end="url(#arrow)" stroke="rgb(156,154,146)" stroke-width="1.5" fill="none"/>
+
+<rect x="624" y="68" width="48" height="52" rx="7" stroke-width="0.5" fill="rgb(8,80,65)" stroke="rgb(93,202,165)"/>
+<text x="648" y="94" text-anchor="middle" dominant-baseline="central" style="fill:rgb(159,225,203);font-family:sans-serif;font-size:12px;font-weight:500">Files</text>
+
 </svg>
