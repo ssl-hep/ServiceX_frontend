@@ -67,7 +67,9 @@ Sample:
 
 Samples are the building blocks of a Spec. Regardless of construction method, each sample requires three pieces of information: a name, one or more datasets, and a query.
 
+:::{note}
 The examples below show how each Spec type defines a sample. The dataset and query objects are placeholders — see [Specifying Datasets](dataset.md) and [Building Queries](query.md) for full details.
+:::
 
 ::::{tab-set}
 
