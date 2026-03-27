@@ -32,4 +32,3 @@ for sha in v1.run_ids():
     run = v1.get_run(sha)
     table.add_row(sha, run.request_id, str(run.submit_time), run.version, run.title)
 console.print(table)
-

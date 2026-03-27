@@ -14,10 +14,7 @@ class Catalog:
 
     @property
     def versions(self) -> list[str]:
-        distinct_versions = {
-            doc["version"]
-            for doc in self.db.all()
-        }
+        distinct_versions = {doc["version"] for doc in self.db.all()}
         return list(distinct_versions)
 
     def get_version(self, version: str) -> "Version":
@@ -50,9 +47,9 @@ class Catalog:
 class Version:
     def __init__(self, version: str, results: list[TransformedResults]):
         self.version = version
-        
+
         # this is where the latest feature now gets enforced
-        # only the most recent sample gets added to the catalog if the version/sample pair 
+        # only the most recent sample gets added to the catalog if the version/sample pair
         # is not unique
         latest_by_title: dict[str, TransformedResults] = {}
         for r in results:
