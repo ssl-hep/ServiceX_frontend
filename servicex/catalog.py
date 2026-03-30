@@ -13,52 +13,71 @@ class Catalog:
         self.db = TinyDB(os.path.join(self.path, ".servicex", "db.json"))
 
     @property
-    def samples(self) -> list[str]:
-        distinct_titles = {doc["title"] for doc in self.db.all()}
-        return list(distinct_titles)
+    def versions(self) -> list[str]:
+        distinct_versions = {doc["version"] for doc in self.db.all()}
+        return list(distinct_versions)
 
-    def get_sample(self, title: str) -> list[TransformedResults]:
+    def get_version(self, version: str) -> "Version":
         """
-        Get a sample from the database and sort the runs by submission time. Decode
-        the JSON into TransformedResults objects.
-        Return a list of TransformedResults, sorted by submission time
+        Return all completed runs sharing the given version tag, sorted by submission time.
         """
         transforms = Query()
-
-        sample_recs = self.db.search(
-            (transforms.title == title) & (transforms.status == "COMPLETE")
+        return Version(
+            version,
+            self._sorted_results(
+                self.db.search(
+                    (transforms.version == version) & (transforms.status == "COMPLETE")
+                )
+            ),
         )
-        sample_recs.sort(
+
+    def _sorted_results(self, records: list[dict]) -> list[TransformedResults]:
+        records.sort(
             key=lambda x: datetime.fromisoformat(
                 x["submit_time"].replace("Z", "+00:00")
             )
         )
+        return [TransformedResults(**rec) for rec in records]
 
-        return [TransformedResults(**rec) for rec in sample_recs]
-
-    def __getitem__(self, item):
-        """
-        Allow the catalog to be indexed by sample title."""
-        return Sample(self.get_sample(item))
+    def __getitem__(self, item: str) -> "Version":
+        """Index the catalog by version tag: cat['v1.0']"""
+        return self.get_version(item)
 
 
-class Sample:
-    def __init__(self, results: list[TransformedResults]):
-        self.results = results
+class Version:
+    def __init__(self, version: str, results: list[TransformedResults]):
+        self.version = version
 
-    def get_runs(self) -> list[str]:
-        return [run.short_hash for run in self.results]
+        # this is where the latest feature now gets enforced
+        # only the most recent sample gets added to the catalog if the version/sample pair
+        # is not unique
+        latest_by_title: dict[str, TransformedResults] = {}
+        for r in results:
+            latest_by_title[r.title] = r
+        self.results = list(latest_by_title.values())
 
     @property
-    def versions(self) -> list[str]:
-        return [run.version for run in self.results if run.version is not None]
+    def samples(self) -> list[str]:
+        return list({r.title for r in self.results})
+
+    def get_sample(self, title: str) -> TransformedResults:
+        """Return the latest run for the given sample title within this version."""
+        runs = [r for r in self.results if r.title == title]
+        if not runs:
+            raise KeyError(f"Sample {title!r} not found in version {self.version!r}")
+        return runs[-1]
+
+    def __getitem__(self, title: str) -> TransformedResults:
+        """Index by sample title: cat['v1.0']['my_sample']"""
+        return self.get_sample(title)
+
+    def run_ids(self) -> list[str]:
+        return [run.short_hash for run in self.results]
 
     def get_run(self, sha: str) -> TransformedResults:
         return next(filter(lambda x: x.short_hash == sha, self.results))
 
-    def get_version(self, version: str) -> TransformedResults:
-        return next(filter(lambda x: x.version == version, self.results))
+    # Note: removed the "latest" feature since it could get confusing when mixed w/ versioning
 
-    @property
-    def latest(self) -> TransformedResults:
-        return self.results[-1]
+    def __repr__(self) -> str:
+        return f"Version({self.version!r}, {len(self.results)} run(s))"
