@@ -95,9 +95,9 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
     def generate_qastle(self, a: ast.AST) -> str:
         r"""Generate the qastle from the ast of the query.
 
-        1. The top level function is already marked as being "ok"
-        1. If the top level function is something we have to process locally,
-           then we strip it off.
+        The top level function is already marked as being "ok".
+        If the top level function is something we have to process locally,
+        then we strip it off.
 
         Args:
             a (ast.AST): The complete AST of the request.
