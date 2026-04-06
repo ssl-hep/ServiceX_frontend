@@ -82,7 +82,7 @@ jobs:
       run: python -m zipfile --list dist/servicex-*.whl
 
     - name: Upload distribution artifact
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: dist-artifact
         path: dist
