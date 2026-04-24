@@ -61,12 +61,14 @@ config: InitConfig = {
 
 
 async def verify_token(url: str, token: str) -> bool:
-    """Verify the token by pinging the ServiceX server."""
+    """Verify the token by authenticating with the ServiceX server."""
     console = get_console()
     try:
         adapter = ServiceXAdapter(url=url, refresh_token=token)
-        await adapter.get_servicex_info()
-        return True
+        result = await adapter.verify_authentication()
+        if not result:
+            console.print("[red]✗ Failed to authenticate with ServiceX server[/red]")
+        return result
     except Exception as e:
         console.print(f"[red]✗ Failed to authenticate with ServiceX server:[/red] {e}")
         return False

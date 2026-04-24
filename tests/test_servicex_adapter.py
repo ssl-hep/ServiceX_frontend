@@ -877,3 +877,52 @@ async def test_sample_title_limit(servicex):
     )
     with pytest.raises(RuntimeError):
         await servicex.get_servicex_sample_title_limit()
+
+
+@pytest.mark.asyncio
+async def test_verify_authentication_with_token_success(servicex):
+    """verify_authentication with refresh_token: get_datasets succeeds → True."""
+    servicex.refresh_token = "mytoken"
+    servicex.get_datasets = AsyncMock(return_value=[])
+    result = await servicex.verify_authentication()
+    assert result is True
+    servicex.get_datasets.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_verify_authentication_with_token_exception(servicex):
+    """verify_authentication with refresh_token: get_datasets raises → False."""
+    servicex.refresh_token = "mytoken"
+    servicex.get_datasets = AsyncMock(side_effect=Exception("Network error"))
+    result = await servicex.verify_authentication()
+    assert result is False
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_verify_authentication_no_token_success(mock_get, servicex):
+    """verify_authentication without refresh_token: HTTP 200 → True."""
+    mock_get.return_value = MagicMock()
+    mock_get.return_value.status_code = 200
+    result = await servicex.verify_authentication()
+    assert result is True
+    mock_get.assert_called_once_with(url="https://servicex.org/servicex")
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_verify_authentication_no_token_non200(mock_get, servicex):
+    """verify_authentication without refresh_token: HTTP non-200 → False."""
+    mock_get.return_value = MagicMock()
+    mock_get.return_value.status_code = 503
+    result = await servicex.verify_authentication()
+    assert result is False
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_verify_authentication_no_token_exception(mock_get, servicex):
+    """verify_authentication without refresh_token: exception → False."""
+    mock_get.side_effect = Exception("Connection refused")
+    result = await servicex.verify_authentication()
+    assert result is False
