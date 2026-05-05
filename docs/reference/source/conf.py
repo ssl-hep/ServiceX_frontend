@@ -8,6 +8,7 @@
 
 # the following is to propagate down to the pydantic class docstring builder
 import os
+from importlib.metadata import version as _pkg_version
 
 os.environ["IN_SPHINX_BUILD"] = "1"
 
@@ -17,7 +18,9 @@ copyright = (
     "Innovation in Software for High Energy Physics (IRIS-HEP)"
 )
 author = "Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"
-html_title = "ServiceX Reference Guide"
+release = _pkg_version("servicex")
+version = ".".join(release.split(".")[:2])
+html_title = f"ServiceX v{release}<br>Reference Guide"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
