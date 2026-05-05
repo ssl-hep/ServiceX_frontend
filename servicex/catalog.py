@@ -84,7 +84,6 @@ class Version:
         return f"Version({self.version!r}, {len(self.results)} run(s))"
 
 
-
 def build_symlink_forest(catalog: Catalog, output_dir: Path) -> None:
     """
     Build a symlink forest from *catalog* under *output_dir*, organized by version.
@@ -114,7 +113,9 @@ def build_symlink_forest(catalog: Catalog, output_dir: Path) -> None:
         for sample_title in sorted(version.samples):
             result = version.get_sample(sample_title)
             if not result.file_list:
-                print(f"  [{version_tag}] {sample_title}: No files found in catalog, skipping symlink.")
+                print(
+                    f"  [{version_tag}] {sample_title}: No files found in catalog, skipping symlink."
+                )
                 continue
 
             cached_path = Path(result.file_list[0]).parent
