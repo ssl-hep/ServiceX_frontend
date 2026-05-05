@@ -30,6 +30,7 @@ import shutil
 from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
+from servicex.catalog import Catalog, build_symlink_forest
 from servicex.configuration import Configuration
 from servicex.models import (
     ResultFormat,
@@ -55,7 +56,6 @@ import traceback
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
-
 
 class ProgressBarFormat(str, Enum):
     """Specify the way progress bars are displayed."""
@@ -329,6 +329,12 @@ async def deliver_async(
         )
 
     output_dict = _output_handler(config, datasets, results)
+
+    if config.General.Delivery == General.DeliveryEnum.LocalCache and datasets:
+        cache_path = Path(datasets[0].configuration.cache_path)
+        #The symlinks automatically go in a directory within the cache, for now.
+        build_symlink_forest(Catalog(cache_path), cache_path / "symlinks")
+   
 
     return output_dict
 
