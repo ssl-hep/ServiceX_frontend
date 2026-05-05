@@ -79,7 +79,7 @@ Each dictionary is either a tree query or a copy request:
 - **Copy request** dictionaries use `copy_histograms` to copy ROOT objects (histograms, `TGraph`s, etc.) from the input file into the output.
 
 :::{seealso}
-For the full set of available keys, detailed information, and important dangers, see the [uproot-raw reference page](https://tryservicex.org/reference/uproot-raw).
+For the full set of available keys, detailed information, and important dangers, see the [uproot-raw reference page](https://tryservicex.org/reference/uproot_raw.html).
 :::
 
 ### Uproot-Python Query
@@ -88,7 +88,7 @@ For the full set of available keys, detailed information, and important dangers,
 ```
 
 :::{seealso}
-For full details on the function signature, return format, and available libraries, see the [uproot-python reference page](https://tryservicex.org/reference/uproot-python).
+For full details on the function signature, return format, and available libraries, see the [uproot-python reference page](https://tryservicex.org/reference/uproot_python.html).
 :::
 
 ### FuncADL Queries

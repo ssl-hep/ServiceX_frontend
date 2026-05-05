@@ -22,7 +22,7 @@ A ServiceX Spec is a collection of Samples that enables multiple transformation 
 There are three ways to define a Spec. Each example below defines a Spec with two samples using only the name field.
 
 :::{seealso}
-For advanced YAML features beyond the scope of this guide, see [YAML Features](https://tryservicex.org/reference/yamlfeatures/) in the reference documentation.
+For advanced YAML features beyond the scope of this guide, see [YAML Features](https://tryservicex.org/reference/yaml.html) in the reference documentation.
 :::
 
 ::::{tab-set}
