@@ -8,9 +8,13 @@
 
 # the following is to propagate down to the pydantic class docstring builder
 import os
-from importlib.metadata import version as _pkg_version
+import sys
+from pathlib import Path
 
 os.environ["IN_SPHINX_BUILD"] = "1"
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _version import release # noqa: E402
 
 project = "ServiceX Reference Guide"
 copyright = (
@@ -18,8 +22,6 @@ copyright = (
     "Innovation in Software for High Energy Physics (IRIS-HEP)"
 )
 author = "Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"
-release = _pkg_version("servicex")
-version = ".".join(release.split(".")[:2])
 html_title = f"ServiceX v{release}<br>Reference Guide"
 
 # -- General configuration ---------------------------------------------------
