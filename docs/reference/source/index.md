@@ -11,7 +11,7 @@ The [15 Minute Histogram Challenge](https://tryservicex.org/challenge/) provides
 
 :::{admonition} User Guide
 :class: seealso
-The [User Guide](https://tryservicex.org/userguide/) covers the core concepts and workflows of ServiceX for new users.
+The [User Guide](https://tryservicex.org/guide/) covers the core concepts and workflows of ServiceX for new users.
 :::
 
 :::{admonition} Example Workflows
