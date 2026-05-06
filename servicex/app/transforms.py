@@ -26,6 +26,8 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import asyncio
+import urllib.parse
+from urllib.parse import urlunparse
 from pathlib import Path
 from typing import Optional, List
 import webbrowser
@@ -233,50 +235,37 @@ class LogLevel(str, Enum):
     Level of the log messages: INFO & ERROR
     """
 
-    info = ("INFO",)
-    error = ("ERROR",)
-
-
-def add_query(key, value):
-    """
-    Creates query string from the key and value pairs
-    """
-    query_string = "(query:(match_phrase:({0}:'{1}')))".format(key, value)
-    return query_string
-
-
-def select_time(time_frame=TimeFrame.day):
-    """
-    Takes input as 'day','week','month' and returns the time filter
-    """
-    time_string = time_frame
-    if time_frame.lower() == TimeFrame.day:
-        time_string = "time:(from:now%2Fd,to:now%2Fd)"
-    elif time_frame.lower() == TimeFrame.week:
-        time_string = "time:(from:now%2Fw,to:now%2Fw)"
-    elif time_frame.lower() == TimeFrame.month:
-        time_string = "time:(from:now-30d%2Fd,to:now)"
-    else:
-        rich.print("Got a time frame apart from 'day', 'week', 'month'")
-    return time_string
+    info = "INFO"
+    error = "ERROR"
 
 
 def create_kibana_link_parameters(
-    log_url, transform_id=None, log_level=None, time_frame=None
+    log_url, transform_id=None, log_level: LogLevel = LogLevel.error
 ):
     """
-    Create the _a and _g parameters for the kibana dashboard link
+    Add a filter to a Kibana dashboard URL to show only results for a given request ID
+    with an ERROR level or higher.
     """
-    if log_level:
-        a_parameter = (
-            f"&_a=(filters:!({add_query('requestId', transform_id)},"
-            f"{add_query('level', log_level.value.lower())}))"
-        )
-    else:
-        a_parameter = f"&_a=(filters:!({add_query('requestId', transform_id)}))"
-    g_parameter = f"&_g=({select_time(time_frame.value.lower())})"
-    kibana_link = re.sub(r"\&\_g\=\(\)", g_parameter + a_parameter, log_url)
-    return kibana_link
+    decoded_url = urllib.parse.urlparse(log_url)
+
+    view_match = re.search(r"/view/([^?]+)", decoded_url.fragment)
+    instance_match = re.search(r"instance:([^)]+)", decoded_url.fragment)
+    index_match = re.search(r"index:'([^']+)'", decoded_url.fragment)
+
+    view = view_match.group(1) if view_match else None
+    instance = instance_match.group(1) if instance_match else None
+    index = index_match.group(1) if index_match else None
+
+    # If we are unable to parse the fragment, return the original URL
+    if view is None or instance is None or index is None:
+        return log_url
+
+    _a = f"(filters:!((query:(match_phrase:(instance:{instance}))),(query:(match_phrase:(requestId:'{transform_id}'))),(query:(match_phrase:(level:{log_level.value})))),index:'{index}')"  # NOQA  E502
+
+    new_fragment = f"/view/{view}?embed=true&_g=(filters:!(),refreshInterval:(pause:!t,value:1000),time:(from:now-24h/h,to:now))"  # NOQA  E502
+    new_fragment += f"&_a={urllib.parse.quote(_a)}"
+    decoded_url = decoded_url._replace(fragment=new_fragment)
+    return urlunparse(decoded_url)
 
 
 @transforms_app.command(no_args_is_help=True)
@@ -284,7 +273,6 @@ def logs(
     backend: Optional[str] = backend_cli_option,
     transform_id: str = transform_id_arg,
     log_level: Optional[LogLevel] = log_level_opt,
-    time_frame: Optional[TimeFrame] = time_frame_opt,
 ):
     """
     Open the URL to the Kibana dashboard of the logs of a tranformer
@@ -293,10 +281,7 @@ def logs(
     transforms = sx.get_transform_status(transform_id)
     if transforms and transforms.request_id == transform_id:
         kibana_link = create_kibana_link_parameters(
-            transforms.log_url,
-            transform_id=transform_id,
-            log_level=log_level,
-            time_frame=time_frame,
+            transforms.log_url, transform_id=transform_id, log_level=log_level
         )
         print(kibana_link)
         webbrowser.open(kibana_link)

@@ -183,11 +183,7 @@ class Query:
         :return: Transform results object which contains the list of files downloaded
                  or the list of pre-signed urls
         """
-        from servicex.app.transforms import (
-            create_kibana_link_parameters,
-            TimeFrame,
-            LogLevel,
-        )
+        from servicex.app.transforms import create_kibana_link_parameters
 
         download_files_task = None
         loop = asyncio.get_running_loop()
@@ -240,10 +236,7 @@ class Query:
                     )
                     if self.current_status.log_url is not None:
                         kibana_link = create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            LogLevel.error,
-                            TimeFrame.month,
+                            self.current_status.log_url, self.current_status.request_id
                         )
                         logger.error(
                             f"More information of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
@@ -412,11 +405,7 @@ class Query:
         of status. Once we know the number of files in the dataset, update the progress
         bars.
         """
-        from servicex.app.transforms import (
-            LogLevel,
-            create_kibana_link_parameters,
-            TimeFrame,
-        )
+        from servicex.app.transforms import create_kibana_link_parameters
 
         # Actual number of files in the dataset. We only know this once the DID
         # finder has completed its work. In the meantime transformers will already
@@ -476,8 +465,6 @@ class Query:
                             kibana_link = create_kibana_link_parameters(
                                 self.current_status.log_url,
                                 self.current_status.request_id,
-                                LogLevel.error,
-                                TimeFrame.month,
                             )
                             logger.warning(
                                 f"More logfiles of '{self.title}' [bold red on white]"
@@ -504,10 +491,7 @@ class Query:
                     err_str = f"Request {titlestr}was canceled"
                     if self.current_status.log_url is not None:
                         kibana_link = create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            LogLevel.error,
-                            TimeFrame.month,
+                            self.current_status.log_url, self.current_status.request_id
                         )
                         logger.error(
                             f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
@@ -549,10 +533,7 @@ class Query:
                         )
                     if self.current_status.log_url is not None:
                         kibana_link = create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            LogLevel.error,
-                            TimeFrame.month,
+                            self.current_status.log_url, self.current_status.request_id
                         )
                         logger.error(
                             f"More logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
@@ -562,10 +543,7 @@ class Query:
                     err_str = f"Fatal issue in ServiceX server for request {titlestr}"
                     if self.current_status.log_url is not None:
                         kibana_link = create_kibana_link_parameters(
-                            self.current_status.log_url,
-                            self.current_status.request_id,
-                            LogLevel.error,
-                            TimeFrame.month,
+                            self.current_status.log_url, self.current_status.request_id
                         )
                         logger.error(
                             f"{err_str}\nMore logfiles of '{self.title}' [bold red on white][link={kibana_link}]HERE[/link][/bold red on white]"  # NOQA: E501
