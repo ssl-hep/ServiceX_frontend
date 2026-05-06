@@ -229,6 +229,20 @@ class ExpandableProgress:
         if self.progress is not None:
             self.progress.refresh()
 
+    def disable_refresh(self) -> None:
+        """Suppress per-call refreshes to avoid repeated re-renders during bulk task
+        registration. Call enable_refresh() to flush a single render afterward."""
+        if self.progress is not None:
+            self._saved_refresh = self.progress.refresh
+            self.progress.refresh = lambda: None
+
+    def enable_refresh(self) -> None:
+        """Re-enable rendering and emit a single refresh to show all registered tasks."""
+        if self.progress is not None and hasattr(self, "_saved_refresh"):
+            self.progress.refresh = self._saved_refresh
+            del self._saved_refresh
+            self.progress.refresh()
+
 
 class TranformStatusProgress(Progress):
     def get_renderables(self):
