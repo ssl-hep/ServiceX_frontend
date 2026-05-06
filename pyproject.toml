@@ -51,7 +51,8 @@ dependencies = [
     "make-it-sync",  # compatible versions controlled through func_adl
     "ruamel.yaml>=0.18.7",
     "filelock>=3.12.0",
-    "tenacity >= 9.0.0"
+    "tenacity >= 9.0.0",
+    "awkward>=2.6",
 ]
 
 [project.scripts]
