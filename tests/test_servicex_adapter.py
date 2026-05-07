@@ -421,6 +421,27 @@ async def test_submit(post, servicex):
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.post")
+async def test_submit_includes_client_version(post, servicex):
+    from servicex._version import __version__
+
+    post.return_value = MagicMock()
+    post.return_value.json.return_value = {"request_id": "123-456-789"}
+    post.return_value.status_code = 200
+    request = TransformRequest(
+        title="Test submission",
+        did="rucio://foo.bar",
+        selection="(call EventDataset)",
+        codegen="uproot",
+        result_destination=ResultDestination.object_store,
+        result_format=ResultFormat.parquet,
+    )
+    await servicex.submit_transform(request)
+    _, kwargs = post.call_args
+    assert kwargs["json"]["client-version"] == __version__
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.post")
 async def test_submit_errors(post, servicex):
     post.return_value = MagicMock()
     post.return_value.status_code = 401
