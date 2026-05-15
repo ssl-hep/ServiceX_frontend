@@ -81,6 +81,7 @@ class Query:
         ignore_cache: bool = False,
         query_string_generator: Optional[QueryStringGenerator] = None,
         fail_if_incomplete: bool = True,
+        version: Optional[str] = None,
     ):
         r"""
         This is the main class for constructing transform requests and receiving the
@@ -121,6 +122,7 @@ class Query:
         self.ignore_cache = ignore_cache
         self.fail_if_incomplete = fail_if_incomplete
         self.query_string_generator = query_string_generator
+        self.version = version
 
         # Number of seconds in between ServiceX status polls
         self.servicex_polling_interval = servicex_polling_interval
@@ -144,6 +146,7 @@ class Query:
             result_destination=ResultDestination.object_store,  # type: ignore
             result_format=self.result_format,  # type: ignore
             selection=self.generate_selection_string(),
+            version=self.version,
         )  # type: ignore
         # Transfer the DID into the transform request
         self.dataset_identifier.populate_transform_request(sx_request)

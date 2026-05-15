@@ -30,6 +30,7 @@ import shutil
 from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
 
+from servicex.catalog import Catalog, build_symlink_forest
 from servicex.configuration import Configuration
 from servicex.models import (
     ResultFormat,
@@ -173,6 +174,7 @@ async def _build_datasets(
     servicex_name,
     fail_if_incomplete,
     cache_dir: Optional[str] = None,
+    version: Optional[str] = None,
 ):
     def get_codegen(_sample: Sample, _general: General):
         if _sample.Codegen is not None:
@@ -199,6 +201,7 @@ async def _build_datasets(
             ignore_cache=sample.IgnoreLocalCache,
             query=sample.Query,
             fail_if_incomplete=fail_if_incomplete,
+            version=version,
         )
         logger.debug(f"Query string: {query.generate_selection_string()}")
         query.ignore_cache = sample.IgnoreLocalCache
@@ -263,6 +266,7 @@ async def deliver_async(
     progress_bar: ProgressBarFormat = ProgressBarFormat.default,
     concurrency: int = 10,
     cache_dir: Optional[str] = None,
+    version: Optional[str] = None,
 ):
     r"""
     Execute a ServiceX query.
@@ -300,7 +304,7 @@ async def deliver_async(
             sample.IgnoreLocalCache = True
 
     datasets = await _build_datasets(
-        config, config_path, servicex_name, fail_if_incomplete, cache_dir
+        config, config_path, servicex_name, fail_if_incomplete, cache_dir, version
     )
 
     group = DatasetGroup(datasets)
@@ -326,6 +330,11 @@ async def deliver_async(
         )
 
     output_dict = _output_handler(config, datasets, results)
+
+    if config.General.Delivery == General.DeliveryEnum.LocalCache and datasets:
+        cache_path = Path(datasets[0].configuration.cache_path)
+        # The symlinks automatically go in a directory within the cache, for now.
+        build_symlink_forest(Catalog(cache_path), cache_path / "symlinks")
 
     return output_dict
 
@@ -474,6 +483,7 @@ class ServiceXClient:
         result_format: ResultFormat = ResultFormat.parquet,
         ignore_cache: bool = False,
         fail_if_incomplete: bool = True,
+        version: Optional[str] = None,
     ) -> Query:
         r"""
         Generate a Query object for a generic codegen specification
@@ -521,6 +531,7 @@ class ServiceXClient:
             ignore_cache=ignore_cache,
             query_string_generator=query,
             fail_if_incomplete=fail_if_incomplete,
+            version=version,
         )
         return qobj
 
