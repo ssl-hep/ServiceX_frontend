@@ -28,6 +28,7 @@
 from servicex.databinder_models import Sample, General, ServiceXSpec
 from servicex.servicex_client import deliver, ProgressBarFormat
 from .models import ResultDestination
+from .query_cache_read import read_dir
 import servicex.dataset as dataset
 import servicex.query as query
 import importlib.metadata
@@ -48,5 +49,6 @@ __all__ = [
     "dataset",
     "query",
     "ProgressBarFormat",
+    "read_dir",
     "__version__",
 ]
