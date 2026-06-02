@@ -1,10 +1,12 @@
 Install and Initialize
 ==============================
 
-:::{admonition} You Will Learn:
+This page covers the installation and initialization of the ServiceX client, including how to authenticate with an analysis facility and access the ServiceX dashboard.
+
+:::{admonition} Page Overview
 :class: note
-- How to Install ServiceX Client
-- How to access ServiceX AF dashboard
+- How to install the ServiceX client
+- How to access the ServiceX Analysis Facility dashboard
 - How to authenticate the client with a backend
 :::
 
@@ -24,7 +26,7 @@ The `servicex` client is installed using `pip`:
 pip install servicex
 ```
 
-## Initialize ServiceX
+## Initialize ServiceX (ATLAS)
 
 With `servicex` installed, the client must be connected to an Analysis Facility. This step authenticates the environment and sets up the required access. The following command launches the setup wizard:
 
@@ -32,19 +34,24 @@ With `servicex` installed, the client must be connected to an Analysis Facility.
 servicex init
 ```
 
-The setup wizard guides through configuring the ServiceX client. After selecting an analysis facility, the wizard provides a link to a sign-in page. On that page, click **Sign in with ATLAS**.
+The setup wizard guides through configuring the ServiceX client. After an analysis facility is selected, the wizard provides a link to a sign-in page. On that page, select **Sign in with ATLAS** to authenticate.
 
-After completing the ATLAS sign-in, open the second link provided by the wizard. On this page, click the button to copy the authentication token:
+After the ATLAS sign-in is complete, the second link provided by the wizard leads to the token retrieval page. On this page, users should click the button to copy the authentication token:
 
 ```{image} imgs/setup-token.png
 :width: 400px
 :alt: Token copy button example
 ```
 
-
-Paste the token into the command line when prompted. The wizard verifies that the client is successfully configured. Once verification is complete, a prompt appears to choose a downloads directory. Press Enter to accept the default location.
+The token should be entered into the command line when prompted. The wizard verifies that the client is successfully configured. Once verification is complete, a prompt appears to choose a downloads directory. Pressing Enter accepts the default location.
 
 If setup completes successfully, a **Configuration Complete** message is displayed. The next step is to use the ServiceX dashboard.
+
+## Initialize ServiceX (CMS)
+
+Currently, the two analysis facilities that host CMS instances of ServiceX do not have per-user authentication. The `servicex.yaml` file must be obtained directly from the analysis facilities. It is recommended to contact the ServiceX team through [ServiceX Mattermost](https://mattermost.web.cern.ch/servicex) to obtain authentication credentials.
+
+Once a `servicex.yaml` is obtained, the file should be placed in the project directory or a directory upstream.
 
 ## ServiceX Dashboard
 
