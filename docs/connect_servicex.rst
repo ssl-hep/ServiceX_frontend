@@ -102,10 +102,7 @@ Navigate to a directory in which you want to begin a ServiceX project and execut
     │ 1. Open this URL to sign in to UChicago:                                                                                                                                        │
     │    https://servicex.af.uchicago.edu/sign-in                                                                                                                                     │
     │                                                                                                                                                                                 │
-    │ 2. After signing in, navigate to:                                                                                                                                               │
-    │    https://servicex.af.uchicago.edu/profile                                                                                                                                     │
-    │                                                                                                                                                                                 │
-    │ 3. Copy your API token and paste it below                                                                                                                                       │
+    │ 2. Once redirected to your user profile, copy your API token and paste it below.                                                                                                                                   │
     ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
     Paste your token here:
