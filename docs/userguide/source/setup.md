@@ -10,7 +10,9 @@ This page covers the installation and initialization of the ServiceX client, inc
 - How to authenticate the client with a backend
 :::
 
-## Install ServiceX
+## Setup For ATLAS
+
+### Install ServiceX
 
 :::{important}
 Using a Python virtual environment is recommended to avoid conflicts with existing packages and to keep the ServiceX setup isolated.
@@ -26,7 +28,7 @@ The `servicex` client is installed using `pip`:
 pip install servicex
 ```
 
-## Initialize ServiceX (ATLAS)
+### Initialize ServiceX
 
 With `servicex` installed, the client must be connected to an Analysis Facility. This step authenticates the environment and sets up the required access. The following command launches the setup wizard:
 
@@ -47,11 +49,14 @@ The token should be entered into the command line when prompted. The wizard veri
 
 If setup completes successfully, a **Configuration Complete** message is displayed. The next step is to use the ServiceX dashboard.
 
-## Initialize ServiceX (CMS)
+## Setup For CMS
 
-Currently, the two analysis facilities that host CMS instances of ServiceX do not have per-user authentication. The `servicex.yaml` file must be obtained directly from the analysis facilities. It is recommended to contact the ServiceX team through [ServiceX Mattermost](https://mattermost.web.cern.ch/servicex) to obtain authentication credentials.
+There are currently two analysis facilities that are set up for use with ServiceX for CMS:
 
-Once a `servicex.yaml` is obtained, the file should be placed in the project directory or a directory upstream.
+1. [Purdue](https://analysis-facility.physics.purdue.edu)
+2. [Nebraska](https://coffea.casa/hub/login)
+
+To use ServiceX on either of these analysis facilities, log into the Coffea Casa instance and ServiceX is ready to use.
 
 ## ServiceX Dashboard
 
