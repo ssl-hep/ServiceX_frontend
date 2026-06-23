@@ -368,6 +368,7 @@ async def test_delete_transform_errors(delete, servicex):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_cancel_transform(get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     get.return_value.json.return_value = {
         "message": "Canceled transformation request 123"
     }
@@ -375,6 +376,23 @@ async def test_cancel_transform(get, servicex):
 
     await servicex.cancel_transform(123)
     get.assert_called_with(
+        url="https://servicex.org/servicex/transformation/123/cancel", headers={}
+    )
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.post")
+async def test_cancel_transform_post(post, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["post_cancel_transform"]
+    )
+    post.return_value.json.return_value = {
+        "message": "Canceled transformation request 123"
+    }
+    post.return_value.status_code = 200
+
+    await servicex.cancel_transform(123)
+    post.assert_called_with(
         url="https://servicex.org/servicex/transformation/123/cancel", headers={}
     )
 
