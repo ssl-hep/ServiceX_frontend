@@ -421,6 +421,27 @@ async def test_submit(post, servicex):
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.post")
+async def test_submit_includes_client_version(post, servicex):
+    from servicex._version import __version__
+
+    post.return_value = MagicMock()
+    post.return_value.json.return_value = {"request_id": "123-456-789"}
+    post.return_value.status_code = 200
+    request = TransformRequest(
+        title="Test submission",
+        did="rucio://foo.bar",
+        selection="(call EventDataset)",
+        codegen="uproot",
+        result_destination=ResultDestination.object_store,
+        result_format=ResultFormat.parquet,
+    )
+    await servicex.submit_transform(request)
+    _, kwargs = post.call_args
+    assert kwargs["json"]["client-version"] == __version__
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.post")
 async def test_submit_errors(post, servicex):
     post.return_value = MagicMock()
     post.return_value.status_code = 401
@@ -877,3 +898,52 @@ async def test_sample_title_limit(servicex):
     )
     with pytest.raises(RuntimeError):
         await servicex.get_servicex_sample_title_limit()
+
+
+@pytest.mark.asyncio
+async def test_verify_authentication_with_token_success(servicex):
+    """verify_authentication with refresh_token: get_datasets succeeds → True."""
+    servicex.refresh_token = "mytoken"
+    servicex.get_datasets = AsyncMock(return_value=[])
+    result = await servicex.verify_authentication()
+    assert result is True
+    servicex.get_datasets.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_verify_authentication_with_token_exception(servicex):
+    """verify_authentication with refresh_token: get_datasets raises → False."""
+    servicex.refresh_token = "mytoken"
+    servicex.get_datasets = AsyncMock(side_effect=Exception("Network error"))
+    result = await servicex.verify_authentication()
+    assert result is False
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_verify_authentication_no_token_success(mock_get, servicex):
+    """verify_authentication without refresh_token: HTTP 200 → True."""
+    mock_get.return_value = MagicMock()
+    mock_get.return_value.status_code = 200
+    result = await servicex.verify_authentication()
+    assert result is True
+    mock_get.assert_called_once_with(url="https://servicex.org/servicex")
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_verify_authentication_no_token_non200(mock_get, servicex):
+    """verify_authentication without refresh_token: HTTP non-200 → False."""
+    mock_get.return_value = MagicMock()
+    mock_get.return_value.status_code = 503
+    result = await servicex.verify_authentication()
+    assert result is False
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_verify_authentication_no_token_exception(mock_get, servicex):
+    """verify_authentication without refresh_token: exception → False."""
+    mock_get.side_effect = Exception("Connection refused")
+    result = await servicex.verify_authentication()
+    assert result is False

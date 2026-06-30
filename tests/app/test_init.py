@@ -43,19 +43,39 @@ def temp_dir():
 
 @pytest.mark.asyncio
 async def test_verify_token_success():
-    """Test verify_token with successful authentication."""
     with patch("servicex.app.init.ServiceXAdapter") as mock_adapter_class:
         mock_adapter = Mock()
-        mock_adapter.get_servicex_info = AsyncMock(return_value={})
+        mock_adapter.verify_authentication = AsyncMock(return_value=True)
         mock_adapter_class.return_value = mock_adapter
 
         result = await verify_token("https://servicex.af.uchicago.edu", "test-token")
 
         assert result is True
         mock_adapter_class.assert_called_once_with(
-            url="https://servicex.af.uchicago.edu", refresh_token="test-token"
+            url="https://servicex.af.uchicago.edu",
+            refresh_token="test-token",
         )
-        mock_adapter.get_servicex_info.assert_called_once()
+        mock_adapter.verify_authentication.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_verify_token_auth_returns_false():
+    """Test verify_token when verify_authentication returns False (no exception)."""
+    with patch("servicex.app.init.ServiceXAdapter") as mock_adapter_class:
+        mock_adapter = Mock()
+        mock_adapter.verify_authentication = AsyncMock(return_value=False)
+        mock_adapter_class.return_value = mock_adapter
+
+        with patch("servicex.app.init.get_console") as mock_console:
+            mock_console_obj = Mock()
+            mock_console.return_value = mock_console_obj
+
+            result = await verify_token("https://servicex.af.uchicago.edu", "bad-token")
+
+            assert result is False
+            mock_console_obj.print.assert_called_once()
+            call_args = mock_console_obj.print.call_args[0][0]
+            assert "Failed to authenticate" in call_args
 
 
 @pytest.mark.asyncio

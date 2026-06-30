@@ -61,12 +61,14 @@ config: InitConfig = {
 
 
 async def verify_token(url: str, token: str) -> bool:
-    """Verify the token by pinging the ServiceX server."""
+    """Verify the token by authenticating with the ServiceX server."""
     console = get_console()
     try:
         adapter = ServiceXAdapter(url=url, refresh_token=token)
-        await adapter.get_servicex_info()
-        return True
+        result = await adapter.verify_authentication()
+        if not result:
+            console.print("[red]✗ Failed to authenticate with ServiceX server[/red]")
+        return result
     except Exception as e:
         console.print(f"[red]✗ Failed to authenticate with ServiceX server:[/red] {e}")
         return False
@@ -93,7 +95,6 @@ def run(
 
     console.print()
 
-    profile_url = f"{url}/profile"
     sign_in_url = f"{url}/sign-in"
 
     if custom_url:
@@ -104,9 +105,7 @@ def run(
         sign_in_message = (
             f"1. Open this URL to sign in to {name}:\n"
             f"   [cyan][link={sign_in_url}]{sign_in_url}[/link][/cyan]\n\n"
-            f"2. After signing in, navigate to:\n"
-            f"   [cyan][link={profile_url}]{profile_url}[/link][/cyan]\n\n"
-            f"3. Copy your API token and paste it below"
+            f"2. Once redirected to your user profile, copy your API token and paste it below."
         )
 
         console.print(

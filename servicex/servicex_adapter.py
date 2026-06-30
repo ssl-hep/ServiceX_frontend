@@ -43,7 +43,7 @@ from tenacity import (
     retry_if_not_exception_type,
 )
 from make_it_sync import make_sync
-
+from servicex._version import __version__
 from servicex.models import (
     TransformRequest,
     TransformStatus,
@@ -211,6 +211,32 @@ class ServiceXAdapter:
 
     get_code_generators = make_sync(get_code_generators_async)
 
+    async def verify_authentication(self) -> bool:
+        """Verify connectivity and authentication with the ServiceX server.
+
+        If a refresh_token is configured, verifies authentication using the
+        /servicex/datasets endpoint which requires authentication.
+
+        If no token is configured (auth disabled), verifies connectivity using
+        the /servicex info endpoint directly without going through authorization.
+
+        Returns True if successful, False otherwise.
+        Any exception (connection error, auth error, etc.) results in False.
+        """
+        try:
+            if self.refresh_token:
+                await self.get_datasets()
+            else:
+                # Call info endpoint directly without authorization headers
+                # to avoid issues with BEARER_TOKEN_FILE containing expired tokens
+                async with AsyncClient() as client:
+                    r = await client.get(url=f"{self.url}/servicex")
+                    if r.status_code != 200:
+                        return False
+            return True
+        except Exception:
+            return False
+
     async def get_datasets(
         self, did_finder=None, show_deleted=False
     ) -> List[CachedDataset]:
@@ -358,13 +384,17 @@ class ServiceXAdapter:
     async def submit_transform(self, transform_request: TransformRequest) -> str:
         headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=30)
+
+        submit_json = transform_request.model_dump(by_alias=True, exclude_none=True)
+        submit_json["client-version"] = __version__
+
         async with AsyncClient(
             transport=RetryTransport(retry=retry_options), timeout=_timeout
         ) as client:
             r = await client.post(
                 url=f"{self.url}/servicex/transformation",
                 headers=headers,
-                json=transform_request.model_dump(by_alias=True, exclude_none=True),
+                json=submit_json,
             )
 
             if r.status_code >= 400:

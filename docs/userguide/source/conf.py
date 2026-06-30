@@ -8,8 +8,13 @@
 
 # the following is to propagate down to the pydantic class docstring builder
 import os
+import sys
+from pathlib import Path
 
 os.environ["IN_SPHINX_BUILD"] = "1"
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from _version import release  # noqa: E402
 
 project = "ServiceX User Guide"
 copyright = (
@@ -17,7 +22,7 @@ copyright = (
     "Innovation in Software for High Energy Physics (IRIS-HEP)"
 )
 author = "Institute for Research and Innovation in Software for High Energy Physics (IRIS-HEP)"
-html_title = "ServiceX User Guide"
+html_title = f"ServiceX v{release}<br>User Guide"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
