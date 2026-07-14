@@ -33,7 +33,7 @@ import datetime
 from unittest.mock import AsyncMock, Mock, patch
 from servicex.dataset_identifier import FileListDataset
 from servicex.configuration import Configuration
-from servicex.minio_adapter import MinioAdapter
+from servicex.download_adapter import MinioAdapter
 from servicex.query_core import Query
 from servicex.query_cache import QueryCache
 from servicex.expandable_progress import ExpandableProgress

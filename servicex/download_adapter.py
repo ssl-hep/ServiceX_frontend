@@ -29,14 +29,18 @@ import os.path
 from hashlib import sha1
 from pathlib import Path
 from typing import List, Optional
+from dataclasses import dataclass
+import sys
 
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
 import aioboto3
 from boto3.s3.transfer import TransferConfig
 import asyncio
+import httpx
 
 from servicex.models import ResultFile, TransformStatus
+from servicex.servicex_adapter import ServiceXAdapter
 
 # Maximum five simultaneous streams per individual file download
 _transferconfig = TransferConfig(max_concurrency=5)
@@ -46,7 +50,7 @@ _file_transfer_sem = asyncio.Semaphore(10)
 _bucket_list_sem = asyncio.Semaphore(5)
 
 
-def init_s3_config(concurrency: int = 10):
+def init_download_concurrency(concurrency: int = 10):
     "Update the number of concurrent connections"
     global _file_transfer_sem
     _file_transfer_sem = asyncio.Semaphore(concurrency)
@@ -57,7 +61,37 @@ def _sanitize_filename(fname: str):
     return fname.replace("*", "_").replace(";", "_").replace(":", "_")
 
 
-class MinioAdapter:
+@dataclass
+class URLAccessInfo:
+    url: str
+    headers: dict[str, str]
+    expiration: int
+
+
+class DownloadAdapter:
+    @classmethod
+    def hash_path(cls, file_name):
+        """
+        Make the path safe for object store or POSIX, by keeping the length
+        less than MAX_PATH_LEN. Replace the leading (less interesting) characters with a
+        forty character hash.
+        :param file_name: Input filename
+        :return: Safe path string
+        """
+        if len(file_name) > cls.MAX_PATH_LEN:
+            hash = sha1(file_name.encode("utf-8")).hexdigest()
+            return "".join(
+                [
+                    "_",
+                    hash,
+                    file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1) :],  # noqa: E203
+                ]
+            )
+        else:
+            return file_name
+
+
+class MinioAdapter(DownloadAdapter):
     # This must be at least 40, the length of the `hash` we are using, or
     # undefined things will happen.
     MAX_PATH_LEN = 60
@@ -154,31 +188,125 @@ class MinioAdapter:
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
-    async def get_signed_url(self, object_name: str) -> str:
+    async def get_signed_url(self, object_name: str) -> URLAccessInfo:
         async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
-            return await s3.generate_presigned_url(
+            url = await s3.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": self.bucket, "Key": object_name},
                 ExpiresIn=365 * 24 * 60 * 60,
             )
+            return URLAccessInfo(url=url, headers={}, expiration=sys.maxsize)
+
+    async def update_cache(self, object_names: list[str]) -> None:
+        # this does nothing
+        pass
+
+
+class HTTPDownloadAdapter(DownloadAdapter):
+    # Ask the server what URL to download from
+    # This must be at least 40, the length of the `hash` we are using, or
+    # undefined things will happen.
+    MAX_PATH_LEN = 60
+
+    def __init__(
+        self,
+        servicex: ServiceXAdapter,
+        bucket: str,
+    ):
+        self.session = httpx.AsyncClient()
+
+        self.servicex = servicex
+        self.bucket = bucket
+        self.urlcache: dict[str, URLAccessInfo] = {}
 
     @classmethod
-    def hash_path(cls, file_name):
-        """
-        Make the path safe for object store or POSIX, by keeping the length
-        less than MAX_PATH_LEN. Replace the leading (less interesting) characters with a
-        forty character hash.
-        :param file_name: Input filename
-        :return: Safe path string
-        """
-        if len(file_name) > cls.MAX_PATH_LEN:
-            hash = sha1(file_name.encode("utf-8")).hexdigest()
-            return "".join(
-                [
-                    "_",
-                    hash,
-                    file_name[-1 * (cls.MAX_PATH_LEN - len(hash) - 1) :],  # noqa: E203
-                ]
+    def for_transform(cls, transform: TransformStatus, servicex: ServiceXAdapter):
+        return HTTPDownloadAdapter(
+            servicex=servicex,
+            bucket=transform.request_id,
+        )
+
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
+    async def list_bucket(self) -> List[ResultFile]:
+        return []
+
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
+    async def download_file(
+        self,
+        object_name: str,
+        local_dir: str,
+        shorten_filename: bool = False,
+        expected_size: Optional[int] = None,
+    ) -> Path:
+        os.makedirs(local_dir, exist_ok=True)
+        path = Path(
+            os.path.join(
+                local_dir,
+                _sanitize_filename(
+                    self.hash_path(object_name) if shorten_filename else object_name,
+                ),
             )
-        else:
-            return file_name
+        )
+
+        async with _file_transfer_sem:
+            if path.exists() and expected_size is not None:
+                # if file size is the same, let's not download anything
+                # maybe move to a better verification mechanism with e-tags in the future
+                localsize = path.stat().st_size
+                if localsize == expected_size:
+                    return path.resolve()
+
+            download_info = await self.get_signed_url(object_name)
+
+            async with self.session.stream(
+                "GET", download_info.url, headers=download_info.headers
+            ) as response:
+                with open(path, "wb") as outfile:
+                    async for chunk in response.aiter_bytes():
+                        outfile.write(chunk)
+            if expected_size is not None:
+                localsize = path.stat().st_size
+                if localsize != expected_size:
+                    raise RuntimeError(f"Download of {object_name} failed")
+        return path.resolve()
+
+    async def get_signed_url(self, object_name: str) -> URLAccessInfo:
+        urldata = self.urlcache.get(object_name)
+        if urldata is None:
+            await self.update_cache([object_name])
+            urldata = self.urlcache.get(object_name)
+            if urldata is None:
+                raise RuntimeError(f"Obtaining URL for {object_name} failed")
+        return urldata
+
+    @retry(
+        stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
+    )
+    async def update_cache(self, object_names: list[str]) -> None:
+        to_lookup: list[str] = []
+        for key in object_names:
+            if key not in self.urlcache:
+                to_lookup.append(key)
+        if to_lookup:
+            download_info = await self.session.post(
+                f"{self.servicex.url}/servicex/transformation/file-urls",
+                json={"request_id": self.bucket, "file_list": to_lookup},
+                headers={"Authorization": f"Bearer {self.servicex.token}"},
+            )
+            self.urlcache |= {
+                key: URLAccessInfo(url=val[0], headers=val[1], expiration=val[2])
+                for key, val in download_info.json()["uris"].items()
+            }
+
+
+async def get_download_adapter(
+    current_status: TransformStatus, servicex: ServiceXAdapter
+):
+    if "generate_file_urls" in await servicex.get_servicex_capabilities():
+        return HTTPDownloadAdapter.for_transform(current_status, servicex)
+    else:
+        return MinioAdapter.for_transform(current_status)

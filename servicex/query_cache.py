@@ -65,7 +65,8 @@ class QueryCache:
         completed_status: TransformStatus,
         data_dir: str,
         file_list: List[str],
-        signed_urls,
+        signed_urls: List[str],
+        headers: List[dict[str, str]],
     ) -> TransformedResults:
         return TransformedResults(
             hash=transform.compute_hash(),
@@ -76,6 +77,7 @@ class QueryCache:
             data_dir=data_dir,
             file_list=file_list,
             signed_url_list=signed_urls,
+            headers=headers,
             files=completed_status.files,
             result_format=transform.result_format,
             log_url=completed_status.log_url,
@@ -191,7 +193,7 @@ class QueryCache:
         if len(records) != 1:
             raise CacheException("Multiple records found in db for hash")
         else:
-            return TransformedResults(**records[0])
+            return TransformedResults(**self._patch_missing_fields(records[0]))
 
     def get_transform_by_request_id(
         self, request_id: str
@@ -210,7 +212,7 @@ class QueryCache:
         if len(records) != 1:
             raise CacheException("Multiple records found in db for request_id")
         else:
-            return TransformedResults(**records[0])
+            return TransformedResults(**self._patch_missing_fields(records[0]))
 
     def cache_path_for_transform(self, transform_status: TransformStatus) -> Path:
         assert self.config.cache_path is not None, "Cache path not set"
@@ -224,7 +226,7 @@ class QueryCache:
 
         with self.lock:
             result = [
-                TransformedResults(**doc)
+                TransformedResults(**self._patch_missing_fields(doc))
                 for doc in self.db.search(
                     transforms.request_id.exists() & ~(transforms.status == "SUBMITTED")
                 )
@@ -250,3 +252,9 @@ class QueryCache:
         transforms = Query()
         with self.lock:
             self.db.remove(transforms.hash == hash)
+
+    def _patch_missing_fields(self, rec: dict) -> dict:
+        rv = rec.copy()
+        if "headers" not in rv:
+            rv["headers"] = [{}] * len(rv["file_list"])
+        return rv

@@ -290,9 +290,9 @@ async def deliver_async(
     :return: A dictionary mapping the name of each :py:class:`Sample` to a :py:class:`.GuardList`
             with the file names or URLs for the outputs.
     """
-    from .minio_adapter import init_s3_config
+    from .download_adapter import init_download_concurrency
 
-    init_s3_config(concurrency)
+    init_download_concurrency(concurrency)
     config = _load_ServiceXSpec(spec)
 
     if ignore_local_cache or config.General.IgnoreLocalCache:
