@@ -537,7 +537,9 @@ async def test_submit_cancel(mocker):
     mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
     mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
     mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
-    mocker.patch("servicex.download_adapter.MinioAdapter", return_value=mock_minio)
+    mocker.patch(
+        "servicex.download_adapter.MinioAdapter.for_transform", return_value=mock_minio
+    )
     did = FileListDataset("/foo/bar/baz.root")
     datasource = Query(
         dataset_identifier=did,
