@@ -372,7 +372,7 @@ class ServiceXAdapter:
 
         async with AsyncClient() as session:
             capabilities = await self.get_servicex_capabilities()
-            if "post_cancel_transform" in capabilities:
+            if "cancel_transform_post_method" in capabilities:
                 r = await session.post(headers=headers, url=url)
             else:
                 r = await session.get(headers=headers, url=url)

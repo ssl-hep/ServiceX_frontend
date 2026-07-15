@@ -384,7 +384,7 @@ async def test_cancel_transform_get(get, servicex):
 @patch("servicex.servicex_adapter.AsyncClient.post")
 async def test_cancel_transform(post, servicex):
     servicex.get_servicex_capabilities = AsyncMock(
-        return_value=["post_cancel_transform"]
+        return_value=["cancel_transform_post_method"]
     )
     post.return_value.json.return_value = {
         "message": "Canceled transformation request 123"
@@ -424,7 +424,7 @@ async def test_cancel_transform_errors_get(get, servicex):
 @patch("servicex.servicex_adapter.AsyncClient.post")
 async def test_cancel_transform_errors(post, servicex):
     servicex.get_servicex_capabilities = AsyncMock(
-        return_value=["post_cancel_transform"]
+        return_value=["cancel_transform_post_method"]
     )
     post.return_value = MagicMock()
     post.return_value.status_code = 403
