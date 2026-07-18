@@ -29,6 +29,7 @@ import os
 import tempfile
 import json
 import pytest
+from pathlib import Path
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
@@ -310,3 +311,22 @@ def test_cache_queries_in_state(transform_request):
         )
 
         cache.close()
+
+
+def test_patch_old_db():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.close()
+        with open(Path(temp_dir) / ".servicex" / "db.json", "w") as f:
+            f.write(
+                """{"_default": {"207": {"hash": "hash", "title": "123456", "codegen": "uproot","""
+                """ "result_format": "root-file", "request_id": "123456", "status": "COMPLETE","""
+                """ "submit_time": "2026-02-04T17:53:56.642131Z", "data_dir": "123456","""
+                """ "file_list": ["a"], "signed_url_list": [], "files": 1,"""
+                """ "log_url": "https://testing/"}}} """
+            )
+        cache = QueryCache(config)
+        transform = cache.get_transform_by_hash("hash")
+        assert transform is not None
+        assert transform.headers == [{}]

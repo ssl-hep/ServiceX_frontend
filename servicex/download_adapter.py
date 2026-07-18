@@ -230,7 +230,14 @@ class HTTPDownloadAdapter(DownloadAdapter):
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
     )
     async def list_bucket(self) -> List[ResultFile]:
-        return []
+        return [
+            ResultFile(
+                filename=_.filename,
+                size=_.total_bytes,
+                extension=_.filename.split(".")[-1],
+            )
+            for _ in await self.servicex.get_transformation_results(self.bucket)
+        ]
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
@@ -253,14 +260,22 @@ class HTTPDownloadAdapter(DownloadAdapter):
         )
 
         async with _file_transfer_sem:
-            if path.exists() and expected_size is not None:
+            download_info = await self.get_signed_url(object_name)
+            if expected_size is not None:
+                remotesize = expected_size
+            else:
+                info = await self.session.head(
+                    download_info.url, headers=download_info.headers
+                )
+                remotesize = info.headers.get("Content-Length")
+                if remotesize is not None:
+                    remotesize = int(remotesize)
+            if path.exists() and remotesize is not None:
                 # if file size is the same, let's not download anything
                 # maybe move to a better verification mechanism with e-tags in the future
                 localsize = path.stat().st_size
-                if localsize == expected_size:
+                if localsize == remotesize:
                     return path.resolve()
-
-            download_info = await self.get_signed_url(object_name)
 
             async with self.session.stream(
                 "GET", download_info.url, headers=download_info.headers
@@ -268,9 +283,9 @@ class HTTPDownloadAdapter(DownloadAdapter):
                 with open(path, "wb") as outfile:
                     async for chunk in response.aiter_bytes():
                         outfile.write(chunk)
-            if expected_size is not None:
+            if remotesize is not None:
                 localsize = path.stat().st_size
-                if localsize != expected_size:
+                if localsize != remotesize:
                     raise RuntimeError(f"Download of {object_name} failed")
         return path.resolve()
 

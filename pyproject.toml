@@ -83,6 +83,7 @@ test = [
     "pytest-aioboto3>=0.6.0",
     "types-aiobotocore>=2.7.0,<=2.26.0",
     "coverage>=7.0.0",
+    "pytest-httpserver>=1.1.5",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",
