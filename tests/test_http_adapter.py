@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
+from pathlib import Path
 
 from servicex.download_adapter import HTTPDownloadAdapter
 from servicex.models import ResultFile
@@ -105,6 +106,21 @@ async def test_download_file_with_expected_size(httpserver, content, tmp_path):
     assert result.exists()
     assert result.read_bytes() == (b"\x01" * 10)
     result.unlink()  # it should exist, from above ...
+
+
+@pytest.mark.parametrize("content", ["test.txt"])
+@pytest.mark.asyncio
+async def test_download_file_with_bad_expected_size(httpserver, content, tmp_path):
+    populate_bucket([content], httpserver)
+    http_adapter = adapter(httpserver)
+    info = await http_adapter.list_bucket()
+    assert len(info) == 1
+    with pytest.raises(RuntimeError):
+        await http_adapter.download_file(
+            "test.txt", local_dir=tmp_path, expected_size=11
+        )
+    result = Path(tmp_path) / "text.txt"
+    assert not result.exists()
 
 
 @pytest.mark.parametrize("content", ["t::est.txt"])
@@ -188,6 +204,15 @@ async def test_get_signed_url(httpserver, content):
     http_adapter = adapter(httpserver)
     result = await http_adapter.get_signed_url("test.txt")
     assert result.url.startswith(httpserver.url_for("/"))
+
+
+@pytest.mark.parametrize("content", ["test.txt"])
+@pytest.mark.asyncio
+async def test_get_signed_url_bad_file(httpserver, content):
+    populate_bucket([content], httpserver)
+    http_adapter = adapter(httpserver)
+    with pytest.raises(RuntimeError):
+        await http_adapter.get_signed_url("test2.txt")
 
 
 # @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)

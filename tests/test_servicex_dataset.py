@@ -299,6 +299,84 @@ async def test_submit(mocker, use_s3_polling):
     mock_cache.cache_transform.assert_called_once()
 
 
+@pytest.mark.asyncio
+async def test_submit_remote_urls(mocker):
+    servicex = _sx_mock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": "123-456-789"}
+
+    # Configure capabilities based on polling type
+    capabilities = ["poll_local_transformation_results", "generate_file_urls"]
+    servicex.get_servicex_capabilities = AsyncMock(return_value=capabilities)
+
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [
+                ServiceXFile(
+                    filename="file1",
+                    total_bytes=100,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                )
+            ],
+            [
+                ServiceXFile(
+                    filename="file1",
+                    total_bytes=100,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+                ServiceXFile(
+                    filename="file2",
+                    total_bytes=100,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+        ]
+    )
+
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status3,
+    ]
+
+    mock_http = AsyncMock()
+    mock_http.download_file = AsyncMock(
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a)
+    )
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
+
+    mocker.patch(
+        "servicex.download_adapter.HTTPDownloadAdapter.for_transform",
+        return_value=mock_http,
+    )
+
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = Query(
+        dataset_identifier=did,
+        title="ServiceX Client",
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+    )
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        result = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
+
+    assert result.file_list == ["file1", "file2"]
+    mock_cache.cache_transform.assert_called_once()
+
+
 @pytest.mark.parametrize("use_s3_polling", [False, True])
 @pytest.mark.asyncio
 async def test_submit_partial_success(mocker, use_s3_polling):
