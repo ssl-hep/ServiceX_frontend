@@ -57,7 +57,7 @@ def populate_bucket(request, httpserver):
                     "s3-object-name": _,
                     "total-bytes": 10,
                     "transform_status": "success",
-                    "created_at": "2026-07-14 12:00+0000",
+                    "created_at": "2026-07-14T12:00:00+0000",
                 }
                 for _ in request
             ]
