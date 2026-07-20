@@ -37,7 +37,7 @@ async def test_codegen_list_fetched_when_not_cached(mocker):
         query=GenericQueryStringGenerator("1", "uproot"),
     )
 
-    mocker.patch.object(Query, "download_files", AsyncMock(return_value=[]))
+    mocker.patch.object(Query, "download_files", AsyncMock(return_value=([], [])))
 
     await q.as_files_async(display_progress=False)
 

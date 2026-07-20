@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
 import sys
+from abc import ABC, abstractmethod
 
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
@@ -68,7 +69,11 @@ class URLAccessInfo:
     expiration: int
 
 
-class DownloadAdapter:
+class DownloadAdapter(ABC):
+    # This must be at least 40, the length of the `hash` we are using, or
+    # undefined things will happen.
+    MAX_PATH_LEN = 60
+
     @classmethod
     def hash_path(cls, file_name):
         """
@@ -90,12 +95,35 @@ class DownloadAdapter:
         else:
             return file_name
 
+    @classmethod
+    @abstractmethod
+    def for_transform(cls, transform: TransformStatus):
+        """Return an adapter instance for a given transform"""
+
+    @abstractmethod
+    async def list_bucket(self) -> List[ResultFile]:
+        """Directly query for the files associated with this transform"""
+
+    @abstractmethod
+    async def download_file(
+        self,
+        object_name: str,
+        local_dir: str,
+        shorten_filename: bool = False,
+        expected_size: Optional[int] = None,
+    ) -> Path:
+        """Download a file"""
+
+    @abstractmethod
+    async def get_signed_url(self, object_name: str) -> URLAccessInfo:
+        """Get URL from which a file can be downloaded"""
+
+    @abstractmethod
+    async def update_cache(self, object_names: list[str]) -> None:
+        """Signal to class that it should look up the URLs for object_names"""
+
 
 class MinioAdapter(DownloadAdapter):
-    # This must be at least 40, the length of the `hash` we are using, or
-    # undefined things will happen.
-    MAX_PATH_LEN = 60
-
     def __init__(
         self,
         endpoint_host: str,
@@ -198,15 +226,11 @@ class MinioAdapter(DownloadAdapter):
             return URLAccessInfo(url=url, headers={}, expiration=sys.maxsize)
 
     async def update_cache(self, object_names: list[str]) -> None:
-        # this does nothing
-        pass
+        """In this class this does nothing"""
 
 
 class HTTPDownloadAdapter(DownloadAdapter):
     # Ask the server what URL to download from
-    # This must be at least 40, the length of the `hash` we are using, or
-    # undefined things will happen.
-    MAX_PATH_LEN = 60
 
     def __init__(
         self,

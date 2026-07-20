@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import pytest
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 from servicex.download_adapter import HTTPDownloadAdapter
 from servicex.models import ResultFile
@@ -213,6 +214,15 @@ async def test_get_signed_url_bad_file(httpserver, content):
     http_adapter = adapter(httpserver)
     with pytest.raises(RuntimeError):
         await http_adapter.get_signed_url("test2.txt")
+
+
+def _sx_mock() -> AsyncMock:
+    """Create a ServiceX adapter mock with code generators configured."""
+    mock = AsyncMock()
+    mock.get_code_generators_async = AsyncMock(
+        return_value={"uproot": "img", "uproot-raw": "img"}
+    )
+    return mock
 
 
 # @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)

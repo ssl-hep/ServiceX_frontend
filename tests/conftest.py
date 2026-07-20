@@ -43,6 +43,7 @@ from servicex.download_adapter import MinioAdapter
 
 import pandas as pd
 import os
+import sys
 
 
 @fixture
@@ -93,7 +94,8 @@ def transformed_result_python_dataset(dummy_parquet_file) -> TransformedResults:
         data_dir="/foo/bar",
         file_list=[dummy_parquet_file],
         signed_url_list=[],
-        headers=[],
+        headers=[{}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -177,6 +179,7 @@ def transformed_result(dummy_parquet_file) -> TransformedResults:
         file_list=[dummy_parquet_file],
         signed_url_list=[],
         headers=[],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -197,6 +200,7 @@ def transformed_result_signed_url() -> TransformedResults:
             "https://dummy.junk.io/2.parquet",
         ],
         headers=[{}, {}],
+        expiries=[sys.maxsize, sys.maxsize],
         files=2,
         result_format=ResultFormat.root_ttree,
     )

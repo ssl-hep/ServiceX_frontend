@@ -196,6 +196,7 @@ def transformed_results(
     file_list: List[str],
     signed_urls,
     headers,
+    expiries,
 ) -> TransformedResults:
     return TransformedResults(
         hash=transform.compute_hash(),
@@ -207,6 +208,7 @@ def transformed_results(
         file_list=file_list,
         signed_url_list=signed_urls,
         headers=headers,
+        expiries=expiries,
         files=completed_status.files,
         result_format=transform.result_format,
         log_url=completed_status.log_url,
@@ -920,3 +922,114 @@ async def test_use_of_ignore_cache(mocker, servicex):
         mock_minio.download_file.assert_not_awaited()
         assert len(res.signed_url_list) == 2
         cache.close()
+
+
+def adapter(httpserver) -> None:
+    httpserver.expect_request("/servicex").respond_with_json(
+        {
+            "app-version": "1.9.0",
+            "code-gen-image": {},
+            "capabilities": ["poll_local_transformation_results", "generate_file_urls"],
+        }
+    )
+
+
+def populate_bucket(request, httpserver):
+    httpserver.expect_request(
+        "/servicex/transformation/bucket/results"
+    ).respond_with_json(
+        {
+            "results": [
+                {
+                    "s3-object-name": _,
+                    "total-bytes": 10,
+                    "transform_status": "success",
+                    "created_at": "2026-07-14T12:00:00+00:00",
+                }
+                for _ in request
+            ]
+        }
+    )
+    httpserver.expect_request("/servicex/transformation/file-urls").respond_with_json(
+        {"uris": {_: (httpserver.url_for("/") + f"files/{_}", {}, 0) for _ in request}}
+    )
+    for _ in request:
+        httpserver.expect_request(f"/files/{_}").respond_with_data(b"\x01" * 10)
+
+
+@pytest.mark.asyncio
+async def test_submit_chain(mocker, httpserver):
+    adapter(httpserver)
+    populate_bucket(["file1", "file2"], httpserver)
+    servicex = _sx_mock()
+    servicex.submit_transform = AsyncMock()
+    servicex.submit_transform.return_value = {"request_id": "123-456-789"}
+
+    # Configure capabilities based on polling type
+    capabilities = ["poll_local_transformation_results", "generate_file_urls"]
+    servicex.get_servicex_capabilities = AsyncMock(return_value=capabilities)
+    servicex.url = httpserver.url_for("/")
+
+    servicex.get_transformation_results = AsyncMock(
+        side_effect=[
+            [
+                ServiceXFile(
+                    filename="file1",
+                    total_bytes=100,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                )
+            ],
+            [
+                ServiceXFile(
+                    filename="file1",
+                    total_bytes=100,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+                ServiceXFile(
+                    filename="file2",
+                    total_bytes=100,
+                    created_at=datetime.datetime.now(datetime.timezone.utc),
+                ),
+            ],
+        ]
+    )
+
+    servicex.get_transform_status = AsyncMock()
+    servicex.get_transform_status.side_effect = [
+        transform_status1,
+        transform_status2,
+        transform_status3,
+    ]
+
+    mocker.patch(
+        "servicex.download_adapter.HTTPDownloadAdapter.download_file",
+        side_effect=lambda a, _, shorten_filename, expected_size: PurePath(a),
+    )
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.transformed_results = mocker.MagicMock(side_effect=transformed_results)
+    mock_cache.cache_transform = mocker.MagicMock(side_effect=cache_transform)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
+
+    did = FileListDataset("/foo/bar/baz.root")
+    datasource = Query(
+        dataset_identifier=did,
+        title="ServiceX Client",
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(
+            api_endpoints=[{"name": "default", "endpoint": httpserver.url_for("/")}]
+        ),
+    )
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+
+    with ExpandableProgress(display_progress=False) as progress:
+        datasource.result_format = ResultFormat.parquet
+        result = await datasource.submit_and_download(
+            signed_urls_only=False, expandable_progress=progress
+        )
+
+    assert result.file_list == ["file1", "file2"]
+    mock_cache.cache_transform.assert_called_once()

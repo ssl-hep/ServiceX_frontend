@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import json
 import os
+import sys
 from pathlib import Path
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -67,6 +68,7 @@ class QueryCache:
         file_list: List[str],
         signed_urls: List[str],
         headers: List[dict[str, str]],
+        expiries: List[int],
     ) -> TransformedResults:
         return TransformedResults(
             hash=transform.compute_hash(),
@@ -78,6 +80,7 @@ class QueryCache:
             file_list=file_list,
             signed_url_list=signed_urls,
             headers=headers,
+            expiries=expiries,
             files=completed_status.files,
             result_format=transform.result_format,
             log_url=completed_status.log_url,
@@ -257,4 +260,6 @@ class QueryCache:
         rv = rec.copy()
         if "headers" not in rv:
             rv["headers"] = [{}] * len(rv["file_list"])
+        if "expiries" not in rv:
+            rv["expiries"] = [sys.maxsize] * len(rv["file_list"])
         return rv

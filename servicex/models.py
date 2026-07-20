@@ -226,6 +226,8 @@ class TransformedResults(DocStringBaseModel):
     """List of URLs to retrieve output from remote ServiceX object store"""
     headers: List[dict[str, str]]
     """List of headers needed to retrieve outputs with URLs (e.g. needed authentication)"""
+    expiries: List[int]
+    """List of expiry times for URLs (Unix epoch in seconds)"""
     files: int
     """Number of files in result"""
     result_format: ResultFormat

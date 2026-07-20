@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
 from pathlib import Path
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -114,6 +115,7 @@ def transformed_results() -> TransformedResults:
             "https://example.com/signed-url-2",
         ],
         "headers": [{}, {}],
+        "expiries": [sys.maxsize, sys.maxsize],
         "files": 2,
         "result_format": ResultFormat.parquet,
         "log_url": "https://logs.servicex.com/request-789",

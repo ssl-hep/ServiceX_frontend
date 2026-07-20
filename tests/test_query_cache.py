@@ -26,6 +26,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+import sys
 import tempfile
 import json
 import pytest
@@ -88,6 +89,7 @@ def test_cache_transform(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -115,6 +117,7 @@ def test_cache_transform(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -129,6 +132,7 @@ def test_cache_transform(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             ).model_dump_json()
         )
         record["hash"] = transform_request.compute_hash()
@@ -169,6 +173,7 @@ def test_record_delete(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
         transform_request.did = "rucio://foo.baz"
@@ -182,6 +187,7 @@ def test_record_delete(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
         assert len(cache.cached_queries()) == 2
@@ -203,6 +209,7 @@ def test_delete_transform_by_hash(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -230,6 +237,7 @@ def test_contains_hash(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -279,6 +287,7 @@ def test_get_transform_request_status(transform_request, completed_status):
                 file_list=file_uris,
                 signed_urls=[],
                 headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -330,3 +339,4 @@ def test_patch_old_db():
         transform = cache.get_transform_by_hash("hash")
         assert transform is not None
         assert transform.headers == [{}]
+        assert transform.expiries == [sys.maxsize]
