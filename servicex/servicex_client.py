@@ -125,10 +125,11 @@ def _async_execute_and_wait(coro: Coroutine) -> Any:
 
     return asyncio.run(coro)
 
+
 def _check_wrong_keys(
     config_dict: Mapping[str, Any]
-)-> None:
-    
+) -> None:
+
     general_keys = set(General.model_fields.keys())
     usr_general_keys = set(config_dict.get("General", {}).keys())
     wrong_general_keys = usr_general_keys - general_keys
@@ -138,10 +139,10 @@ def _check_wrong_keys(
             f"Wrong key(s): {list(wrong_general_keys)}. "
             f"Allowed keys in the 'General' field: {list(general_keys)}"
         )
-        
+
     sample_keys = set(Sample.model_fields.keys())
     user_sample_keys = set()
-    #Sample is a list  
+    # Sample is a list
     for sample in config_dict.get("Sample", []):
         if isinstance(sample, Mapping):
             user_sample_keys.update(sample.keys())
@@ -153,7 +154,8 @@ def _check_wrong_keys(
             f"Wrong key(s): {list(wrong_sample_keys)}. "
             f"Allowed keys in the 'Sample' field: {list(sample_keys)}"
         )
-    
+
+
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
 ) -> ServiceXSpec:
