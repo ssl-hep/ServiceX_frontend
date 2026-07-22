@@ -126,9 +126,7 @@ def _async_execute_and_wait(coro: Coroutine) -> Any:
     return asyncio.run(coro)
 
 
-def _check_wrong_keys(
-    config_dict: Mapping[str, Any]
-) -> None:
+def _check_wrong_keys(config_dict: Mapping[str, Any]) -> None:
 
     general_keys = set(General.model_fields.keys())
     usr_general_keys = set(config_dict.get("General", {}).keys())
