@@ -142,15 +142,11 @@ def _load_ServiceXSpec(
         else:
             file_path = config
 
-        import sys
         from .yaml_parser import YAML
 
         yaml = YAML()
 
-        if sys.version_info < (3, 10):
-            from importlib_metadata import entry_points
-        else:
-            from importlib.metadata import entry_points
+        from importlib.metadata import entry_points
 
         plugins = entry_points(group="servicex.query")
         for _ in plugins:
