@@ -216,7 +216,7 @@ def cancel(
     """
     sx = ServiceXClient(backend=backend, config_path=config_path, cache_dir=cache_dir)
     for transform_id in transform_id_list:
-        asyncio.run(sx.cancel_transform(transform_id))
+        sx.cancel_transform(transform_id)
         print(f"Transform {transform_id} cancelled")
 
 

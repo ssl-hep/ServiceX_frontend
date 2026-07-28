@@ -367,7 +367,8 @@ async def test_delete_transform_errors(delete, servicex):
 
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
-async def test_cancel_transform(get, servicex):
+async def test_cancel_transform_get(get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     get.return_value.json.return_value = {
         "message": "Canceled transformation request 123"
     }
@@ -380,8 +381,26 @@ async def test_cancel_transform(get, servicex):
 
 
 @pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.post")
+async def test_cancel_transform(post, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["cancel_transform_post_method"]
+    )
+    post.return_value.json.return_value = {
+        "message": "Canceled transformation request 123"
+    }
+    post.return_value.status_code = 200
+
+    await servicex.cancel_transform(123)
+    post.assert_called_with(
+        url="https://servicex.org/servicex/transformation/123/cancel", headers={}
+    )
+
+
+@pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
-async def test_cancel_transform_errors(get, servicex):
+async def test_cancel_transform_errors_get(get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     get.return_value = MagicMock()
     get.return_value.status_code = 403
     with pytest.raises(AuthorizationError) as err:
@@ -396,6 +415,31 @@ async def test_cancel_transform_errors(get, servicex):
     get.return_value.json.side_effect = JSONDecodeError("", "", 0)
     get.return_value.text = "error_message"
     get.return_value.status_code = 500
+    with pytest.raises(RuntimeError) as err:
+        await servicex.cancel_transform(123)
+    assert "Failed to cancel transform 123 - error_message" in str(err.value)
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.post")
+async def test_cancel_transform_errors(post, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["cancel_transform_post_method"]
+    )
+    post.return_value = MagicMock()
+    post.return_value.status_code = 403
+    with pytest.raises(AuthorizationError) as err:
+        await servicex.cancel_transform(123)
+    assert "Not authorized to access serviceX at" in str(err.value)
+
+    post.return_value.status_code = 404
+    with pytest.raises(ValueError) as err:
+        await servicex.cancel_transform(123)
+    assert "Transform 123 not found" in str(err.value)
+
+    post.return_value.json.side_effect = JSONDecodeError("", "", 0)
+    post.return_value.text = "error_message"
+    post.return_value.status_code = 500
     with pytest.raises(RuntimeError) as err:
         await servicex.cancel_transform(123)
     assert "Failed to cancel transform 123 - error_message" in str(err.value)
