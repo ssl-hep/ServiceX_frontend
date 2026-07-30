@@ -33,7 +33,7 @@ import datetime
 from unittest.mock import AsyncMock, Mock, patch
 from servicex.dataset_identifier import FileListDataset
 from servicex.configuration import Configuration
-from servicex.minio_adapter import MinioAdapter
+from servicex.download_adapter import MinioAdapter
 from servicex.query_core import Query
 from servicex.query_cache import QueryCache
 from servicex.expandable_progress import ExpandableProgress
@@ -168,7 +168,7 @@ async def test_download_files(python_dataset):
     )
     minio_mock.download_file.assert_awaited()
     minio_mock.get_signed_url.assert_not_awaited()
-    assert result_uris == ["/path/to/downloaded_file", "/path/to/downloaded_file"]
+    assert result_uris == ([], ["/path/to/downloaded_file", "/path/to/downloaded_file"])
 
 
 @pytest.mark.asyncio
@@ -211,10 +211,13 @@ async def test_download_files_with_signed_urls(python_dataset):
     )
     minio_mock.download_file.assert_not_called()
     minio_mock.get_signed_url.assert_called()
-    assert result_uris == [
-        "http://example.com/signed_url",
-        "http://example.com/signed_url",
-    ]
+    assert result_uris == (
+        [
+            "http://example.com/signed_url",
+            "http://example.com/signed_url",
+        ],
+        [],
+    )
 
 
 @pytest.mark.asyncio
@@ -442,7 +445,7 @@ async def test_submit_and_download_cache_miss(python_dataset, completed_status):
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ([], [])
         python_dataset.cache.cache_submitted_transform = Mock()
 
         signed_urls_only = False
@@ -475,7 +478,7 @@ async def test_submit_and_download_cache_miss_overall_progress(
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ([], [])
         python_dataset.cache.cache_submitted_transform = Mock()
 
         signed_urls_only = False
@@ -512,7 +515,7 @@ async def test_submit_and_download_no_result_format(python_dataset, completed_st
             python_dataset.servicex.get_transform_status.return_value = completed_status
             python_dataset.servicex.submit_transform = AsyncMock()
             python_dataset.download_files = AsyncMock()
-            python_dataset.download_files.return_value = []
+            python_dataset.download_files.return_value = ([], [])
             signed_urls_only = False
             expandable_progress = ExpandableProgress()
             await python_dataset.submit_and_download(
@@ -544,7 +547,7 @@ async def test_submit_and_download_cache_miss_signed_urls_only(
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ([], [])
         python_dataset.cache.cache_submitted_transform = Mock()
 
         signed_urls_only = True
@@ -678,7 +681,7 @@ async def test_submit_and_download_get_request_id_from_previous_submitted_reques
         python_dataset.servicex.get_transform_status.return_value = completed_status
         python_dataset.servicex.submit_transform = AsyncMock()
         python_dataset.download_files = AsyncMock()
-        python_dataset.download_files.return_value = []
+        python_dataset.download_files.return_value = ([], [])
         python_dataset.cache.is_transform_request_submitted = Mock(return_value=True)
         python_dataset.cache.get_transform_request_id = Mock(
             return_value="b8c508d0-ccf2-4deb-a1f7-65c839eebabf"

@@ -20,7 +20,7 @@ async def test_codegen_list_fetched_when_not_cached(mocker):
     sx_adapter.get_code_generators_async = AsyncMock(return_value={"uproot": "img"})
     sx_adapter.url = "http://example.com"
 
-    mocker.patch("servicex.minio_adapter.MinioAdapter", return_value=AsyncMock())
+    mocker.patch("servicex.download_adapter.MinioAdapter", return_value=AsyncMock())
 
     cache = MagicMock(spec=QueryCache)
     cache.get_transform_by_hash.return_value = None
@@ -37,7 +37,7 @@ async def test_codegen_list_fetched_when_not_cached(mocker):
         query=GenericQueryStringGenerator("1", "uproot"),
     )
 
-    mocker.patch.object(Query, "download_files", AsyncMock(return_value=[]))
+    mocker.patch.object(Query, "download_files", AsyncMock(return_value=([], [])))
 
     await q.as_files_async(display_progress=False)
 
