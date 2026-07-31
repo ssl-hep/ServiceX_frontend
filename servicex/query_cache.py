@@ -32,6 +32,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
+import logging
 
 from servicex.configuration import Configuration
 from servicex.models import TransformRequest, TransformStatus, TransformedResults
@@ -41,9 +42,13 @@ class CacheException(Exception):
     pass
 
 
+logger = logging.getLogger(__name__)
+
+
 class QueryCache:
     def __init__(self, config: Configuration):
         self.config = config
+        self._mem_cache: Optional[List[dict]] = None
         if self.config.cache_path is not None:
             Path(self.config.cache_path).mkdir(parents=True, exist_ok=True)
             Path(self.config.cache_path + "/.servicex").mkdir(
@@ -58,6 +63,17 @@ class QueryCache:
 
     def close(self):
         self.db.close()
+
+    def _load_all(self) -> List[dict]:
+        """Return all DB records, using an in-memory cache to avoid repeated JSON parses."""
+        if self._mem_cache is None:
+            with self.lock:
+                self._mem_cache = self.db.all()
+        return self._mem_cache
+
+    def _invalidate(self) -> None:
+        """Invalidate the in-memory cache after a write."""
+        self._mem_cache = None
 
     def transformed_results(
         self,
@@ -87,6 +103,7 @@ class QueryCache:
             self.db.upsert(
                 json.loads(record.model_dump_json()), transforms.hash == record.hash
             )
+        self._invalidate()
 
     def update_record(self, record: TransformedResults):
         transforms = Query()
@@ -94,17 +111,16 @@ class QueryCache:
             self.db.update(
                 json.loads(record.model_dump_json()), transforms.hash == record.hash
             )
+        self._invalidate()
 
     def contains_hash(self, hash: str) -> bool:
         """
         Check if the cache has completed records for a hash
         """
-        transforms = Query()
-        with self.lock:
-            records = self.db.search(
-                (transforms.hash == hash) & ~(transforms.status == "SUBMITTED")
-            )
-        return len(records) > 0
+        return any(
+            doc.get("hash") == hash and doc.get("status") != "SUBMITTED"
+            for doc in self._load_all()
+        )
 
     def is_transform_request_submitted(self, hash_value: str) -> bool:
         """
@@ -112,26 +128,16 @@ class QueryCache:
         Returns False if the request is not in the cache at all
         or not submitted
         """
-        transform = Query()
-        with self.lock:
-            records = self.db.search((transform.hash == hash_value))
-
+        records = [doc for doc in self._load_all() if doc.get("hash") == hash_value]
         if not records:
             return False
-
-        if "status" in records[0] and records[0]["status"] == "SUBMITTED":
-            return True
-        return False
+        return records[0].get("status") == "SUBMITTED"
 
     def get_transform_request_id(self, hash_value: str) -> Optional[str]:
         """
         Return the request id of cached record
         """
-        transform = Query()
-
-        with self.lock:
-            records = self.db.search(transform.hash == hash_value)
-
+        records = [doc for doc in self._load_all() if doc.get("hash") == hash_value]
         if not records or "request_id" not in records[0]:
             raise CacheException("Request Id not found")
         return records[0]["request_id"]
@@ -145,6 +151,7 @@ class QueryCache:
             self.db.upsert(
                 {"hash": hash_value, "status": status}, transform.hash == hash_value
             )
+        self._invalidate()
 
     def update_transform_request_id(self, hash_value: str, request_id: str) -> None:
         """
@@ -156,6 +163,7 @@ class QueryCache:
                 {"hash": hash_value, "request_id": request_id},
                 transform.hash == hash_value,
             )
+        self._invalidate()
 
     def cache_submitted_transform(
         self, transform: TransformRequest, request_id: str
@@ -174,16 +182,17 @@ class QueryCache:
         transforms = Query()
         with self.lock:
             self.db.upsert(record, transforms.hash == record["hash"])
+        self._invalidate()
 
     def get_transform_by_hash(self, hash: str) -> Optional[TransformedResults]:
         """
         Returns completed transformations by hash
         """
-        transforms = Query()
-        with self.lock:
-            records = records = self.db.search(
-                (transforms.hash == hash) & ~(transforms.status == "SUBMITTED")
-            )
+        records = [
+            doc
+            for doc in self._load_all()
+            if doc.get("hash") == hash and doc.get("status") != "SUBMITTED"
+        ]
 
         if not records:
             return None
@@ -199,10 +208,9 @@ class QueryCache:
         """
         Returns completed transformed results using a request id
         """
-        transforms = Query()
-
-        with self.lock:
-            records = self.db.search(transforms.request_id == request_id)
+        records = [
+            doc for doc in self._load_all() if doc.get("request_id") == request_id
+        ]
 
         if not records:
             return None
@@ -220,33 +228,27 @@ class QueryCache:
         return result
 
     def cached_queries(self) -> List[TransformedResults]:
-        transforms = Query()
-
-        with self.lock:
-            result = [
-                TransformedResults(**doc)
-                for doc in self.db.search(
-                    transforms.request_id.exists() & ~(transforms.status == "SUBMITTED")
-                )
-            ]
-        return result
+        return [
+            TransformedResults(**doc)
+            for doc in self._load_all()
+            if "request_id" in doc and doc.get("status") != "SUBMITTED"
+        ]
 
     def queries_in_state(self, state: str) -> List[dict]:
         """Return all transform records in a given state."""
-        transforms = Query()
-        with self.lock:
-            return [
-                doc
-                for doc in self.db.search(
-                    (transforms.status == "SUBMITTED") & transforms.request_id.exists()
-                )
-            ]
+        return [
+            doc
+            for doc in self._load_all()
+            if doc.get("status") == state and "request_id" in doc
+        ]
 
     def delete_record_by_request_id(self, request_id: str):
         with self.lock:
             self.db.remove(where("request_id") == request_id)
+        self._invalidate()
 
     def delete_record_by_hash(self, hash: str):
         transforms = Query()
         with self.lock:
             self.db.remove(transforms.hash == hash)
+        self._invalidate()
