@@ -70,13 +70,9 @@ def run_query(
                 continue
 
             if tree_name_clean == "MetaData":
-                fm_branches = [
-                    b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")
-                ]
+                fm_branches = [b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")]
                 # remove the prefix in keys
-                meta_dict = {
-                    p[19:]: str(tree[p].array(library="ak")[0]) for p in fm_branches
-                }
+                meta_dict = {p[19:]: str(tree[p].array(library="ak")[0]) for p in fm_branches}
                 tree_dict["FileMetaData"] = meta_dict
 
             branch_dict = {}
@@ -100,10 +96,10 @@ def build_deliver_spec(datasets):
 
     Parameters:
     datasets (str, [str], dict, DataSetIdentifier): Rucio DIDs (str) or DataSetIdentifier object.
-                                                    If dict, custom names can be inputed for each dataset
+                                If dict, custom names can be inputed for each dataset
 
     Returns:
-    spec_python (dict): The specification for the python function query containing Name, Query, Dataset, NFiles
+    spec_python (dict): The spec for the python function query (Name, Query, Dataset, NFiles)
     """
     # Servicex query using the PythonFunction backend
     query_PythonFunction = query.PythonFunction().with_uproot_function(run_query)
@@ -168,14 +164,12 @@ def open_delivered_file(sample, path):
         return None
 
 
-def print_structure_from_str(
-    deliver_dict, filter_branch="", save_to_txt=False, do_print=False
-):
+def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, do_print=False):
     """
     Re-formats the JSON structure string from ServiceX into a readable summary.
 
     Parameters:
-      deliver_dict (dict): ServiceX deliver output (keys: sample names, values: file paths or URLs).
+      deliver_dict (dict): ServiceX deliver output (keys: sample names, values: paths or URLs).
       filter_branch (str): If provided, only branches containing this string are included.
       save_to_txt (bool): If True, saves output to a text file instead of returning it.
       do_print (bool): If True, prints the output to the terminal and returns None.
@@ -183,8 +177,6 @@ def print_structure_from_str(
     Returns:
       result_str (str): The formatted file structure.
     """
-    import uproot
-    import json
 
     output_lines = []
 
@@ -213,9 +205,7 @@ def print_structure_from_str(
         # drop the File metadata from the trees
         structure_dict.pop("FileMetaData", {})
 
-        output_lines.append(
-            f"\nFile structure with branch filter \U0001f33f '{filter_branch}':\n"
-        )
+        output_lines.append(f"\nFile structure with branch filter \U0001f33f '{filter_branch}':\n")
 
         for tree_name, branches in structure_dict.items():
             output_lines.append(f"\n\U0001f333 Tree: {tree_name}")
@@ -261,12 +251,12 @@ def parse_jagged_depth_and_dtype(dtype_str):
     while current.startswith("AsJagged("):
         depth += 1
         current = current[
-            len("AsJagged(") : -1
+            len("AsJagged("): -1
         ].strip()  # Strip outermost wrapper, up to -1 to remove )
 
     # Extract the base dtype string from AsDtype('<np-format>')
     if current.startswith("AsDtype('") and current.endswith("')"):
-        base_dtype = current[len("AsDtype('") : -2]
+        base_dtype = current[len("AsDtype('"): -2]
         return depth, base_dtype
     else:
         return depth, None
@@ -281,7 +271,7 @@ def str_to_array(encoded_json_str):
         encoded_json_str (str): JSON string from run_query.
 
     Returns:
-        ak.Array: An array containing a dictionary of trees with branch structures and dummy typed values.
+        ak.Array: An array containing a dictionary of trees with branches and typed values.
     """
     reconstructed_data = {}
     structure_dict = json.loads(encoded_json_str)
@@ -324,14 +314,15 @@ def get_structure(datasets, array_out=False, **kwargs):
 
     Parameters:
       datasets (dict,str,[str]): The datasets from which to print the file structures.
-                                A custom sample name per dataset can be given in a dict form: {'sample_name':'dataset_id'}
+                                A custom sample name per dataset can be given in a dict form:
+                                {'sample_name':'dataset_id'}
       kwargs : Arguments to be propagated to print_structure_from_str
     """
     spec_python = build_deliver_spec(datasets)
 
     output = deliver(spec_python)
 
-    if array_out == True:
+    if array_out:
         all_requests = {}
         for sample, path in output.items():
             structure_str = open_delivered_file(sample, path)
