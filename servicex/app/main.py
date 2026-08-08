@@ -42,6 +42,7 @@ from servicex.app.transforms import transforms_app
 from servicex.app.cache import cache_app
 from servicex.app.codegen import codegen_app
 from servicex.app.init import init_app
+from servicex.app.structure import structure_app
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -49,6 +50,7 @@ app.add_typer(transforms_app)
 app.add_typer(cache_app)
 app.add_typer(codegen_app)
 app.add_typer(datasets_app)
+app.add_typer(structure_app)
 app.add_typer(init_app)
 
 spec_file_arg = typer.Argument(..., help="Spec file to submit to serviceX")
