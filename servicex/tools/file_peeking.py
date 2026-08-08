@@ -70,9 +70,13 @@ def run_query(
                 continue
 
             if tree_name_clean == "MetaData":
-                fm_branches = [b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")]
+                fm_branches = [
+                    b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")
+                ]
                 # remove the prefix in keys
-                meta_dict = {p[19:]: str(tree[p].array(library="ak")[0]) for p in fm_branches}
+                meta_dict = {
+                    p[19:]: str(tree[p].array(library="ak")[0]) for p in fm_branches
+                }
                 tree_dict["FileMetaData"] = meta_dict
 
             branch_dict = {}
@@ -164,7 +168,9 @@ def open_delivered_file(sample, path):
         return None
 
 
-def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, do_print=False):
+def print_structure_from_str(
+    deliver_dict, filter_branch="", save_to_txt=False, do_print=False
+):
     """
     Re-formats the JSON structure string from ServiceX into a readable summary.
 
@@ -205,7 +211,9 @@ def print_structure_from_str(deliver_dict, filter_branch="", save_to_txt=False, 
         # drop the File metadata from the trees
         structure_dict.pop("FileMetaData", {})
 
-        output_lines.append(f"\nFile structure with branch filter \U0001f33f '{filter_branch}':\n")
+        output_lines.append(
+            f"\nFile structure with branch filter \U0001f33f '{filter_branch}':\n"
+        )
 
         for tree_name, branches in structure_dict.items():
             output_lines.append(f"\n\U0001f333 Tree: {tree_name}")
@@ -251,12 +259,12 @@ def parse_jagged_depth_and_dtype(dtype_str):
     while current.startswith("AsJagged("):
         depth += 1
         current = current[
-            len("AsJagged("): -1
+            len("AsJagged(") : -1
         ].strip()  # Strip outermost wrapper, up to -1 to remove )
 
     # Extract the base dtype string from AsDtype('<np-format>')
     if current.startswith("AsDtype('") and current.endswith("')"):
-        base_dtype = current[len("AsDtype('"): -2]
+        base_dtype = current[len("AsDtype('") : -2]
         return depth, base_dtype
     else:
         return depth, None
