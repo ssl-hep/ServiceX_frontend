@@ -53,14 +53,13 @@ def run_query(input_filename):
             try:
                 # Build one Awkward array per tree
                 arrays = tree.arrays(library="ak", entry_stop=1)
-                #add classname to array
+                # add classname to array
                 arrays["_classname"] = ak.Array([classname])
                 trees[tree_name] = arrays
                 logging.info(f"Successfully processed tree {tree_name}: {arrays.type}")
             except Exception as e:
                 logging.info(f"No arrays in {tree_name} (type={classname}): {e}")
                 trees[tree_name] = ak.Array([{"_classname": classname}])
-                
 
     return trees
 
@@ -115,9 +114,8 @@ def _build_deliver_spec(datasets):
 
     return spec_python
 
-def _show_structure(
-    deliver_dict, filter="", save_to_txt=False, do_print=False
-):
+
+def _show_structure(deliver_dict, filter="", save_to_txt=False, do_print=False):
     """
     Formats a string to present the file structure from ServiceX into a readable summary.
 
@@ -132,15 +130,13 @@ def _show_structure(
     """
 
     output_lines = []
-    _long = "-------"*10
-    _short = "------"*6
+    _long = "-------" * 10
+    _short = "------" * 6
 
     for sample_name, path in deliver_dict.items():
         output_lines = []
         output_lines.append(
-            f"\n{_long}\n"
-            f"\U0001f4c1 Sample: {sample_name}\n"
-            f"{_long}"
+            f"\n{_long}\n" f"\U0001f4c1 Sample: {sample_name}\n" f"{_long}"
         )
         with uproot.open(path[0]) as f:
             output_lines.append("\nFile Metadata \u2139\ufe0f :\n")
@@ -152,16 +148,20 @@ def _show_structure(
             for key in f.keys():
                 tree = f[key]
                 arrays = tree.arrays(library="ak", entry_stop=1)
-                output_lines.append(f"\n\U0001f333  {str(key).strip(';1')}: {arrays['_classname'][0]}")
+                output_lines.append(
+                    f"\n\U0001f333  {str(key).strip(';1')}: {arrays['_classname'][0]}"
+                )
                 if arrays.fields == ["_classname"]:
                     continue
                 else:
                     output_lines.append("   ├── Columns:")
                     for field in arrays.fields:
                         if field == "_classname" or filter.strip() not in field:
-                            continue #skip the _classname field
+                            continue  # skip the _classname field
 
-                        output_lines.append(f"   │   ├── {field}:  {str(ak.type(arrays[field]))[4:]}")
+                        output_lines.append(
+                            f"   │   ├── {field}:  {str(ak.type(arrays[field]))[4:]}"
+                        )
 
     result_str = "\n".join(output_lines).encode("utf-8").decode("utf-8")
 
@@ -174,6 +174,7 @@ def _show_structure(
         return
     else:
         return result_str
+
 
 def _get_arrays(deliver_dict):
     """
@@ -188,7 +189,7 @@ def _get_arrays(deliver_dict):
     """
     multi_sample = len(deliver_dict.keys()) > 1
     arrays_dict = {}
-    sample_arrays = {} 
+    sample_arrays = {}
     for sample_name, path in deliver_dict.items():
         with uproot.open(path[0]) as f:
             for key in f.keys():
@@ -197,13 +198,13 @@ def _get_arrays(deliver_dict):
                 if arrays.fields == ["_classname"]:
                     continue
                 else:
-                    arrays_dict[key.strip(';1')] = arrays
+                    arrays_dict[key.strip(";1")] = arrays
             if multi_sample:
                 sample_arrays[sample_name] = arrays_dict
             else:
                 sample_arrays = arrays_dict
     return sample_arrays
-                  
+
 
 def get_structure(datasets, array_out=False, **kwargs):
     """
