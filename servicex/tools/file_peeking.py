@@ -35,65 +35,37 @@ import logging
 from servicex.dataset_identifier import DataSetIdentifier
 
 
-def run_query(
-    input_filenames,
-):
+def run_query(input_filename):
     import uproot
     import awkward as ak
-    import json
+    import logging
 
-    def is_tree(obj):
-        """Helper to check if a root file item is TTree."""
-        if hasattr(obj, "classname"):
-            cls_attr = obj.classname
-            cls_value = cls_attr() if callable(cls_attr) else cls_attr
-            return "TTree" in cls_value
-        elif hasattr(obj, "classnames"):
-            cls_attr = obj.classnames
-            cls_values = cls_attr() if callable(cls_attr) else cls_attr
-            return any("TTree" in cls for cls in cls_values)
-        return False
+    logging.basicConfig(level=logging.INFO)
 
-    """
-    Opens a ROOT file and returns a JSON-formatted string describing the structure,
-    encoded inside an ak.Array for ServiceX.
-    """
-    tree_dict = {}
+    trees = {}
 
-    with uproot.open(input_filenames) as file:
+    with uproot.open(input_filename) as file:
+        for tree_name, tree in file.items():
+            tree_name = tree_name.rstrip(";1")
+            classname = getattr(tree, "classname", type(tree).__name__)
+            print(classname, "\n\n\n")
 
-        for tree_name in file.keys():
-            tree_name_clean = tree_name.rstrip(";1")
-            tree = file[tree_name]
+            try:
+                # Build one Awkward array per tree
+                arrays = tree.arrays(library="ak", entry_stop=1)
+                #add classname to array
+                arrays["_classname"] = ak.Array([classname])
+                trees[tree_name] = arrays
+                logging.info(f"Successfully processed tree {tree_name}: {arrays.type}")
+            except Exception as e:
+                logging.info(f"No arrays in {tree_name} (type={classname}): {e}")
+                trees[tree_name] = ak.Array([{"_classname": classname}])
+                
 
-            if not is_tree(tree):
-                continue
-
-            if tree_name_clean == "MetaData":
-                fm_branches = [
-                    b for b in tree.keys() if b.startswith("FileMetaDataAuxDyn.")
-                ]
-                # remove the prefix in keys
-                meta_dict = {
-                    p[19:]: str(tree[p].array(library="ak")[0]) for p in fm_branches
-                }
-                tree_dict["FileMetaData"] = meta_dict
-
-            branch_dict = {}
-            for branch_name, branch in tree.items():
-                branch_type = str(branch.interpretation)
-                branch_dict[branch_name] = branch_type
-
-            tree_dict[tree_name_clean] = branch_dict
-
-    # Serialize tree_dict to JSON string
-    json_str = json.dumps(tree_dict)
-
-    # Return JSON string wrapped in an awkward array
-    return ak.Array([json_str])
+    return trees
 
 
-def build_deliver_spec(datasets):
+def _build_deliver_spec(datasets):
     """
     Helper to build the servicex.deliver configuration.
     Supports multiple inputs for multiple sample queries.
@@ -139,44 +111,19 @@ def build_deliver_spec(datasets):
         }
         for name, did in dataset_dict.items()
     ]
-    spec_python = {"Sample": sample_list}
+    spec_python = {"Sample": sample_list, "General": {"OutputFormat": "root-rntuple"}}
 
     return spec_python
 
-
-def open_delivered_file(sample, path):
-    """
-    Opens the first file delivered by ServiceX for a given sample and returns the
-    structure encoded in the "servicex/branch" branch.
-    If no files are found, logs a warning and returns None.
-    Parameters:
-      sample (str): The sample name for which to open the file.
-      path (list): List of file paths delivered by ServiceX for the sample.
-    """
-
-    if not path:
-        logging.warning(
-            f"Warning: No files found for sample '{sample}' in delivered results. Skipping."
-        )
-        return None
-
-    try:
-        with uproot.open(path[0]) as f:
-            return f["servicex"]["branch"].array()[0]
-    except Exception as e:
-        logging.error(f"Error opening file for sample '{sample}': {e}")
-        return None
-
-
-def print_structure_from_str(
-    deliver_dict, filter_branch="", save_to_txt=False, do_print=False
+def _show_structure(
+    deliver_dict, filter="", save_to_txt=False, do_print=False
 ):
     """
-    Re-formats the JSON structure string from ServiceX into a readable summary.
+    Formats a string to present the file structure from ServiceX into a readable summary.
 
     Parameters:
       deliver_dict (dict): ServiceX deliver output (keys: sample names, values: paths or URLs).
-      filter_branch (str): If provided, only branches containing this string are included.
+      filterh (str): If provided, only columns containing this string are included.
       save_to_txt (bool): If True, saves output to a text file instead of returning it.
       do_print (bool): If True, prints the output to the terminal and returns None.
 
@@ -185,134 +132,78 @@ def print_structure_from_str(
     """
 
     output_lines = []
+    _long = "-------"*10
+    _short = "------"*6
 
     for sample_name, path in deliver_dict.items():
-        structure_str = open_delivered_file(sample_name, path)
-        if structure_str is None:
-            continue
-        # Parse the JSON string into a dictionary
-        structure_dict = json.loads(structure_str)
-
+        output_lines = []
         output_lines.append(
-            "\n---------------------------\n"
+            f"\n{_long}\n"
             f"\U0001f4c1 Sample: {sample_name}\n"
-            "---------------------------"
+            f"{_long}"
         )
+        with uproot.open(path[0]) as f:
+            output_lines.append("\nFile Metadata \u2139\ufe0f :\n")
+            output_lines.append("Coming soon...")
+            output_lines.append(f"\n{_short}")
 
-        # Get the metadata first
-        output_lines.append("\nFile Metadata \u2139\ufe0f :\n")
-        if "FileMetaData" not in structure_dict:
-            output_lines.append("No FileMetaData found in dataset.")
-        else:
-            for key, value in structure_dict.get("FileMetaData", {}).items():
-                output_lines.append(f"── {key}: {value}")
-        output_lines.append("\n---------------------------")
+            output_lines.append(f"\nFile structure with column filter '{filter}':")
 
-        # drop the File metadata from the trees
-        structure_dict.pop("FileMetaData", {})
-
-        output_lines.append(
-            f"\nFile structure with branch filter \U0001f33f '{filter_branch}':\n"
-        )
-
-        for tree_name, branches in structure_dict.items():
-            output_lines.append(f"\n\U0001f333 Tree: {tree_name}")
-            output_lines.append("   ├── Branches:")
-            for branch_name, dtype in branches.items():
-                if filter_branch and filter_branch not in branch_name:
+            for key in f.keys():
+                tree = f[key]
+                arrays = tree.arrays(library="ak", entry_stop=1)
+                output_lines.append(f"\n\U0001f333  {str(key).strip(';1')}: {arrays['_classname'][0]}")
+                if arrays.fields == ["_classname"]:
                     continue
-                output_lines.append(f"   │   ├── {branch_name} ; dtype: {dtype}")
+                else:
+                    output_lines.append("   ├── Columns:")
+                    for field in arrays.fields:
+                        if field == "_classname" or filter.strip() not in field:
+                            continue #skip the _classname field
+
+                        output_lines.append(f"   │   ├── {field}:  {str(ak.type(arrays[field]))[4:]}")
 
     result_str = "\n".join(output_lines).encode("utf-8").decode("utf-8")
 
     if save_to_txt:
         with open("samples_structure.txt", "w") as f:
             f.write(result_str)
-        return "File structure saved to 'samples_structure.txt'."
+        print("File structure saved to 'samples_structure.txt'.")
     elif do_print:
         print(result_str)
         return
     else:
         return result_str
 
-
-def parse_jagged_depth_and_dtype(dtype_str):
+def _get_arrays(deliver_dict):
     """
-    Helper to decode the dtype str for each branch.
-
-    Parses uproot-style interpretation strings such as:
-    - "AsJagged(AsJagged(AsDtype('>f4')))"
-
-    Returns the number of nested layers and the inner dtype.
-    Used in str_to_array to reconstruct the ak.array.
+    Outputs arrays from the ServiceX deliver output in a dictionary format.
+    Only consideres TTrees and RNTuples, and ignores other objects in the ROOT file.
 
     Parameters:
-        dtype_str (str): The dtype part of a branch info str; from the delivered file structure.
+      deliver_dict (dict): ServiceX deliver output (keys: sample names, values: paths or URLs).
 
     Returns:
-        int, str: jagged_depth, base_numpy_dtype_str or None if not recognized.
+      sample_arrays (dict): A dictionary containing the arrays from the ServiceX deliver output.
     """
-    depth = 0
-    current = dtype_str.strip()
-
-    # Count how many nested AsJagged(...) wrappers exist
-    while current.startswith("AsJagged("):
-        depth += 1
-        current = current[
-            len("AsJagged(") : -1
-        ].strip()  # Strip outermost wrapper, up to -1 to remove )
-
-    # Extract the base dtype string from AsDtype('<np-format>')
-    if current.startswith("AsDtype('") and current.endswith("')"):
-        base_dtype = current[len("AsDtype('") : -2]
-        return depth, base_dtype
-    else:
-        return depth, None
-
-
-def str_to_array(encoded_json_str):
-    """
-    Helper to reconstruct ak.Arrays from a JSON-formatted file-structure string.
-    Returns an array mimicking TTrees and TBranches with correct field names and dtypes.
-
-    Parameters:
-        encoded_json_str (str): JSON string from run_query.
-
-    Returns:
-        ak.Array: An array containing a dictionary of trees with branches and typed values.
-    """
-    reconstructed_data = {}
-    structure_dict = json.loads(encoded_json_str)
-    # drop the File metadata from the trees
-    structure_dict.pop("FileMetaData", {})
-
-    for treename, branch_dict in structure_dict.items():
-        branches = {}
-
-        for branch_name, dtype_str in branch_dict.items():
-            # Get jagged depth and numpy base dtype
-            depth, base_dtype_str = parse_jagged_depth_and_dtype(dtype_str)
-            if base_dtype_str is None:
-                branches[branch_name] = None
-                continue
-
-            try:
-                np_dtype = np.dtype(base_dtype_str)
-            except TypeError:
-                branches[branch_name] = None
-                continue
-
-            dummy = np_dtype.type(0)
-            for _ in range(depth):
-                dummy = [dummy]
-
-            branches[branch_name] = ak.Array([dummy])
-
-        if branches:
-            reconstructed_data[treename] = ak.Array([branches])
-
-    return ak.Array(reconstructed_data).type
-
+    multi_sample = len(deliver_dict.keys()) > 1
+    arrays_dict = {}
+    sample_arrays = {} 
+    for sample_name, path in deliver_dict.items():
+        with uproot.open(path[0]) as f:
+            for key in f.keys():
+                tree = f[key]
+                arrays = tree.arrays(library="ak", entry_stop=1)
+                if arrays.fields == ["_classname"]:
+                    continue
+                else:
+                    arrays_dict[key.strip(';1')] = arrays
+            if multi_sample:
+                sample_arrays[sample_name] = arrays_dict
+            else:
+                sample_arrays = arrays_dict
+    return sample_arrays
+                  
 
 def get_structure(datasets, array_out=False, **kwargs):
     """
@@ -324,21 +215,13 @@ def get_structure(datasets, array_out=False, **kwargs):
       datasets (dict,str,[str]): The datasets from which to print the file structures.
                                 A custom sample name per dataset can be given in a dict form:
                                 {'sample_name':'dataset_id'}
-      kwargs : Arguments to be propagated to print_structure_from_str
+      kwargs : Arguments to be propagated to _show_structure (filter, save_to_txt, do_print)
     """
-    spec_python = build_deliver_spec(datasets)
+    spec_python = _build_deliver_spec(datasets)
 
     output = deliver(spec_python)
 
     if array_out:
-        all_requests = {}
-        for sample, path in output.items():
-            structure_str = open_delivered_file(sample, path)
-            if structure_str is None:
-                continue
-            sample_array = str_to_array(structure_str)
-            all_requests[sample] = sample_array
-        return all_requests
-
+        return _get_arrays(output)
     else:
-        return print_structure_from_str(output, **kwargs)
+        return _show_structure(output, **kwargs)

@@ -87,7 +87,7 @@ def get_structure_command(
 
     result = get_structure(
         ds_format,
-        filter_branch=filter_branch,
+        filter=filter_branch,
         do_print=False,
     )
 
