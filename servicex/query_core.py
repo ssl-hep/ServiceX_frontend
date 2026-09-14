@@ -699,11 +699,17 @@ class Query:
         self,
         display_progress: bool = True,
         provided_progress: Optional[ProgressIndicators] = None,
+        dataset_group: bool = False,
     ) -> TransformedResults:
         r"""
         Submit the transform and request all the resulting files to be downloaded
         :return: TransformResult instance with the list of complete paths to the downloaded files
         """
+        if dataset_group:
+            return await self.submit_and_download(
+                signed_urls_only=False, expandable_progress=provided_progress
+            )
+
         with ExpandableProgress(display_progress, provided_progress) as progress:
             return await self.submit_and_download(
                 signed_urls_only=False, expandable_progress=progress
