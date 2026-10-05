@@ -11,14 +11,14 @@ repos:
         args: ["--pytest-test-first"]
       - id: trailing-whitespace
   - repo: https://github.com/pycqa/flake8
-    rev: "7.3.0"
+    rev: "7.4.1"
     hooks:
       - id: flake8
         additional_dependencies: [flake8-print]
         args:
           - --per-file-ignores=examples/**:T201,tests/**:T201,servicex/app/**:T201
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 26.3.1
+    rev: 26.10.0
     hooks:
       -   id: black
 
