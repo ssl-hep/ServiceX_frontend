@@ -107,7 +107,7 @@ async def test_wlcg_bearer_token(
 ):
     TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"  # noqa: E501
 
-    respx_mock.post(
+    respx_mock.get(
         "/bearer-token-exchange", headers={"Authorization": f"Bearer {TOKEN}"}
     ).respond(200, json={"jwt": "myjwt", "pending": False})
     respx_mock.post(
