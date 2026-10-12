@@ -36,6 +36,12 @@ from rich import get_console
 from rich.prompt import Prompt
 from rich.panel import Panel
 
+import json
+import httpx
+import time
+import pkce
+import qrcode
+
 from servicex.servicex_adapter import ServiceXAdapter
 
 init_app = typer.Typer(name="init", invoke_without_command=True, no_args_is_help=False)
@@ -74,6 +80,144 @@ async def verify_token(url: str, token: str) -> bool:
         return False
 
 
+async def device_flow(url: str) -> str | None:
+    adapter = ServiceXAdapter(url=url)
+    capabilities = await adapter.get_servicex_capabilities()
+    console = get_console()
+    if "oauth_device_flow" not in capabilities:
+        console.print(
+            "[yellow]✗ ServiceX server does not support device flow: "
+            "fall back to login page[/yellow]"
+        )
+        return None
+
+    res = httpx.get(f"{url}/device-flow-info")
+    if res.status_code != 200:
+        console.print(f"[yellow]✗ Error in ServiceX server: {res.text}[/yellow]")
+        return None
+    flow_config = res.json()
+    client_id = flow_config["client"]
+    config_url = flow_config["config"]
+    res = httpx.get(config_url)
+    if res.status_code != 200:
+        console.print(
+            f"[yellow]✗ Error accessing authentication server configuration "
+            f"from {config_url}: {res.text}[/yellow]"
+        )
+        return None
+    oidc_config = res.json()
+
+    device_auth_url = oidc_config["device_authorization_endpoint"]
+
+    code_verifier, code_challenge = pkce.generate_pkce_pair()
+
+    res = httpx.post(
+        device_auth_url,
+        headers={"Accept": "application/json"},
+        data={
+            "client_id": client_id,
+            "scope": "openid profile email",
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+        },
+    )
+
+    if res.status_code != 200:
+        console.print(
+            f"[yellow]✗ Error requesting authorization URL: " f"{res.text}[/yellow]"
+        )
+        return None
+    data = res.json()
+
+    if "verification_uri_complete" in data:
+        console.print(
+            f"To login, go to [link={data['verification_uri_complete']}]"
+            f"{data['verification_uri_complete']}[/link] or scan:"
+        )
+        qr = qrcode.QRCode()
+        qr.add_data(data["verification_uri_complete"])
+        qr.make(fit=True)
+        qr.print_ascii()
+    else:
+        console.print(
+            f"To login, go to [link={data['verification_uri']}]"
+            f"{data['verification_uri']}[/link] and enter verification code: "
+            f"{data['user_code']}"
+        )
+
+    # Three minute loop
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 3 * 60:
+        res = httpx.post(
+            oidc_config["token_endpoint"],
+            headers={"Accept": "application/json"},
+            data={
+                "client_id": client_id,
+                "code_verifier": code_verifier,
+                "scope": "openid profile email",
+                "device_code": data["device_code"],
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+            },
+        )
+        if res.status_code == 200:
+            payload = res.json()
+            break
+        try:
+            payload = res.json()
+            if payload["error"] != "authorization_pending":
+                console.print(f"[red]✗ Authorization failed: {payload['error']}")
+                return None
+        except json.decoder.JSONDecodeError:
+            console.print(f"[red]✗ Authorization failed: {res.text}[/red]")
+            return None
+        await asyncio.sleep(int(data.get("interval", 10)))
+    bearer_token = payload["access_token"]
+
+    # now exchange for a refresh token
+    res = httpx.get(
+        f"{url}/bearer-token-exchange",
+        headers={"Authorization": f"Bearer {bearer_token}"},
+    )
+    if res.status_code != 200:
+        console.print(f"[red]✗ Unable to finalize login: {res.text}[/red]")
+        return None
+    tok = res.json()
+    if tok["pending"]:
+        console.print(
+            "[yellow]✗ Your account exists but is pending approval; "
+            "submissions will fail until it is approved[/yellow]"
+        )
+    return tok["jwt"]
+
+
+def old_style_login(url, name, custom_url):
+    console = get_console()
+    sign_in_url = f"{url}/sign-in"
+
+    if custom_url:
+        name = custom_url
+
+    sign_in_message = (
+        f"1. Open this URL to sign in to {name}:\n"
+        f"   [cyan][link={sign_in_url}]{sign_in_url}[/link][/cyan]\n\n"
+        f"2. Once redirected to your user profile, copy your API token and paste it below."
+    )
+
+    console.print(
+        Panel(
+            sign_in_message,
+            title="[bold]Get Your Token[/bold]",
+            border_style="blue",
+        )
+    )
+
+    # Get token from user
+    console.print()
+    token = getpass.getpass("Paste your token here: ")
+    console.print("\n")
+    return token
+
+
 def run(
     source: Optional[Literal["uchicago"]] = None,
     custom_url: Optional[str] = None,
@@ -95,33 +239,14 @@ def run(
 
     console.print()
 
-    sign_in_url = f"{url}/sign-in"
-
-    if custom_url:
-        name = custom_url
-
-    token = None
     if not auth_disabled:
-        sign_in_message = (
-            f"1. Open this URL to sign in to {name}:\n"
-            f"   [cyan][link={sign_in_url}]{sign_in_url}[/link][/cyan]\n\n"
-            f"2. Once redirected to your user profile, copy your API token and paste it below."
-        )
-
-        console.print(
-            Panel(
-                sign_in_message,
-                title="[bold]Get Your Token[/bold]",
-                border_style="blue",
-            )
-        )
-
-        # Get token from user
-        console.print()
-        token = getpass.getpass("Paste your token here: ")
+        # We will first check if we can do device flow
+        token = asyncio.run(device_flow(url))
+        if token is None:
+            token = old_style_login(url, name, custom_url)
 
         # Verify token with authenticated ping
-        console.print("\n[yellow]⏳ Verifying token...[/yellow]")
+        console.print("[yellow]⏳ Verifying token...[/yellow]")
         if not asyncio.run(verify_token(url, token)):
             console.print(
                 "[red]✗ Failed to verify token. "

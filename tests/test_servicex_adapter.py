@@ -32,6 +32,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 import datetime
 
 import httpx
+import respx
 import pytest
 from json import JSONDecodeError
 from pytest_asyncio import fixture
@@ -63,6 +64,7 @@ def test_result_formats():
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms(mock_get, servicex, transform_status_response):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     mock_get.return_value = MagicMock()
     mock_get.return_value.json.return_value = transform_status_response
     mock_get.return_value.status_code = 200
@@ -98,39 +100,31 @@ async def test_get_transforms_auth_error(mock_get, servicex):
 
 
 @pytest.mark.asyncio
-@patch("servicex.servicex_adapter.AsyncClient.get")
-@patch("servicex.servicex_adapter.AsyncClient.post")
-@patch("servicex.servicex_adapter.jwt.decode")
-async def test_get_transforms_wlcg_bearer_token(
-    decode, post, http_get, servicex, transform_status_response
+@respx.mock(base_url="https://servicex.org", assert_all_mocked=True)
+@patch("servicex.servicex_adapter.jwt.decode", return_value={"exp": time.time() + 90})
+async def test_wlcg_bearer_token(
+    decode, respx_mock, servicex, transform_status_response
 ):
-    post.return_value.json.return_value = {"access_token": "luckycharms"}
-    post.return_value.status_code = 401
-    http_get.return_value.__aenter__.return_value.json.return_value = (
-        transform_status_response
+    TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"  # noqa: E501
+
+    respx_mock.post(
+        "/bearer-token-exchange", headers={"Authorization": f"Bearer {TOKEN}"}
+    ).respond(200, json={"jwt": "myjwt", "pending": False})
+    respx_mock.post(
+        "/token/refresh", headers={"authorization": "Bearer myjwt"}
+    ).respond(200, json={"access_token": "luckycharms"})
+    respx_mock.get("/servicex/transformation").respond(
+        200, json=transform_status_response
     )
-    http_get.return_value.__aenter__.return_value.status = 200
-    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
-    post.return_value.__aenter__.return_value.json.return_value = {
-        "access_token": "luckycharms"
-    }
-    post.return_value.__aenter__.return_value.status = 401
+    servicex.get_servicex_capabilities = AsyncMock(return_value=["bearer_exchange"])
     token_file = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
-    token_file.write(""""
-    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-    """)
+    token_file.write(TOKEN)
     token_file.close()
 
     with patch.dict(os.environ, {"BEARER_TOKEN_FILE": token_file.name}):
-        # Try with no expiration at all
-        with pytest.raises(RuntimeError):
-            await servicex.get_transforms()
-
-        # Try with an expired token
-        with pytest.raises(AuthorizationError) as err:
-            decode.return_value = {"exp": 0.0}
-            await servicex.get_transforms()
-            assert "ServiceX access token request rejected:" in str(err.value)
+        await servicex._get_authorization()
+        assert servicex.refresh_token == "myjwt"
+        assert servicex.token == "luckycharms"
 
     os.remove(token_file.name)
 
@@ -140,6 +134,7 @@ async def test_get_transforms_wlcg_bearer_token(
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms_with_refresh(get, post, transform_status_response):
     servicex = ServiceXAdapter(url="https://servicex.org", refresh_token="refrescas")
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     post.return_value = MagicMock()
     post.return_value.json.return_value = {"access_token": "luckycharms"}
     post.return_value.status_code = 200
@@ -217,6 +212,7 @@ async def test_get_datasets(get, servicex, dataset):
     get.return_value = MagicMock()
     get.return_value.json.return_value = {"datasets": [dataset]}
     get.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
 
     c = await servicex.get_datasets()
     assert len(c) == 1
@@ -232,6 +228,7 @@ async def test_get_datasets_show_deleted(get, servicex, dataset):
     get.return_value = MagicMock()
     get.return_value.json.return_value = {"datasets": [dataset]}
     get.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     c = await servicex.get_datasets(show_deleted=True)
     assert len(c) == 1
     assert c[0].id == 123
@@ -256,6 +253,7 @@ async def test_get_datasets_auth_error(get, servicex):
 async def test_get_datasets_miscellaneous_error(get, servicex):
     get.return_value = MagicMock()
     get.return_value.status_code = 500
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(RuntimeError) as err:
         await servicex.get_datasets()
     assert "Failed to get datasets" in str(err.value)
@@ -267,6 +265,7 @@ async def test_get_dataset(get, servicex, dataset):
     get.return_value = MagicMock()
     get.return_value.json.return_value = dataset
     get.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     c = await servicex.get_dataset(123)
     assert c
     assert c.id == 123
@@ -275,6 +274,7 @@ async def test_get_dataset(get, servicex, dataset):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_dataset_errors(get, servicex, dataset):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     get.return_value = MagicMock()
     get.return_value.status_code = 403
     with pytest.raises(AuthorizationError) as err:
@@ -303,6 +303,7 @@ async def test_delete_dataset(delete, servicex):
         "stale": True,
     }
     delete.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
 
     r = await servicex.delete_dataset(123)
     delete.assert_called_with(
@@ -316,6 +317,7 @@ async def test_delete_dataset(delete, servicex):
 async def test_delete_dataset_errors(delete, servicex):
     delete.return_value = MagicMock()
     delete.return_value.status_code = 403
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(AuthorizationError) as err:
         await servicex.delete_dataset(123)
     assert "Not authorized to access serviceX at" in str(err.value)
@@ -337,6 +339,7 @@ async def test_delete_dataset_errors(delete, servicex):
 @patch("servicex.servicex_adapter.AsyncClient.delete")
 async def test_delete_transform(delete, servicex):
     delete.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     await servicex.delete_transform("123-45-6789")
     delete.assert_called_with(
         url="https://servicex.org/servicex/transformation/123-45-6789", headers={}
@@ -348,6 +351,7 @@ async def test_delete_transform(delete, servicex):
 async def test_delete_transform_errors(delete, servicex):
     delete.return_value = MagicMock()
     delete.return_value.status_code = 403
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(AuthorizationError) as err:
         await servicex.delete_transform("123-45-6789")
     assert "Not authorized to access serviceX at" in str(err.value)
@@ -451,6 +455,7 @@ async def test_submit(post, servicex):
     post.return_value = MagicMock()
     post.return_value.json.return_value = {"request_id": "123-456-789"}
     post.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     request = TransformRequest(
         title="Test submission",
         did="rucio://foo.bar",
@@ -479,6 +484,7 @@ async def test_submit_includes_client_version(post, servicex):
         result_destination=ResultDestination.object_store,
         result_format=ResultFormat.parquet,
     )
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     await servicex.submit_transform(request)
     _, kwargs = post.call_args
     assert kwargs["json"]["client-version"] == __version__
@@ -497,6 +503,7 @@ async def test_submit_errors(post, servicex):
         result_destination=ResultDestination.object_store,
         result_format=ResultFormat.parquet,
     )
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(AuthorizationError) as err:
         await servicex.submit_transform(request)
     assert "Not authorized to access serviceX at" in str(err.value)
@@ -536,6 +543,7 @@ async def test_get_transform_status(get, servicex, transform_status_response):
         0
     ]  # NOQA: E501
     get.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     result = await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
     assert result.request_id == "b8c508d0-ccf2-4deb-a1f7-65c839eebabf"
 
@@ -544,6 +552,7 @@ async def test_get_transform_status(get, servicex, transform_status_response):
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transform_status_errors(get, servicex):
     get.return_value = MagicMock()
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(AuthorizationError) as err:
         get.return_value.status_code = 401
         await servicex.get_transform_status("b8c508d0-ccf2-4deb-a1f7-65c839eebabf")
@@ -569,6 +578,7 @@ async def test_get_transform_status_errors(get, servicex):
 async def test_get_tranform_status_retry_error(
     get, mock_transform_status, servicex, transform_status_response
 ):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(RuntimeError) as err:
         get.return_value = MagicMock()
         get.return_value.json.return_value = transform_status_response["requests"][
@@ -583,6 +593,7 @@ async def test_get_tranform_status_retry_error(
 async def test_get_authorization(servicex):
     servicex.token = "token"
     servicex.refresh_token = "refresh"
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with patch("google.auth.jwt.decode", return_value={"exp": time.time() + 90}):
         r = await servicex._get_authorization()
         assert r.get("Authorization") == "Bearer token"
@@ -744,6 +755,7 @@ def test_get_token_expiration_no_exp(decode):
 @pytest.mark.asyncio
 async def test_get_authorization_no_token_no_refresh(servicex, monkeypatch):
     monkeypatch.delenv("BEARER_TOKEN_FILE", raising=False)
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     headers = await servicex._get_authorization()
     assert headers == {}
 
@@ -759,6 +771,7 @@ async def test_get_authorization_with_valid_token(decode, servicex):
 @pytest.mark.asyncio
 async def test_get_authorization_with_refresh(monkeypatch):
     s = ServiceXAdapter("https://servicex.org", refresh_token="rftok")
+    s.get_servicex_capabilities = AsyncMock(return_value=[])
     monkeypatch.delenv("BEARER_TOKEN_FILE", raising=False)
 
     async def fake_get_token(self):
@@ -969,6 +982,7 @@ async def test_verify_authentication_no_token_success(mock_get, servicex):
     """verify_authentication without refresh_token: HTTP 200 → True."""
     mock_get.return_value = MagicMock()
     mock_get.return_value.status_code = 200
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     result = await servicex.verify_authentication()
     assert result is True
     mock_get.assert_called_once_with(url="https://servicex.org/servicex")

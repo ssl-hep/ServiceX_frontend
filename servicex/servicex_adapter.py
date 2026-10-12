@@ -100,6 +100,27 @@ class ServiceXAdapter:
                     f"ServiceX access token request rejected [{r.status_code} {r.reason_phrase}]"
                 )
 
+    async def _exchange_bearer_token(self, bearer_token) -> str:
+        url = f"{self.url}/bearer-token-exchange"
+        headers = {"Authorization": f"Bearer {bearer_token}"}
+        retry_options = Retry(total=3, backoff_factor=10, allowed_methods=["POST"])
+
+        async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
+            r = await client.post(url, headers=headers, json=None)
+            if r.status_code == 200:
+                o = r.json()
+                if o["pending"]:
+                    console = get_console()
+                    console.log(
+                        "WARNING: account is marked PENDING on the server, "
+                        "requests will likely fail"
+                    )
+                return o["jwt"]
+            else:
+                raise AuthorizationError(
+                    f"ServiceX access token request rejected [{r.status_code} {r.reason_phrase}]"
+                )
+
     @staticmethod
     def _get_bearer_token_file():
         bearer_token_file = os.environ.get("BEARER_TOKEN_FILE")
@@ -130,9 +151,10 @@ class ServiceXAdapter:
             return {"Authorization": f"Bearer {self.token}"}
         else:
             bearer_token = self._get_bearer_token_file()
+            capabilities = await self.get_servicex_capabilities()
 
-            if bearer_token:
-                self.token = bearer_token
+            if bearer_token is not None and "bearer_exchange" in capabilities:
+                self.refresh_token = await self._exchange_bearer_token(bearer_token)
             if not bearer_token and not self.refresh_token:
                 return {}
 
@@ -148,10 +170,9 @@ class ServiceXAdapter:
         if self._servicex_info:
             return self._servicex_info
 
-        headers = await self._get_authorization()
         retry_options = Retry(total=3, backoff_factor=10)
         async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
-            r = await client.get(url=f"{self.url}/servicex", headers=headers)
+            r = await client.get(url=f"{self.url}/servicex")
             if r.status_code in (401, 403):
                 raise AuthorizationError(
                     f"Not authorized to access serviceX at {self.url}"

@@ -30,6 +30,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, AsyncMock, Mock
 import tempfile
+import respx
+import httpx
 
 from servicex.app.init import verify_token
 
@@ -99,17 +101,17 @@ async def test_verify_token_failure():
             assert "Failed to authenticate" in call_args
 
 
-@patch("servicex.app.init.asyncio.run", return_value=True)
+@patch("servicex.app.init.device_flow", return_value=None)
 @patch("servicex.app.init.verify_token", return_value=True)
 @patch("servicex.app.init.Prompt.ask", return_value="./downloads")
 @patch("servicex.app.init.getpass.getpass", return_value="test-token-123")
 @patch("servicex.app.init.Path.cwd")
-def test_init_uchicago_command(
+def test_init_uchicago_command_old(
     mock_cwd,
     mock_getpass,
     mock_prompt,
     mock_verify,
-    mock_async,
+    mock_device_flow,
     script_runner,
     temp_dir,
 ):
@@ -126,6 +128,122 @@ def test_init_uchicago_command(
     assert "https://servicex.af.uchicago.edu" in content
     assert "servicex-uc-af" in content
     assert "test-token-123" in content
+
+
+@pytest.mark.parametrize(
+    "complete_url, pending, delay, errtype",
+    [
+        (True, False, True, None),
+        (False, True, True, None),
+        (True, False, False, "bad_devflow"),
+        (True, False, False, "bad_authconfig"),
+        (True, False, False, "bad_authurl"),
+        (True, False, False, "not_json"),
+        (True, False, False, "bad_exchange"),
+    ],
+)
+@respx.mock(
+    base_url="https://servicex.af.uchicago.edu",
+    assert_all_mocked=True,
+    assert_all_called=True,
+)
+@patch("servicex.app.init.old_style_login", return_value="test-token-123")
+@patch("servicex.app.init.verify_token", return_value=True)
+@patch("servicex.app.init.Prompt.ask", return_value="./downloads")
+@patch(
+    "servicex.servicex_adapter.ServiceXAdapter.get_servicex_capabilities",
+    return_value=["oauth_device_flow"],
+)
+@patch("servicex.app.init.Path.cwd")
+def test_init_uchicago_command_device_flow(
+    mock_cwd,
+    mock_capabilities,
+    mock_prompt,
+    mock_verify,
+    mock_old_style_login,
+    respx_mock,
+    complete_url,
+    pending,
+    delay,
+    errtype,
+    script_runner,
+    temp_dir,
+):
+    """Test the uchicago subcommand."""
+    if errtype == "bad_devflow":
+        respx_mock.get("/device-flow-info").respond(500, text="Server error")
+    else:
+        respx_mock.get("/device-flow-info").respond(
+            200,
+            json={
+                "client": "client",
+                "config": "https://servicex.af.uchicago.edu/.conf",
+            },
+        )
+    if errtype == "bad_authconfig":
+        respx_mock.get("/.conf").respond(404, text="Not found")
+    else:
+        respx_mock.get("/.conf").respond(
+            200,
+            json={
+                "device_authorization_endpoint": "https://servicex.af.uchicago.edu/device",
+                "token_endpoint": "https://servicex.af.uchicago.edu/token",
+            },
+        )
+    if complete_url:
+        if errtype == "bad_authurl":
+            respx_mock.post("/device").respond(404, text="Endpoint not found")
+        else:
+            respx_mock.post("/device").respond(
+                200,
+                json={
+                    "verification_uri_complete": "https://servicex.af.uchicago.edu/verify-me",
+                    "device_code": "xyz",
+                    "interval": 1,
+                },
+            )
+    else:
+        respx_mock.post("/device").respond(
+            200,
+            json={
+                "verification_uri": "https://servicex.af.uchicago.edu/verify-me",
+                "user_code": "abc",
+                "device_code": "xyz",
+            },
+        )
+    if delay:
+        respx_mock.post("/token").mock(
+            side_effect=[
+                httpx.Response(400, json={"error": "authorization_pending"}),
+                httpx.Response(200, json={"access_token": "qrs"}),
+            ]
+        )
+    else:
+        if errtype == "not_json":
+            respx_mock.post("/token").respond(403, text="Bad user")
+        else:
+            respx_mock.post("/token").respond(200, json={"access_token": "qrs"})
+    if errtype == "bad_exchange":
+        respx_mock.get("/bearer-token-exchange").respond(500, text="Server error")
+    else:
+        respx_mock.get(
+            "/bearer-token-exchange", headers={"Authorization": "Bearer qrs"}
+        ).respond(200, json={"jwt": "test-token-123", "pending": pending})
+    mock_cwd.return_value = temp_dir
+
+    result = script_runner.run(["servicex", "init", "uchicago"])
+
+    if errtype is None:
+        assert result.returncode == 0
+        # Verify the config file was created
+        config_file = temp_dir / "servicex.yaml"
+        assert config_file.exists()
+        content = config_file.read_text()
+        assert "https://servicex.af.uchicago.edu" in content
+        assert "servicex-uc-af" in content
+        assert "test-token-123" in content
+    else:
+        mock_old_style_login.assert_called()
 
 
 @patch("servicex.app.init.asyncio.run", return_value=True)
