@@ -79,6 +79,7 @@ async def test_get_transforms(mock_get, servicex, transform_status_response):
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms_error(mock_get, servicex, transform_status_response):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     mock_get.return_value = MagicMock()
     mock_get.return_value.json.return_value = {"message": "error_message"}
     mock_get.return_value.status_code = 500
@@ -93,6 +94,7 @@ async def test_get_transforms_error(mock_get, servicex, transform_status_respons
 @pytest.mark.asyncio
 @patch("servicex.servicex_adapter.AsyncClient.get")
 async def test_get_transforms_auth_error(mock_get, servicex):
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
     with pytest.raises(AuthorizationError) as err:
         mock_get.return_value.status_code = 401
         await servicex.get_transforms()
@@ -220,6 +222,18 @@ async def test_get_datasets(get, servicex, dataset):
     get.assert_called_with(
         url="https://servicex.org/servicex/datasets", params={}, headers={}
     )
+
+
+@pytest.mark.asyncio
+@patch("servicex.servicex_adapter.AsyncClient.get")
+async def test_get_datasets_auth_failure(get, servicex, dataset):
+    get.return_value = MagicMock()
+    get.return_value.text.return_value = "unauthorized"
+    get.return_value.status_code = 403
+    servicex.get_servicex_capabilities = AsyncMock(return_value=[])
+
+    with pytest.raises(AuthorizationError):
+        await servicex.get_datasets()
 
 
 @pytest.mark.asyncio
