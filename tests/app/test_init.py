@@ -151,7 +151,7 @@ def test_init_uchicago_command_old(
     assert_all_mocked=True,
     assert_all_called=True,
 )
-@patch("servicex.app.init.old_style_login", return_value="test-token-123")
+@patch("servicex.app.init.old_style_login", return_value="broken-token")
 @patch("servicex.app.init.verify_token", return_value=True)
 @patch("servicex.app.init.Prompt.ask", return_value="./downloads")
 @patch(
@@ -239,17 +239,19 @@ def test_init_uchicago_command_device_flow(
 
     result = script_runner.run(["servicex", "init", "uchicago"])
 
+    assert result.returncode == 0
+    # Verify the config file was created
+    config_file = temp_dir / "servicex.yaml"
+    assert config_file.exists()
+    content = config_file.read_text()
     if errtype is None:
-        assert result.returncode == 0
-        # Verify the config file was created
-        config_file = temp_dir / "servicex.yaml"
-        assert config_file.exists()
-        content = config_file.read_text()
         assert "https://servicex.af.uchicago.edu" in content
         assert "servicex-uc-af" in content
         assert "test-token-123" in content
     else:
-        mock_old_style_login.assert_called()
+        assert "https://servicex.af.uchicago.edu" in content
+        assert "servicex-uc-af" in content
+        assert "broken-token" in content
 
 
 @patch("servicex.app.init.asyncio.run", return_value=True)

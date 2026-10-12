@@ -106,7 +106,7 @@ class ServiceXAdapter:
         retry_options = Retry(total=3, backoff_factor=10, allowed_methods=["POST"])
 
         async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
-            r = await client.post(url, headers=headers, json=None)
+            r = await client.get(url, headers=headers)
             if r.status_code == 200:
                 o = r.json()
                 if o["pending"]:
