@@ -101,7 +101,10 @@ async def test_verify_token_failure():
             assert "Failed to authenticate" in call_args
 
 
-@patch("servicex.app.init.device_flow", return_value=None)
+@patch(
+    "servicex.servicex_adapter.ServiceXAdapter.get_servicex_capabilities",
+    return_value=[],
+)
 @patch("servicex.app.init.verify_token", return_value=True)
 @patch("servicex.app.init.Prompt.ask", return_value="./downloads")
 @patch("servicex.app.init.getpass.getpass", return_value="test-token-123")
@@ -111,7 +114,7 @@ def test_init_uchicago_command_old(
     mock_getpass,
     mock_prompt,
     mock_verify,
-    mock_device_flow,
+    mock_caps,
     script_runner,
     temp_dir,
 ):
@@ -138,6 +141,7 @@ def test_init_uchicago_command_old(
         (True, False, False, "bad_devflow"),
         (True, False, False, "bad_authconfig"),
         (True, False, False, "bad_authurl"),
+        (True, False, False, "auth_error"),
         (True, False, False, "not_json"),
         (True, False, False, "bad_exchange"),
     ],
@@ -221,6 +225,8 @@ def test_init_uchicago_command_device_flow(
     else:
         if errtype == "not_json":
             respx_mock.post("/token").respond(403, text="Bad user")
+        elif errtype == "auth_error":
+            respx_mock.post("/token").respond(400, json={"error": "invalid_grant"})
         else:
             respx_mock.post("/token").respond(200, json={"access_token": "qrs"})
     if errtype == "bad_exchange":

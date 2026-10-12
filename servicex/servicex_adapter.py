@@ -112,8 +112,8 @@ class ServiceXAdapter:
                 if o["pending"]:
                     console = get_console()
                     console.log(
-                        "WARNING: account is marked PENDING on the server, "
-                        "requests will likely fail"
+                        "[yellow]✗ WARNING: account is marked PENDING on the server, "
+                        "requests will fail until it is approved[/yellow]"
                     )
                 return o["jwt"]
             else:

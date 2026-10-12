@@ -174,28 +174,17 @@ async def device_flow(url: str) -> str | None:
     bearer_token = payload["access_token"]
 
     # now exchange for a refresh token
-    res = httpx.get(
-        f"{url}/bearer-token-exchange",
-        headers={"Authorization": f"Bearer {bearer_token}"},
-    )
-    if res.status_code != 200:
-        console.print(f"[red]✗ Unable to finalize login: {res.text}[/red]")
+    try:
+        tok = await adapter._exchange_bearer_token(bearer_token)
+        return tok
+    except Exception as e:
+        console.print(f"[red]✗ Unable to finalize login: {e}[/red]")
         return None
-    tok = res.json()
-    if tok["pending"]:
-        console.print(
-            "[yellow]✗ Your account exists but is pending approval; "
-            "submissions will fail until it is approved[/yellow]"
-        )
-    return tok["jwt"]
 
 
-def old_style_login(url, name, custom_url):
+def old_style_login(url, name):
     console = get_console()
     sign_in_url = f"{url}/sign-in"
-
-    if custom_url:
-        name = custom_url
 
     sign_in_message = (
         f"1. Open this URL to sign in to {name}:\n"
@@ -243,7 +232,7 @@ def run(
         # We will first check if we can do device flow
         token = asyncio.run(device_flow(url))
         if token is None:
-            token = old_style_login(url, name, custom_url)
+            token = old_style_login(url, name)
 
         # Verify token with authenticated ping
         console.print("[yellow]⏳ Verifying token...[/yellow]")
