@@ -103,7 +103,7 @@ class ServiceXAdapter:
     async def _exchange_bearer_token(self, bearer_token) -> str:
         url = f"{self.url}/bearer-token-exchange"
         headers = {"Authorization": f"Bearer {bearer_token}"}
-        retry_options = Retry(total=3, backoff_factor=10, allowed_methods=["POST"])
+        retry_options = Retry(total=3, backoff_factor=10, allowed_methods=["GET"])
 
         async with AsyncClient(transport=RetryTransport(retry=retry_options)) as client:
             r = await client.get(url, headers=headers)
