@@ -30,8 +30,8 @@ from hashlib import sha1
 from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
-import sys
 from abc import ABC, abstractmethod
+import time
 
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 
@@ -41,7 +41,7 @@ import asyncio
 import httpx
 
 from servicex.models import ResultFile, TransformStatus
-from servicex.servicex_adapter import ServiceXAdapter
+from servicex.servicex_adapter import ServiceXAdapter, _timeout
 
 # Maximum five simultaneous streams per individual file download
 _transferconfig = TransferConfig(max_concurrency=5)
@@ -97,7 +97,7 @@ class DownloadAdapter(ABC):
 
     @classmethod
     @abstractmethod
-    def for_transform(cls, transform: TransformStatus):
+    def for_transform(cls, transform: TransformStatus, servicex: ServiceXAdapter):
         """Return an adapter instance for a given transform"""
 
     @abstractmethod
@@ -140,7 +140,7 @@ class MinioAdapter(DownloadAdapter):
         self.bucket = bucket
 
     @classmethod
-    def for_transform(cls, transform: TransformStatus):
+    def for_transform(cls, transform: TransformStatus, _: ServiceXAdapter):
         return MinioAdapter(
             endpoint_host=transform.minio_endpoint,
             secure=transform.minio_secured,
@@ -218,12 +218,15 @@ class MinioAdapter(DownloadAdapter):
     )
     async def get_signed_url(self, object_name: str) -> URLAccessInfo:
         async with self.minio.client("s3", endpoint_url=self.endpoint_host) as s3:
+            expirytime = 365 * 24 * 60 * 60
             url = await s3.generate_presigned_url(
                 "get_object",
                 Params={"Bucket": self.bucket, "Key": object_name},
-                ExpiresIn=365 * 24 * 60 * 60,
+                ExpiresIn=expirytime,
             )
-            return URLAccessInfo(url=url, headers={}, expiration=sys.maxsize)
+            return URLAccessInfo(
+                url=url, headers={}, expiration=int(time.time() + expirytime)
+            )
 
     async def update_cache(self, object_names: list[str]) -> None:
         """In this class this does nothing"""
@@ -237,7 +240,7 @@ class HTTPDownloadAdapter(DownloadAdapter):
         servicex: ServiceXAdapter,
         bucket: str,
     ):
-        self.session = httpx.AsyncClient()
+        self.session = httpx.AsyncClient(timeout=_timeout)
 
         self.servicex = servicex
         self.bucket = bucket
@@ -304,6 +307,11 @@ class HTTPDownloadAdapter(DownloadAdapter):
             async with self.session.stream(
                 "GET", download_info.url, headers=download_info.headers
             ) as response:
+                if response.status_code != 200:
+                    raise RuntimeError(
+                        f"Download of {object_name} failed; "
+                        f"error {response.status_code} from server"
+                    )
                 with open(path, "wb") as outfile:
                     async for chunk in response.aiter_bytes():
                         outfile.write(chunk)
@@ -334,7 +342,7 @@ class HTTPDownloadAdapter(DownloadAdapter):
             download_info = await self.session.post(
                 f"{self.servicex.url}/servicex/transformation/file-urls",
                 json={"request_id": self.bucket, "file_list": to_lookup},
-                headers={"Authorization": f"Bearer {self.servicex.token}"},
+                headers=await self.servicex._get_authorization(),
             )
             self.urlcache |= {
                 key: URLAccessInfo(url=val[0], headers=val[1], expiration=val[2])
@@ -348,4 +356,4 @@ async def get_download_adapter(
     if "generate_file_urls" in await servicex.get_servicex_capabilities():
         return HTTPDownloadAdapter.for_transform(current_status, servicex)
     else:
-        return MinioAdapter.for_transform(current_status)
+        return MinioAdapter.for_transform(current_status, servicex)
