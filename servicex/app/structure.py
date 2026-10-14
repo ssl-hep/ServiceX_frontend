@@ -69,7 +69,7 @@ def make_dataset_list(dataset_arg: List[str]):
     return dataset_arg
 
 
-@structure_app.callback()
+@structure_app.callback(context_settings={"allow_interspersed_args": True})
 def get_structure_command(
     dataset: List[str] = typer.Argument(
         ...,
@@ -88,7 +88,6 @@ def get_structure_command(
     result = get_structure(
         ds_format,
         filter=filter_branch,
-        do_print=False,
     )
 
     print(result)

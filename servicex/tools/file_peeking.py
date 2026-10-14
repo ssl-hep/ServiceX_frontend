@@ -28,10 +28,7 @@
 
 from servicex import deliver, query, dataset
 import uproot
-import numpy as np
 import awkward as ak
-import json
-import logging
 from servicex.dataset_identifier import DataSetIdentifier
 
 
@@ -46,9 +43,8 @@ def run_query(input_filename):
 
     with uproot.open(input_filename) as file:
         for tree_name, tree in file.items():
-            tree_name = tree_name.rstrip(";1")
+            tree_name = tree_name.removesuffix(";1")
             classname = getattr(tree, "classname", type(tree).__name__)
-            print(classname, "\n\n\n")
 
             try:
                 # Build one Awkward array per tree
@@ -115,15 +111,14 @@ def _build_deliver_spec(datasets):
     return spec_python
 
 
-def _show_structure(deliver_dict, filter="", save_to_txt=False, do_print=False):
+def _show_structure(deliver_dict, filter="", save_to_txt=False):
     """
     Formats a string to present the file structure from ServiceX into a readable summary.
 
     Parameters:
       deliver_dict (dict): ServiceX deliver output (keys: sample names, values: paths or URLs).
-      filterh (str): If provided, only columns containing this string are included.
+      filter (str): If provided, only columns containing this string are included.
       save_to_txt (bool): If True, saves output to a text file instead of returning it.
-      do_print (bool): If True, prints the output to the terminal and returns None.
 
     Returns:
       result_str (str): The formatted file structure.
@@ -131,25 +126,19 @@ def _show_structure(deliver_dict, filter="", save_to_txt=False, do_print=False):
 
     output_lines = []
     _long = "-------" * 10
-    _short = "------" * 6
 
     for sample_name, path in deliver_dict.items():
-        output_lines = []
         output_lines.append(
             f"\n{_long}\n" f"\U0001f4c1 Sample: {sample_name}\n" f"{_long}"
         )
         with uproot.open(path[0]) as f:
-            output_lines.append("\nFile Metadata \u2139\ufe0f :\n")
-            output_lines.append("Coming soon...")
-            output_lines.append(f"\n{_short}")
-
             output_lines.append(f"\nFile structure with column filter '{filter}':")
 
             for key in f.keys():
                 tree = f[key]
                 arrays = tree.arrays(library="ak", entry_stop=1)
                 output_lines.append(
-                    f"\n\U0001f333  {str(key).strip(';1')}: {arrays['_classname'][0]}"
+                    f"\n\U0001f333  {str(key).removesuffix(';1')}: {arrays['_classname'][0]}"
                 )
                 if arrays.fields == ["_classname"]:
                     continue
@@ -168,10 +157,7 @@ def _show_structure(deliver_dict, filter="", save_to_txt=False, do_print=False):
     if save_to_txt:
         with open("samples_structure.txt", "w") as f:
             f.write(result_str)
-        print("File structure saved to 'samples_structure.txt'.")
-    elif do_print:
-        print(result_str)
-        return
+        print("File structure saved to samples_structure.txt")  # noqa: T201
     else:
         return result_str
 
@@ -188,9 +174,9 @@ def _get_arrays(deliver_dict):
       sample_arrays (dict): A dictionary containing the arrays from the ServiceX deliver output.
     """
     multi_sample = len(deliver_dict.keys()) > 1
-    arrays_dict = {}
     sample_arrays = {}
     for sample_name, path in deliver_dict.items():
+        arrays_dict = {}
         with uproot.open(path[0]) as f:
             for key in f.keys():
                 tree = f[key]
@@ -198,7 +184,7 @@ def _get_arrays(deliver_dict):
                 if arrays.fields == ["_classname"]:
                     continue
                 else:
-                    arrays_dict[key.strip(";1")] = arrays
+                    arrays_dict[key.removesuffix(";1")] = arrays
             if multi_sample:
                 sample_arrays[sample_name] = arrays_dict
             else:
@@ -216,7 +202,7 @@ def get_structure(datasets, array_out=False, **kwargs):
       datasets (dict,str,[str]): The datasets from which to print the file structures.
                                 A custom sample name per dataset can be given in a dict form:
                                 {'sample_name':'dataset_id'}
-      kwargs : Arguments to be propagated to _show_structure (filter, save_to_txt, do_print)
+      kwargs : Arguments to be propagated to _show_structure (filter, save_to_txt)
     """
     spec_python = _build_deliver_spec(datasets)
 
