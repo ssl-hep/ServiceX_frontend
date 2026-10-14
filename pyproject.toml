@@ -84,6 +84,7 @@ test = [
     "pytest-aioboto3>=0.6.0",
     "types-aiobotocore>=2.7.0,<=2.26.0",
     "coverage>=7.0.0",
+    "uproot>=5.0.0",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",
