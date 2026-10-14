@@ -31,6 +31,7 @@ import pytest
 import uproot
 import awkward as ak
 import numpy as np
+from packaging.version import Version
 
 from servicex.tools import file_peeking
 from servicex import dataset
@@ -40,6 +41,12 @@ from servicex.dataset_identifier import (
     FileListDataset,
     CERNOpenDataDatasetIdentifier,
     XRootDDatasetIdentifier,
+)
+
+# Writing RNTuples with uproot is only supported from 5.7 onwards
+requires_rntuple_writing = pytest.mark.skipif(
+    Version(uproot.__version__) < Version("5.7"),
+    reason="uproot < 5.7 can't write RNTuples",
 )
 
 
@@ -53,9 +60,12 @@ def raw_root_file(tmp_path):
     tree_data1 = {"branch1": np.ones(100), "branch2": np.zeros(100)}
     tree_data2 = {"branch1": np.ones(10)}
 
+    # Explicit mktree: newer uproot writes RNTuples by default with file[name] = ...
     with uproot.create(test_path) as file:
-        file["background"] = tree_data1
-        file["signal"] = tree_data2
+        file.mktree("background", {"branch1": np.float64, "branch2": np.float64})
+        file["background"].extend(tree_data1)
+        file.mktree("signal", {"branch1": np.float64})
+        file["signal"].extend(tree_data2)
 
     return test_path
 
@@ -86,11 +96,28 @@ def deliver_like_multi(raw_root_file, tmp_path):
     """Two-sample deliver() output dict, each sample with different trees."""
     other_raw = str(tmp_path / "test_file2.root")
     with uproot.create(other_raw) as file:
-        file["jets"] = {"jet_pt": np.ones(5)}
+        file.mktree("jets", {"jet_pt": np.float64})
+        file["jets"].extend({"jet_pt": np.ones(5)})
 
     path_a = _write_delivered(raw_root_file, tmp_path / "delivered_a.root")
     path_b = _write_delivered(other_raw, tmp_path / "delivered_b.root")
     return {"sample_A": [path_a], "sample_B": [path_b]}
+
+
+@pytest.fixture
+def raw_rntuple_file(tmp_path):
+    """A plain ROOT file holding an RNTuple, with a jagged and a flat column."""
+    test_path = str(tmp_path / "test_rntuple.root")
+    data = ak.Array(
+        {
+            "el_pt": [[10.0, 20.0], [30.0]],
+            "n_el": np.array([2, 1], dtype=np.int32),
+        }
+    )
+    with uproot.create(test_path) as file:
+        file.mkrntuple("events", data)
+
+    return test_path
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +140,22 @@ def test_run_query(raw_root_file):
 
     assert set(trees["signal"].fields) == {"branch1", "_classname"}
     assert trees["signal"]["branch1"][0] == 1.0
+
+
+@requires_rntuple_writing
+def test_run_query_rntuple(raw_rntuple_file):
+    trees = file_peeking.run_query(raw_rntuple_file)
+
+    assert set(trees.keys()) == {"events"}
+    events = trees["events"]
+    assert isinstance(events, ak.Array)
+    assert set(events.fields) == {"el_pt", "n_el", "_classname"}
+    assert events["_classname"][0] == "ROOT::RNTuple"
+
+    # Only the first entry is read, jagged structure is preserved
+    assert len(events) == 1
+    assert events["el_pt"][0].tolist() == [10.0, 20.0]
+    assert events["n_el"][0] == 2
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +272,18 @@ def test_show_structure_multiple_samples(deliver_like_multi):
     assert "background: TTree" in output_str
     assert "jets: TTree" in output_str
     assert "jet_pt:  float64" in output_str
+
+
+@requires_rntuple_writing
+def test_show_structure_rntuple(raw_rntuple_file, tmp_path):
+    out_path = _write_delivered(raw_rntuple_file, tmp_path / "delivered_rntuple.root")
+    output_str = file_peeking._show_structure({"rntuple_sample": [out_path]})
+
+    assert "\U0001f4c1 Sample: rntuple_sample" in output_str
+    assert "\U0001f333  events: ROOT::RNTuple" in output_str
+    assert "   │   ├── el_pt:  var * float64" in output_str
+    assert "   │   ├── n_el:  int32" in output_str
+    assert "_classname" not in output_str
 
 
 # ---------------------------------------------------------------------------
