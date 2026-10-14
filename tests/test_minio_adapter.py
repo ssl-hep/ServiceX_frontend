@@ -81,7 +81,7 @@ def session(mocker):
 
 @pytest.mark.asyncio
 async def test_initialize_from_status(completed_status):
-    minio = MinioAdapter.for_transform(completed_status)
+    minio = MinioAdapter.for_transform(completed_status, None)
     assert minio.endpoint_host == "http://minio.org:9000"
     assert minio.minio._session._credentials.access_key == "miniouser"
     assert minio.minio._session._credentials.secret_key == "secret"

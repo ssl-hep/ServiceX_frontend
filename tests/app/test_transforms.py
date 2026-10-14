@@ -198,7 +198,9 @@ def test_list_files(script_runner, transform_status_record, result_files):
             assert result_row[2] == "parquet"
 
             mock_transform_status.assert_called_once_with("test-request-123")
-            mock_minio.for_transform.assert_called_once_with(transform_status_record)
+            mock_minio.for_transform.assert_called_once_with(
+                transform_status_record, mock_servicex.return_value.servicex
+            )
             mock_minio_adapter.list_bucket.assert_called_once()
 
 
@@ -235,7 +237,9 @@ def test_download_files(script_runner, transform_status_record, result_files):
             assert result_rows[1] == "/tmp/test_file.parquet"
 
             mock_transform_status.assert_called_once_with("test-request-123")
-            mock_minio.for_transform.assert_called_once_with(transform_status_record)
+            mock_minio.for_transform.assert_called_once_with(
+                transform_status_record, mock_servicex.return_value.servicex
+            )
             mock_minio_adapter.list_bucket.assert_called_once()
             assert mock_minio_adapter.download_file.call_count == 2
             assert mock_minio_adapter.download_file.mock_calls[0].args[0] == "test_file"
