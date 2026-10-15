@@ -43,6 +43,7 @@ from servicex.app.transforms import transforms_app
 from servicex.app.cache import cache_app
 from servicex.app.codegen import codegen_app
 from servicex.app.init import init_app
+from servicex.app.salt import get_salt_data_command
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -52,6 +53,7 @@ app.add_typer(codegen_app)
 app.add_typer(datasets_app)
 app.add_typer(init_app)
 app.add_typer(check_app)
+app.command("get-salt-data")(get_salt_data_command)
 
 spec_file_arg = typer.Argument(..., help="Spec file to submit to serviceX")
 ignore_cache_opt = typer.Option(

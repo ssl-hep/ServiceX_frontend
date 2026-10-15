@@ -81,6 +81,13 @@ test = [
     "pytest-aioboto3>=0.6.0",
     "types-aiobotocore>=2.7.0,<=2.26.0",
     "coverage>=7.0.0",
+    "uproot>=5.0.0",
+    "awkward>=2.6",
+    "h5py>=3.8",
+]
+# servicex get-salt-data: merging the Salt .h5 files on the client
+salt = [
+    "h5py>=3.8",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",

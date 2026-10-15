@@ -31,6 +31,7 @@ from .models import ResultDestination
 import servicex.dataset as dataset
 import servicex.query as query
 import importlib.metadata
+from servicex.tools.salt_data import get_salt_data
 
 OutputFormat = General.OutputFormatEnum
 Delivery = General.DeliveryEnum
@@ -48,5 +49,6 @@ __all__ = [
     "dataset",
     "query",
     "ProgressBarFormat",
+    "get_salt_data",
     "__version__",
 ]
