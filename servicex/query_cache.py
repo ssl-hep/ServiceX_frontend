@@ -79,6 +79,7 @@ class QueryCache:
             files=completed_status.files,
             result_format=transform.result_format,
             log_url=completed_status.log_url,
+            version=transform.version,
         )
 
     def cache_transform(self, record: TransformedResults):
@@ -167,6 +168,7 @@ class QueryCache:
             "title": transform.title,
             "codegen": transform.codegen,
             "result_format": transform.result_format,
+            "version": transform.version,
             "request_id": request_id,
             "status": "SUBMITTED",
             "submit_time": datetime.now(timezone.utc).isoformat(),

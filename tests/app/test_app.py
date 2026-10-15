@@ -58,6 +58,7 @@ def test_deliver(script_runner):
             config_path=None,
             ignore_local_cache=None,
             cache_dir=None,
+            version=None,
         )
         assert result_rows[-3] == "Total files delivered: 2"
 
