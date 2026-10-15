@@ -33,7 +33,7 @@ import asyncio
 from abc import ABC
 from asyncio import Task, CancelledError
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from servicex.expandable_progress import ExpandableProgress
 from rich.logging import RichHandler
 
@@ -42,7 +42,11 @@ from servicex.types import DID
 from rich.progress import Progress, TaskID
 
 from servicex.configuration import Configuration
-from servicex.minio_adapter import MinioAdapter
+from servicex.download_adapter import (
+    get_download_adapter,
+    DownloadAdapter,
+    URLAccessInfo,
+)
 from servicex.models import (
     TransformRequest,
     ResultDestination,
@@ -357,17 +361,23 @@ class Query:
 
         try:
             signed_urls = []
+            headers = []
+            expiries = []
             downloaded_files = []
 
             download_result = await download_files_task
             if signed_urls_only:
-                signed_urls = download_result
+                signed_urls = [_.url for _ in download_result[0]]
+                headers = [_.headers for _ in download_result[0]]
+                expiries = [_.expiration for _ in download_result[0]]
                 if cached_record:
-                    cached_record.signed_url_list = download_result
+                    cached_record.signed_url_list = signed_urls
+                    cached_record.headers = headers
+                    cached_record.expiries = expiries
             else:
-                downloaded_files = download_result
+                downloaded_files = download_result[1]
                 if cached_record:
-                    cached_record.file_list = download_result
+                    cached_record.file_list = downloaded_files
 
             # Update the cache (if no failed files)
             if not cached_record:
@@ -377,6 +387,8 @@ class Query:
                     self.download_path.as_posix(),
                     downloaded_files,
                     signed_urls,
+                    headers,
+                    expiries,
                 )
                 if self.current_status.files_failed == 0:
                     self.cache.update_transform_status(sx_request_hash, "COMPLETE")
@@ -567,7 +579,7 @@ class Query:
         # status. This includes the minio host and credentials. We use the
         # transform id as the bucket.
         if not self.minio:
-            self.minio = MinioAdapter.for_transform(self.current_status)
+            self.minio = await get_download_adapter(self.current_status, self.servicex)
 
     async def download_files(
         self,
@@ -575,7 +587,7 @@ class Query:
         progress: ExpandableProgress,
         download_progress: TaskID,
         cached_record: Optional[TransformedResults],
-    ) -> List[str]:
+    ) -> Tuple[List[URLAccessInfo], List[str]]:
         """
         Task to monitor the list of files in the transform output's bucket. Any new files
         will be downloaded.
@@ -587,7 +599,7 @@ class Query:
         loop = asyncio.get_running_loop()
 
         async def download_file(
-            minio: MinioAdapter,
+            minio: DownloadAdapter,
             filename: str,
             progress: Progress,
             download_progress: TaskID,
@@ -604,7 +616,7 @@ class Query:
             progress.advance(task_id=download_progress, task_type="Download")
 
         async def get_signed_url(
-            minio: MinioAdapter,
+            minio: DownloadAdapter,
             filename: str,
             progress: Optional[Progress],
             download_progress: TaskID,
@@ -640,6 +652,8 @@ class Query:
                         )
                     else:
                         files = await self.minio.list_bucket()
+
+                    await self.minio.update_cache([_.filename for _ in files])
 
                     for file in files:
                         filename = file.filename
@@ -693,7 +707,10 @@ class Query:
 
         # Now just wait until all of our tasks complete
         await asyncio.gather(*download_tasks)
-        return result_uris
+        if signed_urls_only:
+            return (result_uris, [])
+        else:
+            return ([], result_uris)
 
     async def as_files_async(
         self,

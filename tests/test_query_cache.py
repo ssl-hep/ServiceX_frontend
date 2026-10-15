@@ -26,9 +26,11 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import os
+import sys
 import tempfile
 import json
 import pytest
+from pathlib import Path
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
@@ -86,6 +88,8 @@ def test_cache_transform(transform_request, completed_status):
                 data_dir="/foo/bar",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -112,6 +116,8 @@ def test_cache_transform(transform_request, completed_status):
                 data_dir="/foo/baz",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -125,6 +131,8 @@ def test_cache_transform(transform_request, completed_status):
                 data_dir="/foo/baz",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             ).model_dump_json()
         )
         record["hash"] = transform_request.compute_hash()
@@ -164,6 +172,8 @@ def test_record_delete(transform_request, completed_status):
                 data_dir="/foo/bar",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
         transform_request.did = "rucio://foo.baz"
@@ -176,6 +186,8 @@ def test_record_delete(transform_request, completed_status):
                 data_dir="/foo/baz",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
         assert len(cache.cached_queries()) == 2
@@ -196,6 +208,8 @@ def test_delete_transform_by_hash(transform_request, completed_status):
                 data_dir="/foo/bar",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -222,6 +236,8 @@ def test_contains_hash(transform_request, completed_status):
                 data_dir="/foo/bar",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -270,6 +286,8 @@ def test_get_transform_request_status(transform_request, completed_status):
                 data_dir="/foo/bar",
                 file_list=file_uris,
                 signed_urls=[],
+                headers=[{}] * len(file_uris),
+                expiries=[sys.maxsize] * len(file_uris),
             )
         )
 
@@ -302,3 +320,23 @@ def test_cache_queries_in_state(transform_request):
         )
 
         cache.close()
+
+
+def test_patch_old_db():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.close()
+        with open(Path(temp_dir) / ".servicex" / "db.json", "w") as f:
+            f.write(
+                """{"_default": {"207": {"hash": "hash", "title": "123456", "codegen": "uproot","""
+                """ "result_format": "root-file", "request_id": "123456", "status": "COMPLETE","""
+                """ "submit_time": "2026-02-04T17:53:56.642131Z", "data_dir": "123456","""
+                """ "file_list": ["a"], "signed_url_list": [], "files": 1,"""
+                """ "log_url": "https://testing/"}}} """
+            )
+        cache = QueryCache(config)
+        transform = cache.get_transform_by_hash("hash")
+        assert transform is not None
+        assert transform.headers == [{}]
+        assert transform.expiries == [sys.maxsize]
