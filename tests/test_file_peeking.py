@@ -120,6 +120,18 @@ def raw_rntuple_file(tmp_path):
     return test_path
 
 
+@pytest.fixture
+def raw_file_with_histogram(tmp_path):
+    """A ROOT file with a TTree and a non-tree object (histogram) that has no arrays."""
+    test_path = str(tmp_path / "test_histogram.root")
+    with uproot.create(test_path) as file:
+        file.mktree("events", {"x": np.float64})
+        file["events"].extend({"x": np.ones(3)})
+        file["h_pt"] = np.histogram(np.arange(10.0), bins=5)
+
+    return test_path
+
+
 # ---------------------------------------------------------------------------
 # run_query
 # ---------------------------------------------------------------------------
@@ -156,6 +168,17 @@ def test_run_query_rntuple(raw_rntuple_file):
     assert len(events) == 1
     assert events["el_pt"][0].tolist() == [10.0, 20.0]
     assert events["n_el"][0] == 2
+
+
+def test_run_query_non_tree_object(raw_file_with_histogram):
+    trees = file_peeking.run_query(raw_file_with_histogram)
+
+    assert set(trees.keys()) == {"events", "h_pt"}
+    assert set(trees["events"].fields) == {"x", "_classname"}
+
+    # Objects without arrays are kept as a stub holding only their classname
+    assert trees["h_pt"].fields == ["_classname"]
+    assert trees["h_pt"]["_classname"][0] == "TH1D"
 
 
 # ---------------------------------------------------------------------------
@@ -286,6 +309,19 @@ def test_show_structure_rntuple(raw_rntuple_file, tmp_path):
     assert "_classname" not in output_str
 
 
+def test_show_structure_non_tree_object(raw_file_with_histogram, tmp_path):
+    out_path = _write_delivered(raw_file_with_histogram, tmp_path / "delivered_h.root")
+    output_str = file_peeking._show_structure({"hist_sample": [out_path]})
+
+    # The histogram is listed by name and classname, with no columns
+    assert "\U0001f333  h_pt: TH1D" in output_str
+    hist_block = output_str.split("h_pt: TH1D")[1]
+    assert "Columns" not in hist_block.split("\U0001f333")[0]
+
+    assert "\U0001f333  events: TTree" in output_str
+    assert "   │   ├── x:  float64" in output_str
+
+
 # ---------------------------------------------------------------------------
 # _get_arrays
 # ---------------------------------------------------------------------------
@@ -317,6 +353,15 @@ def test_get_arrays_multiple_samples(deliver_like_multi):
         "_classname",
     }
     assert set(arrays["sample_B"]["jets"].fields) == {"jet_pt", "_classname"}
+
+
+def test_get_arrays_skips_non_tree_object(raw_file_with_histogram, tmp_path):
+    out_path = _write_delivered(raw_file_with_histogram, tmp_path / "delivered_h.root")
+    arrays = file_peeking._get_arrays({"hist_sample": [out_path]})
+
+    # Objects without arrays (histogram stub) are dropped
+    assert set(arrays.keys()) == {"events"}
+    assert set(arrays["events"].fields) == {"x", "_classname"}
 
 
 # ---------------------------------------------------------------------------
