@@ -49,7 +49,8 @@ dependencies = [
     "make-it-sync",  # compatible versions controlled through func_adl
     "ruamel.yaml>=0.18.7",
     "filelock>=3.12.0",
-    "tenacity >= 9.0.0"
+    "tenacity >= 9.0.0",
+    "awkward>=2.6",
 ]
 
 [project.scripts]
@@ -81,6 +82,7 @@ test = [
     "pytest-aioboto3>=0.6.0",
     "types-aiobotocore>=2.7.0,<=2.26.0",
     "coverage>=7.0.0",
+    "uproot>=5.0.0",
 ]
 docs = [
     "sphinx>=7.0.1, <8.2.0",
