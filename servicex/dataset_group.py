@@ -65,10 +65,10 @@ class DatasetGroup:
         provided_progress: Optional[Progress] = None,
         return_exceptions: bool = False,
         overall_progress: bool = False,
-    ) -> List[Union[TransformedResults, BaseException]]:
-        # preflight auth
+    ) -> List[Union[TransformedResults, Exception]]:
         if self.datasets:
             await self.datasets[0].servicex._get_authorization()
+            await self.datasets[0].servicex.get_code_generators_async()
         with ExpandableProgress(
             display_progress, provided_progress, overall_progress=overall_progress
         ) as progress:
@@ -80,9 +80,13 @@ class DatasetGroup:
                 )
                 for d in self.datasets
             ]
-            return await asyncio.gather(
-                *self.tasks, return_exceptions=return_exceptions
+            progress.disable_refresh()
+            gather_future = asyncio.ensure_future(
+                asyncio.gather(*self.tasks, return_exceptions=return_exceptions)
             )
+            await asyncio.sleep(0)
+            progress.enable_refresh()
+            return await gather_future
 
     as_signed_urls = make_sync(as_signed_urls_async)
 
@@ -92,10 +96,10 @@ class DatasetGroup:
         provided_progress: Optional[Progress] = None,
         return_exceptions: bool = False,
         overall_progress: bool = False,
-    ) -> List[Union[TransformedResults, BaseException]]:
-        # preflight auth
+    ) -> List[Union[TransformedResults, Exception]]:
         if self.datasets:
             await self.datasets[0].servicex._get_authorization()
+            await self.datasets[0].servicex.get_code_generators_async()
         with ExpandableProgress(
             display_progress, provided_progress, overall_progress=overall_progress
         ) as progress:
@@ -105,8 +109,12 @@ class DatasetGroup:
                 )
                 for d in self.datasets
             ]
-            return await asyncio.gather(
-                *self.tasks, return_exceptions=return_exceptions
+            progress.disable_refresh()
+            gather_future = asyncio.ensure_future(
+                asyncio.gather(*self.tasks, return_exceptions=return_exceptions)
             )
+            await asyncio.sleep(0)
+            progress.enable_refresh()
+            return await gather_future
 
     as_files = make_sync(as_files_async)

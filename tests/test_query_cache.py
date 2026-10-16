@@ -117,7 +117,8 @@ def test_cache_transform(transform_request, completed_status):
 
         assert len(cache.cached_queries()) == 1
 
-        # forcefully create a duplicate record
+        # forcefully create a duplicate record directly in the DB (bypasses _invalidate),
+        # so explicitly clear the in-memory cache to reflect the new state
         record = json.loads(
             cache.transformed_results(
                 transform=transform_request,
@@ -130,6 +131,7 @@ def test_cache_transform(transform_request, completed_status):
         record["hash"] = transform_request.compute_hash()
         record["status"] = "COMPLETE"
         cache.db.insert(record)
+        cache._invalidate()
 
         with pytest.raises(CacheException):
             cache.get_transform_by_hash(transform_request.compute_hash())
@@ -285,6 +287,60 @@ def test_get_transform_request_status(transform_request, completed_status):
         cache.close()
 
 
+def test_mem_cache_reads_db_once(transform_request, completed_status, mocker):
+    """Multiple consecutive reads should only parse the DB file once."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+        # Spy on the underlying db.all() call
+        spy = mocker.spy(cache.db, "all")
+
+        cache.get_transform_by_hash(transform_request.compute_hash())
+        cache.get_transform_by_hash(transform_request.compute_hash())
+        cache.contains_hash(transform_request.compute_hash())
+        cache.cached_queries()
+
+        # Four reads but db.all() should only have been called once
+        assert spy.call_count == 1
+        cache.close()
+
+
+def test_mem_cache_invalidated_on_write(transform_request, completed_status, mocker):
+    """Writing a record invalidates the in-memory cache so the next read reloads."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.cache_transform(
+            cache.transformed_results(
+                transform=transform_request,
+                completed_status=completed_status,
+                data_dir="/foo/bar",
+                file_list=file_uris,
+                signed_urls=[],
+            )
+        )
+        spy = mocker.spy(cache.db, "all")
+
+        # First read populates the cache
+        cache.get_transform_by_hash(transform_request.compute_hash())
+        assert spy.call_count == 1
+
+        # A write should invalidate, so the next read hits the DB again
+        cache.cache_submitted_transform(transform_request, "new-request-id")
+        cache.get_transform_by_hash(transform_request.compute_hash())
+        assert spy.call_count == 2
+        cache.close()
+
+
 def test_cache_queries_in_state(transform_request):
     with tempfile.TemporaryDirectory() as temp_dir:
         config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
@@ -301,4 +357,47 @@ def test_cache_queries_in_state(transform_request):
             is True
         )
 
+        cache.close()
+
+
+def test_update_record(transform_request, completed_status):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        original = cache.transformed_results(
+            transform=transform_request,
+            completed_status=completed_status,
+            data_dir="/foo/bar",
+            file_list=file_uris,
+            signed_urls=[],
+        )
+        cache.cache_transform(original)
+
+        # Populate the in-memory cache
+        assert cache.get_transform_by_hash(transform_request.compute_hash())
+
+        updated = original.model_copy(update={"data_dir": "/foo/updated"})
+        cache.update_record(updated)
+
+        # Cache should be invalidated; next read reflects the update
+        result = cache.get_transform_by_hash(transform_request.compute_hash())
+        assert result is not None
+        assert result.data_dir == "/foo/updated"
+        cache.close()
+
+
+def test_update_transform_request_id(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        hash_value = transform_request.compute_hash()
+        cache.cache_submitted_transform(transform_request, "old-request-id")
+
+        # Populate the in-memory cache
+        assert cache.get_transform_request_id(hash_value) == "old-request-id"
+
+        cache.update_transform_request_id(hash_value, "new-request-id")
+
+        # Cache should be invalidated; next read reflects the new request id
+        assert cache.get_transform_request_id(hash_value) == "new-request-id"
         cache.close()

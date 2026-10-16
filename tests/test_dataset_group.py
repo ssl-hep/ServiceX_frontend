@@ -48,6 +48,7 @@ async def test_as_signed_urls(mocker, transformed_result):
     ds1 = mocker.Mock()
     ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
     ds1.servicex._get_authorization = AsyncMock()
+    ds1.servicex.get_code_generators_async = AsyncMock(return_value={})
 
     ds2 = mocker.Mock()
     ds2.as_signed_urls_async = AsyncMock(
@@ -67,6 +68,7 @@ async def test_as_files(mocker, transformed_result):
     ds1 = mocker.Mock()
     ds1.as_files_async = AsyncMock(return_value=transformed_result)
     ds1.servicex._get_authorization = AsyncMock()
+    ds1.servicex.get_code_generators_async = AsyncMock(return_value={})
 
     ds2 = mocker.Mock()
     ds2.as_files_async = AsyncMock(
@@ -86,6 +88,7 @@ async def test_failure(mocker, transformed_result):
     ds1 = mocker.Mock()
     ds1.as_signed_urls_async = AsyncMock(return_value=transformed_result)
     ds1.servicex._get_authorization = AsyncMock()
+    ds1.servicex.get_code_generators_async = AsyncMock(return_value={})
 
     ds2 = mocker.Mock()
     ds2.as_signed_urls_async = AsyncMock(side_effect=ServiceXException("dummy"))
