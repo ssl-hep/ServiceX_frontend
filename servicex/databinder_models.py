@@ -34,6 +34,7 @@ from pydantic import (
     field_validator,
 )
 import logging
+import warnings
 
 from servicex.dataset_identifier import (
     DataSetIdentifier,
@@ -51,7 +52,11 @@ class Sample(DocStringBaseModel):
     Represents a single transform request within a larger submission.
     """
 
-    model_config = {"use_attribute_docstrings": True}
+    model_config = {
+        "use_attribute_docstrings": True,
+        "arbitrary_types_allowed": True,
+        "extra": "forbid",
+    }
 
     Name: str
     """
@@ -98,8 +103,6 @@ class Sample(DocStringBaseModel):
     XRootD file(s) associated with the sample.
             Deprecated: Use 'Dataset' instead.
     """
-
-    model_config = {"arbitrary_types_allowed": True}
 
     @property
     def dataset_identifier(self) -> DataSetIdentifier:
@@ -184,7 +187,10 @@ class General(DocStringBaseModel):
     Represents a group of samples to be transformed together.
     """
 
-    model_config = {"use_attribute_docstrings": True}
+    model_config = {
+        "use_attribute_docstrings": True,
+        "extra": "forbid",
+    }
 
     class OutputFormatEnum(str, Enum):
         """
@@ -275,7 +281,10 @@ class ServiceXSpec(DocStringBaseModel):
     ServiceX Submission Specification - pass this into the ServiceX `deliver` function
     """
 
-    model_config = {"use_attribute_docstrings": True}
+    model_config = {
+        "use_attribute_docstrings": True,
+        "extra": "forbid",
+    }
 
     General: _General = General()
     """
@@ -287,9 +296,14 @@ class ServiceXSpec(DocStringBaseModel):
     List of samples to be transformed
     """
 
-    Definition: Optional[List] = None
+    Definitions: Optional[List] = None
     """
     Any reusable definitions that are needed for the transform request
+    """
+
+    Definition: Optional[List] = None
+    """
+    [Deprecated] Any reusable definitions that are needed for the transform request
     """
 
     @field_validator("Sample", mode="after")
@@ -301,3 +315,15 @@ class ServiceXSpec(DocStringBaseModel):
                 raise RuntimeError(f"Duplicate samples detected: {sample.Name}")
             hash_set.add(sample.hash)
         return v
+
+    @model_validator(mode="after")
+    def deprecated_definition(self):
+        if "Definition" in self.model_fields_set:
+            warnings.warn(
+                "'Definition' in configuration file deprecated: "
+                "Use 'Definitions' instead of 'Definition'",
+                category=DeprecationWarning,
+            )
+            if "Definitions" not in self.model_fields_set:
+                self.Definitions = self.Definition
+        return self

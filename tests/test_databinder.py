@@ -91,6 +91,71 @@ def test_load_config():
     assert new_config.Sample[0].Query == "a"
 
 
+def test_reject_bad_fields():
+    from servicex.servicex_client import _load_ServiceXSpec
+
+    config = {
+        "General": {
+            "CodeGen": "python",
+            "Delivery": "LocalCache",
+        },
+        "Sample": [
+            {"Name": "sampleA", "RucioDID": "user.kchoi:sampleA", "Query": "a"},
+            {
+                "Name": "sampleB",
+                "XRootDFiles": "root://a.root",
+                "Query": "a",
+            },
+        ],
+    }
+    with pytest.raises(ValidationError) as e:
+        ServiceXSpec.model_validate(config)
+        assert e.type == "extra_forbidden"
+
+    with pytest.raises(ValueError) as e:
+        _load_ServiceXSpec(config)
+        assert e.match("Key CodeGen is not permitted in block General")
+
+    config["General"] = {
+        "Codegen": "python",
+        "Delivery": "LocalCache",
+    }
+    config["Sample"].append({"Broken": "Item"})
+    with pytest.raises(ValidationError) as e:
+        ServiceXSpec.model_validate(config)
+        assert e.type == "value_error"
+
+    with pytest.raises(ValueError) as e:
+        _load_ServiceXSpec(config)
+        assert e.match(
+            "Value error, Must specify one of Dataset, XRootDFiles, "
+            "or RucioDID. Input was {'Broken': 'Item'}"
+        )
+
+    config["Sample"].pop()
+    config["Random"] = []
+    with pytest.raises(ValidationError) as e:
+        ServiceXSpec.model_validate(config)
+        assert e.type == "extra_forbidden"
+
+    with pytest.raises(ValueError) as e:
+        _load_ServiceXSpec(config)
+        assert e.match("Key Random is not permitted at top level")
+
+    del config["Random"]
+    config["General"] = []
+    with pytest.raises(ValidationError) as e:
+        ServiceXSpec.model_validate(config)
+        assert e.type == "model_type"
+
+    with pytest.raises(ValueError) as e:
+        _load_ServiceXSpec(config)
+        assert e.match(
+            "Wrong type provided for 'General': Input should "
+            "be a valid dictionary or instance of General"
+        )
+
+
 def test_single_root_file():
     spec = ServiceXSpec.model_validate(
         basic_spec(
@@ -278,7 +343,7 @@ def test_cernopendata():
                 {
                     "Name": "sampleA",
                     "Dataset": dataset.CERNOpenData(1507),
-                    "Function": "a",
+                    "Query": "a",
                 }
             ]
         }
@@ -293,7 +358,7 @@ def test_xrootd():
                 {
                     "Name": "sampleA",
                     "Dataset": dataset.XRootD("root://blablabla/*/?.root"),
-                    "Function": "a",
+                    "Query": "a",
                 }
             ]
         }
@@ -643,6 +708,39 @@ Sample:
         f1.flush()
         f2.flush()
         _load_ServiceXSpec(path2)
+
+
+# @pytest.mark.filterwarnings("error")
+def test_yaml_include_deprecated(tmp_path):
+    from servicex.servicex_client import _load_ServiceXSpec
+
+    # Create two files, one has definitions for the other and is included by it
+    with (
+        open(tmp_path / "definitions.yaml", "w") as f1,
+        open(path2 := (tmp_path / "parent.yaml"), "w") as f2,
+    ):
+        f1.write("""
+- &DEF_query !PythonFunction |
+        def run_query(input_filenames=None):
+            return []
+""")
+        f2.write("""
+Definition:
+    !include definitions.yaml
+
+General:
+  OutputFormat: root-ttree
+  Delivery: LocalCache
+
+Sample:
+  - Name: ttH
+    Dataset: !Rucio user.kchoi:user.kchoi.fcnc_tHq_ML.ttH.v11
+    Query: *DEF_query
+""")
+        f1.flush()
+        f2.flush()
+        with pytest.deprecated_call(match="Use 'Definitions' instead of 'Definition'"):
+            _load_ServiceXSpec(path2)
 
 
 def test_funcadl_query(transformed_result, network_patches, with_event_loop):
