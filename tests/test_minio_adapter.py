@@ -30,7 +30,7 @@ import urllib.parse
 import pytest
 from pytest_asyncio import fixture
 
-from servicex.minio_adapter import MinioAdapter
+from servicex.download_adapter import MinioAdapter
 from servicex.models import ResultFile
 from pathlib import Path
 
@@ -81,7 +81,7 @@ def session(mocker):
 
 @pytest.mark.asyncio
 async def test_initialize_from_status(completed_status):
-    minio = MinioAdapter.for_transform(completed_status)
+    minio = MinioAdapter.for_transform(completed_status, None)
     assert minio.endpoint_host == "http://minio.org:9000"
     assert minio.minio._session._credentials.access_key == "miniouser"
     assert minio.minio._session._credentials.secret_key == "secret"
@@ -193,7 +193,7 @@ async def test_download_repeat(minio_adapter, populate_bucket, tmp_path):
 @pytest.mark.asyncio
 async def test_get_signed_url(minio_adapter, moto_services, populate_bucket):
     result = await minio_adapter.get_signed_url("test.txt")
-    assert result.startswith(moto_services["s3"])
+    assert result.url.startswith(moto_services["s3"])
 
 
 @pytest.mark.parametrize("populate_bucket", ["test.txt"], indirect=True)
