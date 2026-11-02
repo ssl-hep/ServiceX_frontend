@@ -101,7 +101,9 @@ class DatasetGroup:
         ) as progress:
             self.tasks = [
                 d.as_files_async(
-                    display_progress=display_progress, provided_progress=progress
+                    display_progress=display_progress,
+                    provided_progress=progress,
+                    dataset_group=True,
                 )
                 for d in self.datasets
             ]
