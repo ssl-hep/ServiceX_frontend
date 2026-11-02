@@ -29,6 +29,7 @@ import logging
 import shutil
 from typing import Optional, List, TypeVar, Any, Mapping, Union, cast
 from pathlib import Path
+from pydantic import ValidationError
 
 from servicex.configuration import Configuration
 from servicex.models import (
@@ -126,14 +127,40 @@ def _async_execute_and_wait(coro: Coroutine) -> Any:
     return asyncio.run(coro)
 
 
+def _spec_constructor(config: Mapping[str, Any]) -> ServiceXSpec:
+    try:
+        rconfig = ServiceXSpec(**config)
+    except ValidationError as e:
+        e0 = e.errors()[0]
+        if e0["type"] == "extra_forbidden":
+            if len(e0["loc"]) >= 2:
+                raise ValueError(
+                    f"Key {e0['loc'][-1]} is not permitted " f"in block {e0['loc'][-2]}"
+                ) from e
+            elif len(e0["loc"]) > 0:
+                raise ValueError(
+                    f"Key {e0['loc'][-1]} is not permitted " f"at top level"
+                ) from e
+        elif e0["type"] == "value_error":
+            raise ValueError(f"{e0['msg']} Problematic input was {e0['input']}") from e
+        elif e0["type"] == "model_type":
+            raise ValueError(
+                f"Wrong type provided for '{e0['loc'][0]}': {e0['msg']}"
+            ) from e
+        # We don't have a special treatment for this exception
+        raise e  # pragma: no cover
+    return rconfig
+
+
 def _load_ServiceXSpec(
     config: Union[ServiceXSpec, Mapping[str, Any], str, Path],
 ) -> ServiceXSpec:
     if isinstance(config, Mapping):
         logger.debug("Config from dictionary")
-        config = ServiceXSpec(**config)
+        rconfig = _spec_constructor(config)
     elif isinstance(config, ServiceXSpec):
         logger.debug("Config from ServiceXSpec")
+        rconfig = config
     elif isinstance(config, str) or isinstance(config, Path):
         logger.debug("Config from file")
 
@@ -156,11 +183,11 @@ def _load_ServiceXSpec(
             yaml.register_class(_.load())
 
         conf = yaml.load(file_path)
-        config = ServiceXSpec(**conf)
+        rconfig = _spec_constructor(conf)
     else:
         raise TypeError(f"Unknown config type: {type(config)}")
 
-    return config
+    return rconfig
 
 
 async def _build_datasets(
