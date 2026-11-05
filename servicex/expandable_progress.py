@@ -231,7 +231,36 @@ class ExpandableProgress:
 
 
 class TranformStatusProgress(Progress):
+    """
+    A rich Progress display that stays usable when a request has many samples and
+    can show individual transforms as failed.
+
+    Rich's defaults assume a handful of bars, but ServiceX adds two per sample and
+    every draw covers all of them. Left alone, a request with hundreds of samples
+    can spend minutes drawing bars before any transform reaches the server, because
+    drawing blocks the event loop that submits them.
+    """
+
+    def __init__(self, *args, refresh_per_second: float = 2, **kwargs):
+        # Prevents the background refresh thread from competing with the event loop.
+        # At rich's default of 10 Hz, a slow draw leaves the thread busy most of the
+        # time, delaying network requests. Status only changes every few seconds, so
+        # a slower rate costs little beyond choppier animation on pulsing bars.
+        super().__init__(*args, refresh_per_second=refresh_per_second, **kwargs)
+
+    def refresh(self) -> None:
+        # Prevents a full redraw every time a bar is added. Rich calls this from
+        # add_task, so adding N bars draws N times, and the total cost grows with the
+        # square of the bar count. It is safe to skip when auto-refresh is on: the
+        # background thread draws the latest state shortly after, and stopping the
+        # display draws the final state. Without that thread, this is the only way
+        # to draw, so the call must go through.
+        if not self.live.auto_refresh:
+            super().refresh()
+
     def get_renderables(self):
+        # Rich uses one set of columns per table, so each task gets its own table to
+        # let a failed transform show a red bar while the others stay green.
         for task in self.tasks:
             if task.fields.get("bar") == "failure":
                 self.columns = BROKEN_STYLE
