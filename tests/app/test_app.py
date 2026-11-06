@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -88,6 +89,8 @@ def test_cache_list(script_runner, tmp_path) -> None:
         data_dir=str(tmp_path),
         file_list=[str(dummy_file)],
         signed_url_list=[],
+        headers=[{"a": "b"}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -131,6 +134,8 @@ def test_cache_list_size(script_runner, tmp_path) -> None:
         data_dir=str(tmp_path),
         file_list=[str(dummy_file)],
         signed_url_list=[],
+        headers=[{"a": "b"}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -162,6 +167,8 @@ def test_cache_list_without_size(script_runner, tmp_path) -> None:
         data_dir=str(tmp_path),
         file_list=[str(dummy_file)],
         signed_url_list=[],
+        headers=[{"a": "b"}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -192,6 +199,8 @@ def test_cache_list_size_gb(script_runner, tmp_path) -> None:
         data_dir=str(tmp_path),
         file_list=[str(dummy_file)],
         signed_url_list=[],
+        headers=[{"a": "b"}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -228,6 +237,8 @@ def test_cache_list_size_tb(script_runner, tmp_path) -> None:
         data_dir=str(tmp_path),
         file_list=[str(dummy_file)],
         signed_url_list=[],
+        headers=[{"a": "b"}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )
@@ -290,6 +301,8 @@ def test_cache_delete(script_runner, tmp_path) -> None:
         data_dir=str(tmp_path),
         file_list=[str(dummy_file)],
         signed_url_list=[],
+        headers=[{"a": "b"}],
+        expiries=[sys.maxsize],
         files=1,
         result_format=ResultFormat.parquet,
     )

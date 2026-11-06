@@ -45,7 +45,7 @@ from servicex.app.cli_options import (
     config_file_option,
     cache_dir_option,
 )
-from servicex.minio_adapter import MinioAdapter
+from servicex.download_adapter import get_download_adapter
 from servicex.models import Status, ResultFile
 from servicex.servicex_client import ServiceXClient
 
@@ -124,12 +124,13 @@ def files(
     List the files that were produced by a transform.
     """
 
+    sx = ServiceXClient(backend=backend, config_path=config_path, cache_dir=cache_dir)
+
     async def list_files(sx: ServiceXClient, transform_id: str) -> List[ResultFile]:
         transform = await sx.get_transform_status_async(transform_id)
-        minio = MinioAdapter.for_transform(transform)
+        minio = await get_download_adapter(transform, sx.servicex)
         return await minio.list_bucket()
 
-    sx = ServiceXClient(backend=backend, config_path=config_path, cache_dir=cache_dir)
     result_files = asyncio.run(list_files(sx, transform_id))
     table = pipeable_table(title=f"Files from {transform_id}")
     table.add_column("filename")
@@ -167,7 +168,7 @@ def download(
             return p
 
         transform = await sx.get_transform_status_async(transform_id)
-        minio = MinioAdapter.for_transform(transform)
+        minio = await get_download_adapter(transform, sx.servicex)
         file_list = await minio.list_bucket()
         progress.update(download_progress, total=len(file_list))
         progress.start_task(download_progress)

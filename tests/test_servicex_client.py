@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
 from pathlib import Path
+import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -113,6 +114,8 @@ def transformed_results() -> TransformedResults:
             "https://example.com/signed-url-1",
             "https://example.com/signed-url-2",
         ],
+        "headers": [{}, {}],
+        "expiries": [sys.maxsize, sys.maxsize],
         "files": 2,
         "result_format": ResultFormat.parquet,
         "log_url": "https://logs.servicex.com/request-789",
@@ -169,7 +172,7 @@ async def test_deliver_async_invalid_delivery_config():
     # Mock the config loading to return invalid delivery type
     with patch("servicex.servicex_client._load_ServiceXSpec") as mock_load_spec:
         with patch("servicex.servicex_client._build_datasets") as mock_build_datasets:
-            with patch("servicex.minio_adapter.init_s3_config"):
+            with patch("servicex.download_adapter.init_download_concurrency"):
                 mock_config = MagicMock()
                 mock_config.General.Delivery = (
                     "INVALID_DELIVERY"  # Invalid delivery type

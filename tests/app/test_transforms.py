@@ -167,10 +167,13 @@ def test_transforms_list_filters(
 
 def test_list_files(script_runner, transform_status_record, result_files):
     with patch("servicex.app.transforms.ServiceXClient") as mock_servicex:
-        with patch("servicex.app.transforms.MinioAdapter") as mock_minio:
+        with patch("servicex.download_adapter.MinioAdapter") as mock_minio:
             mock_transform_status = AsyncMock(return_value=transform_status_record)
             mock_servicex.return_value.get_transform_status_async = (
                 mock_transform_status
+            )
+            mock_servicex.return_value.servicex.get_servicex_capabilities = AsyncMock(
+                return_value=[]
             )
 
             mock_minio_adapter = Mock()
@@ -195,16 +198,21 @@ def test_list_files(script_runner, transform_status_record, result_files):
             assert result_row[2] == "parquet"
 
             mock_transform_status.assert_called_once_with("test-request-123")
-            mock_minio.for_transform.assert_called_once_with(transform_status_record)
+            mock_minio.for_transform.assert_called_once_with(
+                transform_status_record, mock_servicex.return_value.servicex
+            )
             mock_minio_adapter.list_bucket.assert_called_once()
 
 
 def test_download_files(script_runner, transform_status_record, result_files):
     with patch("servicex.app.transforms.ServiceXClient") as mock_servicex:
-        with patch("servicex.app.transforms.MinioAdapter") as mock_minio:
+        with patch("servicex.download_adapter.MinioAdapter") as mock_minio:
             mock_transform_status = AsyncMock(return_value=transform_status_record)
             mock_servicex.return_value.get_transform_status_async = (
                 mock_transform_status
+            )
+            mock_servicex.return_value.servicex.get_servicex_capabilities = AsyncMock(
+                return_value=[]
             )
 
             mock_minio_adapter = Mock()
@@ -229,7 +237,9 @@ def test_download_files(script_runner, transform_status_record, result_files):
             assert result_rows[1] == "/tmp/test_file.parquet"
 
             mock_transform_status.assert_called_once_with("test-request-123")
-            mock_minio.for_transform.assert_called_once_with(transform_status_record)
+            mock_minio.for_transform.assert_called_once_with(
+                transform_status_record, mock_servicex.return_value.servicex
+            )
             mock_minio_adapter.list_bucket.assert_called_once()
             assert mock_minio_adapter.download_file.call_count == 2
             assert mock_minio_adapter.download_file.mock_calls[0].args[0] == "test_file"
