@@ -31,6 +31,9 @@ import tempfile
 import json
 import pytest
 from pathlib import Path
+from unittest.mock import patch
+
+from tinydb.storages import JSONStorage
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
@@ -340,3 +343,115 @@ def test_patch_old_db():
         assert transform is not None
         assert transform.headers == [{}]
         assert transform.expiries == [sys.maxsize]
+
+
+def _two_caches(temp_dir):
+    """Two instances sharing one database, standing in for two processes."""
+    config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+    return QueryCache(config), QueryCache(config)
+
+
+def test_new_query_sees_write_from_other_process(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        other = transform_request.model_copy(update={"did": "rucio://other"})
+        hash_value = transform_request.compute_hash()
+
+        # Reading a different hash first fills the memo without caching this query
+        assert reader.is_transform_request_submitted(other.compute_hash()) is False
+        writer.cache_submitted_transform(transform_request, "request-id")
+
+        assert reader.is_transform_request_submitted(hash_value) is True
+        writer.close()
+        reader.close()
+
+
+def test_repeated_query_sees_write_from_other_process(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        hash_value = transform_request.compute_hash()
+
+        assert reader.is_transform_request_submitted(hash_value) is False
+        writer.cache_submitted_transform(transform_request, "request-id")
+
+        assert reader.is_transform_request_submitted(hash_value) is True
+        writer.close()
+        reader.close()
+
+
+def test_repeated_query_sees_delete_from_other_process(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        hash_value = transform_request.compute_hash()
+
+        writer.cache_submitted_transform(transform_request, "request-id")
+        assert reader.is_transform_request_submitted(hash_value) is True
+        writer.delete_record_by_hash(hash_value)
+
+        assert reader.is_transform_request_submitted(hash_value) is False
+        writer.close()
+        reader.close()
+
+
+def test_repeated_reads_parse_file_once(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        hash_value = transform_request.compute_hash()
+        writer.cache_submitted_transform(transform_request, "request-id")
+
+        with patch("tinydb.storages.json.load", wraps=json.load) as parse:
+            for _ in range(5):
+                assert reader.is_transform_request_submitted(hash_value) is True
+                assert reader.contains_hash(hash_value) is False
+            assert parse.call_count == 1
+
+            # This instance's own writes and later reads don't need a parse either
+            reader.update_transform_status(hash_value, "COMPLETE")
+            assert reader.is_transform_request_submitted(hash_value) is False
+            assert parse.call_count == 1
+        writer.close()
+        reader.close()
+
+
+def test_memo_matches_file_after_write(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+
+        cache.cache_submitted_transform(transform_request, "request-id")
+
+        with open(Path(temp_dir) / ".servicex" / "db.json") as f:
+            on_disk = json.load(f)
+        assert cache.db.storage._memo == on_disk
+        record = next(iter(cache.db.storage._memo["_default"].values()))
+        assert type(record["result_format"]) is str
+        cache.close()
+
+
+def test_failed_write_does_not_change_later_reads(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        hash_value = transform_request.compute_hash()
+        cache.cache_submitted_transform(transform_request, "request-id")
+
+        with patch.object(JSONStorage, "write", side_effect=OSError("disk full")):
+            with pytest.raises(OSError):
+                cache.update_transform_status(hash_value, "COMPLETE")
+
+        assert cache.db.storage._memo is None
+        assert cache.is_transform_request_submitted(hash_value) is True
+        cache.close()
+
+
+def test_close_clears_memo(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.cache_submitted_transform(transform_request, "request-id")
+        storage = cache.db.storage
+        assert storage._memo is not None
+
+        cache.close()
+
+        assert storage._memo is None
