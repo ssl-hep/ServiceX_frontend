@@ -25,6 +25,7 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
 import datetime
 import tempfile
 from typing import List
@@ -299,6 +300,9 @@ async def test_submit(mocker, use_s3_polling):
 
     assert result.file_list == ["file1", "file2"]
     mock_cache.cache_transform.assert_called_once()
+    # The adapter's connections are released, and a rerun would get a new one
+    mock_minio.close.assert_awaited_once()
+    assert datasource.minio is None
 
 
 @pytest.mark.asyncio
@@ -637,6 +641,8 @@ async def test_submit_cancel(mocker):
                 signed_urls_only=False, expandable_progress=progress
             )
     mock_cache.cache_transform.assert_not_called()
+    # A transform that really failed is forgotten, so a rerun submits it again
+    mock_cache.delete_record_by_request_id.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -679,6 +685,8 @@ async def test_submit_fatal(mocker):
                 signed_urls_only=False, expandable_progress=progress
             )
     mock_cache.cache_transform.assert_not_called()
+    # A transform that really failed is forgotten, so a rerun submits it again
+    mock_cache.delete_record_by_request_id.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -1033,3 +1041,209 @@ async def test_submit_chain(mocker, httpserver):
 
     assert result.file_list == ["file1", "file2"]
     mock_cache.cache_transform.assert_called_once()
+
+
+async def _finishes_within(coroutine, seconds=10):
+    """Run coroutine and return its task, failing the test if it is still running
+    after the given time. asyncio.wait_for is not enough here, because
+    submit_and_download turns cancellation into the transform's own exception."""
+    task = asyncio.ensure_future(coroutine)
+    done, _ = await asyncio.wait({task}, timeout=seconds)
+    if not done:
+        task.cancel()
+        pytest.fail(f"request still running after {seconds} s")
+    return task
+
+
+def _query_whose_status_poll_fails(
+    mocker, mock_minio, fail_if_incomplete, fail_after=None, cache=None
+):
+    """A query whose second status poll raises, as when the process runs out of
+    file descriptors, so the transform never reports a final status. If
+    fail_after is given, that poll waits for it first. Uses a mock cache unless
+    one is given."""
+    polls = 0
+
+    async def get_transform_status(*args, **kwargs):
+        nonlocal polls
+        polls += 1
+        if polls == 1:
+            return transform_status2
+        if fail_after is not None:
+            await fail_after.wait()
+        raise OSError(24, "Too many open files")
+
+    servicex = _sx_mock()
+    servicex.submit_transform = AsyncMock(return_value="123-456-789")
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+    servicex.get_transformation_results = AsyncMock(
+        return_value=[
+            ServiceXFile(
+                filename="file1",
+                total_bytes=100,
+                created_at=datetime.datetime.now(datetime.timezone.utc),
+            )
+        ]
+    )
+    servicex.get_transform_status = AsyncMock(side_effect=get_transform_status)
+    mocker.patch(
+        "servicex.download_adapter.MinioAdapter.for_transform", return_value=mock_minio
+    )
+
+    if cache is None:
+        cache = mocker.MagicMock(QueryCache)
+        cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+        cache.is_transform_request_submitted = mocker.MagicMock(return_value=False)
+        cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
+
+    datasource = Query(
+        dataset_identifier=FileListDataset("/foo/bar/baz.root"),
+        title="ServiceX Client",
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=cache,
+        config=Configuration(api_endpoints=[]),
+        servicex_polling_interval=0.01,
+        minio_polling_interval=0.01,
+        fail_if_incomplete=fail_if_incomplete,
+    )
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+    datasource.result_format = ResultFormat.parquet
+    return datasource
+
+
+@pytest.mark.parametrize("fail_if_incomplete", [True, False])
+@pytest.mark.asyncio
+async def test_status_poll_failure_ends_request(mocker, fail_if_incomplete):
+    mock_minio = AsyncMock()
+    mock_minio.download_file = AsyncMock(return_value=PurePath("file1"))
+    datasource = _query_whose_status_poll_fails(mocker, mock_minio, fail_if_incomplete)
+
+    with ExpandableProgress(display_progress=False) as progress:
+        with pytest.raises(OSError, match="Too many open files"):
+            # Before the fix this waited forever for a final status
+            task = await _finishes_within(
+                datasource.submit_and_download(
+                    signed_urls_only=False, expandable_progress=progress
+                )
+            )
+            task.result()
+
+    mock_minio.close.assert_awaited_once()
+    # The transform may still be running, so its record is kept for the next run
+    datasource.cache.delete_record_by_request_id.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_status_poll_failure_cancels_running_transfers(mocker):
+    started = asyncio.Event()
+    cancelled = asyncio.Event()
+
+    async def never_finishes(*args, **kwargs):
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    mock_minio = AsyncMock()
+    mock_minio.download_file = AsyncMock(side_effect=never_finishes)
+    datasource = _query_whose_status_poll_fails(
+        mocker, mock_minio, True, fail_after=started
+    )
+
+    with ExpandableProgress(display_progress=False) as progress:
+        with pytest.raises(OSError):
+            task = await _finishes_within(
+                datasource.submit_and_download(
+                    signed_urls_only=False, expandable_progress=progress
+                )
+            )
+            task.result()
+
+    # The transfer was running and was stopped before its adapter was closed
+    assert started.is_set()
+    await asyncio.wait_for(cancelled.wait(), timeout=1)
+    mock_minio.close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_rerun_resumes_transform_after_status_poll_failure(mocker, tmp_path):
+    cache = QueryCache(
+        Configuration(cache_path=str(tmp_path), api_endpoints=[])  # type: ignore
+    )
+
+    async def run(datasource):
+        with ExpandableProgress(display_progress=False) as progress:
+            with pytest.raises(OSError):
+                task = await _finishes_within(
+                    datasource.submit_and_download(
+                        signed_urls_only=False, expandable_progress=progress
+                    )
+                )
+                task.result()
+
+    first = _query_whose_status_poll_fails(mocker, AsyncMock(), True, cache=cache)
+    await run(first)
+    first.servicex.submit_transform.assert_awaited_once()
+
+    # The same request again: it should poll the transform already on the server
+    second = _query_whose_status_poll_fails(mocker, AsyncMock(), True, cache=cache)
+    await run(second)
+    second.servicex.submit_transform.assert_not_called()
+    second.servicex.get_transform_status.assert_any_await("123-456-789")
+
+
+@pytest.mark.asyncio
+async def test_failed_transform_ends_request_when_cache_cleanup_fails(mocker):
+    servicex = _sx_mock()
+    servicex.submit_transform = AsyncMock(return_value="123-456-789")
+    # The fatal status reports a completed file that the results never list, so
+    # the download loop cannot finish on its own and has to be cancelled.
+    servicex.get_transform_status = AsyncMock(
+        side_effect=[transform_status1, transform_status5]
+    )
+    servicex.get_servicex_capabilities = AsyncMock(
+        return_value=["poll_local_transformation_results"]
+    )
+    servicex.get_transformation_results = AsyncMock(return_value=[])
+    mocker.patch(
+        "servicex.download_adapter.MinioAdapter.for_transform", return_value=AsyncMock()
+    )
+
+    mock_cache = mocker.MagicMock(QueryCache)
+    mock_cache.get_transform_by_hash = mocker.MagicMock(return_value=None)
+    mock_cache.is_transform_request_submitted = mocker.MagicMock(return_value=False)
+    mock_cache.cache_path_for_transform = mocker.MagicMock(return_value=PurePath("."))
+    mock_cache.delete_record_by_request_id = mocker.MagicMock(
+        side_effect=OSError(24, "Too many open files")
+    )
+
+    datasource = Query(
+        dataset_identifier=FileListDataset("/foo/bar/baz.root"),
+        title="ServiceX Client",
+        codegen="uproot",
+        sx_adapter=servicex,
+        query_cache=mock_cache,
+        config=Configuration(api_endpoints=[]),
+        servicex_polling_interval=0.01,
+        minio_polling_interval=0.01,
+    )
+    datasource.query_string_generator = FuncADLQuery_Uproot().FromTree("nominal")
+    datasource.result_format = ResultFormat.parquet
+
+    with ExpandableProgress(display_progress=False) as progress:
+        with pytest.raises(ServiceXException):
+            # Cancelling the download must not depend on the cleanup succeeding
+            task = await _finishes_within(
+                datasource.submit_and_download(
+                    signed_urls_only=False, expandable_progress=progress
+                )
+            )
+            task.result()
+
+    # A transform that really failed is still forgotten
+    mock_cache.delete_record_by_request_id.assert_called_once_with("123-456-789")

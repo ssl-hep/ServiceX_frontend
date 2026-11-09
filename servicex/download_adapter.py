@@ -122,6 +122,9 @@ class DownloadAdapter(ABC):
     async def update_cache(self, object_names: list[str]) -> None:
         """Signal to class that it should look up the URLs for object_names"""
 
+    async def close(self) -> None:
+        """Release any network resources held by the adapter"""
+
 
 class MinioAdapter(DownloadAdapter):
     def __init__(
@@ -240,7 +243,12 @@ class HTTPDownloadAdapter(DownloadAdapter):
         servicex: ServiceXAdapter,
         bucket: str,
     ):
-        self.session = httpx.AsyncClient(timeout=_timeout)
+        # Don't keep idle connections: each sample has its own adapter, and one
+        # idle socket per sample in a large request exceeds the process's
+        # open-file limit long before the request ends.
+        self.session = httpx.AsyncClient(
+            timeout=_timeout, limits=httpx.Limits(max_keepalive_connections=0)
+        )
 
         self.servicex = servicex
         self.bucket = bucket
@@ -252,6 +260,9 @@ class HTTPDownloadAdapter(DownloadAdapter):
             servicex=servicex,
             bucket=transform.request_id,
         )
+
+    async def close(self) -> None:
+        await self.session.aclose()
 
     @retry(
         stop=stop_after_attempt(3), wait=wait_random_exponential(max=60), reraise=True
