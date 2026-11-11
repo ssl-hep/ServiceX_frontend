@@ -205,10 +205,16 @@ class Query:
                     f'ServiceX Exception for request ID {self.request_id} ({self.title})"',
                     exc_info=task.exception(),
                 )
-                if self.fail_if_incomplete:
+                transform_finished = (
+                    self.current_status is not None
+                    and self.current_status.status in DONE_STATUS
+                )
+                if download_files_task and (
+                    self.fail_if_incomplete or not transform_finished
+                ):
+                    download_files_task.cancel("Transform failed")
+                if self.fail_if_incomplete and transform_finished:
                     self.cache.delete_record_by_request_id(self.request_id)
-                    if download_files_task:
-                        download_files_task.cancel("Transform failed")
                 raise task.exception()
 
             if self.current_status.status in DONE_STATUS:
@@ -401,8 +407,19 @@ class Query:
             return transform_report
         except CancelledError:
             logger.warning("Aborted file downloads due to transform failure")
+        finally:
+            await self._close_download_adapter()
 
         _ = await monitor_task  # raise exception, if it is there
+
+    async def _close_download_adapter(self) -> None:
+        """Release the download adapter's connections once downloads are over.
+
+        A new adapter is created on the next status poll if this query runs again.
+        """
+        if self.minio is not None:
+            minio, self.minio = self.minio, None
+            await minio.close()
 
     async def transform_status_listener(
         self,
@@ -640,73 +657,80 @@ class Query:
                 "ServiceX server to the latest version."
             )
 
-        while True:
-            if not cached_record:
-                await asyncio.sleep(self.minio_polling_interval)
-            if self.minio:
-                # if self.minio exists, self.current_status will too
-                if self.current_status.files_completed > len(files_seen):
-                    if use_local_polling:
-                        files = await self.servicex.get_transformation_results(
-                            self.current_status.request_id, later_than
-                        )
-                    else:
-                        files = await self.minio.list_bucket()
+        try:
+            while True:
+                if not cached_record:
+                    await asyncio.sleep(self.minio_polling_interval)
+                if self.minio:
+                    # if self.minio exists, self.current_status will too
+                    if self.current_status.files_completed > len(files_seen):
+                        if use_local_polling:
+                            files = await self.servicex.get_transformation_results(
+                                self.current_status.request_id, later_than
+                            )
+                        else:
+                            files = await self.minio.list_bucket()
 
-                    await self.minio.update_cache([_.filename for _ in files])
+                        await self.minio.update_cache([_.filename for _ in files])
 
-                    for file in files:
-                        filename = file.filename
+                        for file in files:
+                            filename = file.filename
 
-                        if filename != "" and filename not in files_seen:
-                            if signed_urls_only:
-                                download_tasks.append(
-                                    loop.create_task(
-                                        get_signed_url(
-                                            self.minio,
-                                            filename,
-                                            progress,
-                                            download_progress,
+                            if filename != "" and filename not in files_seen:
+                                if signed_urls_only:
+                                    download_tasks.append(
+                                        loop.create_task(
+                                            get_signed_url(
+                                                self.minio,
+                                                filename,
+                                                progress,
+                                                download_progress,
+                                            )
                                         )
                                     )
-                                )
-                            else:
-                                if use_local_polling:
-                                    expected_size = file.total_bytes
                                 else:
-                                    expected_size = file.size
-                                download_tasks.append(
-                                    loop.create_task(
-                                        download_file(
-                                            self.minio,
-                                            filename,
-                                            progress,
-                                            download_progress,
-                                            shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
-                                            expected_size=expected_size,
+                                    if use_local_polling:
+                                        expected_size = file.total_bytes
+                                    else:
+                                        expected_size = file.size
+                                    download_tasks.append(
+                                        loop.create_task(
+                                            download_file(
+                                                self.minio,
+                                                filename,
+                                                progress,
+                                                download_progress,
+                                                shorten_filename=self.configuration.shortened_downloaded_filename,  # NOQA: E501
+                                                expected_size=expected_size,
+                                            )
                                         )
-                                    )
-                                )  # NOQA 501
-                            files_seen.add(filename)
+                                    )  # NOQA 501
+                                files_seen.add(filename)
 
-                            if use_local_polling:
-                                if file.created_at > later_than:
-                                    later_than = file.created_at
+                                if use_local_polling:
+                                    if file.created_at > later_than:
+                                        later_than = file.created_at
 
-            # Once the transform is complete and all files are seen we can stop polling.
-            # Also, if we are just downloading or signing urls for a previous transform
-            # then we know it is complete as well
-            if cached_record or (
-                self.current_status
-                and (
-                    self.current_status.status in DONE_STATUS
-                    and self.current_status.files_completed == len(files_seen)
-                )
-            ):
-                break
+                # Once the transform is complete and all files are seen we can stop polling.
+                # Also, if we are just downloading or signing urls for a previous transform
+                # then we know it is complete as well
+                if cached_record or (
+                    self.current_status
+                    and (
+                        self.current_status.status in DONE_STATUS
+                        and self.current_status.files_completed == len(files_seen)
+                    )
+                ):
+                    break
 
-        # Now just wait until all of our tasks complete
-        await asyncio.gather(*download_tasks)
+            # Now just wait until all of our tasks complete
+            await asyncio.gather(*download_tasks)
+        except BaseException:
+            # Don't leave file transfers running on an adapter that is about to be
+            # closed, whether we were cancelled or one of the transfers failed.
+            for task in download_tasks:
+                task.cancel()
+            raise
         if signed_urls_only:
             return (result_uris, [])
         else:

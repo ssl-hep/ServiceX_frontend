@@ -29,10 +29,12 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime, timezone
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
+from tinydb.storages import JSONStorage
+from tinydb.table import Table
 
 from servicex.configuration import Configuration
 from servicex.models import TransformRequest, TransformStatus, TransformedResults
@@ -40,6 +42,66 @@ from servicex.models import TransformRequest, TransformStatus, TransformedResult
 
 class CacheException(Exception):
     pass
+
+
+class _MemoizedJSONStorage(JSONStorage):
+    """
+    A TinyDB JSON storage that only parses the database file when it has changed.
+
+    TinyDB parses the whole file on every read. With a large cache and hundreds of
+    samples, those parses block the event loop before any transform is submitted.
+    Other processes can write to the same file, so the parsed copy is only reused
+    while the file's modification time and size are unchanged.
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._memo: Optional[Dict[str, Dict[str, Any]]] = None
+        self._signature: Optional[Tuple[int, int]] = None
+
+    def _current_signature(self) -> Tuple[int, int]:
+        st = os.fstat(self._handle.fileno())
+        return (st.st_mtime_ns, st.st_size)
+
+    def read(self) -> Optional[Dict[str, Dict[str, Any]]]:
+        signature = self._current_signature()
+        if self._memo is None or signature != self._signature:
+            self._memo = super().read()
+            self._signature = signature
+        return self._memo
+
+    def write(self, data: Dict[str, Dict[str, Any]]) -> None:
+        # TinyDB changes the parsed data in place before writing it, so the memo must
+        # not survive a failed write.
+        self._memo = None
+        super().write(data)
+        self._memo = data
+        self._signature = self._current_signature()
+
+    def close(self) -> None:
+        # Don't keep the parsed database in memory after the storage is closed.
+        self._memo = None
+        super().close()
+
+
+class _ProcessSafeTable(Table):
+    """
+    A TinyDB table that works out each new document ID from the stored data.
+
+    TinyDB works out the next ID once and then counts up from it in memory, so it
+    misses records that other processes add. Two processes sharing a cache can then
+    give out the same ID, and the second insert fails with "Document with ID ...
+    already exists". Inserts run under the cache's file lock and the storage
+    re-reads a changed file, so recomputing here always sees every process's
+    records.
+    """
+
+    def _get_next_id(self):
+        # Forget the remembered ID so TinyDB recomputes it from the stored data.
+        # This overrides a private method; the multi-process tests would fail if a
+        # TinyDB upgrade changed it.
+        self._next_id = None
+        return super()._get_next_id()
 
 
 class QueryCache:
@@ -51,8 +113,13 @@ class QueryCache:
                 parents=True, exist_ok=True
             )
             self.db = TinyDB(
-                os.path.join(self.config.cache_path, ".servicex", "db.json")
+                os.path.join(self.config.cache_path, ".servicex", "db.json"),
+                storage=_MemoizedJSONStorage,
             )
+            self.db.table_class = _ProcessSafeTable
+            # TinyDB's query cache only notices writes from this process, so it can
+            # return stale results when another process changes the database.
+            self.db.table(self.db.default_table_name, cache_size=0)
             self.lock = FileLock(
                 os.path.join(self.config.cache_path, ".servicex", "db.lock")
             )
@@ -171,7 +238,8 @@ class QueryCache:
             "hash": transform.compute_hash(),
             "title": transform.title,
             "codegen": transform.codegen,
-            "result_format": transform.result_format,
+            # Store the plain value so the memoized data matches what is on disk.
+            "result_format": transform.result_format.value,
             "request_id": request_id,
             "status": "SUBMITTED",
             "submit_time": datetime.now(timezone.utc).isoformat(),

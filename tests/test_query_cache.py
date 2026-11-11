@@ -25,12 +25,17 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import multiprocessing
 import os
 import sys
 import tempfile
 import json
 import pytest
 from pathlib import Path
+from unittest.mock import patch
+
+from filelock import FileLock
+from tinydb.storages import JSONStorage
 
 from servicex.configuration import Configuration
 from servicex.models import ResultFormat
@@ -340,3 +345,283 @@ def test_patch_old_db():
         assert transform is not None
         assert transform.headers == [{}]
         assert transform.expiries == [sys.maxsize]
+
+
+def _two_caches(temp_dir):
+    """Two instances sharing one database, standing in for two processes."""
+    config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+    return QueryCache(config), QueryCache(config)
+
+
+def test_new_query_sees_write_from_other_process(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        other = transform_request.model_copy(update={"did": "rucio://other"})
+        hash_value = transform_request.compute_hash()
+
+        # Reading a different hash first fills the memo without caching this query
+        assert reader.is_transform_request_submitted(other.compute_hash()) is False
+        writer.cache_submitted_transform(transform_request, "request-id")
+
+        assert reader.is_transform_request_submitted(hash_value) is True
+        writer.close()
+        reader.close()
+
+
+def test_repeated_query_sees_write_from_other_process(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        hash_value = transform_request.compute_hash()
+
+        assert reader.is_transform_request_submitted(hash_value) is False
+        writer.cache_submitted_transform(transform_request, "request-id")
+
+        assert reader.is_transform_request_submitted(hash_value) is True
+        writer.close()
+        reader.close()
+
+
+def test_repeated_query_sees_delete_from_other_process(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        hash_value = transform_request.compute_hash()
+
+        writer.cache_submitted_transform(transform_request, "request-id")
+        assert reader.is_transform_request_submitted(hash_value) is True
+        writer.delete_record_by_hash(hash_value)
+
+        assert reader.is_transform_request_submitted(hash_value) is False
+        writer.close()
+        reader.close()
+
+
+def test_repeated_reads_parse_file_once(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        writer, reader = _two_caches(temp_dir)
+        hash_value = transform_request.compute_hash()
+        writer.cache_submitted_transform(transform_request, "request-id")
+
+        with patch("tinydb.storages.json.load", wraps=json.load) as parse:
+            for _ in range(5):
+                assert reader.is_transform_request_submitted(hash_value) is True
+                assert reader.contains_hash(hash_value) is False
+            assert parse.call_count == 1
+
+            # This instance's own writes and later reads don't need a parse either
+            reader.update_transform_status(hash_value, "COMPLETE")
+            assert reader.is_transform_request_submitted(hash_value) is False
+            assert parse.call_count == 1
+        writer.close()
+        reader.close()
+
+
+def test_memo_matches_file_after_write(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+
+        cache.cache_submitted_transform(transform_request, "request-id")
+
+        with open(Path(temp_dir) / ".servicex" / "db.json") as f:
+            on_disk = json.load(f)
+        assert cache.db.storage._memo == on_disk
+        record = next(iter(cache.db.storage._memo["_default"].values()))
+        assert type(record["result_format"]) is str
+        cache.close()
+
+
+def test_failed_write_does_not_change_later_reads(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        hash_value = transform_request.compute_hash()
+        cache.cache_submitted_transform(transform_request, "request-id")
+
+        with patch.object(JSONStorage, "write", side_effect=OSError("disk full")):
+            with pytest.raises(OSError):
+                cache.update_transform_status(hash_value, "COMPLETE")
+
+        assert cache.db.storage._memo is None
+        assert cache.is_transform_request_submitted(hash_value) is True
+        cache.close()
+
+
+def test_insert_after_other_process_inserted(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        first, second = _two_caches(temp_dir)
+        requests = [
+            transform_request.model_copy(update={"did": f"rucio://request{i}"})
+            for i in range(3)
+        ]
+
+        # The first insert makes TinyDB work out and remember the next ID
+        first.cache_submitted_transform(requests[0], "request-0")
+        # Another process takes that ID
+        second.cache_submitted_transform(requests[1], "request-1")
+        # Without recomputing, this reuses the taken ID and raises
+        first.cache_submitted_transform(requests[2], "request-2")
+
+        for i, request in enumerate(requests):
+            assert second.get_transform_request_id(request.compute_hash()) == (
+                f"request-{i}"
+            )
+        first.close()
+        second.close()
+
+
+def test_close_clears_memo(transform_request):
+    with tempfile.TemporaryDirectory() as temp_dir:
+        config = Configuration(cache_path=temp_dir, api_endpoints=[])  # type: ignore
+        cache = QueryCache(config)
+        cache.cache_submitted_transform(transform_request, "request-id")
+        storage = cache.db.storage
+        assert storage._memo is not None
+
+        cache.close()
+
+        assert storage._memo is None
+
+
+def _cache_worker(cache_path, conn):
+    """Run in a separate process: open a QueryCache and call its methods as the
+    test asks, replying with each result, until sent None."""
+    cache = QueryCache(
+        Configuration(cache_path=cache_path, api_endpoints=[])  # type: ignore
+    )
+    conn.send(("ready", None))
+    while (command := conn.recv()) is not None:
+        name, args = command
+        try:
+            conn.send(("ok", getattr(cache, name)(*args)))
+        except Exception as e:
+            conn.send(("error", repr(e)))
+    cache.close()
+
+
+class _CacheProcess:
+    """A QueryCache in its own process, driven one call at a time so the test
+    decides exactly how operations from different processes interleave."""
+
+    _TIMEOUT = 30
+
+    def __init__(self, context, cache_path):
+        self._conn, child_conn = context.Pipe()
+        self._process = context.Process(
+            target=_cache_worker, args=(cache_path, child_conn)
+        )
+        self._process.start()
+        assert self.result() is None  # the cache is open
+
+    def send(self, name, *args):
+        self._conn.send((name, args))
+
+    def replied_within(self, seconds):
+        return self._conn.poll(seconds)
+
+    def result(self):
+        if not self._conn.poll(self._TIMEOUT):
+            pytest.fail(f"cache process did not reply within {self._TIMEOUT} s")
+        status, value = self._conn.recv()
+        if status == "error":
+            pytest.fail(f"cache process raised {value}")
+        return value
+
+    def call(self, name, *args):
+        self.send(name, *args)
+        return self.result()
+
+    def stop(self):
+        if self._process.is_alive():
+            try:
+                self._conn.send(None)
+            except (BrokenPipeError, OSError):
+                pass
+            self._process.join(timeout=10)
+        if self._process.is_alive():
+            self._process.kill()
+
+
+@pytest.fixture
+def cache_processes(tmp_path):
+    """Start QueryCache processes that share one database in tmp_path."""
+    context = multiprocessing.get_context("spawn")
+    started = []
+
+    def start():
+        process = _CacheProcess(context, str(tmp_path))
+        started.append(process)
+        return process
+
+    yield start
+    for process in started:
+        process.stop()
+
+
+def _request_ids(cache_path, requests):
+    """Read each request's ID back from the database with a fresh cache."""
+    cache = QueryCache(
+        Configuration(cache_path=str(cache_path), api_endpoints=[])  # type: ignore
+    )
+    try:
+        return [
+            (
+                cache.get_transform_request_id(r.compute_hash())
+                if cache.is_transform_request_submitted(r.compute_hash())
+                else None
+            )
+            for r in requests
+        ]
+    finally:
+        cache.close()
+
+
+def _requests(transform_request, count):
+    return [
+        transform_request.model_copy(update={"did": f"rucio://request{i}"})
+        for i in range(count)
+    ]
+
+
+def test_processes_get_distinct_document_ids(
+    transform_request, cache_processes, tmp_path
+):
+    a, b = cache_processes(), cache_processes()
+    requests = _requests(transform_request, 3)
+
+    a.call("cache_submitted_transform", requests[0], "request-0")  # A picks next ID
+    b.call("cache_submitted_transform", requests[1], "request-1")  # B takes it
+    # Fails if A reuses the ID it worked out before B's insert
+    a.call("cache_submitted_transform", requests[2], "request-2")
+
+    assert _request_ids(tmp_path, requests) == ["request-0", "request-1", "request-2"]
+
+
+def test_process_sees_other_process_write_before_writing(
+    transform_request, cache_processes, tmp_path
+):
+    a, b = cache_processes(), cache_processes()
+    requests = _requests(transform_request, 3)
+
+    b.call("cache_submitted_transform", requests[0], "request-0")
+    # A reads, so it now holds a parsed copy of the database
+    assert a.call("is_transform_request_submitted", requests[0].compute_hash())
+    b.call("cache_submitted_transform", requests[1], "request-1")
+    # If A wrote from its old copy, B's second record would be lost
+    a.call("cache_submitted_transform", requests[2], "request-2")
+
+    assert _request_ids(tmp_path, requests) == ["request-0", "request-1", "request-2"]
+
+
+def test_process_waits_for_cache_lock(transform_request, cache_processes, tmp_path):
+    b = cache_processes()
+    request = transform_request
+
+    lock = FileLock(os.path.join(tmp_path, ".servicex", "db.lock"))
+    with lock:
+        b.send("cache_submitted_transform", request, "request-0")
+        # B must not finish while another process holds the lock. If locking were
+        # missing, B would reply almost at once.
+        assert not b.replied_within(0.5), "wrote while another process held the lock"
+    b.result()
+
+    assert _request_ids(tmp_path, [request]) == ["request-0"]

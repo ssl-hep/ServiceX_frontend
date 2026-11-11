@@ -25,7 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import io
+import time
 from unittest.mock import patch, MagicMock
+
+from rich.console import Console
 
 from servicex.expandable_progress import ExpandableProgress, TranformStatusProgress
 from rich.progress import TextColumn, BarColumn, MofNCompleteColumn, TimeRemainingColumn
@@ -150,6 +154,59 @@ def test_get_renderables_with_failure():
     assert len(progress.columns) == 4
     assert isinstance(progress.columns[1], BarColumn)
     assert progress.columns[1].complete_style == "rgb(255,0,0)"
+
+
+def _captured_console():
+    return Console(file=io.StringIO(), force_terminal=True, width=80)
+
+
+def test_refresh_rate_defaults_to_two_per_second():
+    assert TranformStatusProgress().live.refresh_per_second == 2
+
+
+def test_refresh_rate_can_be_overridden():
+    progress = TranformStatusProgress(refresh_per_second=5)
+    assert progress.live.refresh_per_second == 5
+
+
+@patch("rich.progress.Progress.refresh")
+def test_add_task_does_not_draw_with_auto_refresh(mock_refresh):
+    progress = TranformStatusProgress()
+    for i in range(5):
+        progress.add_task(f"task {i}", start=False, total=None)
+    progress.refresh()
+    mock_refresh.assert_not_called()
+
+
+@patch("rich.progress.Progress.refresh")
+def test_refresh_still_draws_without_auto_refresh(mock_refresh):
+    progress = TranformStatusProgress(auto_refresh=False)
+    progress.add_task("task", start=False, total=None)
+    mock_refresh.assert_called_once()
+
+
+def test_refresh_thread_draws_new_tasks():
+    console = _captured_console()
+    with TranformStatusProgress(console=console, refresh_per_second=50) as progress:
+        progress.add_task("drawn by thread", total=10)
+        deadline = time.monotonic() + 5
+        while (
+            "drawn by thread" not in console.file.getvalue()
+            and time.monotonic() < deadline
+        ):
+            time.sleep(0.01)
+        assert "drawn by thread" in console.file.getvalue()
+
+
+def test_stop_draws_final_state():
+    console = _captured_console()
+    # A low rate keeps the refresh thread from drawing before the context exits.
+    with TranformStatusProgress(console=console, refresh_per_second=0.1) as progress:
+        task_id = progress.add_task("final state", total=10)
+        progress.update(task_id, completed=3)
+    output = console.file.getvalue()
+    assert "final state" in output
+    assert "3/10" in output
 
 
 def test_progress_advance():

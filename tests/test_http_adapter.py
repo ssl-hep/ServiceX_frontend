@@ -237,3 +237,21 @@ def _sx_mock() -> AsyncMock:
 #     assert result.exists()
 #     assert download_patch.call_count == 3
 #     result.unlink()
+
+
+@pytest.mark.asyncio
+async def test_close_releases_session(httpserver):
+    http_adapter = adapter(httpserver)
+    await http_adapter.close()
+    assert http_adapter.session.is_closed
+
+
+@pytest.mark.asyncio
+async def test_download_session_keeps_no_idle_connections(httpserver):
+    # Large requests have one adapter per sample, so an idle connection per
+    # adapter can exhaust the process's open-file limit. This checks the setting
+    # rather than behaviour, because the test server closes every connection
+    # itself. httpx does not expose its pool, so this reads private attributes.
+    http_adapter = adapter(httpserver)
+    assert http_adapter.session._transport._pool._max_keepalive_connections == 0
+    await http_adapter.close()
