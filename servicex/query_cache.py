@@ -34,6 +34,7 @@ from datetime import datetime, timezone
 from filelock import FileLock
 from tinydb import TinyDB, Query, where
 from tinydb.storages import JSONStorage
+from tinydb.table import Table
 
 from servicex.configuration import Configuration
 from servicex.models import TransformRequest, TransformStatus, TransformedResults
@@ -83,6 +84,26 @@ class _MemoizedJSONStorage(JSONStorage):
         super().close()
 
 
+class _ProcessSafeTable(Table):
+    """
+    A TinyDB table that works out each new document ID from the stored data.
+
+    TinyDB works out the next ID once and then counts up from it in memory, so it
+    misses records that other processes add. Two processes sharing a cache can then
+    give out the same ID, and the second insert fails with "Document with ID ...
+    already exists". Inserts run under the cache's file lock and the storage
+    re-reads a changed file, so recomputing here always sees every process's
+    records.
+    """
+
+    def _get_next_id(self):
+        # Forget the remembered ID so TinyDB recomputes it from the stored data.
+        # This overrides a private method; the multi-process tests would fail if a
+        # TinyDB upgrade changed it.
+        self._next_id = None
+        return super()._get_next_id()
+
+
 class QueryCache:
     def __init__(self, config: Configuration):
         self.config = config
@@ -95,6 +116,7 @@ class QueryCache:
                 os.path.join(self.config.cache_path, ".servicex", "db.json"),
                 storage=_MemoizedJSONStorage,
             )
+            self.db.table_class = _ProcessSafeTable
             # TinyDB's query cache only notices writes from this process, so it can
             # return stale results when another process changes the database.
             self.db.table(self.db.default_table_name, cache_size=0)
