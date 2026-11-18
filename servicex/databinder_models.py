@@ -27,7 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from enum import Enum
 import hashlib
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Annotated
 from pydantic import (
     Field,
     model_validator,
@@ -301,7 +301,7 @@ class ServiceXSpec(DocStringBaseModel):
     Any reusable definitions that are needed for the transform request
     """
 
-    Definition: Optional[List] = None
+    Definition: Annotated[Optional[List], Field(deprecated=True)] = None
     """
     [Deprecated] Any reusable definitions that are needed for the transform request
     """

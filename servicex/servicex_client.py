@@ -50,6 +50,7 @@ from servicex.dataset_group import DatasetGroup
 
 from make_it_sync import make_sync
 from servicex.databinder_models import ServiceXSpec, General, Sample
+import servicex.databinder_models
 from collections.abc import Sequence, Coroutine
 from enum import Enum
 import traceback
@@ -134,12 +135,24 @@ def _spec_constructor(config: Mapping[str, Any]) -> ServiceXSpec:
         e0 = e.errors()[0]
         if e0["type"] == "extra_forbidden":
             if len(e0["loc"]) >= 2:
-                raise ValueError(
+                blockname: str = str(e0["loc"][-2])
+                block = getattr(servicex.databinder_models, blockname, None)
+                info = (
                     f"Key {e0['loc'][-1]} is not permitted " f"in block {e0['loc'][-2]}"
-                ) from e
+                )
+                if block is not None:
+                    info += f"; allowed keys are {', '.join(block.model_fields.keys())}"
+                raise ValueError(info) from e
             elif len(e0["loc"]) > 0:
+                ok_keys = [
+                    _[0]
+                    for _ in ServiceXSpec.model_fields.items()
+                    if not _[1].deprecated
+                ]
                 raise ValueError(
-                    f"Key {e0['loc'][-1]} is not permitted " f"at top level"
+                    f"Key {e0['loc'][-1]} is not permitted "
+                    f"at top level;"
+                    f"allowed keys are {', '.join(ok_keys)}"
                 ) from e
         elif e0["type"] == "value_error":
             raise ValueError(f"{e0['msg']} Problematic input was {e0['input']}") from e

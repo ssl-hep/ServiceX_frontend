@@ -110,11 +110,13 @@ def test_reject_bad_fields():
     }
     with pytest.raises(ValidationError) as e:
         ServiceXSpec.model_validate(config)
-        assert e.type == "extra_forbidden"
+
+    assert e.value.errors()[0]["type"] == "extra_forbidden"
 
     with pytest.raises(ValueError) as e:
         _load_ServiceXSpec(config)
-        assert e.match("Key CodeGen is not permitted in block General")
+
+    assert e.match("Key CodeGen is not permitted in block General")
 
     config["General"] = {
         "Codegen": "python",
@@ -123,37 +125,43 @@ def test_reject_bad_fields():
     config["Sample"].append({"Broken": "Item"})
     with pytest.raises(ValidationError) as e:
         ServiceXSpec.model_validate(config)
-        assert e.type == "value_error"
+
+    assert e.value.errors()[0]["type"] == "value_error"
 
     with pytest.raises(ValueError) as e:
         _load_ServiceXSpec(config)
-        assert e.match(
-            "Value error, Must specify one of Dataset, XRootDFiles, "
-            "or RucioDID. Input was {'Broken': 'Item'}"
-        )
+
+    assert e.match(
+        "Value error, Must specify one of Dataset, XRootDFiles, "
+        "or RucioDID. Problematic input was {'Broken': 'Item'}"
+    )
 
     config["Sample"].pop()
     config["Random"] = []
     with pytest.raises(ValidationError) as e:
         ServiceXSpec.model_validate(config)
-        assert e.type == "extra_forbidden"
+
+    assert e.value.errors()[0]["type"] == "extra_forbidden"
 
     with pytest.raises(ValueError) as e:
         _load_ServiceXSpec(config)
-        assert e.match("Key Random is not permitted at top level")
+
+    assert e.match("Key Random is not permitted at top level")
 
     del config["Random"]
     config["General"] = []
     with pytest.raises(ValidationError) as e:
         ServiceXSpec.model_validate(config)
-        assert e.type == "model_type"
+
+    assert e.value.errors()[0]["type"] == "model_type"
 
     with pytest.raises(ValueError) as e:
         _load_ServiceXSpec(config)
-        assert e.match(
-            "Wrong type provided for 'General': Input should "
-            "be a valid dictionary or instance of General"
-        )
+
+    assert e.match(
+        "Wrong type provided for 'General': Input should "
+        "be a valid dictionary or instance of General"
+    )
 
 
 def test_single_root_file():
