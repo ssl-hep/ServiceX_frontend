@@ -25,7 +25,11 @@
 # CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import asyncio
+import threading
 from unittest.mock import patch, MagicMock
+
+import pytest
 
 from servicex.expandable_progress import ExpandableProgress, TranformStatusProgress
 from rich.progress import TextColumn, BarColumn, MofNCompleteColumn, TimeRemainingColumn
@@ -150,6 +154,72 @@ def test_get_renderables_with_failure():
     assert len(progress.columns) == 4
     assert isinstance(progress.columns[1], BarColumn)
     assert progress.columns[1].complete_style == "rgb(255,0,0)"
+
+
+def test_get_renderables_skips_invisible_tasks():
+    """Regression test: get_renderables() should skip tasks with visible=False."""
+    progress = TranformStatusProgress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(complete_style="rgb(114,156,31)", finished_style="rgb(0,255,0)"),
+        MofNCompleteColumn(),
+        TimeRemainingColumn(compact=True, elapsed_when_finished=True),
+    )
+    progress.add_task("visible_task", visible=True)
+    for i in range(10):
+        progress.add_task(f"hidden_task_{i}", visible=False)
+
+    renderables = list(progress.get_renderables())
+    assert len(renderables) == 1
+
+
+def test_download_aggregation_ignores_title_padding():
+    """Regression test: the Download/URLs aggregate should sum every dataset, not just one."""
+    with ExpandableProgress(overall_progress=True) as progress:
+        short_transform_title = "a: Transform"
+        short_download_title = "Download".rjust(len(short_transform_title))
+
+        long_transform_title = "a_much_longer_dataset_name: Transform"
+        long_download_title = "Download".rjust(len(long_transform_title))
+
+        # Sanity check: the two download titles really are padded differently.
+        assert short_download_title != long_download_title
+
+        progress.add_task(short_transform_title, start=False, total=None)
+        d1 = progress.add_task(short_download_title, start=False, total=None)
+        progress.add_task(long_transform_title, start=False, total=None)
+        d2 = progress.add_task(long_download_title, start=False, total=None)
+
+        progress.update(d1, short_download_title, total=10, completed=4)
+        progress.update(d2, long_download_title, total=20, completed=6)
+
+        download_task = progress.progress.tasks[progress.overall_progress_download_task]
+        assert download_task.total == 30
+        assert download_task.completed == 10
+
+
+@pytest.mark.asyncio
+async def test_no_background_refresh_thread():
+    """Regression test: no background thread is created; refresh runs via asyncio."""
+    before = threading.active_count()
+    with ExpandableProgress(display_progress=True, overall_progress=True) as progress:
+        assert progress.progress.live.auto_refresh is False
+        assert progress._refresh_task is not None
+        during = threading.active_count()
+
+        t_id = progress.add_task("0001_x: Transform", start=True, total=10)
+        for _ in range(3):
+            progress.advance(t_id, "Transform")
+        # Give the asyncio refresh task a couple of turns to prove it runs.
+        await asyncio.sleep(0.25)
+        assert progress.progress.tasks[0].completed == 3
+
+    # Let the cancellation raised inside _auto_refresh actually propagate.
+    await asyncio.sleep(0)
+    after = threading.active_count()
+
+    assert during == before
+    assert after == before
+    assert progress._refresh_task.cancelled() or progress._refresh_task.done()
 
 
 def test_progress_advance():

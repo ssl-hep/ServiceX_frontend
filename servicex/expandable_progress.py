@@ -27,6 +27,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
+import asyncio
 from typing import Optional
 
 from rich.progress import (
@@ -51,6 +52,11 @@ BROKEN_STYLE = [
     MofNCompleteColumn(),
     TimeRemainingColumn(compact=True, elapsed_when_finished=True),
 ]
+
+
+def _bucket(name: str) -> str:
+    """Classify a task title as "Transform" or "Download", ignoring padding."""
+    return "Transform" if name.strip().endswith("Transform") else "Download"
 
 
 class ProgressCounts:
@@ -96,9 +102,13 @@ class ExpandableProgress:
         self.overall_progress_transform_task = None
         self.overall_progress_download_task = None
         self.progress_counts = {}
+        self._refresh_task = None
         if display_progress:
             if self.overall_progress or not provided_progress:
-                self.progress = TranformStatusProgress(*DEFAULT_STYLE)
+                # auto_refresh=False: skip rich's background thread; refresh via asyncio instead.
+                self.progress = TranformStatusProgress(
+                    *DEFAULT_STYLE, auto_refresh=False
+                )
 
             if provided_progress:
                 self.progress = (
@@ -109,6 +119,14 @@ class ExpandableProgress:
         else:
             self.progress = None
 
+    async def _auto_refresh(self):
+        try:
+            while True:
+                await asyncio.sleep(0.1)
+                self.progress.refresh()
+        except asyncio.CancelledError:
+            pass
+
     def __enter__(self):
         """
         Start the progress bar if it is not already started and the user wants one.
@@ -116,6 +134,12 @@ class ExpandableProgress:
         """
         if self.display_progress and not self.provided_progress:
             self.progress.start()
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None:
+                self._refresh_task = loop.create_task(self._auto_refresh())
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -128,6 +152,8 @@ class ExpandableProgress:
         :return:
         """
         if self.display_progress and not self.provided_progress:
+            if self._refresh_task is not None:
+                self._refresh_task.cancel()
             self.progress.stop()
 
     def add_task(self, param, start, total):
@@ -147,7 +173,7 @@ class ExpandableProgress:
                 param, start=start, total=total, visible=False
             )
             new_task = ProgressCounts(
-                "Transform" if param.endswith("Transform") else param,
+                _bucket(param),
                 task_id,
                 start=start,
                 total=total,
@@ -160,8 +186,7 @@ class ExpandableProgress:
     def update(self, task_id, task_type, total=None, completed=None, **fields):
 
         if self.display_progress and self.overall_progress:
-            if task_type.endswith("Transform"):
-                task_type = "Transform"
+            task_type = _bucket(task_type)
             # Calculate and update
             overall_completed = 0
             overall_total = 0
@@ -205,7 +230,7 @@ class ExpandableProgress:
 
     def start_task(self, task_id, task_type):
         if self.display_progress and self.overall_progress:
-            if task_type.endswith("Transform"):
+            if _bucket(task_type) == "Transform":
                 self.progress.start_task(task_id=self.overall_progress_transform_task)
             else:
                 self.progress.start_task(task_id=self.overall_progress_download_task)
@@ -218,7 +243,7 @@ class ExpandableProgress:
                 self.progress_counts[task_id].completed += 1
             else:
                 self.progress_counts[task_id].completed = 1
-            if task_type.endswith("Transform"):
+            if _bucket(task_type) == "Transform":
                 self.progress.advance(task_id=self.overall_progress_transform_task)
             else:
                 self.progress.advance(task_id=self.overall_progress_download_task)
@@ -233,6 +258,8 @@ class ExpandableProgress:
 class TranformStatusProgress(Progress):
     def get_renderables(self):
         for task in self.tasks:
+            if not task.visible:
+                continue
             if task.fields.get("bar") == "failure":
                 self.columns = BROKEN_STYLE
             else:
