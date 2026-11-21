@@ -100,7 +100,9 @@ def test_reject_event_ordering_in_python_ast(operator, method_form):
         if method_form
         else f"{operator}({source}, lambda row: row.pt)"
     )
-    with pytest.raises(ValueError, match=f"{operator} cannot sort a ServiceX event stream"):
+    with pytest.raises(
+        ValueError, match=f"{operator} cannot sort a ServiceX event stream"
+    ):
         FuncADLQuery().generate_qastle(ast.parse(expression))
 
 
