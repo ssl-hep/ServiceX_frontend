@@ -35,13 +35,54 @@ from typing import (
     Type,
     TypeVar,
 )
-from qastle import python_ast_to_text_ast
+from qastle import python_ast_to_text_ast, text_ast_to_python_ast
 
 from func_adl import EventDataset, find_EventDataset
 from servicex.query_core import QueryStringGenerator
 from abc import ABC
 
 T = TypeVar("T")
+
+
+_ORDER_OPERATORS = {"OrderBy", "OrderByDescending", "ThenBy", "ThenByDescending"}
+
+
+class _RejectEventOrdering(ast.NodeVisitor):
+    def __init__(self):
+        self._inside_lambda = False
+
+    def visit_Lambda(self, node):
+        self.visit(node.args)
+        previous = self._inside_lambda
+        self._inside_lambda = True
+        self.visit(node.body)
+        self._inside_lambda = previous
+
+    def _check_source(self, operator, source):
+        uses_dataset = source is not None and any(
+            isinstance(item, ast.Call)
+            and isinstance(item.func, ast.Name)
+            and item.func.id == "EventDataset"
+            for item in ast.walk(source)
+        )
+        if not self._inside_lambda or uses_dataset:
+            raise ValueError(
+                f"{operator} cannot sort a ServiceX event stream. "
+                "Sort a collection inside each event."
+            )
+
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Attribute) and node.func.attr in _ORDER_OPERATORS:
+            self._check_source(node.func.attr, node.func.value)
+        elif isinstance(node.func, ast.Name) and node.func.id in _ORDER_OPERATORS:
+            self._check_source(node.func.id, node.args[0] if node.args else None)
+        self.generic_visit(node)
+
+    def visit_OrderBy(self, node):
+        self._check_source(type(node).__name__, node.source)
+        self.generic_visit(node)
+
+    visit_OrderByDescending = visit_OrderBy
 
 
 class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
@@ -73,6 +114,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
 
     def generate_selection_string(self) -> str:
         if self.provided_qastle:
+            _RejectEventOrdering().visit(text_ast_to_python_ast(self.provided_qastle))
             return self.provided_qastle
         else:
             return self.generate_qastle(self.query_ast)
@@ -105,6 +147,7 @@ class FuncADLQuery(QueryStringGenerator, EventDataset[T], ABC):
         Returns:
             str: Qastle that should be sent to servicex
         """
+        _RejectEventOrdering().visit(a)
         return python_ast_to_text_ast(a)
 
     def as_qastle(self):
@@ -141,8 +184,7 @@ class FuncADLQuery_Uproot(FuncADLQuery):
         return super().generate_selection_string()
 
     def set_provided_qastle(self, qastle_query: str):
-        # we do not validate provided qastle, so we don't know if a tree name is specified.
-        # assume user knows what they're doing
+        # A supplied Qastle query is responsible for providing its own tree name.
         self.tree_is_set = True
         super().set_provided_qastle(qastle_query)
 
